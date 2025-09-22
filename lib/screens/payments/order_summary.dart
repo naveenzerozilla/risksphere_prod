@@ -125,28 +125,16 @@ class _OrderSummaryState extends State<OrderSummary> {
                           ),
                           const SizedBox(height: 20),
                           _KeyValueRow(
-                              label: 'User count',
-                              value: item.selectedPlan ?? '—'),
+                              label: 'Count', value: item.selectedPlan ?? '—'),
                           const SizedBox(height: 15),
                           _KeyValueRow(
                               label: 'Billing', value: item.planType ?? '—'),
                           const SizedBox(height: 15),
                           _KeyValueRow(
                             label: 'License pricing',
-                            value: '\$${item.price?.toString() ?? '0'} / user',
+                            value: '\$${item.price?.toString() ?? '0'}'
+                                "${item.planName.toString() == "User License" ? "/ user" : item.planName.toString() == "Event Count Cost" ? '/ event' : "/ location"}",
                           ),
-                          if (item.vendor != "" && item.eventType != "") ...[
-                            const SizedBox(height: 15),
-                            _KeyValueRow(
-                              label: 'Vendor Name',
-                              value: '${item.vendor?.toString()}',
-                            ),
-                            const SizedBox(height: 15),
-                            _KeyValueRow(
-                              label: 'Event Type',
-                              value: '${item.eventType?.toString()}',
-                            ),
-                          ],
                           const SizedBox(height: 24),
                           if (!isLast) const Divider(thickness: 1, height: 1),
                           if (!isLast) const SizedBox(height: 24),

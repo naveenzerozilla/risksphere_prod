@@ -35,6 +35,12 @@ class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
   int currentPage = 1;
 
+
+  void setLoading(bool value) {
+    isLoading = value;
+    notifyListeners();
+  }
+
   void goToNextPage() {
     currentPage++;
     notifyListeners(); // Triggers UI update
@@ -85,7 +91,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
   bool get isHeatMapGeneratingLive => _isHeatMapGeneratingLive;
 
-  set isHeatMapGeneratingLive(bool value) {
+  void setHeatmapGeneratingLive(bool value) {
     _isHeatMapGeneratingLive = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
@@ -387,12 +393,34 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
+  int? _locationCount = 0;
+
+  int get locationcount => _locationCount!;
+
+  set locationcount(int value) {
+    _locationCount = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+
   List<MyLocation> _myLocationList = [];
 
   List<MyLocation> get myLocationList => _myLocationList;
 
   set myLocationList(List<MyLocation> value) {
     _myLocationList = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+  List<MyLocation> _myLocationConflictList = [];
+
+  List<MyLocation> get myLocationConflictList => _myLocationConflictList;
+
+  set myLocationConflictList(List<MyLocation> value) {
+    _myLocationConflictList = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -925,8 +953,9 @@ class MyLocationListProvider extends ChangeNotifier {
       // ));
     }
   }
+// Add this flag in your provider class
+  bool _isFetching = false;
 
-  /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchLocationList(
       BuildContext context,
       String searchQuery,
@@ -936,15 +965,15 @@ class MyLocationListProvider extends ChangeNotifier {
       String? subAccountID,
       String? processId,
       String? subProcessId,
-      [String? sovID]) async {
+      [String? sovID]
+      ) async {
+    if (_isFetching) return; // Prevent multiple concurrent calls
+    _isFetching = true;
+
     var typography = CustomTypography(context);
     try {
-      // print('Api called page and total page are $page and $totalPages');
-      // Check if api is already working
-      // if (isLoading || isNextPageLoading) return;
-      // dont call api is next page does not exist
-      print(totalPages.toString());
       if (page - 1 > totalPages) return;
+
       if (page == 1) {
         myLocationList = [];
         isLoading = true;
@@ -953,88 +982,56 @@ class MyLocationListProvider extends ChangeNotifier {
       }
 
       var headers = await CommonHeaders.createHeaders();
-
       log(headers.toString());
 
+      // Build URL
       var url;
-      if (sovID != null) {
-        url = AppConstant.MY_LOCATION +
-            "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+      if (sovID != null && sovID.isNotEmpty) {
+        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
       } else {
-        url = AppConstant.MY_LOCATION +
-            "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-      }
-      if (countries.isNotEmpty) {
-        url += "&country=${countries.join(",")}";
-      }
-      if (zipcode.isNotEmpty) {
-        url += "&zip=$state";
-      }
-      if (sortBy.isNotEmpty) {
-        url += "&sort=$sortBy";
+        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
       }
 
+      if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
+      if (zipcode.isNotEmpty) url += "&zip=$state";
+      if (sortBy.isNotEmpty) url += "&sort=$sortBy";
       if (certifications.isNotEmpty) {
         for (var cert in certifications) {
-          if (cert == "Manual Certified") {
-            url += "&manual_certified=true";
-          } else if (cert == "Auto Certified") {
-            url += "&auto_certified=true";
-          }
+          if (cert == "Manual Certified") url += "&manual_certified=true";
+          if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty) {
-        /*for (var hazard in hazardRatings.keys) {
-          url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-        }*/
-        // we pass it in as json
-        url += "&hazard=${jsonEncode(hazardRatings)}";
-      }
-      if (rating.isNotEmpty) {
-        url += "&score=${rating.join(",")}";
-      }
-
-      if (_selectedCampusIds.isNotEmpty) {
-        url += "&campus_id=${_selectedCampusIds.join(",")}";
-      }
-
-      if (processId != null) {
-        url += "&process_id=$processId";
-      }
-
-      if (subProcessId != null) {
-        url += "&sub_process_id=$subProcessId";
-      }
+      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
+      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (processId != null) url += "&process_id=$processId";
+      if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
       print(url);
       var uri = Uri.parse(url);
 
-      var response = await http.get(
-        uri,
-        headers: headers,
-        //body: body,
-      );
+      var response = await http.get(uri, headers: headers);
       log(response.body);
       print(response.statusCode);
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         isConflict = locationListModel.isConflict!;
         isHazardCanStart = locationListModel.isHazardCanStart!;
         isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
-
         totalPages = locationHits ~/ pageSize;
-        //summaryList = locationListModel.summaryList ?? [];
-        //mainSovRating = locationListModel. ?? 0.0;
+
         if (page == 1) {
+          locationcount = locationListModel.totalRecords ?? 1;
           myLocationList = locationListModel.results ?? [];
         } else {
           addToMyLocationList(locationListModel.results ?? []);
         }
+
         log(myLocationList.toString());
         print("totalPages: $totalPages");
         log(page.toString());
@@ -1042,31 +1039,392 @@ class MyLocationListProvider extends ChangeNotifier {
         print(json.decode(response.body)["error"]);
         throw Exception('Failed to load data');
       }
-      isLoading = false;
-      isNextPageLoading = false;
     } on BackendException catch (e, stackTrace) {
-      isLoading = false;
-      isNextPageLoading = false;
       print(stackTrace);
       print(e.message);
-      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      //   content: Text(
-      //     e.message,
-      //     style: typography.Body1,
-      //   ),
-      // ));
     } catch (e, stackTrace) {
+      print(stackTrace);
+    } finally {
       isLoading = false;
       isNextPageLoading = false;
-      print(stackTrace);
-      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      //   content: Text(
-      //     "Error fetching data",
-      //     style: typography.Body1,
-      //   ),
-      // ));
+      _isFetching = false; // Release the fetch lock
+      notifyListeners(); // Notify UI only once at the end
     }
   }
+
+  Future<void> fetchLocationConflictList(
+      BuildContext context,
+      String searchQuery,
+      int page,
+      int pageSize,
+      String? accountID,
+      String? subAccountID,
+      String? processId,
+      String? subProcessId,
+      [String? sovID]
+      ) async {
+    if (_isFetching) return; // Prevent multiple concurrent calls
+    _isFetching = true;
+
+    var typography = CustomTypography(context);
+    try {
+      if (page - 1 > totalPages) return;
+
+      if (page == 1) {
+        myLocationConflictList = [];
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
+      }
+
+      var headers = await CommonHeaders.createHeaders();
+      log(headers.toString());
+
+      var url;
+      if (sovID != null) {
+        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
+      } else {
+        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
+      }
+
+      if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
+      if (zipcode.isNotEmpty) url += "&zip=$state";
+      if (sortBy.isNotEmpty) url += "&sort=$sortBy";
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if (cert == "Manual Certified") url += "&manual_certified=true";
+          if (cert == "Auto Certified") url += "&auto_certified=true";
+        }
+      }
+      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
+      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (processId != null) url += "&process_id=$processId";
+      if (subProcessId != null) url += "&sub_process_id=$subProcessId";
+
+      print(url);
+      var uri = Uri.parse(url);
+
+      var response = await http.get(uri, headers: headers);
+      log(response.body);
+      print(response.statusCode);
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+
+        // locationHits = locationListModel.totalRecords ?? 0;
+        // certifiedLocationHits = locationListModel.totalCertified ?? 0;
+        isConflict = locationListModel.isConflict!;
+        isHazardCanStart = locationListModel.isHazardCanStart!;
+        isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
+        totalPages = locationHits ~/ pageSize;
+
+        if (page == 1) {
+          myLocationConflictList = locationListModel.results ?? [];
+        } else {
+          addToMyLocationList(locationListModel.results ?? []);
+        }
+
+        log(myLocationConflictList.toString());
+        print("totalPages: $totalPages");
+        log(page.toString());
+      } else {
+        print(json.decode(response.body)["error"]);
+        throw Exception('Failed to load data');
+      }
+    } on BackendException catch (e, stackTrace) {
+      print(stackTrace);
+      print(e.message);
+    } catch (e, stackTrace) {
+      print(stackTrace);
+    } finally {
+      isLoading = false;
+      isNextPageLoading = false;
+      _isFetching = false; // Release the fetch lock
+      notifyListeners(); // Notify UI only once at the end
+    }
+  }
+
+  //old
+  /// Fetch sov list with pagination, search query, and filters
+  // Future<void> fetchLocationList(
+  //     BuildContext context,
+  //     String searchQuery,
+  //     int page,
+  //     int pageSize,
+  //     String? accountID,
+  //     String? subAccountID,
+  //     String? processId,
+  //     String? subProcessId,
+  //     [String? sovID]) async {
+  //   var typography = CustomTypography(context);
+  //   try {
+  //     // print('Api called page and total page are $page and $totalPages');
+  //     // Check if api is already working
+  //     // if (isLoading || isNextPageLoading) return;
+  //     // dont call api is next page does not exist
+  //     print(totalPages.toString());
+  //     if (page - 1 > totalPages) return;
+  //     if (page == 1) {
+  //       myLocationList = [];
+  //       isLoading = true;
+  //     } else {
+  //       isNextPageLoading = true;
+  //     }
+  //
+  //     var headers = await CommonHeaders.createHeaders();
+  //
+  //     log(headers.toString());
+  //
+  //     var url;
+  //     if (sovID != null && sovID.isNotEmpty) {
+  //       print("Aa");
+  //       url = AppConstant.MY_LOCATION +
+  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+  //     } else if (processId != null && processId.isNotEmpty) {
+  //       print("Bb");
+  //       url = AppConstant.MY_LOCATION +
+  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+  //     } else {
+  //       print("Cb");
+  //       url = AppConstant.MY_LOCATION +
+  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+  //               // "&process_id=$processId";
+  //     }
+  //
+  //     // if (sovID != null) {
+  //     //   url = AppConstant.MY_LOCATION +
+  //     //       "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+  //     // } else {
+  //     //   url = AppConstant.MY_LOCATION +
+  //     //       "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
+  //     // }
+  //     if (countries.isNotEmpty) {
+  //       url += "&country=${countries.join(",")}";
+  //     }
+  //     if (zipcode.isNotEmpty) {
+  //       url += "&zip=$state";
+  //     }
+  //     if (sortBy.isNotEmpty) {
+  //       url += "&sort=$sortBy";
+  //     }
+  //
+  //     if (certifications.isNotEmpty) {
+  //       for (var cert in certifications) {
+  //         if (cert == "Manual Certified") {
+  //           url += "&manual_certified=true";
+  //         } else if (cert == "Auto Certified") {
+  //           url += "&auto_certified=true";
+  //         }
+  //       }
+  //     }
+  //     if (hazardRatings.isNotEmpty) {
+  //       /*for (var hazard in hazardRatings.keys) {
+  //         url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
+  //       }*/
+  //       // we pass it in as json
+  //       url += "&hazard=${jsonEncode(hazardRatings)}";
+  //     }
+  //     if (rating.isNotEmpty) {
+  //       url += "&score=${rating.join(",")}";
+  //     }
+  //
+  //     if (_selectedCampusIds.isNotEmpty) {
+  //       url += "&campus_id=${_selectedCampusIds.join(",")}";
+  //     }
+  //
+  //     if (processId != null) {
+  //       url += "&process_id=$processId";
+  //     }
+  //
+  //     if (subProcessId != null) {
+  //       url += "&sub_process_id=$subProcessId";
+  //     }
+  //
+  //     print(url);
+  //     var uri = Uri.parse(url);
+  //
+  //     var response = await http.get(
+  //       uri,
+  //       headers: headers,
+  //       //body: body,
+  //     );
+  //     log(response.body);
+  //     print(response.statusCode);
+  //
+  //     if (response.statusCode == 200) {
+  //       var jsonResponse = json.decode(response.body);
+  //       MyLocationModel locationListModel =
+  //           MyLocationModel.fromJson(jsonResponse);
+  //       locationHits = locationListModel.totalRecords ?? 0;
+  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
+  //       isConflict = locationListModel.isConflict!;
+  //       isHazardCanStart = locationListModel.isHazardCanStart!;
+  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
+  //
+  //       totalPages = locationHits ~/ pageSize;
+  //       //summaryList = locationListModel.summaryList ?? [];
+  //       //mainSovRating = locationListModel. ?? 0.0;
+  //       if (page == 1) {
+  //         locationcount=locationListModel.totalRecords??1;
+  //         myLocationList = locationListModel.results ?? [];
+  //       } else {
+  //         addToMyLocationList(locationListModel.results ?? []);
+  //       }
+  //       log(myLocationList.toString());
+  //       print("totalPages: $totalPages");
+  //       log(page.toString());
+  //     } else {
+  //       print(json.decode(response.body)["error"]);
+  //       throw Exception('Failed to load data');
+  //     }
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //   } on BackendException catch (e, stackTrace) {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(stackTrace);
+  //     print(e.message);
+  //
+  //   } catch (e, stackTrace) {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(stackTrace);
+  //
+  //   }
+  // }
+  //
+  // Future<void> fetchLocationConflictList(
+  //     BuildContext context,
+  //     String searchQuery,
+  //     int page,
+  //     int pageSize,
+  //     String? accountID,
+  //     String? subAccountID,
+  //     String? processId,
+  //     String? subProcessId,
+  //     [String? sovID]) async {
+  //   var typography = CustomTypography(context);
+  //   try {
+  //     // print('Api called page and total page are $page and $totalPages');
+  //     // Check if api is already working
+  //     // if (isLoading || isNextPageLoading) return;
+  //     // dont call api is next page does not exist
+  //     print(totalPages.toString());
+  //     if (page - 1 > totalPages) return;
+  //     if (page == 1) {
+  //       myLocationList = [];
+  //       isLoading = true;
+  //     } else {
+  //       isNextPageLoading = true;
+  //     }
+  //
+  //     var headers = await CommonHeaders.createHeaders();
+  //
+  //     log(headers.toString());
+  //
+  //     var url;
+  //     if (sovID != null) {
+  //       url = AppConstant.MY_LOCATION +
+  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
+  //     } else {
+  //       url = AppConstant.MY_LOCATION +
+  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
+  //     }
+  //     if (countries.isNotEmpty) {
+  //       url += "&country=${countries.join(",")}";
+  //     }
+  //     if (zipcode.isNotEmpty) {
+  //       url += "&zip=$state";
+  //     }
+  //     if (sortBy.isNotEmpty) {
+  //       url += "&sort=$sortBy";
+  //     }
+  //
+  //     if (certifications.isNotEmpty) {
+  //       for (var cert in certifications) {
+  //         if (cert == "Manual Certified") {
+  //           url += "&manual_certified=true";
+  //         } else if (cert == "Auto Certified") {
+  //           url += "&auto_certified=true";
+  //         }
+  //       }
+  //     }
+  //     if (hazardRatings.isNotEmpty) {
+  //       /*for (var hazard in hazardRatings.keys) {
+  //         url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
+  //       }*/
+  //       // we pass it in as json
+  //       url += "&hazard=${jsonEncode(hazardRatings)}";
+  //     }
+  //     if (rating.isNotEmpty) {
+  //       url += "&score=${rating.join(",")}";
+  //     }
+  //
+  //     if (_selectedCampusIds.isNotEmpty) {
+  //       url += "&campus_id=${_selectedCampusIds.join(",")}";
+  //     }
+  //
+  //     if (processId != null) {
+  //       url += "&process_id=$processId";
+  //     }
+  //
+  //     if (subProcessId != null) {
+  //       url += "&sub_process_id=$subProcessId";
+  //     }
+  //
+  //     print(url);
+  //     var uri = Uri.parse(url);
+  //
+  //     var response = await http.get(
+  //       uri,
+  //       headers: headers,
+  //       //body: body,
+  //     );
+  //     log(response.body);
+  //     print(response.statusCode);
+  //
+  //     if (response.statusCode == 200) {
+  //       var jsonResponse = json.decode(response.body);
+  //       MyLocationModel locationListModel =
+  //       MyLocationModel.fromJson(jsonResponse);
+  //       locationHits = locationListModel.totalRecords ?? 0;
+  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
+  //       isConflict = locationListModel.isConflict!;
+  //       isHazardCanStart = locationListModel.isHazardCanStart!;
+  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
+  //
+  //       totalPages = locationHits ~/ pageSize;
+  //       //summaryList = locationListModel.summaryList ?? [];
+  //       //mainSovRating = locationListModel. ?? 0.0;
+  //       if (page == 1) {
+  //         myLocationConflictList = locationListModel.results ?? [];
+  //       } else {
+  //         addToMyLocationList(locationListModel.results ?? []);
+  //       }
+  //       log(myLocationConflictList.toString());
+  //       print("totalPages: $totalPages");
+  //       log(page.toString());
+  //     } else {
+  //       print(json.decode(response.body)["error"]);
+  //       throw Exception('Failed to load data');
+  //     }
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //   } on BackendException catch (e, stackTrace) {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(stackTrace);
+  //     print(e.message);
+  //
+  //   } catch (e, stackTrace) {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(stackTrace);
+  //
+  //   }
+  // }
 
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchCertifiedLocationList(
@@ -1918,7 +2276,7 @@ class MyLocationListProvider extends ChangeNotifier {
       print("url: ${AppConstant.UPLOAD_SOV_LOCATIONS}");
       // Send a POST request to the API to upload the image
       Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(
-          sovFile, accountId, subAccountId, sovId, tags, sovName);
+          sovFile, accountId, subAccountId, sovId, tags, sovName, context);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);
@@ -1970,29 +2328,14 @@ class MyLocationListProvider extends ChangeNotifier {
       }
 
       // Display the error message in a SnackBar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            style: typography.Body1,
-          ),
-        ),
-      );
+
 
       return ''; // Return an empty string or handle the error as needed
     } catch (e, stackTrace) {
       print(stackTrace);
       print("Error uploading SOV: $e");
       // Handle other unexpected exceptions
-      Navigator.pop(context);
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //       '${e.toString()}',
-      //       style: typography.Body1,
-      //     ),
-      //   ),
-      // );
+
       isImageUploadLoading = false;
       return ''; // Return empty string or handle the error as needed
     }
@@ -2010,7 +2353,7 @@ class MyLocationListProvider extends ChangeNotifier {
   Future<void> fetchCampusIds(
       String accountId, String subAccountId, String sovId) async {
     final url = Uri.parse(
-        "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+        "${AppConstant.baseURL}/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
 
     try {
       var headers = await CommonHeaders.createHeaders();

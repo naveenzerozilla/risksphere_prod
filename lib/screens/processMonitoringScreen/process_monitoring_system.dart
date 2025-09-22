@@ -582,7 +582,9 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => JobMonitoringDashboard()));
+                              builder: (_) => JobMonitoringDashboard(
+
+                              )));
                     },
                     child: Text(
                       'Open Job Monitoring',

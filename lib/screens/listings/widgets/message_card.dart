@@ -17,7 +17,7 @@ class MessageCard extends StatelessWidget {
   const MessageCard({
     Key? key,
     required this.messageTextSpans,
-    this.icon = Icons.info,
+    this.icon = Icons.block_rounded,
     this.iconColor = Colors.orange,
     this.isError = false, // Default to false
     this.isUpgrade = false, // Default to false

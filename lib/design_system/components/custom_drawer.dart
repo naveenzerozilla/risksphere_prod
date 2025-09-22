@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
@@ -69,6 +71,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer = Debouncer(milliseconds: 200);
   bool isHasAnyPlan = false;
+
   @override
   void initState() {
     super.initState();
@@ -207,10 +210,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       final trialStatus = userProfile.trialInfo['status'] ?? '';
 
                       // if (trialStatus.contains('Expired'))
-                        if (trialStatus.contains('Expired') &&
-                            isHasAnyPlan == false)
-
-                      {
+                      if (trialStatus.contains('Expired') &&
+                          isHasAnyPlan == false) {
                         return Container(
                           padding:
                               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -391,34 +392,35 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       //         userProfileProvider.userData.role![0].name
                       //                 .toString() ==
                       //             "Admin" &&
-                      // Consumer<UserProfileProvider>(
-                      //   builder: (context, userProfileProvider, child) {
-                      //     if (isSuperAdmin ||
-                      //         isPgAdmin ||
-                      //         isAdmin ||
-                      //         userProfileProvider.userData.isIndividual ==
-                      //             true) {
-                      //       return _buildDrawerItem(
-                      //         context,
-                      //         provider,
-                      //         title: "Purchase License",
-                      //         icon: Icons.description,
-                      //         onTap: () {
-                      //           provider.setSelectedItem("purchase_license");
-                      //           Navigator.of(context).push(
-                      //             MaterialPageRoute(
-                      //               builder: (_) => PurchaseLicensePage(),
-                      //             ),
-                      //           );
-                      //         },
-                      //         isSelected:
-                      //             provider.selectedItem == "purchase_license",
-                      //       );
-                      //     } else {
-                      //       return Container();
-                      //     }
-                      //   },
-                      // ),
+                      if (Platform.isAndroid)
+                        Consumer<UserProfileProvider>(
+                          builder: (context, userProfileProvider, child) {
+                            if (isSuperAdmin ||
+                                isPgAdmin ||
+                                isAdmin ||
+                                userProfileProvider.userData.isIndividual ==
+                                    true) {
+                              return _buildDrawerItem(
+                                context,
+                                provider,
+                                title: "Purchase License",
+                                icon: Icons.description,
+                                onTap: () {
+                                  provider.setSelectedItem("purchase_license");
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PurchaseLicensePage(),
+                                    ),
+                                  );
+                                },
+                                isSelected:
+                                    provider.selectedItem == "purchase_license",
+                              );
+                            } else {
+                              return Container();
+                            }
+                          },
+                        ),
                       Consumer<UserProfileProvider>(
                         builder: (context, userProfileProvider, child) {
                           if (isSuperAdmin ||
@@ -469,15 +471,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                       'Are you sure you want to delete the account?',
                                       style: typography.Body1,
                                     ),
-                                    SizedBox(
-                                      height: CustomSpacing.two,
-                                    ),
+                                    SizedBox(height: CustomSpacing.two),
                                     Row(
                                       children: [
                                         Expanded(
                                           child: CustomButton(
                                             onPressed: () {
-                                              // Cancel
                                               Navigator.pop(context);
                                             },
                                             child: Text(
@@ -489,38 +488,187 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                             type: ButtonType.text,
                                           ),
                                         ),
-                                        Consumer<AuthNotifier>(builder:
-                                            (context, authNotifier, child) {
-                                          return TextButton(
-                                            onPressed: () async {
-                                              final _googleSignIn =
-                                                  GoogleSignIn();
-                                              var isSignedIn =
-                                                  await _googleSignIn
-                                                      .isSignedIn();
-                                              if (isSignedIn)
-                                                await _googleSignIn
-                                                    .disconnect();
-                                              await authNotifier.signOut();
-                                              Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          LoginScreen()));
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                    content: Text(
-                                                        "Account deleted Successfully")),
-                                              );
-                                            },
-                                            child: Text(
-                                              "Delete",
-                                              style:
-                                                  TextStyle(color: Colors.red),
-                                            ),
-                                          );
-                                        }),
+                                        Consumer<AuthNotifier>(
+                                          builder:
+                                              (context, authNotifier, child) {
+                                            return ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                // 🔴 Red background
+                                                foregroundColor: Colors.white,
+                                                // ⚪ White text
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 20,
+                                                        vertical: 12),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    bool isDeleting =
+                                                        false; // local state
+
+                                                    return StatefulBuilder(
+                                                      builder:
+                                                          (context, setState) {
+                                                        return AlertDialog(
+                                                          title: Text(
+                                                            'Delete Account',
+                                                            style: typography
+                                                                .H5_Regular,
+                                                          ),
+                                                          content: Column(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Text(
+                                                                'Are you sure you want to delete the account?',
+                                                                style:
+                                                                    typography
+                                                                        .Body1,
+                                                              ),
+                                                              SizedBox(
+                                                                  height:
+                                                                      CustomSpacing
+                                                                          .two),
+                                                              Row(
+                                                                children: [
+                                                                  Expanded(
+                                                                    child:
+                                                                        CustomButton(
+                                                                      onPressed:
+                                                                          () =>
+                                                                              Navigator.pop(context),
+                                                                      child:
+                                                                          Text(
+                                                                        LanguageService.getTranslated(
+                                                                            context,
+                                                                            "account_list_app_duplicate_cancel"),
+                                                                        style: typography
+                                                                            .ButtonLarge,
+                                                                      ),
+                                                                      type: ButtonType
+                                                                          .text,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      width: 8),
+                                                                  Consumer<
+                                                                      AuthNotifier>(
+                                                                    builder: (context,
+                                                                        authNotifier,
+                                                                        child) {
+                                                                      return ElevatedButton(
+                                                                        style: ElevatedButton
+                                                                            .styleFrom(
+                                                                          backgroundColor:
+                                                                              Colors.red,
+                                                                          foregroundColor:
+                                                                              Colors.white,
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              horizontal: 20,
+                                                                              vertical: 12),
+                                                                          shape:
+                                                                              RoundedRectangleBorder(
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(6),
+                                                                          ),
+                                                                        ),
+                                                                        onPressed: isDeleting
+                                                                            ? null // disable while deleting
+                                                                            : () async {
+                                                                                setState(() => isDeleting = true);
+
+                                                                                try {
+                                                                                  final googleSignIn = GoogleSignIn();
+                                                                                  if (await googleSignIn.isSignedIn()) {
+                                                                                    await googleSignIn.disconnect();
+                                                                                  }
+                                                                                  await authNotifier.signOut();
+
+                                                                                  Navigator.pushAndRemoveUntil(
+                                                                                    context,
+                                                                                    MaterialPageRoute(builder: (_) => LoginScreen()),
+                                                                                    (route) => false,
+                                                                                  );
+
+                                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                                    const SnackBar(
+                                                                                      content: Text("Account deleted successfully"),
+                                                                                    ),
+                                                                                  );
+                                                                                } catch (e) {
+                                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                                    SnackBar(content: Text("Delete failed: $e")),
+                                                                                  );
+                                                                                  setState(() => isDeleting = false);
+                                                                                }
+                                                                              },
+                                                                        child: isDeleting
+                                                                            ? const SizedBox(
+                                                                                height: 20,
+                                                                                width: 20,
+                                                                                child: CircularProgressIndicator(
+                                                                                  strokeWidth: 2,
+                                                                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                                                                ),
+                                                                              )
+                                                                            : const Text(
+                                                                                "Delete",
+                                                                                style: TextStyle(
+                                                                                  color: Colors.white,
+                                                                                  fontSize: 18,
+                                                                                  fontWeight: FontWeight.bold,
+                                                                                ),
+                                                                              ),
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                );
+                                              },
+
+                                              // onPressed: () async {
+                                              //   final googleSignIn = GoogleSignIn();
+                                              //   if (await googleSignIn.isSignedIn()) {
+                                              //     await googleSignIn.disconnect();
+                                              //   }
+                                              //   await authNotifier.signOut();
+                                              //   Navigator.push(
+                                              //     context,
+                                              //     MaterialPageRoute(builder: (_) => LoginScreen()),
+                                              //   );
+                                              //   ScaffoldMessenger.of(context).showSnackBar(
+                                              //     const SnackBar(
+                                              //       content: Text("Account deleted successfully"),
+                                              //     ),
+                                              //   );
+                                              // },
+                                              child: const Text(
+                                                "Delete",
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 18,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -622,6 +770,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   ),
 
                                   TextButton(
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      // 🔴 Red background
+                                      foregroundColor: Colors.white,
+                                      // ⚪ White text (also sets overlay ripple)
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
                                     onPressed: () async {
                                       try {
                                         // Optional: Show loader here if using a loading state
@@ -644,6 +803,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
                                         // Step 2: Sign out from Firebase
                                         await FirebaseAuth.instance.signOut();
+                                        await authNotifier.signOut();
 
                                         // Step 3: Reset state like drawer selection
                                         Provider.of<DrawerSelectionProvider>(
@@ -681,7 +841,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                             LanguageService.getTranslated(
                                                 context, "drawer_menu_logout"),
                                             style: typography.Body1.copyWith(
-                                                color: iconColor),
+                                                color: iconColor,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold),
                                           ),
                                   ),
 

@@ -73,8 +73,10 @@ class HazardsSection extends StatelessWidget {
                     final hazardName = entry.key;
                     final hazard = entry.value;
                     final rating = hazard.rating ?? 0;
-                    final color = rating >= 0 && rating < scoreColors.length
-                        ? scoreColors[rating]
+                    final intRating = int.tryParse(rating.toString()) ?? -1; // Safely parse it, defaulting to -1 if invalid
+
+                    final color = (intRating >= 0 && intRating < scoreColors.length)
+                        ? scoreColors[intRating]
                         : Colors.grey;
 
                     return ExpansionTile(

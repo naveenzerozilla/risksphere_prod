@@ -258,7 +258,7 @@ class LocationListProvider extends ChangeNotifier {
   Future<void> fetchCampusIds(
       String accountId, String subAccountId, String sovId) async {
     final url = Uri.parse(
-        "https://us-central1-project-green-f4d78.cloudfunctions.net/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
+        "${AppConstant.baseURL}/accounts/$accountId/subaccount/$subAccountId/sov/$sovId/location?pageSize=10&campus_id_list=true");
 
     try {
       var headers = await CommonHeaders.createHeaders();
@@ -288,7 +288,7 @@ class LocationListProvider extends ChangeNotifier {
   Future<void> fetchLocationSummary(
       String accountId, String subAccountId, String sovId) async {
     final url = Uri.parse(
-        "https://us-central1-project-green-f4d78.cloudfunctions.net/locations/location_summary/$accountId/subaccount/$subAccountId/sov/$subAccountId");
+        "${AppConstant.baseURL}/locations/location_summary/$accountId/subaccount/$subAccountId/sov/$subAccountId");
     try {
       var headers = await CommonHeaders.createHeaders();
       final response = await http.get(url, headers: headers);
@@ -654,7 +654,7 @@ class LocationListProvider extends ChangeNotifier {
       print(apiService);
       // Send a POST request to the API to upload the image
       Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(
-          sovFile, accountId, subAccountId, sovId, "", "");
+          sovFile, accountId, subAccountId, sovId, "", "",context);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);

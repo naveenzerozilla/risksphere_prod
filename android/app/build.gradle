@@ -26,11 +26,9 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '2')
 def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0')
 
 android {
-    namespace "com.zerozilla.risksphere"
+    namespace "com.risksphere.green"
     compileSdk 36
-
     ndkVersion flutter.ndkVersion
-
     compileOptions {
         coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -46,27 +44,30 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.zerozilla.risksphere"
+        applicationId "com.risksphere.green"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode
         versionName flutterVersionName
         multiDexEnabled true
+        manifestPlaceholders = [
+                appAuthRedirectScheme: "msaleb81a783-765c-482d-8fcb-6440ab1d1201"
+        ]
     }
 
     signingConfigs {
         debug {
-            storeFile file("/Users/naveen/Documents/qa.keystore")
-            storePassword 'projectgreen123'
-            keyAlias 'qaKey'
-            keyPassword 'projectgreen123'
+            storeFile file("/Users/naveen/Documents/new-upload-key")
+            storePassword 'zerozilla'
+            keyAlias 'upload'
+            keyPassword 'zerozilla'
         }
 
         qa {
-            storeFile file(System.getenv("KEYSTORE_FILE") ?: "/Users/naveen/Documents/qa.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "projectgreen123"
-            keyAlias System.getenv("KEY_ALIAS") ?: "qaKey"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "projectgreen123"
+            storeFile file(System.getenv("KEYSTORE_FILE") ?: "/Users/naveen/Documents/new-upload-key")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "zerozilla"
+            keyAlias System.getenv("KEY_ALIAS") ?: "upload"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "zerozilla"
         }
     }
 

@@ -50,23 +50,23 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
-    appId: '1:857135835532:android:6b9c06c80a185c4fc84ea9',
-    messagingSenderId: '857135835532',
-    projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    apiKey: 'AIzaSyAaTjxnFgG55q7C1eZ4JrFWUeFTO5rs5AY',
+    appId: '1:863607711683:android:3f822b45f25191a7bcff76',
+    messagingSenderId: '863607711683',
+    projectId: 'project-green-prod',
+    storageBucket: 'project-green-prod.firebasestorage.app',
   );
 
   /// Config for package: com.example.green
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-    appId: '1:857135835532:ios:dce11826e3313f03c84ea9',
-    messagingSenderId: '857135835532',
-    projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-    iosClientId: '857135835532-al09g5oa31ue7i0ikttr6r1m97t9tep0.apps.googleusercontent.com',
+    apiKey: 'AIzaSyBdxubbXu3Kv56rn6lqoLyoj7aoMIJ-ZCc',
+    appId: '1:863607711683:ios:f0160ac7f584c6bdbcff76',
+    messagingSenderId: '863607711683',
+    projectId: 'project-green-prod',
+    storageBucket: 'project-green-prod.firebasestorage.app',
+    androidClientId: '863607711683-dfstf17atfh3vai7bevdc6mlfaap8l1q.apps.googleusercontent.com',
+    iosClientId: '863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m.apps.googleusercontent.com',
     iosBundleId: 'com.sonofthunder.risksphere',
   );
 

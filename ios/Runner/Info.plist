@@ -2,109 +2,134 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>RiskSphere</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>firebase_performance_collection_enabled</key>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>RiskSphere</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>firebase_performance_collection_enabled</key>
     <false/>
     <key>firebase_performance_logcat_enabled</key>
     <true/>
-	<key>CFBundleIcons~ipad</key>
-	<dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string>icon-167</string>
-			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
-		</dict>
-	</dict>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>en</string>
-		<string>nb</string>
-	</array>
-	<key>CFBundleName</key>
-	<string>green</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-			 <string>msauth.com.sonofthunder.risksphere</string>
-			<string>msaleb81a783-765c-482d-8fcb-6440ab1d1201</string>
-			 <string>com.googleusercontent.apps.857135835532-dce11826e3313f03c84ea9</string>
-			 <string>app-1-857135835532-ios-dce11826e3313f03c84ea9</string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
+    <key>CFBundleIcons~ipad</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>icon-167</string>
+            </array>
+            <key>UIPrerenderedIcon</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>nb</string>
+    </array>
+    <key>CFBundleName</key>
+    <string>green</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <!-- URL Schemes for Google, Microsoft, and Firebase Auth -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <!-- Google Sign-In -->
+      <dict>
+          <key>CFBundleTypeRole</key>
+          <string>Editor</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+              <!-- Reversed iOS client ID -->
+              <string>com.googleusercontent.apps.863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
+              <!-- Firebase app-1 scheme from REVERSED_CLIENT_ID -->
+              <string>app-1-863607711683-ios-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
+          </array>
+      </dict>
+
+        <!-- Microsoft Auth -->
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>msauth.com.sonofthunder.risksphere</string>
+                <string>msaleb81a783-765c-482d-8fcb-6440ab1d1201</string>
+            </array>
+        </dict>
+
+        <!-- Firebase OAuth Redirect -->
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>app-1-863607711683-ios-f0160ac7f584c6bdbcff76</string>
+            </array>
+        </dict>
+    </array>
+
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    <key>NSCameraUsageDescription</key>
     <string>This app needs camera access to take pictures.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app needs photo library access to save pictures.</string>
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>We need access to your documents folder to pick and upload files.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We need your location to provide personalized content and improve your experience.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location to enhance app features and provide relevant content.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need access to your microphone to record videos.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app requires access to add photos to your library.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires access to your photo library to save screenshots.</string>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
-	</array>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>We need access to your documents folder to pick and upload files.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>We need your location to provide personalized content and improve your experience.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need your location to enhance app features and provide relevant content.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need access to your microphone to record videos.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app requires access to add photos to your library.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app requires access to your photo library to save screenshots.</string>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    </array>
 </dict>
 </plist>

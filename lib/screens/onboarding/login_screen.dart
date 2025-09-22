@@ -7,6 +7,7 @@ import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
 
 import 'package:RiskSphere/design_system/primitives/app_colors.dart';
@@ -44,6 +45,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isCaptchaVerified = false;
   RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
   bool _showPassword = false;
+  final FlutterAppAuth appAuth = FlutterAppAuth();
+  String clientId = 'eb81a783-765c-482d-8fcb-6440ab1d1201';
+  String tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
+  String redirectUrl = 'https://erp.projectzerozilla.com/';
+  late String discoveryUrl =
+      "https://login.microsoftonline.com/${tenantId!}/v2.0/.well-known/openid-configuration";
+  List<String> scopes = ['openid', 'profile', 'email', 'User.Read'];
 
   @override
   void initState() {
@@ -77,6 +85,40 @@ class _LoginScreenState extends State<LoginScreen> {
       await prefs.remove('password');
     }
   }
+
+  Future<void> signInWithMicrosoft(BuildContext context) async {
+    try {
+      final result = await appAuth.authorizeAndExchangeCode(
+        AuthorizationTokenRequest(
+          clientId,
+          "com.risksphere.green://oauth2redirect",
+          discoveryUrl: discoveryUrl,
+          scopes: scopes,
+          promptValues: ['login'],
+        ),
+      );
+      print(result);
+      print("result");
+
+      if (result != null) {
+
+        print('Success! Token: ${result.accessToken}');
+        Navigator.push(context, MaterialPageRoute(builder: (context)=> DashboardScreen())); // or your target route
+      } else {
+        // User cancelled - webview also closed
+        print('Authentication cancelled');
+      }
+
+      // If authentication is successful, navigate to the desired screen
+      if (result != null && result.accessToken != null) {
+        Navigator.of(context).pushReplacementNamed('/home'); // or your target route
+      }
+    } catch (e) {
+      print('Error during Microsoft sign-in: $e');
+      // Handle error, maybe show a snackbar or dialog
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -210,64 +252,40 @@ class _LoginScreenState extends State<LoginScreen> {
             // ),
             SizedBox(height: CustomSpacing.two),
             // Social Media Buttons
-            // if (Platform.isAndroid)...[
-            // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-            //   return SocialMediaButton(
-            //     onPressed: () async {
-            //       // Add your onPressed function here
-            //       await authNotifier.signInWithGoogle(context: context);
-            //       print(authNotifier.user.toString());
-            //       print(authNotifier.isNewUser.toString());
-            //       // Check if the user is authenticated after login attempt
-            //       // if (authNotifier.user != null && !authNotifier.isNewUser) {
-            //       //   // Navigate to the home screen or any other screen after login
-            //       //   Provider.of<UserProfileProvider>(context, listen: false)
-            //       //       .getAllUserData(context, '', '');
-            //       //   Navigator.pushReplacement(
-            //       //     context,
-            //       //     MaterialPageRoute(
-            //       //       builder:
-            //       //           (context) => /*Home(
-            //       //         useLightMode: false,
-            //       //         useMaterial3: true,
-            //       //         colorSelected: ColorSeed.baseColor,
-            //       //         imageSelected: ColorImageProvider.leaves,
-            //       //         handleBrightnessChange: handleBrightnessChange,
-            //       //         handleMaterialVersionChange:
-            //       //             handleMaterialVersionChange,
-            //       //         handleColorSelect: handleColorSelect,
-            //       //         handleImageSelect: handleImageSelect,
-            //       //         colorSelectionMethod: ColorSelectionMethod.colorSeed,
-            //       //       ),*/
-            //       //               DashboardScreen(),
-            //       //     ),
-            //       //   );
-            //       // }
-            //     },
-            //     buttonText: LanguageService.getTranslated(
-            //         context, "login_googlebutton"),
-            //     iconPath: 'assets/images/googleLogo.svg',
-            //   );
-            // }),
-            //
-            // SizedBox(
-            //   height: CustomSpacing.one,
-            // ),
-            // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-            //   return authNotifier.isRemindLoading
-            //       ? Center(
-            //           child: Container(
-            //               child: CircularProgressIndicator()), // loader
-            //         )
-            //       : SocialMediaButton(
-            //           onPressed: () async {
-            //             await authNotifier.signInWithMicrosoft(context);
-            //           },
-            //           buttonText: LanguageService.getTranslated(
-            //               context, "login_microsoft_button"),
-            //           iconPath: 'assets/images/microsoftLogo.svg',
-            //         );
-            // }),
+            // if (Platform.isAndroid) ...[
+            Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+              return SocialMediaButton(
+                onPressed: () async {
+                  // Add your onPressed function here
+                  await authNotifier.signInWithGoogle(context: context);
+                  print(authNotifier.user.toString());
+                  print(authNotifier.isNewUser.toString());
+
+                },
+                buttonText: LanguageService.getTranslated(
+                    context, "login_googlebutton"),
+                iconPath: 'assets/images/googleLogo.svg',
+              );
+            }),
+
+            SizedBox(height: CustomSpacing.two),
+
+            Consumer<AuthNotifier>(
+              builder: (context, authNotifier, child) {
+                return SocialMediaButton(
+                  onPressed: () async {
+                    await authNotifier.signInWithMicrosoft(context: context);
+                    print(authNotifier.user.toString());
+                    print(authNotifier.userProfile.toString());
+                    print(authNotifier.isNewUser.toString());
+                  },
+                  buttonText: LanguageService.getTranslated(context, "login_microsoft_button"),
+                  iconPath: 'assets/images/microsoftLogo.svg',
+                );
+              },
+            ),
+
+
             SizedBox(height: CustomSpacing.four),
             Row(
               mainAxisSize: MainAxisSize.min,

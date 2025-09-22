@@ -20,19 +20,24 @@ class JobMonitoringProvider extends ChangeNotifier {
   }
 
   bool _isSummaryLoading = false;
+
   bool get isSummaryLoading => _isSummaryLoading;
+
   set isSummaryLoading(bool val) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isSummaryLoading = val;
       notifyListeners();
     });
   }
+
   //processing
   bool _isProcessing = false;
   String _processStatus = 'completed'; // Default status
 
   bool get isProcessing => _isProcessing;
+
   String get processStatus => _processStatus;
+
   void updateProcessStatus(String newStatus) {
     if (_processStatus != newStatus) {
       _processStatus = newStatus;
@@ -42,14 +47,10 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
-
   // void setProcessing(bool value) {
   //   _isProcessing = value;
   //   notifyListeners();
   // }
-
-
-
 
   bool _isAddLoading = false;
 
@@ -126,40 +127,132 @@ class JobMonitoringProvider extends ChangeNotifier {
       return Stream.empty();
     }
   }*/
+  // Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(String accountId, String subAccountId) {
+  //   Stream<QuerySnapshot<Map<String, dynamic>>> stream;
+  //
+  //   if (_isSuperAdmin) {
+  //     stream = _fireStore
+  //         .collection('processes')
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //   } else if (_docIds.isNotEmpty) {
+  //     stream = _fireStore
+  //         .collection('processes')
+  //         .where('company_id', isEqualTo: _docIds)
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //   } else {
+  //     stream = _fireStore
+  //         .collection('processes')
+  //         .where('process_type', isEqualTo: 'event')
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //   }
+  //
+  //   // Listen to stream to print total docs
+  //   stream.listen((snapshot) {
+  //     print("Total snapshot data count: ${snapshot.docs.length}");
+  //   });
+  //
+  //   return stream;
+  // }
+  Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(
+      String accountId, String subAccountId) {
+    Query<Map<String, dynamic>> query;
+
+    if (_isSuperAdmin) {
+      // Super admin: fetch all 'event' processes, but limit to 2
+      query = _fireStore
+          .collection('processes')
+          .where('process_type', isEqualTo: 'event')
+          .orderBy('created_at', descending: true)
+          .limit(2);
+    } else if (_docIds.isNotEmpty) {
+      // Non-super-admin: filter by first company ID, limit to 2
+      query = _fireStore
+          .collection('processes')
+          .where('company_id', isEqualTo: _docIds[0])
+          .orderBy('created_at', descending: true)
+          .limit(2);
+    } else {
+      // Default fallback: fetch 'event' processes, limit to 2
+      query = _fireStore
+          .collection('processes')
+          .where('process_type', isEqualTo: 'event')
+          .orderBy('created_at', descending: true)
+          .limit(2);
+    }
+
+    return query.snapshots();
+  }
+
+  // Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(
+  //     String accountId, String subAccountId) {
+  //   Query<Map<String, dynamic>> query;
+  //
+  //   if (_isSuperAdmin) {
+  //     query = _fireStore
+  //         .collection('processes')
+  //         .orderBy('created_at', descending: true)
+  //         .limit(2); // Load only first 2 items
+  //   } else if (_docIds.isNotEmpty) {
+  //     query = _fireStore
+  //         .collection('processes')
+  //         .where('company_id', isEqualTo: _docIds[0]) // use first company ID
+  //         .orderBy('created_at', descending: true)
+  //         .limit(2); // Load only first 2 items
+  //   } else {
+  //     query = _fireStore
+  //         .collection('processes')
+  //         .where('process_type', isEqualTo: 'event')
+  //         .orderBy('created_at', descending: true)
+  //         .limit(2); // Load only first 2 items
+  //   }
+  //
+  //   // Print snapshot length
+  //   query.snapshots().listen((snapshot) {
+  //     print("Total snapshot data count (limited): ${snapshot.docs.length}");
+  //   });
+  //
+  //   return query.snapshots();
+  // }
 
   // Fetch Job Monitoring Data (handle filtering by `company_id`)
-  Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(String accountId, String subAccountId) {
-    // if (_isSuperAdmin) {
-    //   // Fetch all processes if the user is a super admin
-    //   return _fireStore
-    //       .collection('processes')
-    //
-    //       .where('process_type', isEqualTo: 'hazard')
-    //       .orderBy('created_at', descending: true)
-    //       .snapshots();
-    // }
-    //
-    // if (_docIds.isNotEmpty) {
-    //   // Query for non-super-admins filtered by company IDs
-    //   return _fireStore
-    //       .collection('processes')
-    //       .where('company_id', whereIn: _docIds) // Filter by company IDs
-    //
-    //       .where('process_type', isEqualTo: 'hazard')
-    //
-    //       .orderBy('created_at', descending: true)
-    //       .snapshots();
-    // }
-      return _fireStore
-          .collection('processes')
-
-          .where('process_type', isEqualTo: 'hazard')
-          .orderBy('created_at', descending: true)
-          .snapshots();
-
-    // Return an empty stream if there are no company IDs
-    return Stream.empty();
-  }
+  // Stream<QuerySnapshot<Map<String, dynamic>>> getJobMonitoringData(String accountId, String subAccountId) {
+  //   if (_isSuperAdmin) {
+  //     // Fetch all processes if the user is a super admin
+  //     return _fireStore
+  //         .collection('processes')
+  //
+  //         // .where('process_type', isEqualTo: 'hazard')
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //   }
+  //
+  //   print(docIds);
+  //   print("Company IDs: $_docIds");
+  //   if (_docIds.isNotEmpty) {
+  //     // Query for non-super-admins filtered by company IDs
+  //     return _fireStore
+  //         .collection('processes')
+  //         .where('company_id', isEqualTo: _docIds[0]) // Filter by company IDs
+  //
+  //         // .where('process_type', isEqualTo: 'hazard')
+  //
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //   }
+  //     return _fireStore
+  //         .collection('processes')
+  //
+  //         .where('process_type', isEqualTo: 'event')
+  //         .orderBy('created_at', descending: true)
+  //         .snapshots();
+  //
+  //
+  //   // Return an empty stream if there are no company IDs
+  //   return Stream.empty();
+  // }
 
   // Fetch Summary for both process and sub process
   Future<Map<String, dynamic>?> fetchSummary(String id) async {
@@ -168,7 +261,8 @@ class JobMonitoringProvider extends ChangeNotifier {
       notifyListeners();
 
       // Initialize the API service
-      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING_SUMMARY}/$id');
+      ApiService apiService =
+          ApiService('${AppConstant.GET_JOB_MONITORING_SUMMARY}/$id');
       final response = await apiService.get();
 
       if (response != null) {
@@ -185,13 +279,16 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchLocationSummary(String accountId,String subaccountId) async {
+  Future<Map<String, dynamic>?> fetchLocationSummary(
+      String accountId, String subaccountId) async {
     try {
       isSummaryLoading = true; // Trigger loader
       notifyListeners();
-      print('${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
+      print(
+          '${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
       // Initialize the API service
-      ApiService apiService = ApiService('${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
+      ApiService apiService = ApiService(
+          '${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
 
       final response = await apiService.get();
 
@@ -209,8 +306,6 @@ class JobMonitoringProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-
 
 /*  // Fetch company IDs from the API
   Future<void> fetchCompanyIds() async {
@@ -258,10 +353,10 @@ class JobMonitoringProvider extends ChangeNotifier {
       _isSuperAdmin = response['is_super_admin'] ?? false;
 
       if (!_isSuperAdmin) {
-        final ApiService apiServiceNew = ApiService(AppConstant.GET_CURRENT_COMPANY_ID);
+        final ApiService apiServiceNew =
+            ApiService(AppConstant.GET_CURRENT_COMPANY_ID);
         // Fetch company IDs for non-super-admins
-        final companyResponse =
-        await apiServiceNew.get();
+        final companyResponse = await apiServiceNew.get();
 
         if (companyResponse != null) {
           _docIds = [companyResponse['company_id']]; // Assign as company ID
@@ -284,10 +379,9 @@ class JobMonitoringProvider extends ChangeNotifier {
     }
   }
 
-
-
   // Add maintenance period
-  Future<String> addMaintainancePeriod(String processStartTime, String processEndTime) async {
+  Future<String> addMaintainancePeriod(
+      String processStartTime, String processEndTime) async {
     try {
       var body = {
         "data": {
@@ -321,7 +415,8 @@ class JobMonitoringProvider extends ChangeNotifier {
       var response = await apiService.get();
       print(response);
 
-      MaintainanceResponse maintainanceResponse = MaintainanceResponse.fromJson(response);
+      MaintainanceResponse maintainanceResponse =
+          MaintainanceResponse.fromJson(response);
       maintainancePeriods = maintainanceResponse.results ?? [];
 
       isLoading = false;
@@ -334,7 +429,8 @@ class JobMonitoringProvider extends ChangeNotifier {
   }
 
   // Edit maintenance period
-  Future<String> editMaintainancePeriod(String processStartTime, String processEndTime, String id) async {
+  Future<String> editMaintainancePeriod(
+      String processStartTime, String processEndTime, String id) async {
     try {
       var body = {
         "data": {
@@ -362,7 +458,8 @@ class JobMonitoringProvider extends ChangeNotifier {
     try {
       isDeleteLoading = true;
 
-      ApiService apiService = ApiService('${AppConstant.GET_JOB_MONITORING}/$id');
+      ApiService apiService =
+          ApiService('${AppConstant.GET_JOB_MONITORING}/$id');
       var body = {
         "data": {'id': id},
       };

@@ -71,7 +71,7 @@
     "register_corporate_legalname_filed_placeholder": "Enter the legal name of the company",
     "register_corporate_company_type_field_label": "Company type",
     "register_corporate_company_type_field_placeholder": "Select the type of the company",
-    "register_corporate_company_displayname_field_label": "Company Display Name",
+    "register_corporate_company_displayname_field_label": "Display Name(Optional)",
     "register_corporate_comapny_displayname_field_placeholder": "Enter display name of your company",
     "register_corporate_user&roles_field_label": "User & Role(s)",
     "register_corporate_role_field_label": "Role",

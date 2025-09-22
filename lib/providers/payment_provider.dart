@@ -158,22 +158,48 @@ class PaymentProvider extends ChangeNotifier {
     final requestBody = {
       "data": {
         "amount": double.parse(amount) * 100,
-        "currency": currency,
+        // "currency": currency,
         "plans": List.generate(
-            summary['planId']?.length ?? 0,
-            (i) => {
-                  "plan_id": summary['planId']?[i] ?? "",
-                  "plan_type_id": summary['planType']?[i] ?? "",
-                  "plan_type": summary['selectedPlanType']?[i]
-                          ?.toString()
-                          .toLowerCase() ??
-                      "",
-                  "selected_plan": summary['usercount']?[i] ?? "",
-                  "plan_name": summary['titles']?[i] ?? "",
-                  "price": summary['licenseprice']?[i] ?? "",
-                  "vendor": vendorName ?? "",
-                  "event_type": hazardName ?? "",
-                }),
+          summary['planId']?.length ?? 0,
+              (i) {
+            String planTypeId = summary['planType']?[i] ?? "";
+            Map<String, dynamic> plan = {
+              "plan_id": summary['planId']?[i] ?? "",
+              "plan_type_id": planTypeId,
+              "plan_type": summary['selectedPlanType']?[i]
+                  ?.toString()
+                  .toLowerCase() ??
+                  "",
+              "selected_plan": summary['usercount']?[i] ?? "",
+              "plan_name": summary['titles']?[i] ?? "",
+              "price": summary['licenseprice']?[i] ?? "",
+            };
+
+            if (planTypeId == "event_cost") {
+              plan["vendor"] = vendorName ?? "";
+              plan["event_type"] = hazardName ?? "";
+            }
+
+            return plan;
+          },
+        ),
+
+        // "plans": List.generate(
+        //     summary['planId']?.length ?? 0,
+        //     (i) => {
+        //           "plan_id": summary['planId']?[i] ?? "",
+        //           "plan_type_id": summary['planType']?[i] ?? "",
+        //           "plan_type": summary['selectedPlanType']?[i]
+        //                   ?.toString()
+        //                   .toLowerCase() ??
+        //               "",
+        //           "selected_plan": summary['usercount']?[i] ?? "",
+        //           "plan_name": summary['titles']?[i] ?? "",
+        //           "price":amount, //summary['licenseprice']?[i] ?? "",
+        //       "vendor": summary['planType']?[i] == "event_cost" ? (vendorName ?? "") : "",
+        //       "event_type": summary['planType']?[i] == "event_cost" ? (hazardName ?? "") : "",
+        //
+        //         }),
       }
     };
     print(requestBody);

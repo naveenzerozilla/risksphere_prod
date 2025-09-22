@@ -125,7 +125,7 @@ class CompanyType {
       //corporateUserSelfRegistration = bool.parse(json['corporate_user_self_registration']);
     }
     //corporateUserSelfRegistration = json['corporate_user_self_registration'];
-    name = json['name'] ?? "";
+    name = json['company_name'] ?? "";
     if (json['corporate_user_verification_by_admin'].runtimeType == bool) {
       corporateUserVerificationByAdmin =
           json['corporate_user_verification_by_admin'];
@@ -175,7 +175,7 @@ class CompanyType {
     _data['enable_corporate_verification'] = enableCorporateVerification;
     _data['roles'] = roles.map((e) => e.toJson()).toList();
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
-    _data['name'] = name;
+    _data['company_name'] = name;
     _data['corporate_user_verification_by_admin'] =
         corporateUserVerificationByAdmin;
     _data['can_be_listed'] = canBeListed;
@@ -354,8 +354,8 @@ class Companies {
       name = "";
     }
 
-    if (json['company_type_name'] != null) {
-      companyTypeName = json['company_type_name'];
+    if (json['company_type'] != null) {
+      companyTypeName = json['company_type'];
     } else {
       companyTypeName = "";
     }
@@ -387,7 +387,7 @@ class Companies {
     _data['admin_self_registration'] = adminSelfRegistration;
     _data['company_type_id'] = companyTypeId;
     _data['company_name'] = name;
-    _data['company_type_name'] = companyTypeName;
+    _data['company_type'] = companyTypeName;
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['corporate_user_verification_by_admin'] =
         corporateUserVerificationByAdmin;

@@ -30,6 +30,9 @@ class MyLocationList extends StatefulWidget {
 
 class _MyLocationListState extends State<MyLocationList>
     with TickerProviderStateMixin {
+  String? _activeSubAccountId;
+  String? _activeProcessId;
+
   Timer? _refreshTimer;
   static bool _hasActiveTimer = false;
   bool _isExpanded = false;
@@ -75,6 +78,7 @@ class _MyLocationListState extends State<MyLocationList>
   int selectedMainTab = 0;
   int selectedTab = 0;
   int selectedMasterTab = 0;
+  String _lastProcessStatus = '';
 
   /// Sov Things
   TextEditingController _textEditingController = TextEditingController();
@@ -116,10 +120,18 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   bool isProcessing = false;
+  late final Stream<Map<String, dynamic>> _combinedStream;
+  String? _streamAcct;
+  String? _streamSub;
+
+// State fields
+  final _processIndex$ = BehaviorSubject<int>.seeded(0);
+  int _currentProcessIndex = 0;
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
 
@@ -146,12 +158,183 @@ class _MyLocationListState extends State<MyLocationList>
       _initializeData(); // Load all data after first render
     });
     _tryShowTutorialOnce();
+    _buildCombinedStream();
   }
+
+  void _buildCombinedStream() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    // 🔹 Firestore streams
+    final userStream =
+        FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+
+    final subaccountStream = FirebaseFirestore.instance
+        .collection('subaccount')
+        .where('sub_account_id', isEqualTo: widget.subAccountID!)
+        .snapshots();
+
+    // 🔹 Combine user + subaccount + process updates
+    _combinedStream = Rx.combineLatest3(
+      userStream,
+      subaccountStream,
+      _processIndex$.distinct(), // current selected process index
+      (userSnap, subSnap, selIndex) {
+        final userData = (userSnap.data() as Map<String, dynamic>?) ?? {};
+
+        // Active processes for this account/subaccount
+        final activeProcesses =
+            (userData['on_going_processes'] as List<dynamic>? ?? [])
+                .cast<Map<String, dynamic>>()
+                .where((p) =>
+                    p['last_account'] == widget.accountID &&
+                    p['last_sub_account'] == widget.subAccountID)
+                .toList();
+
+        final heatmapData =
+            subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
+
+        if (activeProcesses.isEmpty) {
+          return Stream.value({
+            'processData': null,
+            'heatmapData': heatmapData,
+            'activeProcesses': const <Map<String, dynamic>>[],
+            'currentProcessIndex': 0,
+          });
+        }
+
+        // Clamp index
+        final clampedIndex = selIndex.clamp(0, activeProcesses.length - 1);
+        final currentProcess = activeProcesses[clampedIndex];
+        final String? lastProcessId = currentProcess['last_process_id'];
+
+        if (lastProcessId == null) {
+          return Stream.value({
+            'processData': null,
+            'heatmapData': heatmapData,
+            'activeProcesses': activeProcesses,
+            'currentProcessIndex': clampedIndex,
+          });
+        }
+
+        // 🔹 Always listen to process doc updates
+        final processStream = FirebaseFirestore.instance
+            .collection('processes')
+            .where('process_id', isEqualTo: lastProcessId)
+            .limit(1)
+            .snapshots()
+            .map((processSnap) => processSnap.docs.isNotEmpty
+                ? processSnap.docs.first.data()
+                : {});
+
+        // 🔹 Merge outer data + live process stream
+        return processStream.map((processData) => {
+              'processData': processData,
+              'heatmapData': heatmapData,
+              'activeProcesses': activeProcesses,
+              'currentProcessIndex': clampedIndex,
+            });
+      },
+    )
+        .switchMap((inner) => inner) // flatten nested streams
+        .throttleTime(const Duration(milliseconds: 500)); // smooth updates
+  }
+
+  // void _buildCombinedStream() {
+  //   final uid = FirebaseAuth.instance.currentUser!.uid;
+  //   final userStream =
+  //       FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+  //   final subaccountStream = FirebaseFirestore.instance
+  //       .collection('subaccount')
+  //       .where('sub_account_id', isEqualTo: widget.subAccountID!)
+  //       .snapshots();
+  //
+  //   _combinedStream = Rx.combineLatest3(
+  //     userStream,
+  //     subaccountStream,
+  //     _processIndex$.distinct(), // 👈 index drives the outer stream
+  //     (userSnap, subSnap, selIndex) {
+  //       final userData = (userSnap.data() as Map<String, dynamic>?) ?? {};
+  //       final rawProcesses =
+  //           (userData['on_going_processes'] as List<dynamic>? ?? [])
+  //               .cast<Map<String, dynamic>>();
+  //
+  //       final activeProcesses = rawProcesses
+  //           .where((p) =>
+  //               p['last_account'] == widget.accountID &&
+  //               p['last_sub_account'] == widget.subAccountID)
+  //           .toList();
+  //
+  //       final heatmapData =
+  //           subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
+  //
+  //       if (activeProcesses.isEmpty) {
+  //         return Stream.value({
+  //           'processData': null,
+  //           'heatmapData': heatmapData,
+  //           'activeProcesses': const <Map<String, dynamic>>[],
+  //           'currentProcessIndex': 0,
+  //         });
+  //       }
+  //
+  //       final clampedIndex = selIndex.clamp(0, activeProcesses.length - 1);
+  //       final currentProcess = activeProcesses[clampedIndex];
+  //       final String? lastProcessId = currentProcess['last_process_id'];
+  //
+  //       if (lastProcessId == null) {
+  //         return Stream.value({
+  //           'processData': null,
+  //           'heatmapData': heatmapData,
+  //           'activeProcesses': activeProcesses,
+  //           'currentProcessIndex': clampedIndex,
+  //         });
+  //       }
+  //
+  //       final processDocStream = FirebaseFirestore.instance
+  //           .collection('processes')
+  //           .where('process_id', isEqualTo: lastProcessId)
+  //           .limit(1)
+  //           .snapshots();
+  //
+  //       return processDocStream.map((processSnap) {
+  //         final processData =
+  //             processSnap.docs.isNotEmpty ? processSnap.docs.first.data() : {};
+  //         return {
+  //           'processData': processData,
+  //           'heatmapData': heatmapData,
+  //           'activeProcesses': activeProcesses,
+  //           'currentProcessIndex': clampedIndex,
+  //         };
+  //       });
+  //     },
+  //   )
+  //       .switchMap((inner) => inner)
+  //       // IMPORTANT: do NOT distinct on status only; throttle if needed
+  //       .debounceTime(const Duration(
+  //           milliseconds: 500)); // smooth, but keeps progress moving
+  // }
+
+  // void _buildCombinedStream() {
+  //   final uid = FirebaseAuth.instance.currentUser!.uid;
+  //   _combinedStream = _createLiveProcessStream(
+  //     userId: uid,
+  //     accountId: widget.accountID!,
+  //     subAccountId: widget.subAccountID!,
+  //   )
+  //       // collapse noisy updates
+  //       .distinct((a, b) =>
+  //           (a['processData']?['status'] == b['processData']?['status']) &&
+  //           (a['heatmapData']?['heatmap_status'] ==
+  //               b['heatmapData']?['heatmap_status']))
+  //       .debounceTime(const Duration(milliseconds: 250)); // needs rxdart
+  //
+  //   _streamAcct = widget.accountID;
+  //   _streamSub = widget.subAccountID;
+  // }
 
   void _initializeData() {
     _setClaims();
-    _getData();
-    _startRefreshTimer();
+    getdata(widget.accountID!, widget.subAccountID!);
+    _startRefreshTimer(widget.accountID!, widget.subAccountID!);
     _getSovUploadStatus();
     // _getMaintainancePeriod();
 
@@ -322,7 +505,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        10000,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -335,7 +518,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        10000,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -418,15 +601,36 @@ class _MyLocationListState extends State<MyLocationList>
   bool _isDisposed = false;
   MyLocationListProvider? _myLocationProvider;
 
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   _myLocationProvider ??=
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  // }
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _myLocationProvider ??=
-        Provider.of<MyLocationListProvider>(context, listen: false);
+  void didUpdateWidget(covariant MyLocationList old) {
+    super.didUpdateWidget(old);
+    if (old.accountID != widget.accountID ||
+        old.subAccountID != widget.subAccountID) {
+      _currentProcessIndex = 0;
+      _processIndex$.add(0);
+      // stop anything tied to the old page
+      _refreshTimer?.cancel();
+      _activeAccountKey = null;
+      _lastProcessStatus = '';
+      _buildCombinedStream();
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    _processIndex$.close();
+    _refreshTimer?.cancel();
+    _refreshTimer?.cancel();
+    _activeAccountKey = null;
+    _isDisposed = true;
     _mainTabController?.dispose();
     _masterTabController?.dispose();
     _tabController?.dispose();
@@ -434,7 +638,7 @@ class _MyLocationListState extends State<MyLocationList>
     _hasActiveTimer = false;
     _isDisposed = true;
 
-    deBouncer?.cancel();
+    // deBouncer?.cancel();
 
     // Safely use the cached reference
     _myLocationProvider?.clearAllFilters();
@@ -491,159 +695,255 @@ class _MyLocationListState extends State<MyLocationList>
   //     }
   //   });
   // }
-  void _startRefreshTimer() {
-    if (_refreshTimer != null && _refreshTimer!.isActive) return;
-    if (_hasActiveTimer) return;
+  String? _activeAccountKey; // track which account/subaccount timer belongs to
 
-    _hasActiveTimer = true;
+  // void _startRefreshTimer(String accountId, String subAccountId) {
+  //   final currentKey = "$accountId-$subAccountId";
+  //
+  //   // if already running for the same account/subaccount → skip
+  //   if (_activeAccountKey == currentKey && _refreshTimer?.isActive == true)
+  //     return;
+  //
+  //   // cancel any old timer
+  //   _refreshTimer?.cancel();
+  //   _hasActiveTimer = false;
+  //
+  //   _activeAccountKey = currentKey;
+  //   _hasActiveTimer = true;
+  //
+  //   // 👇 Immediately refresh once
+  //   final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+  //   if (mounted && provider.isProcessing) {
+  //     getdata(accountId, subAccountId);
+  //   }
+  //
+  //   // 👇 Schedule periodic refresh
+  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+  //     final provider =
+  //         Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //     if (mounted && provider.isProcessing) {
+  //       setState(() {
+  //         isUploadInProgress = false;
+  //       });
+  //       getdata(accountId, subAccountId);
+  //     } else {
+  //       _refreshTimer?.cancel();
+  //       _activeAccountKey = null;
+  //       _hasActiveTimer = false;
+  //     }
+  //   });
+  // }
 
-    // 👇 Immediately refresh once when timer starts
-    final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
-    if (mounted && provider.isProcessing) {
-      _refreshData();
-    }
-
-    // 👇 Then schedule periodic refresh
-    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      final provider =
-          Provider.of<JobMonitoringProvider>(context, listen: false);
-      if (mounted && provider.isProcessing) {
-        setState(() {
-          isUploadInProgress = false;
-        });
-        _refreshData();
-      } else {
-        _refreshTimer?.cancel();
-        _hasActiveTimer = false;
-      }
-    });
-  }
-
-  Future<void> _refreshData() async {
-    if (!mounted) return; // Ensure the widget is still in the tree
+  Future<void> getdata(String accountId, String subAccountId) async {
+    if (!mounted) return;
 
     final locationListProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
 
     locationListProvider.certifiedPage = 1;
 
-    await locationListProvider.fetchCertifiedLocationList(
-      context,
-      "",
-      locationListProvider.certifiedPage,
-      20,
-      widget.accountID,
-      widget.subAccountID,
-      widget.initialProcessId,
-      widget.initialSubProcessId,
-    );
-
     await locationListProvider.fetchLocationList(
       context,
       "",
       1,
-      10000,
-      widget.accountID,
-      widget.subAccountID,
+      8,
+      accountId,
+      subAccountId,
       widget.initialProcessId,
       widget.initialSubProcessId,
     );
 
     await locationListProvider.fetchAllLocationList(
       context,
-      widget.accountID,
-      widget.subAccountID,
+      accountId,
+      subAccountId,
       processId: widget.initialProcessId,
       subProcessId: widget.initialSubProcessId,
     );
 
+    await locationListProvider.fetchCertifiedLocationList(
+      context,
+      "",
+      locationListProvider.certifiedPage,
+      8,
+      accountId,
+      subAccountId,
+      widget.initialProcessId,
+      widget.initialSubProcessId,
+    );
+
     if (mounted) {
-      setState(() {}); // Trigger UI update after fetching data
+      setState(() {});
     }
   }
 
-  Future<void> _getData() async {
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_SUPER_ADMIN) ??
-        false;
-    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
-    String? geoCodingStatus =
-        await SharedPreferenceService.getGeocodingLicense();
-    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
-    String? hazardLicenseStatus =
-        await SharedPreferenceService.getHazardLicense();
-    setState(() {
-      isPgAdmin = isPgAdmin;
-      isSuperAdmin = isSuperAdmin;
-      hasAnyPlan = hasAnyPlans ?? false;
-      hasLicenseStatus = userLicenseStatus ?? "1";
-      hasGeocodingStatus = geoCodingStatus ?? "1";
-      hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
-    });
-    final myLocationProvider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-    final sovListProvider =
-        Provider.of<SOVListProvider>(context, listen: false);
-    final jobMonitoringProvider =
-        Provider.of<JobMonitoringProvider>(context, listen: false);
-
-    await Future.wait([
-      myLocationProvider
-          .fetchLocationList(
-            context,
-            "",
-            1,
-            10000,
-            widget.accountID,
-            widget.subAccountID,
-            widget.initialProcessId,
-            widget.initialSubProcessId,
-          )
-          .then(
-              (_) => setState(() {})), // Update UI after fetching location list
-
-      myLocationProvider.fetchCertifiedLocationList(
-        context,
-        "",
-        1,
-        1000,
-        widget.accountID,
-        widget.subAccountID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-      ),
-      // .then((_) => WidgetsBinding.instance!.addPostFrameCallback(
-      //     (_) => setState(() {}))), // Update UI after frame rendering
-
-      sovListProvider.fetchSovList(
-        context,
-        widget.accountID!,
-        widget.subAccountID!,
-        "",
-        1,
-        10,
-      ),
-
-      sovListProvider.fetchAutoCompleteSovListLocations(
-        context,
-        widget.accountID!,
-        widget.subAccountID!,
-      ),
-
-      myLocationProvider.fetchAllLocationList(
-        context,
-        widget.accountID,
-        widget.subAccountID,
-        processId: widget.initialProcessId,
-        subProcessId: widget.initialSubProcessId,
-      ),
-
-      jobMonitoringProvider.fetchCompanyIds(),
-    ]);
-  }
+//   void _startRefreshTimer() {
+//     if (_refreshTimer != null && _refreshTimer!.isActive) return;
+//     if (_hasActiveTimer) return;
+//
+//     _hasActiveTimer = true;
+//
+//     // 👇 Immediately refresh once when timer starts
+//     final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
+//     if (mounted && provider.isProcessing) {
+//       _refreshData();
+//     }
+//
+//     // 👇 Then schedule periodic refresh
+//     _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+//       final provider =
+//           Provider.of<JobMonitoringProvider>(context, listen: false);
+//       if (mounted && provider.isProcessing) {
+//         setState(() {
+//           isUploadInProgress = false;
+//         });
+//         _refreshData();
+//       } else {
+//         _refreshTimer?.cancel();
+//         _hasActiveTimer = false;
+//       }
+//     });
+//   }
+//
+//   Future<void> _refreshData() async {
+//     if (!mounted) return; // Ensure the widget is still in the tree
+//
+//     final locationListProvider =
+//         Provider.of<MyLocationListProvider>(context, listen: false);
+//
+//     locationListProvider.certifiedPage = 1;
+//
+//
+//     await locationListProvider.fetchLocationList(
+//       context,
+//       "",
+//       1,
+//       10,
+//       widget.accountID,
+//       widget.subAccountID,
+//       widget.initialProcessId,
+//       widget.initialSubProcessId,
+//     );
+//
+//     await locationListProvider.fetchAllLocationList(
+//       context,
+//       widget.accountID,
+//       widget.subAccountID,
+//       processId: widget.initialProcessId,
+//       subProcessId: widget.initialSubProcessId,
+//     );
+//     await locationListProvider.fetchCertifiedLocationList(
+//       context,
+//       "",
+//       locationListProvider.certifiedPage,
+//       8,
+//       widget.accountID,
+//       widget.subAccountID,
+//       widget.initialProcessId,
+//       widget.initialSubProcessId,
+//     );
+//
+//
+//     if (mounted) {
+//       setState(() {}); // Trigger UI update after fetching data
+//     }
+//   }
+//
+//   Future<void> _getData() async {
+//     isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+//             SharedPreferenceService.IS_PG_ADMIN) ??
+//         false;
+//     isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+//             SharedPreferenceService.IS_SUPER_ADMIN) ??
+//         false;
+//     bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+//     String? geoCodingStatus =
+//         await SharedPreferenceService.getGeocodingLicense();
+//     String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
+//     String? hazardLicenseStatus =
+//         await SharedPreferenceService.getHazardLicense();
+//     setState(() {
+//       isPgAdmin = isPgAdmin;
+//       isSuperAdmin = isSuperAdmin;
+//       hasAnyPlan = hasAnyPlans ?? false;
+//       hasLicenseStatus = userLicenseStatus ?? "1";
+//       hasGeocodingStatus = geoCodingStatus ?? "1";
+//       hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
+//     });
+//     final myLocationProvider =
+//         Provider.of<MyLocationListProvider>(context, listen: false);
+//     final sovListProvider =
+//         Provider.of<SOVListProvider>(context, listen: false);
+//     final jobMonitoringProvider =
+//         Provider.of<JobMonitoringProvider>(context, listen: false);
+//
+//     await Future.wait([
+//
+//       myLocationProvider
+//           .fetchLocationList(
+//             context,
+//             "",
+//             1,
+//             8,
+//             widget.accountID,
+//             widget.subAccountID,
+//             widget.initialProcessId,
+//             widget.initialSubProcessId,
+//           )
+//           .then((_) => setState(() {})),
+//       myLocationProvider
+//           .fetchLocationConflictList(
+//         context,
+//         "",
+//         1,
+//         30,
+//         widget.accountID,
+//         widget.subAccountID,
+//         widget.initialProcessId,
+//         widget.initialSubProcessId,
+//       )
+//           .then((_) => setState(() {})),
+//
+//       myLocationProvider.fetchCertifiedLocationList(
+//         context,
+//         "",
+//         1,
+//         10,
+//         widget.accountID,
+//         widget.subAccountID,
+//         widget.initialProcessId,
+//         widget.initialSubProcessId,
+//       ),
+//       // .then((_) => WidgetsBinding.instance!.addPostFrameCallback(
+//       //     (_) => setState(() {}))), // Update UI after frame rendering
+//
+//       sovListProvider.fetchSovList(
+//         context,
+//         widget.accountID!,
+//         widget.subAccountID!,
+//         "",
+//         1,
+//         10,
+//       ),
+//
+//       sovListProvider.fetchAutoCompleteSovListLocations(
+//         context,
+//         widget.accountID!,
+//         widget.subAccountID!,
+//       ),
+// //future
+//       // myLocationProvider.fetchAllLocationList(
+//       //   context,
+//       //   widget.accountID,
+//       //   widget.subAccountID,
+//       //   processId: widget.initialProcessId,
+//       //   subProcessId: widget.initialSubProcessId,
+//       // ),
+//
+//       jobMonitoringProvider.fetchCompanyIds(),
+//     ]);
+//   }
 
   ScrollController _scrollController = ScrollController();
 
@@ -781,14 +1081,17 @@ class _MyLocationListState extends State<MyLocationList>
                                             )));
 
                                 _isDisposed = false;
-                                _startRefreshTimer(); // recreate timer
+                                _startRefreshTimer(widget.accountID!,
+                                    widget.subAccountID!); // recreate timer
                                 // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
                                 _getSovUploadStatus();
                                 setState(() => _isLoading = false);
 
                                 if (result == true) {
-                                  await _getData();
-                                  _startRefreshTimer();
+                                  await getdata(
+                                      widget.accountID!, widget.subAccountID!);
+                                  _startRefreshTimer(
+                                      widget.accountID!, widget.subAccountID!);
                                   await Provider.of<MyLocationListProvider>(
                                           context,
                                           listen: false)
@@ -796,7 +1099,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     "",
                                     1,
-                                    10000,
+                                    10,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -1002,7 +1305,10 @@ class _MyLocationListState extends State<MyLocationList>
                             onTap: trialStatus.isNotEmpty
                                 ? null
                                 : () async {
-                                    await _getData(); // API call only when tapped
+                                    await getdata(
+                                        widget.accountID!,
+                                        widget
+                                            .subAccountID!); // API call only when tapped
                                     setState(() {});
 
                                     showDialog(
@@ -1129,13 +1435,14 @@ class _MyLocationListState extends State<MyLocationList>
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      Consumer<JobMonitoringProvider>(
-                                        builder: (context,
-                                            jobMonitoringProvider, child) {
-                                          return _getLiveUI(
-                                              jobMonitoringProvider);
-                                        },
-                                      ),
+                                      // Consumer<JobMonitoringProvider>(
+                                      //   builder: (context,
+                                      //       jobMonitoringProvider, child) {
+                                      //     return _getLiveUI(
+                                      //         jobMonitoringProvider);
+                                      //   },
+                                      // ),
+                                      _getLiveUI(),
                                       Consumer<MyLocationListProvider>(
                                         builder: (context,
                                             myLocationListProvider, child) {
@@ -1354,28 +1661,29 @@ class _MyLocationListState extends State<MyLocationList>
                                               myLocationListProvider
                                                   .myLocationList
                                                   .clear();
+                                              _buildCombinedStream();
                                               myLocationListProvider
                                                   .fetchLocationList(
                                                 context,
                                                 "",
                                                 1,
-                                                10000,
+                                                10,
                                                 widget.accountID,
                                                 widget.subAccountID,
                                                 widget.initialProcessId,
                                                 widget.initialSubProcessId,
                                               );
-                                              myLocationListProvider
-                                                  .fetchLocationList(
-                                                context,
-                                                "",
-                                                1,
-                                                10000,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                              );
+                                              // myLocationListProvider
+                                              //     .fetchLocationList(
+                                              //   context,
+                                              //   "",
+                                              //   1,
+                                              //   10,
+                                              //   widget.accountID,
+                                              //   widget.subAccountID,
+                                              //   widget.initialProcessId,
+                                              //   widget.initialSubProcessId,
+                                              // );
                                             } else if (_selectedScreen ==
                                                 Screens.certifiedLocationList) {
                                               myLocationListProvider
@@ -1386,7 +1694,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 context,
                                                 "",
                                                 1,
-                                                10000,
+                                                10,
                                                 widget.accountID,
                                                 widget.subAccountID,
                                                 widget.initialProcessId,
@@ -2243,7 +2551,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        10000,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -2267,7 +2575,7 @@ class _MyLocationListState extends State<MyLocationList>
         context,
         "",
         1,
-        10000,
+        10,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
@@ -2420,152 +2728,1045 @@ class _MyLocationListState extends State<MyLocationList>
   //     },
   //   );
   // }
+  Widget _getLiveUI() {
+    final stream = _combinedStream;
+    if (stream == null) return const SizedBox.shrink();
 
-  Widget _getLiveUI(JobMonitoringProvider provider) {
-    var typography = CustomTypography(context);
-    FirebaseAuth auth = FirebaseAuth.instance;
-    String uid = auth.currentUser!.uid;
-
-    final combinedStream = _createLiveProcessStream(
-      userId: uid,
-      accountId: widget.accountID!,
-      subAccountId: widget.subAccountID!,
-    );
+    // static locals to persist across rebuilds
+    // (avoids adding new state fields outside this range)
+    // ignore: prefer_final_locals
+    String? _lastHeatmapStatusLocal;
 
     return StreamBuilder<Map<String, dynamic>>(
-      stream: combinedStream,
+      key: ValueKey('${widget.accountID}-${widget.subAccountID}'),
+      stream: stream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return SizedBox(
-            height: CustomSpacing.six,
-            child: Text(""),
-          );
-        }
-
-        if (snapshot.hasError || !snapshot.hasData) {
-          return SizedBox.shrink(
-            child: Text(""),
-          );
-        }
+        if (!snapshot.hasData) return const SizedBox.shrink();
 
         final data = snapshot.data!;
-        final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
-        final processStatus = data['processData']?['status'] ?? '';
+        final heatmapStatus = (data['heatmapData']?['heatmap_status'] ?? '')
+            .toString()
+            .toLowerCase();
+        final newStatus =
+            (data['processData']?['status'] ?? '').toString().toLowerCase();
 
-        final List<dynamic> onGoingProcesses =
-            data['on_going_processes'] is List
-                ? data['on_going_processes']
-                : [];
+        // Progress derivation (defensive)
+        final num totalCompletedRaw = (data['processData']
+                ?['total_processes_completed'] ??
+            data['processData']?['completed'] ??
+            0) as num;
+        final num totalProcessesRaw = (data['processData']
+                ?['total_processes'] ??
+            data['processData']?['total'] ??
+            1) as num;
+        final double progressPct = totalProcessesRaw > 0
+            ? (totalCompletedRaw / totalProcessesRaw) * 100
+            : 0.0;
 
-        final bool isCurrentlyProcessing =
-            processStatus.toLowerCase() == 'processing';
-        final String newProcessStatus = data['processData']?['status'] ?? '';
+        final bool isProcessing = newStatus.toLowerCase() == 'processing';
+        final bool forceCompleted = isProcessing && progressPct >= 99.5;
+        final bool isCompleted =
+            newStatus.toLowerCase() == 'completed' || forceCompleted;
+        final bool isFailed = newStatus.toLowerCase() == 'failed' ||
+            newStatus.toLowerCase() == 'error';
 
-        final jobProvider =
-            Provider.of<JobMonitoringProvider>(context, listen: false);
-        _startRefreshTimer();
-        if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+        // Defer side-effects to post-frame to avoid losing the final snapshot rebuild.
+        if (newStatus != _lastProcessStatus) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!_isDisposed) {
-              jobProvider.updateProcessStatus(newProcessStatus);
-
-              if (isCurrentlyProcessing) {
-                setState(() {
-                  isUploadInProgress = false;
-                });
-                _startRefreshTimer();
-              } else {
-                _refreshTimer?.cancel();
-                _getData();
-              }
-            }
+            _lastProcessStatus = newStatus;
+            _onProcessStatusChange(newStatus);
           });
         }
 
-        final locationProvider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
-        locationProvider.isHeatMapGeneratingLive =
-            heatmapStatus.toString().toLowerCase() == 'initiated';
+        if (heatmapStatus != _lastHeatmapStatusLocal) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context
+                .read<MyLocationListProvider>()
+                .setHeatmapGeneratingLive(heatmapStatus == 'initiated');
+            _lastHeatmapStatusLocal = heatmapStatus;
+          });
+        }
 
-        final int totalCompleted =
-            data['processData']?['total_processes_completed'] ?? 0;
-        final int totalProcesses = data['processData']?['total_processes'] ?? 1;
-        final double percentage = (totalCompleted / totalProcesses) * 100;
-
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: Column(
-            key: ValueKey('$processStatus-$heatmapStatus'),
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Text(data['processData'].toString(),
-              // maxLines: 2,
-              //
-              // ),
-              if (isCurrentlyProcessing)
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProcessMonitoringScreen(
-                          accountId: widget.accountID,
-                          subAccountId: widget.subAccountID,
-                        ),
-                      ),
-                    ).then((value) => _getData());
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Lottie.asset(
-                          'assets/lottie/loading.json',
-                          width: 20,
-                          height: 20,
-                        ),
-                        const SizedBox(width: 8.0),
-                        Text(
-                          'Processing ${percentage.toStringAsFixed(0)}%',
-                          style: typography.Caption.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (heatmapStatus.toString().toLowerCase() == 'initiated')
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Lottie.asset(
-                        'assets/lottie/loading.json',
-                        width: 20,
-                        height: 20,
-                      ),
-                      const SizedBox(width: 8.0),
-                      Text(
-                        'Generating Heatmap',
-                        style: typography.Caption.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+        return Column(
+          children: [
+            // Debug / status text (remove if not needed)
+            // Text(
+            //   isCompleted
+            //       ? 'completed'
+            //       : isFailed
+            //           ? newStatus
+            //           : isProcessing
+            //               ? 'processing ${(forceCompleted ? 100 : progressPct).toStringAsFixed(0)}%'
+            //               : newStatus,
+            // ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Builder(
+                key: ValueKey(newStatus), // 👈 ensures widget refreshes
+                builder: (_) {
+                  if (isFailed) return const SizedBox.shrink();
+                  if (isCompleted) return _CompletedRow(data);
+                  if (isProcessing) return _ProcessingRow(data);
+                  if (heatmapStatus == 'initiated') return _HeatmapRow();
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+            // AnimatedSwitcher(
+            //   duration: const Duration(milliseconds: 250),
+            //   child: () {
+            //     if (isFailed) return const SizedBox.shrink();
+            //     if (isCompleted) return _CompletedRow(data);
+            //     if (isProcessing) return _ProcessingRow(data);
+            //     if (heatmapStatus == 'initiated') return _HeatmapRow();
+            //     return const SizedBox.shrink();
+            //   }(),
+            // ),
+          ],
         );
       },
     );
   }
 
+  // Widget _getLiveUI() {
+  //   final stream = _combinedStream; // local alias
+  //   if (stream == null) return const SizedBox.shrink();
+  //
+  //   return StreamBuilder<Map<String, dynamic>>(
+  //     key: ValueKey('${widget.accountID}-${widget.subAccountID}'),
+  //     stream: stream,
+  //     builder: (context, snapshot) {
+  //       if (!snapshot.hasData) return const SizedBox.shrink();
+  //       final data = snapshot.data!;
+  //       final heatmapStatus = (data['heatmapData']?['heatmap_status'] ?? '')
+  //           .toString()
+  //           .toLowerCase();
+  //       final newStatus =
+  //           (data['processData']?['status'] ?? '').toString().toLowerCase();
+  //       final isProcessing = newStatus == 'processing';
+  //
+  //       // 🔒 Side-effects outside of provider/consumer loop
+  //       if (newStatus != _lastProcessStatus) {
+  //         _lastProcessStatus = newStatus;
+  //         _onProcessStatusChange(newStatus);
+  //       }
+  //
+  //
+  //       context
+  //           .read<MyLocationListProvider>()
+  //           .setHeatmapGeneratingLive(heatmapStatus == 'initiated');
+  //
+  //       // … render UI only (no timers, no provider updates, no getdata here) …
+  //       return Column(
+  //         children: [
+  //           Text(newStatus.toString()),
+  //           AnimatedSwitcher(
+  //             duration: const Duration(milliseconds: 250),
+  //             child: () {
+  //               if (isProcessing) return _ProcessingRow(data);
+  //               if (newStatus == 'completed') return _CompletedRow(data);
+  //               if (newStatus == 'failed' || newStatus == 'error') return Container();
+  //               if (heatmapStatus == 'initiated') return _HeatmapRow();
+  //               // Fallback if an unexpected / stale state occurs
+  //               return const SizedBox.shrink();
+  //             }(),
+  //           ),
+  //           // AnimatedSwitcher(
+  //           //   duration: const Duration(milliseconds: 250),
+  //           //   child: isProcessing
+  //           //       ? _ProcessingRow(data)
+  //           //       : newStatus == 'completed'
+  //           //           ? _CompletedRow(data) // ✅ show 100% or "done"
+  //           //           : heatmapStatus == 'initiated'
+  //           //               ? _HeatmapRow()
+  //           //               : const SizedBox.shrink(),
+  //           // ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  Widget _CompletedRow(Map<String, dynamic> data) {
+    final percentage = data['processData']?['progress'] ?? 100;
+    return _AutoHideCompletedRow(percentage: percentage);
+  }
+
+  Widget _ProcessingRow(Map<String, dynamic> data) {
+    final typography = CustomTypography(context);
+    final activeProcesses = data['activeProcesses'] ?? [];
+    final currentIndex = data['currentProcessIndex'] ?? 0;
+    final totalCompleted =
+        data['processData']?['total_processes_completed'] ?? 0;
+    final totalProcesses = data['processData']?['total_processes'] ?? 1;
+    final percentage = (totalCompleted / totalProcesses) * 100;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProcessMonitoringScreen(
+              accountId: widget.accountID,
+              subAccountId: widget.subAccountID,
+            ),
+          ),
+        ).then((_) {
+          // safe refresh after returning
+          getdata(widget.accountID!, widget.subAccountID!);
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Lottie.asset(
+              'assets/lottie/loading.json',
+              width: 20,
+              height: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Processing ${percentage.toStringAsFixed(0)} %',
+              style: typography.Caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.blue,
+              ),
+            ),
+            if (activeProcesses.length > 1) ...[
+              const SizedBox(width: 12),
+              InkWell(
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  size: 18,
+                  color: _currentProcessIndex > 0 ? Colors.white : Colors.grey,
+                ),
+                onTap: _currentProcessIndex > 0
+                    ? () {
+                        setState(() {
+                          _currentProcessIndex = (_currentProcessIndex - 1)
+                              .clamp(0, activeProcesses.length - 1)
+                              .toInt();
+                        });
+                        _processIndex$.add(
+                            _currentProcessIndex); // 👈 switch inner stream now
+                      }
+                    : null,
+                // onTap: _currentProcessIndex > 0
+                //     ? () => setState(() {
+                //           _currentProcessIndex = (_currentProcessIndex - 1)
+                //               .clamp(0, activeProcesses.length - 1)
+                //               .toInt();
+                //         })
+                //     : null,
+              ),
+            ],
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.lightBlue[500],
+                // background color (adjust as needed)
+                borderRadius: BorderRadius.circular(7), // rounded corners
+              ),
+              child: Text(
+                "${_currentProcessIndex + 1}/${activeProcesses.length}",
+                style: typography.Caption?.copyWith(
+                  color: Colors.black, // text color (adjust if needed)
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (activeProcesses.length > 1) ...[
+              InkWell(
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 18,
+                  color: _currentProcessIndex < activeProcesses.length - 1
+                      ? Colors.white
+                      : Colors.grey,
+                ),
+                onTap: _currentProcessIndex < activeProcesses.length - 1
+                    ? () {
+                        setState(() {
+                          _currentProcessIndex = (_currentProcessIndex + 1)
+                              .clamp(0, activeProcesses.length - 1)
+                              .toInt();
+                        });
+                        _processIndex$.add(
+                            _currentProcessIndex); // 👈 switch inner stream now
+                      }
+                    : null,
+                // onTap: _currentProcessIndex < activeProcesses.length - 1
+                //     ? () => setState(() {
+                //           _currentProcessIndex = (_currentProcessIndex + 1)
+                //               .clamp(0, activeProcesses.length - 1)
+                //               .toInt();
+                //         })
+                //     : null,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _HeatmapRow() {
+    final typography = CustomTypography(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'assets/lottie/loading.json',
+            width: 20,
+            height: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Generating Heatmap',
+            style: typography.Caption.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onProcessStatusChange(String status) {
+    if (!mounted || _isDisposed) return;
+    final key = '${widget.accountID}/${widget.subAccountID}';
+
+    if (status == 'processing') {
+      // start a single keyed timer
+      if (_activeAccountKey != key) {
+        _refreshTimer?.cancel();
+        _activeAccountKey = key;
+        _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+      } else if (!(_refreshTimer?.isActive ?? false)) {
+        _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+      }
+    } else {
+      _refreshTimer?.cancel();
+      _activeAccountKey = null;
+      // safe follow-up fetch, not inside build
+      Future.microtask(() {
+        if (!mounted || _isDisposed) return;
+        getdata(widget.accountID!, widget.subAccountID!);
+      });
+    }
+  }
+
+  void _startRefreshTimer(String accountId, String subAccountId) {
+    final key = '$accountId/$subAccountId';
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+      if (!mounted || _isDisposed) return;
+      if (_activeAccountKey != key) return; // don't leak across pages
+      await context
+          .read<MyLocationListProvider>()
+          .fetchLocationConflictList(
+            context,
+            "",
+            1,
+            20,
+            widget.accountID,
+            widget.subAccountID,
+            widget.initialProcessId,
+            widget.initialSubProcessId,
+          )
+          .then((_) => setState(() {}));
+      await context.read<MyLocationListProvider>().fetchLocationList(
+            context,
+            locationQuery,
+            1,
+            8,
+            accountId,
+            subAccountId,
+            widget.initialProcessId,
+            widget.initialSubProcessId,
+          );
+      setState(() {
+        _buildCombinedStream(); // rebuild the stream
+      });
+    });
+  }
+
+  // void _onProcessStatusChange(String status) {
+  //   if (!mounted || _isDisposed) return;
+  //   final key = '${widget.accountID}/${widget.subAccountID}';
+  //
+  //   if (status == 'processing') {
+  //     // start a single keyed timer
+  //     if (_activeAccountKey != key) {
+  //       _refreshTimer?.cancel();
+  //       _activeAccountKey = key;
+  //       _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+  //     } else if (!(_refreshTimer?.isActive ?? false)) {
+  //       _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+  //     }
+  //   } else {
+  //     _refreshTimer?.cancel();
+  //     _activeAccountKey = null;
+  //     // safe follow-up fetch, not inside build
+  //     Future.microtask(() {
+  //       if (!mounted || _isDisposed) return;
+  //       getdata(widget.accountID!, widget.subAccountID!);
+  //     });
+  //   }
+  // }
+  //
+  // void _startRefreshTimer(String accountId, String subAccountId) {
+  //   final key = '$accountId/$subAccountId';
+  //   _refreshTimer?.cancel();
+  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+  //     if (!mounted || _isDisposed) return;
+  //     if (_activeAccountKey != key) return; // don't leak across pages
+  //     await context.read<MyLocationListProvider>().fetchLocationList(
+  //           context,
+  //           locationQuery,
+  //           1,
+  //           8,
+  //           accountId,
+  //           subAccountId,
+  //           widget.initialProcessId,
+  //           widget.initialSubProcessId,
+  //         );
+  //   });
+  // }
+
+  // Widget _getLiveUI(JobMonitoringProvider provider) {
+  //   var typography = CustomTypography(context);
+  //   FirebaseAuth auth = FirebaseAuth.instance;
+  //   String uid = auth.currentUser!.uid;
+  //
+  //   final combinedStream = _createLiveProcessStream(
+  //     userId: uid,
+  //     accountId: widget.accountID!,
+  //     subAccountId: widget.subAccountID!,
+  //   );
+  //
+  //   return StreamBuilder<Map<String, dynamic>>(
+  //     stream: combinedStream,
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting &&
+  //           !snapshot.hasData) {
+  //         return const SizedBox.shrink();
+  //       }
+  //
+  //       if (snapshot.hasError || !snapshot.hasData) {
+  //         return const SizedBox.shrink();
+  //       }
+  //
+  //       final data = snapshot.data!;
+  //       final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+  //       final processStatus = data['processData']?['status'] ?? '';
+  //
+  //       final bool isCurrentlyProcessing =
+  //           processStatus.toLowerCase() == 'processing';
+  //       final String newProcessStatus = data['processData']?['status'] ?? '';
+  //
+  //       final jobProvider =
+  //           Provider.of<JobMonitoringProvider>(context, listen: false);
+  //
+  //       // 🔹 Update provider only when process status changes
+  //       if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+  //         WidgetsBinding.instance.addPostFrameCallback((_) {
+  //           if (!_isDisposed) {
+  //             jobProvider.updateProcessStatus(newProcessStatus);
+  //
+  //             if (isCurrentlyProcessing) {
+  //               setState(() {
+  //                 isUploadInProgress = false;
+  //               });
+  //               // ✅ Start refresh timer only if not already running
+  //               if (_refreshTimer == null || !_refreshTimer!.isActive) {
+  //                 _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+  //               }
+  //             } else {
+  //               // ✅ Cancel timer when processing stops
+  //               _refreshTimer?.cancel();
+  //               _activeAccountKey = null;
+  //
+  //               // ✅ Call getdata safely (not on every rebuild)
+  //               Future.microtask(() {
+  //                 if (!_isDisposed) {
+  //                   getdata(widget.accountID!, widget.subAccountID!);
+  //                 }
+  //               });
+  //             }
+  //           }
+  //         });
+  //       }
+  //
+  //       final locationProvider =
+  //           Provider.of<MyLocationListProvider>(context, listen: false);
+  //       locationProvider.isHeatMapGeneratingLive =
+  //           heatmapStatus.toString().toLowerCase() == 'initiated';
+  //
+  //       final int totalCompleted =
+  //           data['processData']?['total_processes_completed'] ?? 0;
+  //       final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+  //       final double percentage = (totalCompleted / totalProcesses) * 100;
+  //
+  //       final List activeProcesses = data['activeProcesses'] ?? [];
+  //       final int currentIndex = data['currentProcessIndex'] ?? 0;
+  //
+  //       return AnimatedSwitcher(
+  //         duration: const Duration(milliseconds: 250),
+  //         child: Column(
+  //           key: ValueKey('$processStatus-$heatmapStatus'),
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             if (activeProcesses.isNotEmpty)
+  //               Row(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [],
+  //               ),
+  //             const SizedBox(height: 8),
+  //             if (isCurrentlyProcessing)
+  //               GestureDetector(
+  //                 onTap: () {
+  //                   Navigator.push(
+  //                     context,
+  //                     MaterialPageRoute(
+  //                       builder: (context) => ProcessMonitoringScreen(
+  //                         accountId: widget.accountID,
+  //                         subAccountId: widget.subAccountID,
+  //                       ),
+  //                     ),
+  //                   ).then((_) {
+  //                     // ✅ Refresh only after navigation completes
+  //                     getdata(widget.accountID!, widget.subAccountID!);
+  //                   });
+  //                 },
+  //                 child: Padding(
+  //                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                   child: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.center,
+  //                     children: [
+  //                       Lottie.asset(
+  //                         'assets/lottie/loading.json',
+  //                         width: 20,
+  //                         height: 20,
+  //                       ),
+  //                       const SizedBox(width: 8.0),
+  //                       Text(
+  //                         'Processing ${percentage.toStringAsFixed(0)} %',
+  //                         style: typography.Caption.copyWith(
+  //                           fontWeight: FontWeight.w600,
+  //                           color: Colors.blue,
+  //                         ),
+  //                       ),
+  //                       if (activeProcesses.length > 1) ...[
+  //                         const SizedBox(width: 12.0),
+  //                         InkWell(
+  //                           onTap: _currentProcessIndex > 0
+  //                               ? () {
+  //                                   setState(() {
+  //                                     _currentProcessIndex =
+  //                                         (_currentProcessIndex - 1).clamp(
+  //                                             0, activeProcesses.length - 1);
+  //                                   });
+  //                                 }
+  //                               : null,
+  //                           child: Icon(
+  //                             Icons.arrow_back_ios_new,
+  //                             size: 18,
+  //                             color: _currentProcessIndex > 0
+  //                                 ? Colors.white
+  //                                 : Colors.grey,
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 10),
+  //                         Container(
+  //                           padding: const EdgeInsets.symmetric(
+  //                               horizontal: 8, vertical: 3),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.blue.shade200,
+  //                             borderRadius: BorderRadius.circular(8),
+  //                           ),
+  //                           child: Text(
+  //                             "${_currentProcessIndex + 1}/${activeProcesses.length}",
+  //                             style: typography.Caption.copyWith(
+  //                               fontWeight: FontWeight.w500,
+  //                               color: Colors.black,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 10),
+  //                         InkWell(
+  //                           onTap: _currentProcessIndex <
+  //                                   activeProcesses.length - 1
+  //                               ? () {
+  //                                   setState(() {
+  //                                     _currentProcessIndex =
+  //                                         (_currentProcessIndex + 1).clamp(
+  //                                             0, activeProcesses.length - 1);
+  //                                   });
+  //                                 }
+  //                               : null,
+  //                           child: Icon(
+  //                             Icons.arrow_forward_ios,
+  //                             size: 18,
+  //                             color: _currentProcessIndex <
+  //                                     activeProcesses.length - 1
+  //                                 ? Colors.white
+  //                                 : Colors.grey,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ],
+  //                   ),
+  //                 ),
+  //               )
+  //             else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+  //               Padding(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                 child: Row(
+  //                   mainAxisAlignment: MainAxisAlignment.center,
+  //                   children: [
+  //                     Lottie.asset(
+  //                       'assets/lottie/loading.json',
+  //                       width: 20,
+  //                       height: 20,
+  //                     ),
+  //                     const SizedBox(width: 8.0),
+  //                     Text(
+  //                       'Generating Heatmap',
+  //                       style: typography.Caption.copyWith(
+  //                         fontWeight: FontWeight.w500,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
+// // 🔹 Live UI-2
+//   Widget _getLiveUI(JobMonitoringProvider provider) {
+//     var typography = CustomTypography(context);
+//     FirebaseAuth auth = FirebaseAuth.instance;
+//     String uid = auth.currentUser!.uid;
+//
+//     final combinedStream = _createLiveProcessStream(
+//       userId: uid,
+//       accountId: widget.accountID!,
+//       subAccountId: widget.subAccountID!,
+//     );
+//
+//     return StreamBuilder<Map<String, dynamic>>(
+//       stream: combinedStream,
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting &&
+//             !snapshot.hasData) {
+//           return const SizedBox.shrink();
+//         }
+//
+//         if (snapshot.hasError || !snapshot.hasData) {
+//           return const SizedBox.shrink();
+//         }
+//
+//         final data = snapshot.data!;
+//         final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+//         final processStatus = data['processData']?['status'] ?? '';
+//
+//         final bool isCurrentlyProcessing =
+//             processStatus.toLowerCase() == 'processing';
+//         final String newProcessStatus = data['processData']?['status'] ?? '';
+//
+//         final jobProvider =
+//         Provider.of<JobMonitoringProvider>(context, listen: false);
+//
+//         // ✅ Timer tied to current account + subaccount
+//         _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+//
+//         if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+//           WidgetsBinding.instance.addPostFrameCallback((_) {
+//             if (!_isDisposed) {
+//               jobProvider.updateProcessStatus(newProcessStatus);
+//
+//               if (isCurrentlyProcessing) {
+//                 setState(() {
+//                   isUploadInProgress = false;
+//                 });
+//                 _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+//               } else {
+//                 _refreshTimer?.cancel();
+//                 _activeAccountKey = null;
+//                 getdata(widget.accountID!,widget.subAccountID!);
+//               }
+//             }
+//           });
+//         }
+//
+//         final locationProvider =
+//         Provider.of<MyLocationListProvider>(context, listen: false);
+//         locationProvider.isHeatMapGeneratingLive =
+//             heatmapStatus.toString().toLowerCase() == 'initiated';
+//
+//         final int totalCompleted =
+//             data['processData']?['total_processes_completed'] ?? 0;
+//         final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+//         final double percentage = (totalCompleted / totalProcesses) * 100;
+//
+//         final List activeProcesses = data['activeProcesses'] ?? [];
+//         final int currentIndex = data['currentProcessIndex'] ?? 0;
+//
+//         return AnimatedSwitcher(
+//           duration: const Duration(milliseconds: 250),
+//           child: Column(
+//             key: ValueKey('$processStatus-$heatmapStatus'),
+//             crossAxisAlignment: CrossAxisAlignment.center,
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               // 🔹 Navigation arrows if multiple processes
+//               if (activeProcesses.isNotEmpty)
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [],
+//                 ),
+//               const SizedBox(height: 8),
+//               if (isCurrentlyProcessing)
+//                 GestureDetector(
+//                   onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => ProcessMonitoringScreen(
+//                           accountId: widget.accountID,
+//                           subAccountId: widget.subAccountID,
+//                         ),
+//                       ),
+//                     ).then((value) => getdata(widget.accountID!, widget.subAccountID!));
+//                   },
+//                   child: Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                     child: Row(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         // 🔄 Loader
+//                         Lottie.asset(
+//                           'assets/lottie/loading.json',
+//                           width: 20,
+//                           height: 20,
+//                         ),
+//                         const SizedBox(width: 8.0),
+//
+//                         // 📊 Processing %
+//                         Text(
+//                           'Processing ${percentage.toStringAsFixed(0)} %',
+//                           style: typography.Caption.copyWith(
+//                             fontWeight: FontWeight.w600,
+//                             color: Colors.blue,
+//                           ),
+//                         ),
+//
+//                         if (activeProcesses.length > 1) ...[
+//                           const SizedBox(width: 12.0),
+//                           InkWell(
+//                             onTap: _currentProcessIndex > 0
+//                                 ? () {
+//                               setState(() {
+//                                 _currentProcessIndex =
+//                                     (_currentProcessIndex - 1).clamp(
+//                                         0, activeProcesses.length - 1);
+//                               });
+//                             }
+//                                 : null,
+//                             child: Icon(
+//                               Icons.arrow_back_ios_new,
+//                               size: 18,
+//                               color: _currentProcessIndex > 0
+//                                   ? Colors.white
+//                                   : Colors.grey,
+//                             ),
+//                           ),
+//                           const SizedBox(width: 10),
+//                           Container(
+//                             padding: const EdgeInsets.symmetric(
+//                                 horizontal: 8, vertical: 3),
+//                             decoration: BoxDecoration(
+//                               color: Colors.blue.shade200,
+//                               borderRadius: BorderRadius.circular(8),
+//                             ),
+//                             child: Text(
+//                               "${_currentProcessIndex + 1}/${activeProcesses.length}",
+//                               style: typography.Caption.copyWith(
+//                                 fontWeight: FontWeight.w500,
+//                                 color: Colors.black,
+//                               ),
+//                             ),
+//                           ),
+//                           const SizedBox(width: 10),
+//                           InkWell(
+//                             onTap: _currentProcessIndex <
+//                                 activeProcesses.length - 1
+//                                 ? () {
+//                               setState(() {
+//                                 _currentProcessIndex =
+//                                     (_currentProcessIndex + 1).clamp(
+//                                         0, activeProcesses.length - 1);
+//                               });
+//                             }
+//                                 : null,
+//                             child: Icon(
+//                               Icons.arrow_forward_ios,
+//                               size: 18,
+//                               color: _currentProcessIndex <
+//                                   activeProcesses.length - 1
+//                                   ? Colors.white
+//                                   : Colors.grey,
+//                             ),
+//                           ),
+//                         ],
+//                       ],
+//                     ),
+//                   ),
+//                 )
+//               else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+//                 Padding(
+//                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                   child: Row(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       Lottie.asset(
+//                         'assets/lottie/loading.json',
+//                         width: 20,
+//                         height: 20,
+//                       ),
+//                       const SizedBox(width: 8.0),
+//                       Text(
+//                         'Generating Heatmap',
+//                         style: typography.Caption.copyWith(
+//                           fontWeight: FontWeight.w500,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+// 🔹 Live UI
+//   Widget _getLiveUI(JobMonitoringProvider provider) {
+//     var typography = CustomTypography(context);
+//     FirebaseAuth auth = FirebaseAuth.instance;
+//     String uid = auth.currentUser!.uid;
+//
+//     final combinedStream = _createLiveProcessStream(
+//       userId: uid,
+//       accountId: widget.accountID!,
+//       subAccountId: widget.subAccountID!,
+//     );
+//
+//     return StreamBuilder<Map<String, dynamic>>(
+//       stream: combinedStream,
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting &&
+//             !snapshot.hasData) {
+//           return const SizedBox.shrink();
+//         }
+//
+//         if (snapshot.hasError || !snapshot.hasData) {
+//           return const SizedBox.shrink();
+//         }
+//
+//         final data = snapshot.data!;
+//         final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+//         final processStatus = data['processData']?['status'] ?? '';
+//
+//         final bool isCurrentlyProcessing =
+//             processStatus.toLowerCase() == 'processing';
+//         final String newProcessStatus = data['processData']?['status'] ?? '';
+//
+//         final jobProvider =
+//             Provider.of<JobMonitoringProvider>(context, listen: false);
+//         _startRefreshTimer();
+//         if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+//           WidgetsBinding.instance.addPostFrameCallback((_) {
+//             if (!_isDisposed) {
+//               jobProvider.updateProcessStatus(newProcessStatus);
+//
+//               if (isCurrentlyProcessing) {
+//                 setState(() {
+//                   isUploadInProgress = false;
+//                 });
+//                 _startRefreshTimer();
+//               } else {
+//                 _refreshTimer?.cancel();
+//                 _getData();
+//               }
+//             }
+//           });
+//         }
+//
+//         final locationProvider =
+//             Provider.of<MyLocationListProvider>(context, listen: false);
+//         locationProvider.isHeatMapGeneratingLive =
+//             heatmapStatus.toString().toLowerCase() == 'initiated';
+//
+//         final int totalCompleted =
+//             data['processData']?['total_processes_completed'] ?? 0;
+//         final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+//         final double percentage = (totalCompleted / totalProcesses) * 100;
+//
+//         final List activeProcesses = data['activeProcesses'] ?? [];
+//         final int currentIndex = data['currentProcessIndex'] ?? 0;
+//
+//         return AnimatedSwitcher(
+//           duration: const Duration(milliseconds: 250),
+//           child: Column(
+//             key: ValueKey('$processStatus-$heatmapStatus'),
+//             crossAxisAlignment: CrossAxisAlignment.center,
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               // 🔹 Counter + Navigation
+//               if (activeProcesses.isNotEmpty)
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [],
+//                 ),
+//               const SizedBox(height: 8),
+//               if (isCurrentlyProcessing)
+//                 GestureDetector(
+//                   onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => ProcessMonitoringScreen(
+//                           accountId: widget.accountID,
+//                           subAccountId: widget.subAccountID,
+//                         ),
+//                       ),
+//                     ).then((value) => _getData());
+//                   },
+//                   child: Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                     child: Row(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         // 🔄 Loader
+//                         Lottie.asset(
+//                           'assets/lottie/loading.json',
+//                           width: 20,
+//                           height: 20,
+//                         ),
+//                         const SizedBox(width: 8.0),
+//
+//                         // 📊 Processing %
+//                         Text(
+//                           'Processing ${percentage.toStringAsFixed(0)} %',
+//                           style: typography.Caption.copyWith(
+//                             fontWeight: FontWeight.w600,
+//                             color: Colors.blue, // blue like in screenshot
+//                           ),
+//                         ),
+//                         // const SizedBox(width: 12.0),
+//                         if (activeProcesses.length > 1) ...[
+//                           InkWell(
+//                             onTap: _currentProcessIndex > 0
+//                                 ? () {
+//                                     setState(() {
+//                                       _currentProcessIndex =
+//                                           (_currentProcessIndex - 1).clamp(
+//                                               0, activeProcesses.length - 1);
+//                                     });
+//                                   }
+//                                 : null,
+//                             child: Icon(
+//                               Icons.arrow_back_ios_new,
+//                               size: 18,
+//                               color: _currentProcessIndex > 0
+//                                   ? Colors.white
+//                                   : Colors.grey, // visually disabled
+//                             ),
+//                           ),],
+//                           SizedBox(width: 10),
+//                           Container(
+//                             padding: const EdgeInsets.symmetric(
+//                                 horizontal: 8, vertical: 3),
+//                             decoration: BoxDecoration(
+//                               color: Colors.blue.shade200,
+//                               borderRadius: BorderRadius.circular(8),
+//                             ),
+//                             child: Text(
+//                               "${_currentProcessIndex + 1}/${activeProcesses.length}",
+//                               style: typography.Caption.copyWith(
+//                                 fontWeight: FontWeight.w500,
+//                                 color: Colors.black,
+//                               ),
+//                             ),
+//                           ),
+//                           SizedBox(width: 10),
+//                         if (activeProcesses.length > 1) ...[
+//                           InkWell(
+//                             onTap: _currentProcessIndex <
+//                                     activeProcesses.length - 1
+//                                 ? () {
+//                                     setState(() {
+//                                       _currentProcessIndex =
+//                                           (_currentProcessIndex + 1).clamp(
+//                                               0, activeProcesses.length - 1);
+//                                     });
+//                                   }
+//                                 : null,
+//                             child: Icon(
+//                               Icons.arrow_forward_ios,
+//                               size: 18,
+//                               color: _currentProcessIndex <
+//                                       activeProcesses.length - 1
+//                                   ? Colors.white
+//                                   : Colors.grey, // visually disabled
+//                             ),
+//                           ),
+//
+//                         ],
+//                       ],
+//                     ),
+//                   ),
+//                 )
+//               else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+//                 Padding(
+//                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                   child: Row(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       Lottie.asset(
+//                         'assets/lottie/loading.json',
+//                         width: 20,
+//                         height: 20,
+//                       ),
+//                       const SizedBox(width: 8.0),
+//                       Text(
+//                         'Generating Heatmap',
+//                         style: typography.Caption.copyWith(
+//                           fontWeight: FontWeight.w500,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+  // 🔹 Stream
   Stream<Map<String, dynamic>> _createLiveProcessStream({
     required String userId,
     required String accountId,
@@ -2581,46 +3782,344 @@ class _MyLocationListState extends State<MyLocationList>
 
     return Rx.combineLatest2(userStream, subaccountStream, (userSnap, subSnap) {
       final userData = userSnap.data() as Map<String, dynamic>? ?? {};
-      final onGoingProcesses = userData['on_going_processes'] ?? [];
 
-      final activeProcess = onGoingProcesses.firstWhere(
-        (p) =>
-            p['last_account'] == accountId &&
-            p['last_sub_account'] == subAccountId,
-        orElse: () => null,
-      );
+      // Get raw on_going_processes
+      final rawProcesses =
+          (userData['on_going_processes'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
 
-      final String? lastProcessId = activeProcess?['last_process_id'];
+      // Filter for this account + subaccount
+      final activeProcesses = rawProcesses.where((p) {
+        return p['last_account'] == accountId &&
+            p['last_sub_account'] == subAccountId;
+      }).toList();
+
+      // 🔹 Print counts
+      print("📌 Total on_going_processes: ${rawProcesses.length}");
+      print(
+          "✅ Active processes for subAccount($subAccountId): ${activeProcesses.length}");
+      for (var i = 0; i < activeProcesses.length; i++) {
+        print(
+            "   ➡️ Process ${i + 1}: ${activeProcesses[i]['last_process_id']}");
+      }
 
       final heatmapData =
           subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
 
-      if (lastProcessId != null) {
-        final processDocStream = FirebaseFirestore.instance
-            .collection('processes')
-            .where('process_id', isEqualTo: lastProcessId)
-            .limit(1)
-            .snapshots();
+      if (activeProcesses.isNotEmpty) {
+        // clamp index if out of range
+        if (_currentProcessIndex >= activeProcesses.length) {
+          _currentProcessIndex = 0;
+        }
 
-        return processDocStream.map((processSnap) {
-          final processData =
-              processSnap.docs.isNotEmpty ? processSnap.docs.first.data() : {};
+        final currentProcess = activeProcesses[_currentProcessIndex];
+        final String? lastProcessId = currentProcess['last_process_id'];
 
-          return {
-            'processData': processData,
-            'heatmapData': heatmapData,
-            'on_going_processes': onGoingProcesses,
-          };
-        });
+        if (lastProcessId != null) {
+          final processDocStream = FirebaseFirestore.instance
+              .collection('processes')
+              .where('process_id', isEqualTo: lastProcessId)
+              .limit(1)
+              .snapshots();
+
+          return processDocStream.map((processSnap) {
+            final processData = processSnap.docs.isNotEmpty
+                ? processSnap.docs.first.data()
+                : {};
+
+            return {
+              'processData': processData,
+              'heatmapData': heatmapData,
+              'activeProcesses': activeProcesses,
+              'currentProcessIndex': _currentProcessIndex,
+            };
+          });
+        }
       }
 
+      // No process case
       return Stream.value({
         'processData': null,
         'heatmapData': heatmapData,
-        'on_going_processes': onGoingProcesses,
+        'activeProcesses': activeProcesses,
+        'currentProcessIndex': _currentProcessIndex,
       });
-    }).switchMap((stream) => stream); // flatten nested stream
+    }).switchMap((stream) => stream);
   }
+
+//=> Single process
+//   Widget _getLiveUI(JobMonitoringProvider provider) {
+//     var typography = CustomTypography(context);
+//     FirebaseAuth auth = FirebaseAuth.instance;
+//     String uid = auth.currentUser!.uid;
+//
+//     final combinedStream = _createLiveProcessStream(
+//       userId: uid,
+//       accountId: widget.accountID!,
+//       subAccountId: widget.subAccountID!,
+//     );
+//
+//     return StreamBuilder<Map<String, dynamic>>(
+//       stream: combinedStream,
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting &&
+//             !snapshot.hasData) {
+//           return SizedBox(
+//             height: CustomSpacing.six,
+//             child: Text(""),
+//           );
+//         }
+//
+//         if (snapshot.hasError || !snapshot.hasData) {
+//           return SizedBox.shrink(
+//             child: Text(""),
+//           );
+//         }
+//
+//         final data = snapshot.data!;
+//         final heatmapStatus = data['heatmapData']?['heatmap_status'] ?? '';
+//         final processStatus = data['processData']?['status'] ?? '';
+//
+//         final bool isCurrentlyProcessing =
+//             processStatus.toLowerCase() == 'processing';
+//         final String newProcessStatus = data['processData']?['status'] ?? '';
+//
+//         final jobProvider =
+//             Provider.of<JobMonitoringProvider>(context, listen: false);
+//         _startRefreshTimer();
+//         if (!_isDisposed && jobProvider.processStatus != newProcessStatus) {
+//           WidgetsBinding.instance.addPostFrameCallback((_) {
+//             if (!_isDisposed) {
+//               jobProvider.updateProcessStatus(newProcessStatus);
+//
+//               if (isCurrentlyProcessing) {
+//                 setState(() {
+//                   isUploadInProgress = false;
+//                 });
+//                 _startRefreshTimer();
+//               } else {
+//                 _refreshTimer?.cancel();
+//                 _getData();
+//               }
+//             }
+//           });
+//         }
+//
+//         final locationProvider =
+//             Provider.of<MyLocationListProvider>(context, listen: false);
+//         locationProvider.isHeatMapGeneratingLive =
+//             heatmapStatus.toString().toLowerCase() == 'initiated';
+//
+//         final int totalCompleted =
+//             data['processData']?['total_processes_completed'] ?? 0;
+//         final int totalProcesses = data['processData']?['total_processes'] ?? 1;
+//         final double percentage = (totalCompleted / totalProcesses) * 100;
+//
+//         return AnimatedSwitcher(
+//           duration: const Duration(milliseconds: 250),
+//           child: Column(
+//             key: ValueKey('$processStatus-$heatmapStatus'),
+//             crossAxisAlignment: CrossAxisAlignment.center,
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               Text(data['processData'].toString(),
+//               // maxLines: 2,
+//               //
+//               ),
+//               if (isCurrentlyProcessing)
+//                 GestureDetector(
+//                   onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => ProcessMonitoringScreen(
+//                           accountId: widget.accountID,
+//                           subAccountId: widget.subAccountID,
+//                         ),
+//                       ),
+//                     ).then((value) => _getData());
+//                   },
+//                   child: Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                     child: Row(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         Lottie.asset(
+//                           'assets/lottie/loading.json',
+//                           width: 20,
+//                           height: 20,
+//                         ),
+//                         const SizedBox(width: 8.0),
+//                         Text(
+//                           'Processing ${percentage.toStringAsFixed(0)}%',
+//                           style: typography.Caption.copyWith(
+//                             fontWeight: FontWeight.w500,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 )
+//               else if (heatmapStatus.toString().toLowerCase() == 'initiated')
+//                 Padding(
+//                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                   child: Row(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       Lottie.asset(
+//                         'assets/lottie/loading.json',
+//                         width: 20,
+//                         height: 20,
+//                       ),
+//                       const SizedBox(width: 8.0),
+//                       Text(
+//                         'Generating Heatmap',
+//                         style: typography.Caption.copyWith(
+//                           fontWeight: FontWeight.w500,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+//
+//   Stream<Map<String, dynamic>> _createLiveProcessStream({
+//     required String userId,
+//     required String accountId,
+//     required String subAccountId,
+//   }) {
+//     final userStream =
+//     FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
+//
+//     final subaccountStream = FirebaseFirestore.instance
+//         .collection('subaccount')
+//         .where('sub_account_id', isEqualTo: subAccountId)
+//         .snapshots();
+//
+//     return Rx.combineLatest2(userStream, subaccountStream,
+//             (userSnap, subSnap) {
+//           final userData = userSnap.data() as Map<String, dynamic>? ?? {};
+//
+//           // Get raw on_going_processes
+//           final rawProcesses =
+//           (userData['on_going_processes'] as List<dynamic>? ?? [])
+//               .cast<Map<String, dynamic>>();
+//
+//           // Filter for this account + subaccount
+//           final activeProcesses = rawProcesses.where((p) {
+//             return p['last_account'] == accountId &&
+//                 p['last_sub_account'] == subAccountId;
+//           }).toList();
+//
+//           // 🔹 Print counts
+//           print("📌 Total on_going_processes: ${rawProcesses.length}");
+//           print("✅ Active processes for subAccount($subAccountId): ${activeProcesses.length}");
+//           for (var i = 0; i < activeProcesses.length; i++) {
+//             print("   ➡️ Process ${i + 1}: ${activeProcesses[i]['last_process_id']}");
+//           }
+//
+//           final heatmapData =
+//           subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
+//
+//           if (activeProcesses.isNotEmpty) {
+//             final currentProcess = activeProcesses[_currentProcessIndex];
+//             final String? lastProcessId = currentProcess['last_process_id'];
+//
+//             if (lastProcessId != null) {
+//               final processDocStream = FirebaseFirestore.instance
+//                   .collection('processes')
+//                   .where('process_id', isEqualTo: lastProcessId)
+//                   .limit(1)
+//                   .snapshots();
+//
+//               return processDocStream.map((processSnap) {
+//                 final processData = processSnap.docs.isNotEmpty
+//                     ? processSnap.docs.first.data()
+//                     : {};
+//
+//                 return {
+//                   'processData': processData,
+//                   'heatmapData': heatmapData,
+//                   'activeProcesses': activeProcesses,
+//                   'currentProcessIndex': _currentProcessIndex,
+//                 };
+//               });
+//             }
+//           }
+//
+//           // No process case
+//           return Stream.value({
+//             'processData': null,
+//             'heatmapData': heatmapData,
+//             'activeProcesses': activeProcesses,
+//             'currentProcessIndex': _currentProcessIndex,
+//           });
+//         }).switchMap((stream) => stream);
+//   }
+// o/d above
+//   Stream<Map<String, dynamic>> _createLiveProcessStream({
+//     required String userId,
+//     required String accountId,
+//     required String subAccountId,
+//   }) {
+//     final userStream =
+//         FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
+//
+//     final subaccountStream = FirebaseFirestore.instance
+//         .collection('subaccount')
+//         .where('sub_account_id', isEqualTo: subAccountId)
+//         .snapshots();
+//
+//     return Rx.combineLatest2(userStream, subaccountStream, (userSnap, subSnap) {
+//       final userData = userSnap.data() as Map<String, dynamic>? ?? {};
+//       final onGoingProcesses = userData['on_going_processes'] ?? [];
+//       print("onGoingProcesses");
+//       print("Count: ${onGoingProcesses.length}");
+//       print("Count: ${onGoingProcesses}");
+// print("onGoingProcesses");
+//       final activeProcess = onGoingProcesses.firstWhere(
+//         (p) =>
+//             p['last_account'] == accountId &&
+//             p['last_sub_account'] == subAccountId,
+//         orElse: () => null,
+//       );
+//
+//       final String? lastProcessId = activeProcess?['last_process_id'];
+//
+//       final heatmapData =
+//           subSnap.docs.isNotEmpty ? subSnap.docs.first.data() : {};
+//
+//       if (lastProcessId != null) {
+//         final processDocStream = FirebaseFirestore.instance
+//             .collection('processes')
+//             .where('process_id', isEqualTo: lastProcessId)
+//             .limit(1)
+//             .snapshots();
+//
+//         return processDocStream.map((processSnap) {
+//           final processData =
+//               processSnap.docs.isNotEmpty ? processSnap.docs.first.data() : {};
+//
+//           return {
+//             'processData': processData,
+//             'heatmapData': heatmapData,
+//             'on_going_processes': onGoingProcesses,
+//           };
+//         });
+//       }
+//
+//       return Stream.value({
+//         'processData': null,
+//         'heatmapData': heatmapData,
+//         'on_going_processes': onGoingProcesses,
+//       });
+//     }).switchMap((stream) => stream); // flatten nested stream
+//   }
 
   Widget _buildProcessSummary(Map<String, dynamic>? summaryData) {
     if (summaryData == null || summaryData.isEmpty) {
@@ -3450,7 +4949,7 @@ class _MyLocationListState extends State<MyLocationList>
     if (success) {
       Provider.of<JobMonitoringProvider>(context, listen: false)
           .updateProcessStatus('processing');
-      _startRefreshTimer();
+      _startRefreshTimer(widget.accountID!, widget.subAccountID!);
     }
     // if (success) {
     //   _startRefreshTimer();
@@ -3461,7 +4960,7 @@ class _MyLocationListState extends State<MyLocationList>
 
   Future<List<Object?>> handleFetchConflict(bool conflictsCheck) async {
     final url = Uri.parse(
-      '${AppConstant.HANDLE_CONFLICT}?page=0&pageSize=50'
+      '${AppConstant.HANDLE_CONFLICT}?page=0&pageSize=10'
       '&account_id=${widget.accountID}'
       '&sub_account_id=${widget.subAccountID}'
       '&show_full_list=true'
@@ -3576,7 +5075,7 @@ class _MyLocationListState extends State<MyLocationList>
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
-        final conflictLocations = locationListProvider.myLocationList
+        final conflictLocations = locationListProvider.myLocationConflictList
             .where((location) => location.isConflict == true)
             .toList();
         return Column(
@@ -3605,7 +5104,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     locationQuery,
                                     1,
-                                    10000,
+                                    10,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -3630,7 +5129,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     locationQuery,
                                     1,
-                                    10000,
+                                    10,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -3689,7 +5188,7 @@ class _MyLocationListState extends State<MyLocationList>
                                       context,
                                       locationQuery,
                                       1,
-                                      10000,
+                                      10,
                                       widget.accountID,
                                       widget.subAccountID,
                                       widget.initialProcessId,
@@ -3708,14 +5207,13 @@ class _MyLocationListState extends State<MyLocationList>
                                 label: Text(
                                     "Ratings: ${locationListProvider.rating.join(', ')}"),
                                 onDeleted: () {
-                                  print("Clearing ratings filter");
                                   locationListProvider.clearRatingsFilter();
-                                  print("Calling api after filter");
+
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
                                     1,
-                                    10000,
+                                    8,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -3741,7 +5239,7 @@ class _MyLocationListState extends State<MyLocationList>
                             context,
                             locationQuery,
                             1,
-                            10000,
+                            8,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -3767,78 +5265,98 @@ class _MyLocationListState extends State<MyLocationList>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        MessageCard(
-                          messageTextSpans: [
-                            TextSpan(
-                              text:
-                                  "We've found several potential matches for some of the provided location. Please review them and select the correct match to ",
-                              style: typography.Body2,
-                            ),
-                            TextSpan(
-                              text: "resolve the conflict",
-                              style: typography.Body2.copyWith(
-                                color: AppColors.primaryMain,
-                                decoration: TextDecoration.underline,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  for (int i = 0;
-                                      i < conflictLocations.length;
-                                      i++) {
-                                    print(
-                                        'Item $i - Geocoded Address: ${conflictLocations[i].geocodedAddress}');
-                                  }
-
-                                  Navigator.of(context)
-                                      .push(MaterialPageRoute(
-                                    builder: (_) => ConflictsTab(
-                                      processId: widget.accountID ?? "",
-                                      accountId: widget.accountID ?? "",
-                                      subAccountId: widget.subAccountID ?? "",
-                                      sovId: "null",
-                                      accountName: widget.accountName ?? "",
-                                      subAccountName:
-                                          widget.subAccountName ?? "",
-                                      tempId: "tempId",
-                                      lat: conflictLocations
-                                          .first.location.latitude
-                                          .toString(),
-
-                                      long: conflictLocations
-                                          .first.location.longitude
-                                          .toString(),
-                                      geocodingAddress: conflictLocations
-                                              .first.finalAddress?.address ??
-                                          "",
-                                      conflict:
-                                          conflictLocations.first.conflicts,
-                                      // Optional or just first one
-                                      location: conflictLocations,
-
-                                      startHazard:
-                                          locationListProvider.isHazardCanStart,
+                        conflictLocations.length.toString() == "0"
+                            ? Container()
+                            : MessageCard(
+                                messageTextSpans: [
+                                  TextSpan(
+                                    text:
+                                        "We’ve found ${conflictLocations.length} potential matches for the provided location. Please review them and select the correct match to ",
+                                    style: typography.Body2,
+                                  ),
+                                  TextSpan(
+                                    text: "resolve the conflict",
+                                    style: typography.Body2.copyWith(
+                                      color: AppColors.primaryMain,
+                                      decoration: TextDecoration.underline,
                                     ),
-                                  ))
-                                      .then((value) {
-                                    if (value == true) {
-                                      _StartHazardConflict(
-                                          conflictLocations: conflictLocations);
-                                      locationListProvider.fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        1,
-                                        10000,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                      );
-                                    }
-                                  });
-                                },
-                            ),
-                          ],
-                        )
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        for (int i = 0;
+                                            i < conflictLocations.length;
+                                            i++) {
+                                          print(
+                                              'Item $i - Geocoded Address: ${conflictLocations[i].geocodedAddress}');
+                                        }
+
+                                        Navigator.of(context)
+                                            .push(MaterialPageRoute(
+                                          builder: (_) => ConflictsTab(
+                                            processId: widget.accountID ?? "",
+                                            accountId: widget.accountID ?? "",
+                                            subAccountId:
+                                                widget.subAccountID ?? "",
+                                            sovId: "null",
+                                            accountName:
+                                                widget.accountName ?? "",
+                                            subAccountName:
+                                                widget.subAccountName ?? "",
+                                            tempId: "tempId",
+                                            lat: conflictLocations[0]
+                                                .location
+                                                .latitude
+                                                .toString(),
+
+                                            long: conflictLocations
+                                                .first.location.longitude
+                                                .toString(),
+                                            geocodingAddress: conflictLocations
+                                                    .first
+                                                    .finalAddress
+                                                    ?.address ??
+                                                "",
+                                            conflict: conflictLocations
+                                                .first.conflicts,
+                                            // Optional or just first one
+                                            location: conflictLocations,
+
+                                            startHazard: false,
+                                          ),
+                                        ))
+                                            .then((value) {
+                                          if (value == true) {
+                                            _StartHazardConflict(
+                                                conflictLocations:
+                                                    conflictLocations);
+                                            locationListProvider
+                                                .fetchLocationList(
+                                              context,
+                                              locationQuery,
+                                              1,
+                                              1,
+                                              widget.accountID,
+                                              widget.subAccountID,
+                                              widget.initialProcessId,
+                                              widget.initialSubProcessId,
+                                            );
+                                            locationListProvider
+                                                .fetchLocationConflictList(
+                                                  context,
+                                                  "",
+                                                  1,
+                                                  20,
+                                                  widget.accountID,
+                                                  widget.subAccountID,
+                                                  widget.initialProcessId,
+                                                  widget.initialSubProcessId,
+                                                )
+                                                .then((_) => setState(() {}));
+                                          }
+                                        });
+                                      },
+                                  ),
+                                ],
+                              )
                       ],
                     ),
                   ),
@@ -3937,23 +5455,36 @@ class _MyLocationListState extends State<MyLocationList>
                             // Refresh data in parallel
                             locationListProvider.certifiedPage = 1;
                             await Future.wait([
+                              locationListProvider
+                                  .fetchLocationConflictList(
+                                    context,
+                                    "",
+                                    1,
+                                    3,
+                                    widget.accountID,
+                                    widget.subAccountID,
+                                    widget.initialProcessId,
+                                    widget.initialSubProcessId,
+                                  )
+                                  .then((_) => setState(() {})),
                               locationListProvider.fetchLocationList(
                                 context,
                                 locationQuery,
                                 1,
-                                10000,
+                                8,
                                 widget.accountID,
                                 widget.subAccountID,
                                 widget.initialProcessId,
                                 widget.initialSubProcessId,
                               ),
-                              locationListProvider.fetchAllLocationList(
-                                context,
-                                widget.accountID,
-                                widget.subAccountID,
-                                processId: widget.initialProcessId,
-                                subProcessId: widget.initialSubProcessId,
-                              ),
+
+                              // locationListProvider.fetchAllLocationList(
+                              //   context,
+                              //   widget.accountID,
+                              //   widget.subAccountID,
+                              //   processId: widget.initialProcessId,
+                              //   subProcessId: widget.initialSubProcessId,
+                              // ),
                             ]);
 
                             // Restore selection after refresh
@@ -4092,7 +5623,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                 context,
                                                 locationQuery,
                                                 1,
-                                                10000,
+                                                8,
                                                 widget.accountID,
                                                 widget.subAccountID,
                                                 widget.initialProcessId,
@@ -4150,7 +5681,10 @@ class _MyLocationListState extends State<MyLocationList>
                                             .myLocationList[index]
                                             .finalAddress
                                             ?.rented,
-                                        getData: _getData,
+                                        getData: () {
+                                          getdata(widget.accountID!,
+                                              widget.subAccountID!);
+                                        },
                                         onNavigateStart: () {
                                           _isDisposed = true;
                                           _refreshTimer?.cancel();
@@ -4165,7 +5699,7 @@ class _MyLocationListState extends State<MyLocationList>
                                             context,
                                             locationQuery,
                                             1,
-                                            10000,
+                                            8,
                                             widget.accountID,
                                             widget.subAccountID,
                                             widget.initialProcessId,
@@ -4199,7 +5733,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     locationQuery,
                                     // Pass the search query if any
                                     locationListProvider.page,
-                                    10000,
+                                    8,
                                     // Page size
                                     widget.accountID,
                                     widget.subAccountID,
@@ -4313,7 +5847,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         context,
                                         locationQuery,
                                         1,
-                                        10000,
+                                        8,
                                         widget.accountID,
                                         widget.subAccountID,
                                         widget.initialProcessId,
@@ -4361,7 +5895,10 @@ class _MyLocationListState extends State<MyLocationList>
 
                                 hazardProcess: locationListProvider
                                     .myLocationList[index].isHazardProcess,
-                                getData: _getData,
+                                getData: () {
+                                  getdata(
+                                      widget.accountID!, widget.subAccountID!);
+                                },
                                 onNavigateStart: () {
                                   _isDisposed = true;
                                   _refreshTimer?.cancel();
@@ -4374,7 +5911,7 @@ class _MyLocationListState extends State<MyLocationList>
                                     context,
                                     locationQuery,
                                     1,
-                                    10000,
+                                    5,
                                     widget.accountID,
                                     widget.subAccountID,
                                     widget.initialProcessId,
@@ -4571,7 +6108,7 @@ class _MyLocationListState extends State<MyLocationList>
                             context,
                             locationQuery,
                             1,
-                            10000,
+                            5,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -4615,7 +6152,7 @@ class _MyLocationListState extends State<MyLocationList>
                               context,
                               "",
                               locationListProvider.certifiedPage,
-                              40,
+                              5,
                               widget.accountID,
                               widget.subAccountID,
                               widget.initialProcessId,
@@ -4625,7 +6162,7 @@ class _MyLocationListState extends State<MyLocationList>
                               context,
                               locationQuery,
                               1,
-                              10000,
+                              8,
                               widget.accountID,
                               widget.subAccountID,
                               widget.initialProcessId,
@@ -4806,7 +6343,7 @@ class _MyLocationListState extends State<MyLocationList>
               context,
               locationQuery,
               1,
-              10000,
+              5,
               widget.accountID,
               widget.subAccountID,
               widget.initialProcessId,
@@ -4852,7 +6389,9 @@ class _MyLocationListState extends State<MyLocationList>
           : false,
 
       // Provide a default boolean value // hazardProcess: locationListProvider.myLocationList[index].isHazardProcess ??"",
-      getData: _getData,
+      getData: () {
+        getdata(widget.accountID!, widget.subAccountID!);
+      },
       onNavigateStart: () {
         _isDisposed = true;
         _refreshTimer?.cancel();
@@ -4860,13 +6399,12 @@ class _MyLocationListState extends State<MyLocationList>
       },
 
       onNavigateBack: () {
-        print("Hello1");
         _StartHazardConflict(conflictLocations: conflictLocations);
         locationListProvider.fetchLocationList(
           context,
           locationQuery,
           1,
-          10000,
+          5,
           widget.accountID,
           widget.subAccountID,
           widget.initialProcessId,
@@ -5112,14 +6650,14 @@ class _MyLocationListState extends State<MyLocationList>
                             // Text(hasHazardLicenseStatus.toString()),
                             // Text(hasLicenseStatus.toString()),
                             SizedBox(height: 16),
-                            if (int.parse(hasHazardLicenseStatus.toString()) >=
-                                    1 &&
-                                int.parse(hasHazardLicenseStatus.toString()) <=
-                                    10)
-                              Text(
-                                'The system will only process the first ${hasHazardLicenseStatus} locations.',
-                                style: typography.Body1,
-                              ),
+                            // if (int.parse(hasHazardLicenseStatus.toString()) >=
+                            //         1 &&
+                            //     int.parse(hasHazardLicenseStatus.toString()) <=
+                            //         10)
+                            //   Text(
+                            //     'The system will only process the first ${hasHazardLicenseStatus} locations.',
+                            //     style: typography.Body1,
+                            //   ),
                             SizedBox(height: 16),
                           ],
                         ),
@@ -5312,10 +6850,14 @@ class _MyLocationListState extends State<MyLocationList>
                         ),
 
                         if (int.parse(hasHazardLicenseStatus.toString()) > 10)
-                          Text(
-                              "Available Locations: " +
-                                  hasHazardLicenseStatus.toString(),
-                              style: typography.Body1),
+                          Container(
+                            padding: EdgeInsets.only(left: 10),
+                            child: Text(
+                                "Available Locations: " +
+                                    hasHazardLicenseStatus.toString(),
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 20)),
+                          ),
                         SizedBox(height: 20),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -5463,7 +7005,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                                       });
                                                                 } else if (success
                                                                     .isNotEmpty) {
-                                                                  print("Nan");
                                                                   Navigator.push(
                                                                       context,
                                                                       MaterialPageRoute(
@@ -5477,11 +7018,16 @@ class _MyLocationListState extends State<MyLocationList>
                                                                     if (value) {
                                                                       setState(
                                                                           () {
-                                                                        _getData();
+                                                                        getdata(
+                                                                            widget.accountID!,
+                                                                            widget.accountID!);
                                                                         _getSovUploadStatus();
                                                                       });
                                                                     }
                                                                   });
+                                                                } else {
+                                                                  print(
+                                                                      'Location Upload Failed: $success');
                                                                 }
                                                               }
                                                             }
@@ -5626,7 +7172,7 @@ class _MyLocationListState extends State<MyLocationList>
                                 widget.subAccountID!,
                                 _sovQuery,
                                 sovListProvider.page,
-                                10, // Page size
+                                5, // Page size
                               );
                               return SizedBox();
                             }
@@ -6315,7 +7861,8 @@ class _MyLocationListState extends State<MyLocationList>
                                             _selectedUser!.id)
                                         .then((value) {
                                       if (value) {
-                                        _getData();
+                                        getdata(widget.accountID!,
+                                            widget.accountID!);
                                       }
                                     });
                                     setState(() {
@@ -6366,5 +7913,40 @@ class _MyLocationListState extends State<MyLocationList>
       print(e.toString());
       return [];
     }
+  }
+}
+
+class _AutoHideCompletedRow extends StatefulWidget {
+  final int percentage;
+
+  const _AutoHideCompletedRow({required this.percentage});
+
+  @override
+  State<_AutoHideCompletedRow> createState() => _AutoHideCompletedRowState();
+}
+
+class _AutoHideCompletedRowState extends State<_AutoHideCompletedRow> {
+  bool _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _visible = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+    return Row(
+      children: [
+        const Icon(Icons.check_circle, color: Colors.green),
+        const SizedBox(width: 8),
+        Text("Completed (${widget.percentage}%)"),
+      ],
+    );
   }
 }

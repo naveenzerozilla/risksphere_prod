@@ -245,7 +245,6 @@ class _LocationProfileState extends State<LocationProfile>
     // Check if the page already exists in the navigation stack
     bool alreadyExists = false;
     Navigator.popUntil(context, (route) {
-      print("DUPLICATE1");
       if (route.settings.name == 'LocationProfile$pageToNavigate') {
         alreadyExists = true;
       }
@@ -1659,9 +1658,9 @@ class _LocationProfileState extends State<LocationProfile>
                           Tab(
                             text: 'Gallery',
                           ),
-                          Tab(
-                            text: 'Documents',
-                          ),
+                          // Tab(
+                          //   text: 'Documents',
+                          // ),
                         ],
                       ),
                       Container(
@@ -1676,7 +1675,7 @@ class _LocationProfileState extends State<LocationProfile>
                           children: [
                             _campusWidget(),
                             _mediaImageWidget(),
-                            _mediaDocumentWidget(),
+                            // _mediaDocumentWidget(),
                           ],
                         ),
                       ),
@@ -3140,7 +3139,8 @@ class _LocationProfileState extends State<LocationProfile>
           address: location.finalAddress?.address ?? 'Unknown Address',
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
-          riskScore: location.overallScore ?? 5,
+          riskScore:
+          location.overallScore ?? 5,
           dataCompleteness: scoreToStar(
               location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
           hazards: location.hazard ?? {},

@@ -1,83 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
+import 'package:marquee/marquee.dart';
+import 'package:intl/intl.dart';
 
-class MaintenanceUI extends StatefulWidget {
+class MaintenanceUI extends StatelessWidget {
   final String? isMaintenance;
+  final String? startDate;
+  final String? endDate;
 
-  const MaintenanceUI({super.key, required this.isMaintenance});
-
-  @override
-  MaintenanceUIState createState() => MaintenanceUIState();
-}
-
-class MaintenanceUIState extends State<MaintenanceUI>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _animation;
-  final String ongoing = "Ongoing maintenance. Expected to finish by 18 Feb 2025 01:20. Please check back later. ";
-  final String upcoming = "Upcoming maintenance. Expected to finish by 18 Feb 2025 01:20. Please check back later. ";
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      duration: const Duration(seconds: 10),
-      vsync: this,
-    );
-
-    _animation = Tween<Offset>(
-      begin: const Offset(-2, 0), // Start from left of the screen
-      end: const Offset(2, 0),    // Move to right of the screen
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.linear,
-    ));
-
-    // Repeat the animation indefinitely
-    _controller.repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const MaintenanceUI({
+    super.key,
+    required this.isMaintenance,
+    this.startDate,
+    this.endDate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // if (!widget.isMaintenance.toString().contains("in_progress")) {
-    //   return const SizedBox();
-    // }
+    // Parse the endDate and format it
+    String formattedEndDate = 'N/A';
+    if (endDate != null) {
+      try {
+        final dateTime = DateTime.parse(endDate!);
+        formattedEndDate =
+            DateFormat('dd MMM yyyy HH:mm').format(dateTime.toLocal());
+      } catch (e) {
+        formattedEndDate = 'Invalid date';
+      }
+    }
+
+    final String ongoing =
+        "Ongoing maintenance. Expected to finish by $formattedEndDate. Please check back later.";
 
     return Column(
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.symmetric(horizontal: 11),
+          height: 30,
+          width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.red.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.redAccent, width: 2),
           ),
-          clipBehavior: Clip.hardEdge, // Add this to clip overflow
-          child: SlideTransition(
-            position: _animation,
-            child: Row(
-              children: [
-                ...List.generate(
-                  1, // Repeat the text 3 times to ensure continuous flow
-                      (_) => Row(
-                    children: ongoing.characters.map((char) => Text(
-                      char,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.redAccent,
-                      ),
-                    )).toList(),
-                  ),
-                ),
-              ],
+          child: Marquee(
+            text: ongoing,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent,
+              fontSize: 14,
             ),
+            scrollAxis: Axis.horizontal,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            blankSpace: 50,
+            velocity: 50,
+            pauseAfterRound: const Duration(seconds: 1),
+            startPadding: 10,
+            accelerationDuration: const Duration(seconds: 1),
+            decelerationDuration: const Duration(seconds: 1),
           ),
         ),
         SizedBox(height: CustomSpacing.four),

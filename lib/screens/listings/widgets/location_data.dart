@@ -650,11 +650,15 @@ class LocationDataScreenState extends State<LocationDataScreen>
                                     ),
                                   ),
                                   SizedBox(height: 16),
-                                  Text(
-                                    "We're currently reviewing your addresses.\nJust hang tight for a few minutes, and we'll have it ready for you shortly!",
-                                    textAlign: TextAlign.center,
-                                    style: typography.Subtitle1,
-                                  ),
+
+                                  Consumer<UploadSovProvider>(
+                                      builder: (context, provider, child) {
+                                    return Text(
+                                      "We're currently reviewing your addresses.\nJust hang tight for a few minutes, and we'll have it ready for you shortly! ${provider.geocodingList.length.toString()} locations completed.",
+                                      textAlign: TextAlign.center,
+                                      style: typography.Subtitle1,
+                                    );
+                                  }),
                                 ],
                               ),
                             )
@@ -749,8 +753,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
                           onChanged: _toggleSelectAll,
                         ),
                         Text(
-                          _selectAll == false ?
-                          "Select All":  "DeSelect All",
+                          _selectAll == false ? "Select All" : "DeSelect All",
                           style: typography.Body1,
                         ),
                       ],

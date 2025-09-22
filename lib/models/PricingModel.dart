@@ -112,15 +112,40 @@ class RangeYear {
   var endCount;
   dynamic pricePerUser;
   dynamic rangePrice;
+  String? vendorId;
+  String? hazardId;
+  String? vendorName;
+  String? vendorNameLabel;
+  String? hazardName;
+  String? hazardNameLabel;
 
   RangeYear(
-      {this.startCount, this.endCount, this.pricePerUser, this.rangePrice});
+      {this.startCount, this.endCount, this.pricePerUser,
+        this.rangePrice,
+        this.vendorId,
+        this.hazardId,
+        this.vendorName,
+        this.vendorNameLabel,
+        this.hazardName,
+        this.hazardNameLabel
+
+
+
+      });
 
   RangeYear.fromJson(Map<String, dynamic> json) {
     startCount = json['start_count'];
     endCount = json['end_count'];
     pricePerUser = json['price_per_user'];
     rangePrice = json['range_price'];
+
+    vendorId = json['vendor_id'];
+    hazardId = json['hazard_id'];
+    vendorName = json['vendor_name'];
+    vendorNameLabel = json['vendor_name_label'];
+    hazardName = json['hazard_name'];
+    hazardNameLabel = json['hazard_name_label'];
+
   }
 
   Map<String, dynamic> toJson() {
@@ -129,6 +154,12 @@ class RangeYear {
     data['end_count'] = this.endCount;
     data['price_per_user'] = this.pricePerUser;
     data['range_price'] = this.rangePrice;
+    data['vendor_id'] = this.vendorId;
+    data['hazard_id'] = this.hazardId;
+    data['vendor_name'] = this.vendorName;
+    data['vendor_name_label'] = this.vendorNameLabel;
+    data['hazard_name'] = this.hazardName;
+    data['hazard_name_label'] = this.hazardNameLabel;
     return data;
   }
 }

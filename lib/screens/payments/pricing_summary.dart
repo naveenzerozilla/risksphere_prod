@@ -235,24 +235,43 @@ class _PricingSummaryState extends State<PricingSummary> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          if (item['usercount'] != null && item['titles'][index].toString() !=
-                        "Event Count Cost" &&
-                              item['usercount'].length > index)
-                            _buildRow("User count", item['usercount'][index]),
+                          // if (item['usercount'] != null &&
+                          //         item['titles'][index].toString() !=
+                          //             "Event Count Cost" &&
+                          //     item['usercount'].length > index)
+                         if(item['titles'][index].toString() !=
+                                          "Event Count Cost" )...[
+                            _buildRow("Count", item['usercount'][index])],
                           _buildRow("Billing", item['selectedPlanType'][index]),
-                          if (item['licenseprice'] != null && item['titles'][index].toString() !=
-                    "Event Count Cost" &&
-                              item['licenseprice'].length > index)
-                            _buildRow("License pricing",
-                                "\$${item['licenseprice'][index]} / user"),
-                          const SizedBox(height: 3),
-                          if (item['titles'][index].toString() ==
-                                  "Event Count Cost" &&
-                              widget.vendorName != "") ...[
-                            _buildRow("Vendor", widget.vendorName),
-                            const SizedBox(height: 3),
-                            _buildRow("Hazard", widget.hazardName),
-                          ],
+                          if (item['licenseprice'] != null)
+                            _buildRow(
+                              "License pricing",
+                              "\$${item['licenseprice'][index]} "
+                                  "${item['titles'][index].toString() == "User License" ?
+                              "/ user"
+                           :   item['titles'][index].toString() ==
+                                  "Event Count Cost" ? '/ event'
+
+                                  : "/ location"
+
+
+
+                              }",
+                            ),
+
+
+
+
+
+
+                          // const SizedBox(height: 3),
+                          // if (item['titles'][index].toString() ==
+                          //         "Event Count Cost" &&
+                          //     widget.vendorName != "") ...[
+                          //   _buildRow("Vendor", widget.vendorName),
+                          //   const SizedBox(height: 3),
+                          //   _buildRow("Hazard", widget.hazardName),
+                          // ],
                           Container(
                             padding: EdgeInsets.only(top: 10),
                             child: Divider(),

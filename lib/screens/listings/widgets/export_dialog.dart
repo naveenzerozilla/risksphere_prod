@@ -137,7 +137,7 @@ class _ExportDialogState extends State<ExportDialog> {
                       exportData, widget.sovId);
                 }
               },
-              child: Text(LanguageService.getTranslated(context, "export_dialog_download"), style: typography.Body1),
+              child: Text(LanguageService.getTranslated(context, "export_dialog_download"), style: typography.ButtonLarge.copyWith(color: Colors.black,fontSize: 14)),
               type: ButtonType.elevated,
             ),
           ],

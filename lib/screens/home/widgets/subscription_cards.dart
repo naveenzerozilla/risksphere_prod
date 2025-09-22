@@ -101,19 +101,22 @@ class SubscriptionCard extends StatelessWidget {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text(title.toString() ==
+                                    title: Text(title.toString()
+                                        ==
                                             "Hurricane (Kinetic Analysis Corporation)"
                                         ? "Hurricane Event Monitoring Subscription"
                                         : title.toString() ==
                                                 "Earthquake Event Monitoring Subscription"
                                             ? "Earthquake Event Monitoring Subscription"
-                                            : title.toString()),
+                                            : title.toString()
+                                    ),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(title.toString() ==
+                                        Text(title.toString()
+                                            ==
                                                 "Hurricane (Kinetic Analysis Corporation)"
                                             ? "Get real-time hurricane alerts and automated tracking."
                                             : "The Earthquake Event Monitoring Subscription keeps you updated with timely alerts on seismic activity."),
@@ -283,13 +286,13 @@ class SubscriptionCard extends StatelessWidget {
                             child: MessageCard(
                               messageTextSpans: [
                                 TextSpan(
-                                  text: "For yearly alerts subscription.",
+                                  text: "Purchase a license to enable subscription",
                                   style: typography.Body2.copyWith(
                                     color: AppColors.warning,
                                   ),
                                 ),
                                 TextSpan(
-                                  text: " Upgrade Now!",
+                                  text: " Purchase Now",
                                   style: typography.Body2.copyWith(
                                     color: AppColors.primaryMain,
                                   ),

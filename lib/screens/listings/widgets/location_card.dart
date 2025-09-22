@@ -595,7 +595,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return Container(
       margin: EdgeInsets.only(right: 5),
       padding: EdgeInsets.all(8),
-      width: MediaQuery.of(context).size.width < 400 ? 130 : 180,
+      width: MediaQuery.of(context).size.width < 400 ? 165 : 190,
       height: MediaQuery.of(context).size.height < 400 ? 80 : 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),

@@ -495,7 +495,6 @@ class AccountListProvider extends ChangeNotifier {
     var typography = CustomTypography(context);
     try {
       isDuplicateLoading = true;
-
       ApiService apiService = ApiService(AppConstant.DUPLICATE_ACCOUNT);
       var response = await apiService.post({
         'data': {

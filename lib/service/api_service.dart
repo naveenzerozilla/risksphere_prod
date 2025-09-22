@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 
 import '../providers/auth_provider.dart';
 import '../utils/common_headers.dart';
+import '../utils/global_imports.dart';
 
 class ApiService {
   final String endpoint;
@@ -332,7 +333,10 @@ class ApiService {
       String subAccountId,
       String sovId,
       String tags,
-      String sovName) async {
+      String sovName,
+      BuildContext context,
+      ) async {
+    var typography = CustomTypography(context);
     await FirebaseAuth.instance.currentUser?.reload();
     IdTokenResult? token =
         await FirebaseAuth.instance.currentUser?.getIdTokenResult();
@@ -380,14 +384,29 @@ class ApiService {
 
     print("Response Code: ${streamedResponse.statusCode}");
     print("Response Reason: ${streamedResponse.reasonPhrase}");
+
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
-      print(responseData);
+
       return _handleResponse(
           http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
+      print("responseData");
       print(responseData);
+      print("responseData");
+      final decoded = jsonDecode(responseData);
+      final errorMessage = decoded['error'] ?? 'Something went wrong';
+      print(errorMessage);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            errorMessage,
+            style: TextStyle(color: Colors.black)
+          ),
+        ),
+      );
       throw BackendException(
           responseData ?? "An error occurred", streamedResponse.statusCode);
     }

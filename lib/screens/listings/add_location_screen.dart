@@ -110,7 +110,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   // radio group for rented and leased
   bool rented = false;
-  bool leased = false;
+  bool leased = false;Timer? _debounce;
 
   @override
   initState() {
@@ -186,6 +186,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
     print("account name: ${widget.accountName}");
     print("sub account name: ${widget.subAccountName}");
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _initPgAdmin() async {
@@ -438,38 +444,38 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Autocomplete<Suggestion>(
-                                            optionsBuilder: (TextEditingValue
-                                                textEditingValue) async {
-                                              if (textEditingValue
-                                                      .text.isEmpty ||
-                                                  _isSelectedFromAutocomplete) {
-                                                return const Iterable<
-                                                    Suggestion>.empty();
+                                            optionsBuilder: (TextEditingValue textEditingValue) async {
+                                              if (textEditingValue.text.isEmpty || _isSelectedFromAutocomplete) {
+                                                return const Iterable<Suggestion>.empty();
                                               }
-                                              final apiProvider =
-                                                  PlaceApiProvider(
-                                                      sessionToken);
-                                              return await apiProvider
-                                                  .fetchSuggestions(
-                                                      textEditingValue.text,
-                                                      'en');
+
+                                              // ✅ Debounce logic
+                                              _debounce?.cancel();
+                                              final completer = Completer<List<Suggestion>>();
+                                              _debounce = Timer(const Duration(milliseconds: 400), () async {
+                                                final apiProvider = PlaceApiProvider(sessionToken);
+                                                final results = await apiProvider.fetchSuggestions(
+                                                  textEditingValue.text,
+                                                  'en',
+                                                );
+                                                if (!completer.isCompleted) {
+                                                  completer.complete(results);
+                                                }
+                                              });
+
+                                              return completer.future;
                                             },
-                                            displayStringForOption: (option) =>
-                                                option.description,
-                                            fieldViewBuilder: (context,
-                                                controller,
-                                                focusNode,
-                                                onFieldSubmitted) {
-                                              _locationNameController =
-                                                  controller;
+                                            displayStringForOption: (option) => option.description,
+                                            fieldViewBuilder:
+                                                (context, controller, focusNode, onFieldSubmitted) {
+                                              _locationNameController = controller;
                                               return TextField(
                                                 enabled: !areFieldsDisabled(),
                                                 controller: controller,
                                                 focusNode: focusNode,
                                                 onChanged: (value) {
                                                   if (_isSelectedFromAutocomplete) {
-                                                    _isSelectedFromAutocomplete =
-                                                        false;
+                                                    _isSelectedFromAutocomplete = false;
                                                     return;
                                                   }
                                                   if (value.isEmpty) {
@@ -477,26 +483,84 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   }
                                                 },
                                                 decoration: InputDecoration(
-                                                  labelText: LanguageService
-                                                      .getTranslated(context,
-                                                          "addlocation_location_name"),
-                                                  border: OutlineInputBorder(),
-                                                  prefixIcon:
-                                                      Icon(Icons.search),
+                                                  labelText: LanguageService.getTranslated(
+                                                      context, "addlocation_location_name"),
+                                                  border: const OutlineInputBorder(),
+                                                  prefixIcon: const Icon(Icons.search),
                                                 ),
                                               );
                                             },
                                             onSelected: areFieldsDisabled()
                                                 ? null
                                                 : (Suggestion selection) {
-                                                    _isSelectedFromAutocomplete =
-                                                        true;
-                                                    _handlePlaceSelection(
-                                                        selection);
-                                                  },
+                                              _isSelectedFromAutocomplete = true;
+                                              _handlePlaceSelection(selection);
+                                            },
                                           ),
-                                        ),
+                                        )
 
+                                        // Padding(
+                                        //   padding: const EdgeInsets.all(8.0),
+                                        //   child: Autocomplete<Suggestion>(
+                                        //     optionsBuilder: (TextEditingValue
+                                        //         textEditingValue) async {
+                                        //       if (textEditingValue
+                                        //               .text.isEmpty ||
+                                        //           _isSelectedFromAutocomplete) {
+                                        //         return const Iterable<
+                                        //             Suggestion>.empty();
+                                        //       }
+                                        //       final apiProvider =
+                                        //           PlaceApiProvider(
+                                        //               sessionToken);
+                                        //       return await apiProvider
+                                        //           .fetchSuggestions(
+                                        //               textEditingValue.text,
+                                        //               'en');
+                                        //     },
+                                        //     displayStringForOption: (option) =>
+                                        //         option.description,
+                                        //     fieldViewBuilder: (context,
+                                        //         controller,
+                                        //         focusNode,
+                                        //         onFieldSubmitted) {
+                                        //       _locationNameController =
+                                        //           controller;
+                                        //       return TextField(
+                                        //         enabled: !areFieldsDisabled(),
+                                        //         controller: controller,
+                                        //         focusNode: focusNode,
+                                        //         onChanged: (value) {
+                                        //           if (_isSelectedFromAutocomplete) {
+                                        //             _isSelectedFromAutocomplete =
+                                        //                 false;
+                                        //             return;
+                                        //           }
+                                        //           if (value.isEmpty) {
+                                        //             markers.clear();
+                                        //           }
+                                        //         },
+                                        //         decoration: InputDecoration(
+                                        //           labelText: LanguageService
+                                        //               .getTranslated(context,
+                                        //                   "addlocation_location_name"),
+                                        //           border: OutlineInputBorder(),
+                                        //           prefixIcon:
+                                        //               Icon(Icons.search),
+                                        //         ),
+                                        //       );
+                                        //     },
+                                        //     onSelected: areFieldsDisabled()
+                                        //         ? null
+                                        //         : (Suggestion selection) {
+                                        //             _isSelectedFromAutocomplete =
+                                        //                 true;
+                                        //             _handlePlaceSelection(
+                                        //                 selection);
+                                        //           },
+                                        //   ),
+                                        // ),
+,
                                         SizedBox(height: CustomSpacing.four),
                                         // Location Address
                                         Padding(

@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:external_path/external_path.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../utils/global_imports.dart';
 import 'package:RiskSphere/providers/invoice_provider.dart';
 import 'package:RiskSphere/screens/payments/purchase_license.dart';
@@ -160,56 +162,57 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                   ),
                 ),
                 const SizedBox(height: 14),
-                if (trialStatus.contains('Expired') &&
-                    isHasAnyPlan == false) ...[
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surface
-                          .withOpacity(0.95),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(height: CustomSpacing.four),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: MessageCard(
-                            messageTextSpans: [
-                              TextSpan(
-                                text:
-                                    'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
-                                style: typography.Body1,
-                              ),
-                              // tappable
-                              TextSpan(
-                                text: ' Upgrade Now!',
-                                style: typography.Body1.copyWith(
-                                  color: AppColors.primaryMain,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                PurchaseLicensePage()));
-                                  },
-                              ),
-                            ],
-                            isError: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                ] else ...[
-                  Consumer2<PaymentProvider, InvoiceProvider>(
-                    builder:
-                        (context, paymentProvider, invoiceProvider, child) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                // if (trialStatus.contains('Expired')) ...[
+                //   Container(
+                //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                //     decoration: BoxDecoration(
+                //       color: Theme.of(context)
+                //           .colorScheme
+                //           .surface
+                //           .withOpacity(0.95),
+                //     ),
+                //     child: Column(
+                //       mainAxisAlignment: MainAxisAlignment.center,
+                //       children: [
+                //         SizedBox(height: CustomSpacing.four),
+                //         Padding(
+                //           padding: const EdgeInsets.all(8.0),
+                //           child: MessageCard(
+                //             messageTextSpans: [
+                //               TextSpan(
+                //                 text:
+                //                     'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                //                 style: typography.Body1,
+                //               ),
+                //               // tappable
+                //               TextSpan(
+                //                 text: ' Upgrade Now!',
+                //                 style: typography.Body1.copyWith(
+                //                   color: AppColors.primaryMain,
+                //                 ),
+                //                 recognizer: TapGestureRecognizer()
+                //                   ..onTap = () {
+                //                     Navigator.of(context).push(
+                //                         MaterialPageRoute(
+                //                             builder: (_) =>
+                //                                 PurchaseLicensePage()));
+                //                   },
+                //               ),
+                //             ],
+                //             isError: true,
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   )
+                // ] else ...[
+                Consumer2<PaymentProvider, InvoiceProvider>(
+                  builder: (context, paymentProvider, invoiceProvider, child) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        // 👈 makes it scrollable horizontally
                         child: Row(
                           children: [
                             Container(
@@ -220,14 +223,21 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                     Border.all(color: Colors.blue, width: 1.0),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: DropdownButton<String>(
+                              child: DropdownButton2<String>(
                                 value: _selectedValue,
+
+                                dropdownStyleData: DropdownStyleData(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E1E1E),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
                                 style: const TextStyle(color: Colors.white),
                                 items: [
                                   'All License',
                                   'Event Count Cost',
                                   'Location Count(Geocoding)',
-                                  'Location Count(Hazard)',
+                                  'Location Count(Geocoding & Hazard)',
                                   'Location Improvement Cost',
                                   'User License'
                                 ].map<DropdownMenuItem<String>>((String value) {
@@ -247,7 +257,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                       'Event Count Cost': 'event_cost',
                                       'Location Count(Geocoding)':
                                           'location_geocoding',
-                                      'Location Count(Hazard)':
+                                      'Location Count(Geocoding & Hazard)':
                                           'location_hazard',
                                       'Location Improvement Cost':
                                           'location_improvement_cost',
@@ -257,32 +267,11 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                       filterItem = valueMap[newValue] ?? '';
                                     });
 
-                                    // Find the selected index
-                                    int selectedIndex = [
-                                      'All License',
-                                      'Event Count Cost',
-                                      'Location Count(Geocoding)',
-                                      'Location Count(Hazard)',
-                                      'Location Improvement Cost',
-                                      'User License'
-                                    ].indexOf(newValue);
-
                                     if (_tabController.index == 0) {
-                                      print(_tabController.indexIsChanging
-                                          .toString());
-
                                       paymentProvider.fetchTransactionList(
                                         context,
                                         valueMap[newValue] ?? '',
                                         '',
-                                      );
-                                    } else if (_tabController.index == 1) {
-                                      print(_tabController.indexIsChanging
-                                          .toString());
-
-                                      invoiceProvider.fetchInvoiceList(
-                                        context,
-                                        valueMap[newValue] ?? '',
                                       );
                                     } else {
                                       invoiceProvider.fetchInvoiceList(
@@ -292,21 +281,93 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                     }
                                   }
                                 },
-
-                                underline: const SizedBox(),
-                                // Removes the default underline
-                                dropdownColor: const Color(
-                                    0xFF1E1E1E), // Optional: Matches the theme
+                                underline:
+                                    const SizedBox(), // 👈 hides the underline
+                                // dropdownColor: const Color(0xFF1E1E1E),
                               ),
+
+                              // DropdownButton2<String>(
+                              //   value: _selectedValue,
+                              //
+                              //   buttonStyleData: ButtonStyleData(
+                              //     decoration: BoxDecoration(
+                              //       border: Border.all(color: Colors.blue),
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //   ),
+                              //   dropdownStyleData: DropdownStyleData(
+                              //     decoration: BoxDecoration(
+                              //       color: const Color(0xFF1E1E1E),
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //   ),
+                              //   style: const TextStyle(color: Colors.white),
+                              //
+                              //
+                              //   items: [
+                              //     'All License',
+                              //     'Event Count Cost',
+                              //     'Location Count(Geocoding)',
+                              //     'Location Count(Geocoding & Hazard)',
+                              //     'Location Improvement Cost',
+                              //     'User License'
+                              //   ].map<DropdownMenuItem<String>>((String value) {
+                              //     return DropdownMenuItem<String>(
+                              //       value: value,
+                              //       child: Text(value),
+                              //     );
+                              //   }).toList(),
+                              //   onChanged: (String? newValue) {
+                              //     if (newValue != null) {
+                              //       setState(() {
+                              //         _selectedValue = newValue;
+                              //       });
+                              //
+                              //       final valueMap = {
+                              //         'All License': '',
+                              //         'Event Count Cost': 'event_cost',
+                              //         'Location Count(Geocoding)':
+                              //             'location_geocoding',
+                              //         'Location Count(Geocoding & Hazard)':
+                              //             'location_hazard',
+                              //         'Location Improvement Cost':
+                              //             'location_improvement_cost',
+                              //         'User License': 'user_cost',
+                              //       };
+                              //       setState(() {
+                              //         filterItem = valueMap[newValue] ?? '';
+                              //       });
+                              //
+                              //       if (_tabController.index == 0) {
+                              //         paymentProvider.fetchTransactionList(
+                              //           context,
+                              //           valueMap[newValue] ?? '',
+                              //           '',
+                              //         );
+                              //       } else if (_tabController.index == 1) {
+                              //         invoiceProvider.fetchInvoiceList(
+                              //           context,
+                              //           valueMap[newValue] ?? '',
+                              //         );
+                              //       } else {
+                              //         invoiceProvider.fetchInvoiceList(
+                              //           context,
+                              //           valueMap[newValue] ?? '',
+                              //         );
+                              //       }
+                              //     }
+                              //   },
+                              //   underline: const SizedBox(),
+                              //   dropdownColor: const Color(0xFF1E1E1E),
+                              // ),
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Container(
-                              width: 140,
+                              width: 130,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: Colors.blue,
-                                    width: 1.0), // Blue border
+                                border:
+                                    Border.all(color: Colors.blue, width: 1.0),
                               ),
                               child: TextButton(
                                 onPressed: () => _selectDateRange(context),
@@ -314,28 +375,29 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                   dateText,
                                   maxLines: 2,
                                   textAlign: TextAlign.center,
-                                  // style: typography.Body2,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+                Expanded(
+                  child: TabBarView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    controller: _tabController,
+                    children: [
+                      _buildTransactionsHistoryList(),
+                      _buildInvoiceHistoryList(),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: TabBarView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      controller: _tabController,
-                      children: [
-                        _buildTransactionsHistoryList(),
-                        _buildInvoiceHistoryList(),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ],
+              // ],
             );
           }),
         ),
@@ -446,18 +508,18 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                               child: InkWell(
                                                 onTap: () {
                                                   // Navigate to invoice details
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          InvoiceWebViewPage(
-                                                        url: invoice
-                                                                .stripeInvoice
-                                                                ?.hostedInvoiceUrl ??
-                                                            '',
-                                                      ),
-                                                    ),
-                                                  );
+                                                  // Navigator.push(
+                                                  //   context,
+                                                  //   MaterialPageRoute(
+                                                  //     builder: (context) =>
+                                                  //         InvoiceWebViewPage(
+                                                  //       url: invoice
+                                                  //               .stripeInvoice
+                                                  //               ?.hostedInvoiceUrl ??
+                                                  //           '',
+                                                  //     ),
+                                                  //   ),
+                                                  // );
                                                 },
                                                 child: Text(
                                                     "Inv# ${invoice.invoiceId ?? 'N/A'}",
@@ -570,174 +632,240 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                 ],
                                               ),
                                             ),
-                                            if (Platform.isIOS)
-                                              IconButton(
-                                                icon: Icon(Icons.download,
-                                                    size: 16),
-                                                onPressed: () async {
-                                                  final url =
-                                                      invoice.invoicePdfUrl ??
-                                                          '';
-                                                  if (url.isEmpty) {
-                                                    debugPrint(
-                                                        "Empty invoice URL.");
-                                                    return;
-                                                  }
+                                            // if (Platform.isIOS)
+                                            IconButton(
+                                              icon: const Icon(Icons.download,
+                                                  size: 16),
+                                              onPressed: () async {
+                                                final url =
+                                                    invoice.invoicePdfUrl ?? '';
+                                                if (url.isEmpty) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text(
+                                                            'Empty invoice URL.')),
+                                                  );
+                                                  return;
+                                                }
 
-                                                  debugPrint(
-                                                      "Invoice URL: $url");
-
+                                                if (Platform.isAndroid) {
+                                                  // ✅ Android: open PDF directly inside the app
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) => Scaffold(
+                                                        appBar: AppBar(
+                                                            title: const Text(
+                                                                'Invoice PDF')),
+                                                        body: SfPdfViewer.network(
+                                                            url), // stream & show PDF in-app
+                                                      ),
+                                                    ),
+                                                  );
+                                                } else if (Platform.isIOS) {
                                                   try {
-                                                    Directory? directory;
-
-                                                    // if (Platform.isAndroid) {
-                                                    //   if (await Permission
-                                                    //           .manageExternalStorage
-                                                    //           .request()
-                                                    //           .isGranted ||
-                                                    //       await Permission.storage
-                                                    //           .request()
-                                                    //           .isGranted) {
-                                                    //     if (Platform.version
-                                                    //         .contains('30')) {
-                                                    //       directory =
-                                                    //           await getExternalStorageDirectory(); // Scoped
-                                                    //     } else {
-                                                    //       directory = Directory(
-                                                    //           '/storage/emulated/0/Download'); // Legacy
-                                                    //     }
-                                                    //   } else {
-                                                    //     ScaffoldMessenger.of(
-                                                    //             context)
-                                                    //         .showSnackBar(
-                                                    //       SnackBar(
-                                                    //           content: Text(
-                                                    //               'Storage permission denied')),
-                                                    //     );
-                                                    //     return;
-                                                    //   }
-                                                    // } else
-                                                    if (Platform.isIOS) {
-                                                      directory =
-                                                          await getApplicationDocumentsDirectory();
-                                                    }
-
-                                                    if (directory == null) {
-                                                      throw Exception(
-                                                          "❌ Cannot determine save directory.");
-                                                    }
-
+                                                    final directory =
+                                                        await getApplicationDocumentsDirectory();
                                                     final filename =
                                                         'invoice_${invoice.invoiceId ?? DateTime.now().millisecondsSinceEpoch}.pdf';
                                                     final filePath = path.join(
                                                         directory.path,
                                                         filename);
 
-                                                    debugPrint(
-                                                        "📁 Will save file to: $filePath");
-
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                      SnackBar(
-                                                        content: Row(
-                                                          children: [
-                                                            CircularProgressIndicator(),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                                'Downloading invoice...'),
-                                                          ],
-                                                        ),
-                                                        duration: Duration(
-                                                            seconds: 2),
-                                                      ),
-                                                    );
-
                                                     final dio = Dio();
                                                     await dio.download(
-                                                      url,
-                                                      filePath,
-                                                      onReceiveProgress:
-                                                          (received, total) {
-                                                        if (total != -1) {
-                                                          debugPrint(
-                                                              '⬇️ Progress: ${(received / total * 100).toStringAsFixed(0)}%');
-                                                        }
-                                                      },
-                                                    );
+                                                        url, filePath);
 
-                                                    debugPrint(
-                                                        " File downloaded to: $filePath");
-
-                                                    final file = File(filePath);
-                                                    if (!await file.exists()) {
+                                                    final result =
+                                                        await OpenFile.open(
+                                                            filePath);
+                                                    if (result.type !=
+                                                        ResultType.done) {
                                                       throw Exception(
-                                                          "File not found at $filePath after download.");
+                                                          'Could not open file: ${result.message}');
                                                     }
-
-                                                    final fileSize =
-                                                        await file.length();
-                                                    debugPrint(
-                                                        " File size: $fileSize bytes");
-
-                                                    if (fileSize == 0) {
-                                                      throw Exception(
-                                                          " File is empty. Invalid or broken download.");
-                                                    }
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                            'Invoice downloaded successfully'),
-                                                        action: SnackBarAction(
-                                                          label: 'OPEN',
-                                                          onPressed: () async {
-                                                            try {
-                                                              final result =
-                                                                  await OpenFile
-                                                                      .open(
-                                                                          filePath);
-                                                              debugPrint(
-                                                                  " OpenFile result: ${result.message}");
-                                                              if (result.type !=
-                                                                  ResultType
-                                                                      .done) {
-                                                                throw Exception(
-                                                                    "Failed to open file: ${result.message}");
-                                                              }
-                                                            } catch (e) {
-                                                              debugPrint(
-                                                                  " Open file error: $e");
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                    content: Text(
-                                                                        'Could not open file: $e')),
-                                                              );
-                                                            }
-                                                          },
-                                                        ),
-                                                        duration: Duration(
-                                                            seconds: 4),
-                                                      ),
-                                                    );
                                                   } catch (e) {
-                                                    debugPrint(" Error: $e");
+                                                    debugPrint(
+                                                        "Download/Open error: $e");
                                                     ScaffoldMessenger.of(
                                                             context)
                                                         .showSnackBar(
                                                       SnackBar(
-                                                        content: Text(
-                                                            'Download failed: ${e.toString()}'),
-                                                        duration: Duration(
-                                                            seconds: 4),
-                                                      ),
+                                                          content: Text(
+                                                              'Download failed: $e')),
                                                     );
                                                   }
-                                                },
-                                              ),
+                                                }
+                                              },
+                                            )
+
+                                            //   IconButton(
+                                            //     icon: Icon(Icons.download,
+                                            //         size: 16),
+                                            //     onPressed: () async {
+                                            //       final url =
+                                            //           invoice.invoicePdfUrl ??
+                                            //               '';
+                                            //       if (url.isEmpty) {
+                                            //         debugPrint(
+                                            //             "Empty invoice URL.");
+                                            //         return;
+                                            //       }
+                                            //
+                                            //       debugPrint(
+                                            //           "Invoice URL: $url");
+                                            //
+                                            //       try {
+                                            //         Directory? directory;
+                                            //
+                                            //         // if (Platform.isAndroid) {
+                                            //         //   if (await Permission
+                                            //         //           .manageExternalStorage
+                                            //         //           .request()
+                                            //         //           .isGranted ||
+                                            //         //       await Permission.storage
+                                            //         //           .request()
+                                            //         //           .isGranted) {
+                                            //         //     if (Platform.version
+                                            //         //         .contains('30')) {
+                                            //         //       directory =
+                                            //         //           await getExternalStorageDirectory(); // Scoped
+                                            //         //     } else {
+                                            //         //       directory = Directory(
+                                            //         //           '/storage/emulated/0/Download'); // Legacy
+                                            //         //     }
+                                            //         //   } else {
+                                            //         //     ScaffoldMessenger.of(
+                                            //         //             context)
+                                            //         //         .showSnackBar(
+                                            //         //       SnackBar(
+                                            //         //           content: Text(
+                                            //         //               'Storage permission denied')),
+                                            //         //     );
+                                            //         //     return;
+                                            //         //   }
+                                            //         // } else
+                                            //         if (Platform.isIOS) {
+                                            //           directory =
+                                            //               await getApplicationDocumentsDirectory();
+                                            //         }
+                                            //
+                                            //         if (directory == null) {
+                                            //           throw Exception(
+                                            //               "❌ Cannot determine save directory.");
+                                            //         }
+                                            //
+                                            //         final filename =
+                                            //             'invoice_${invoice.invoiceId ?? DateTime.now().millisecondsSinceEpoch}.pdf';
+                                            //         final filePath = path.join(
+                                            //             directory.path,
+                                            //             filename);
+                                            //
+                                            //         debugPrint(
+                                            //             "📁 Will save file to: $filePath");
+                                            //
+                                            //         ScaffoldMessenger.of(
+                                            //                 context)
+                                            //             .showSnackBar(
+                                            //           SnackBar(
+                                            //             content: Row(
+                                            //               children: [
+                                            //                 CircularProgressIndicator(),
+                                            //                 SizedBox(width: 10),
+                                            //                 Text(
+                                            //                     'Downloading invoice...'),
+                                            //               ],
+                                            //             ),
+                                            //             duration: Duration(
+                                            //                 seconds: 2),
+                                            //           ),
+                                            //         );
+                                            //
+                                            //         final dio = Dio();
+                                            //         await dio.download(
+                                            //           url,
+                                            //           filePath,
+                                            //           onReceiveProgress:
+                                            //               (received, total) {
+                                            //             if (total != -1) {
+                                            //               debugPrint(
+                                            //                   '⬇️ Progress: ${(received / total * 100).toStringAsFixed(0)}%');
+                                            //             }
+                                            //           },
+                                            //         );
+                                            //
+                                            //         debugPrint(
+                                            //             " File downloaded to: $filePath");
+                                            //
+                                            //         final file = File(filePath);
+                                            //         if (!await file.exists()) {
+                                            //           throw Exception(
+                                            //               "File not found at $filePath after download.");
+                                            //         }
+                                            //
+                                            //         final fileSize =
+                                            //             await file.length();
+                                            //         debugPrint(
+                                            //             " File size: $fileSize bytes");
+                                            //
+                                            //         if (fileSize == 0) {
+                                            //           throw Exception(
+                                            //               " File is empty. Invalid or broken download.");
+                                            //         }
+                                            //         ScaffoldMessenger.of(
+                                            //                 context)
+                                            //             .showSnackBar(
+                                            //           SnackBar(
+                                            //             content: Text(
+                                            //                 'Invoice downloaded successfully'),
+                                            //             action: SnackBarAction(
+                                            //               label: 'OPEN',
+                                            //               onPressed: () async {
+                                            //                 try {
+                                            //                   final result =
+                                            //                       await OpenFile
+                                            //                           .open(
+                                            //                               filePath);
+                                            //                   debugPrint(
+                                            //                       " OpenFile result: ${result.message}");
+                                            //                   if (result.type !=
+                                            //                       ResultType
+                                            //                           .done) {
+                                            //                     throw Exception(
+                                            //                         "Failed to open file: ${result.message}");
+                                            //                   }
+                                            //                 } catch (e) {
+                                            //                   debugPrint(
+                                            //                       " Open file error: $e");
+                                            //                   ScaffoldMessenger
+                                            //                           .of(context)
+                                            //                       .showSnackBar(
+                                            //                     SnackBar(
+                                            //                         content: Text(
+                                            //                             'Could not open file: $e')),
+                                            //                   );
+                                            //                 }
+                                            //               },
+                                            //             ),
+                                            //             duration: Duration(
+                                            //                 seconds: 4),
+                                            //           ),
+                                            //         );
+                                            //       } catch (e) {
+                                            //         debugPrint(" Error: $e");
+                                            //         ScaffoldMessenger.of(
+                                            //                 context)
+                                            //             .showSnackBar(
+                                            //           SnackBar(
+                                            //             content: Text(
+                                            //                 'Download failed: ${e.toString()}'),
+                                            //             duration: Duration(
+                                            //                 seconds: 4),
+                                            //           ),
+                                            //         );
+                                            //       }
+                                            //     },
+                                            //   ),
                                           ],
                                         ),
                                       ],
@@ -850,8 +978,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                         style: const TextStyle(
                                             fontSize: 13, color: Colors.grey),
                                         children: [
-                                          const TextSpan(
-                                              text: 'User count left: '),
+                                          const TextSpan(text: 'count left: '),
                                           TextSpan(
                                             text: invoiceData.availableCredits
                                                 .toString(),

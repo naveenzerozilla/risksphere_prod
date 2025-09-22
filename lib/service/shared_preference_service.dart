@@ -61,9 +61,12 @@ class SharedPreferenceService {
   static const String EMPMT = 'EMPMT'; // My Teams for EMP
   static const String FCMTK = 'FCMTK'; // FCM Token
   static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS';
+  static const String SCHEDULE_STARTTIME = 'SCHEDULE_STARTTIME';
   static const String TRAIL_USER = 'TRAIL_USER';
   static const String TRAIL_LOCATION_COUNT = 'TRAIL_LOCATION_COUNT';
   static const String USER_LICENSE = 'USER_LICENSE';
+  static const String START_TIME = 'START_TIME';
+  static const String END_TIME = 'END_TIME';
 
   // Schedule In Progress
   static const String SOV_UPLOAD_TEMP_ID = 'SOV_UPLOAD_TEMP_ID';
@@ -323,6 +326,36 @@ class SharedPreferenceService {
   //   final prefs = await SharedPreferences.getInstance();
   //   return prefs.getString('schedule_in_progress'); // Now returns a String
   // }
+
+
+
+  static Future<void> setUpcomingScheduleEndTime(String? value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('upcoming_schedule_endtime', value ?? '');
+    print('Upcoming schedule end time set to $value');
+  }
+
+  static Future<String?> getUpcomingScheduleEndTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('upcoming_schedule_endtime');
+    print('Upcoming schedule end time: $value');
+    return value == '' ? null : value;
+  }
+
+  // static Future<void> setUpcomingScheduleStartTime(String? value) async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('upcoming_schedule_starttime', value ?? '');
+  //   print('Upcoming schedule start time set to $value');
+  // }
+
+  // static Future<String?> getUpcomingScheduleStartTime() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   String? value = prefs.getString('upcoming_schedule_starttime');
+  //   print('Upcoming schedule start time: $value');
+  //   return value == '' ? null : value;
+  // }
+
+
   static Future<void> setScheduleInProgress(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SCHEDULE_INPROGRESS, value);
@@ -335,6 +368,20 @@ class SharedPreferenceService {
     print('Schedule in progress $value');
     return value;
   }
+  static Future<void> setUpcomingScheduleStartTime(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(SCHEDULE_STARTTIME, value);
+    print('Schedule STARTTIME progress $value');
+  }
+
+  static Future<String?> getUpcomingScheduleStartTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString(SCHEDULE_STARTTIME);
+    print('Schedule STARTTIME progress $value');
+    return value;
+  }
+
+
   static Future<void> setTrialUser(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(TRAIL_USER, value);

@@ -5,6 +5,7 @@ import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:RiskSphere/design_system/components/country_picker_flag_name.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -66,13 +67,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   //     setState(() {}); // Force UI to refresh and show results
   //   });
   // }
-  // void onSearchChanged(String query, AuthNotifier authNotifier) {
-  //   if (_debounce?.isActive ?? false) _debounce!.cancel();
-  //
-  //   _debounce = Timer(Duration(milliseconds: 300), () {
-  //     authNotifier.fetchCompanies(query); // 🔹 Fetch data and trigger UI updates
-  //   });
-  // }
+  // ✅ Updated search handler with null safety
+  void onSearchChanged(String query, AuthNotifier authNotifier) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(Duration(milliseconds: 300), () {
+      authNotifier.fetchCompanies(query);
+      setState(() {}); // Trigger UI update when new options are fetched
+    });
+  }
 
   // Future<void> fetchCompanies(String name, AuthNotifier authNotifier) async {
   //   if (name.isEmpty) {
@@ -398,6 +401,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             return;
                                           }*/
                                       if (authNotifier.isNewUser) {
+
                                         String result = await authNotifier
                                             .signUpIndividualWithGoogle(
                                           widget.userCredential!,
@@ -747,60 +751,125 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Social Media Buttons
-        if (Platform.isAndroid)
-          Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-            return SocialMediaButton(
-              onPressed: () async {
-                try {
-                  await authNotifier.signInWithGoogle(context: context);
+        // if (Platform.isAndroid)
+        // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+        //   return SocialMediaButton(
+        //     onPressed: () async {
+        //       try {
+        //         await authNotifier.signInWithGoogle(c);
+        //
+        //         if (authNotifier.user != null) {
+        //           // Fetch user data only if user exists
+        //           Provider.of<UserProfileProvider>(context, listen: false)
+        //               .getAllUserData(context, '', '');
+        //
+        //           // Navigate to Dashboard if not a new user
+        //           if (!authNotifier.isNewUser) {
+        //             Navigator.pushReplacement(
+        //               context,
+        //               MaterialPageRoute(
+        //                 builder: (context) => DashboardScreen(),
+        //               ),
+        //             );
+        //           }
+        //         } else {
+        //           // Handle sign-in failure
+        //           ScaffoldMessenger.of(context).showSnackBar(
+        //             SnackBar(
+        //                 content:
+        //                     Text("Google sign-in failed. Please try again.")),
+        //           );
+        //         }
+        //       } catch (e) {
+        //         // Catch any errors during sign-in
+        //         debugPrint("Error during Google sign-in: $e");
+        //         ScaffoldMessenger.of(context).showSnackBar(
+        //           SnackBar(
+        //               content: Text("An error occurred. Please try again.")),
+        //         );
+        //       }
+        //     },
+        //     buttonText:
+        //         LanguageService.getTranslated(context, "login_googlebutton"),
+        //     iconPath: 'assets/images/googleLogo.svg',
+        //   );
+        // }),
+        Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+          return SocialMediaButton(
+            onPressed: () async {
+              try {
+                await authNotifier.signInWithGoogle(context: context);
 
-                  if (authNotifier.user != null) {
-                    // Fetch user data only if user exists
-                    Provider.of<UserProfileProvider>(context, listen: false)
-                        .getAllUserData(context, '', '');
+                if (authNotifier.user != null) {
+                  // Fetch user data only if user exists
+                  Provider.of<UserProfileProvider>(context, listen: false)
+                      .getAllUserData(context, '', '');
 
-                    // Navigate to Dashboard if not a new user
-                    if (!authNotifier.isNewUser) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DashboardScreen(),
-                        ),
-                      );
-                    }
-                  } else {
-                    // Handle sign-in failure
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text("Google sign-in failed. Please try again.")),
+                  // Navigate to Dashboard if not a new user
+                  if (!authNotifier.isNewUser) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DashboardScreen(),
+                      ),
                     );
                   }
-                } catch (e) {
-                  // Catch any errors during sign-in
-                  debugPrint("Error during Google sign-in: $e");
+                } else {
+                  // Handle sign-in failure
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text("An error occurred. Please try again.")),
+                        content:
+                        Text("Google sign-in failed. Please try again.")),
                   );
                 }
+              } catch (e) {
+                // Catch any errors during sign-in
+                debugPrint("Error during Google sign-in: $e");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text("An error occurred. Please try again.")),
+                );
+              }
+            },
+            buttonText:
+            LanguageService.getTranslated(context, "login_googlebutton"),
+            iconPath: 'assets/images/googleLogo.svg',
+          );
+        }),
+        SizedBox(
+          height: CustomSpacing.one,
+        ),
+        Consumer<AuthNotifier>(
+          builder: (context, authNotifier, child) {
+            return SocialMediaButton(
+              onPressed: () async {
+                await authNotifier.signInWithMicrosoft(context: context);
+                print(authNotifier.user.toString());
+                print(authNotifier.userProfile.toString());
+                print(authNotifier.isNewUser.toString());
               },
-              buttonText:
-                  LanguageService.getTranslated(context, "login_googlebutton"),
-              iconPath: 'assets/images/googleLogo.svg',
+              buttonText: LanguageService.getTranslated(context, "login_microsoft_button"),
+              iconPath: 'assets/images/microsoftLogo.svg',
             );
-          }),
-        // SizedBox(
-        //   height: CustomSpacing.one,
-        // ),
-        // SocialMediaButton(
-        //   onPressed: () {
-        //     // Add your onPressed function here
-        //   },
-        //   buttonText:
-        //       LanguageService.getTranslated(context, "login_microsoft_button"),
-        //   iconPath: 'assets/images/microsoftLogo.svg',
-        // ),
+          },
+        ),
+
+        // if (Platform.isAndroid)
+        // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+        //   return authNotifier.isRemindLoading
+        //       ? Center(
+        //           child:
+        //               Container(child: CircularProgressIndicator()), // loader
+        //         )
+        //       : SocialMediaButton(
+        //           onPressed: () async {
+        //             await authNotifier.signInWithMicrosoft(context);
+        //           },
+        //           buttonText: LanguageService.getTranslated(
+        //               context, "login_microsoft_button"),
+        //           iconPath: 'assets/images/microsoftLogo.svg',
+        //         );
+        // }),
         SizedBox(height: CustomSpacing.four),
         if (Platform.isAndroid) ...[
           Row(
@@ -884,6 +953,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               text: TextSpan(
                 children: [
                   TextSpan(
+                // Display Name(Optional)
                     text: LanguageService.getTranslated(context,
                         "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
                   ),
@@ -1988,317 +2058,118 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ValueListenableBuilder<List<Companies>>(
-                  valueListenable: authNotifier.companyOptionsNotifier,
-                  builder: (context, companyOptions, _) {
-                    return Autocomplete<Companies>(
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          print(
-                              'Options builder called with: ${textEditingValue.text}');
+                Autocomplete<Companies>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      final input = textEditingValue.text.trim().toLowerCase();
+                      if (input.isEmpty) {
+                        return authNotifier.companyOptions;
+                      }
+                      return authNotifier.companyOptions.where(
+                        (company) => company.name.toLowerCase().contains(input),
+                      );
+                    },
+                    displayStringForOption: (Companies option) => option.name,
+                    onSelected: (Companies selection) {
+                      setState(() {
+                        companyDisplayNameController.text = selection.displayName;
 
-                          if (textEditingValue.text.isEmpty) {
-                            return const Iterable<Companies>.empty();
-                          }
+                        // Map the correct company type by matching selection.companyTypeName
+                        selectedCompanyType = authNotifier.companyTypeList?.firstWhere(
+                              (t) => t.type.toLowerCase() == selection.companyTypeName.toLowerCase(),
+                        );
 
-                          final filteredOptions = List<Companies>.from(
-                              companyOptions.where((Companies) => Companies.name
-                                  .toLowerCase()
-                                  .contains(
-                                      textEditingValue.text.toLowerCase())));
-                          print(
-                              'Filtered options count: ${filteredOptions.length}');
-                          return filteredOptions;
-                        },
-                        onSelected: (Companies selection) {
-                          print('Selected: ${selection.name}');
-                          _textEditingController.text = selection.name;
-                          companyDisplayNameController.text = selection.name;
-                          setState(() {
-                            _enableCompanyTypeDropdown = false;
-                          });
-                        },
-                        displayStringForOption: (Companies option) =>
-                            option.name,
-                        fieldViewBuilder: (context, textEditingController,
-                            focusNode, onFieldSubmitted) {
-                          _textEditingController = textEditingController;
-                          return TextFormField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
-                            decoration: InputDecoration(
-                              labelText: "Company Name",
-                              hintText: "Enter company name...",
-                              border: const OutlineInputBorder(),
-                              suffixIcon: isLoading
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(10),
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2),
-                                      ),
-                                    )
-                                  : const Icon(Icons.search),
-                            ),
-                          );
-                        },
-                        optionsViewBuilder: (context, onSelected, options) {
-                          print("options");
-                          print(options);
-                          return StatefulBuilder(
-                            builder: (context, setState) {
-                              return Align(
-                                alignment: Alignment.topLeft,
-                                child: Material(
-                                  elevation: 4.0,
-                                  child: Container(
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.9,
-                                    constraints: BoxConstraints(maxHeight: 130),
-                                    child: ListView.builder(
-                                      padding: EdgeInsets.zero,
-                                      itemCount: options.length,
-                                      itemBuilder:
-                                          (BuildContext context, int index) {
-                                        final option = options.elementAt(index);
-                                        return ListTile(
-                                          title: Text(option.name),
-                                          onTap: () {
-                                            onSelected(option);
-                                            setState(
-                                                () {}); // Ensures UI updates
-                                          },
-                                        );
-                                      },
-                                    ),
+                        // Lock the dropdown after selection
+                        _enableCompanyTypeDropdown = false;
+
+                        debugPrint('Matched type: ${selectedCompanyType?.type ?? "none"}');
+                      });
+                    },
+
+                    fieldViewBuilder: (context, textEditingController,
+                        focusNode, onFieldSubmitted) {
+                      _textEditingController = textEditingController;
+                      return TextFormField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                          labelText: "Company Name",
+                          hintText: "Enter company name...",
+                          border: OutlineInputBorder(),
+                          suffixIcon: isLoading
+                              ? Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        });
-                  },
-                ),
+                                )
+                              : Icon(Icons.search),
+                        ),
+                        onChanged: (value) async {
+                          if (value.trim().isEmpty) {
+                            setState(() {
+                              _enableCompanyTypeDropdown = true;
+                              selectedCompanyType = null;
+                              companyDisplayNameController.clear();
+                            });
+                            authNotifier.filteredCompanyOptions = [];
+                          } else {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            await authNotifier.fetchCompanies(value);
+                            authNotifier.filterCompanies(
+                                value); // filter after fetching
+                            setState(() {
+                              isLoading = false;
+                            });
+                          }
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      if (options.isEmpty) {
+                        return SizedBox
+                            .shrink(); // Don't show anything if no options
+                      }
+
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          child: Container(
+                            color: Colors.white,
+                            width: MediaQuery.of(context).size.width * 0.9,
+                            constraints: BoxConstraints(maxHeight: 180),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: options.length,
+                              itemBuilder: (context, index) {
+                                final option = options.elementAt(index);
+                                return ListTile(
+                                  title: Text(
+                                    option.name,
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
               ],
             );
           },
         ),
 
-        // Consumer<AuthNotifier>(
-        //   builder: (context, authNotifier, child) {
-        //     return Column(
-        //       crossAxisAlignment: CrossAxisAlignment.start,
-        //       children: [
-        //         Autocomplete<Companies>(
-        //
-        //           optionsBuilder: (TextEditingValue textEditingValue) {
-        //             if (textEditingValue.text.isEmpty) {
-        //               return const Iterable<Companies>.empty();
-        //             }
-        //             return authNotifier.companyOptions.where((company) =>
-        //                 company.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-        //           },
-        //
-        //           onSelected: (Companies selection) {
-        //             _textEditingController.text = selection.name;
-        //             companyDisplayNameController.text = selection.name;
-        //             _enableCompanyTypeDropdown = false;
-        //           },
-        //           displayStringForOption: (Companies option) => option.name,
-        //           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-        //             _textEditingController = textEditingController;
-        //             return TextFormField(
-        //               controller: textEditingController,
-        //               focusNode: focusNode,
-        //               decoration: InputDecoration(
-        //                 labelText: "Company Name",
-        //                 hintText: "Enter company name...",
-        //                 border: OutlineInputBorder(),
-        //                 suffixIcon: isLoading
-        //                     ? Padding(
-        //                   padding: EdgeInsets.all(10),
-        //                   child: SizedBox(
-        //                     width: 20,
-        //                     height: 20,
-        //                     child: CircularProgressIndicator(strokeWidth: 2),
-        //                   ),
-        //                 )
-        //                     : Icon(Icons.search),
-        //
-        //               ),
-        //     onChanged: (value) {
-        //     if (_debounce?.isActive ?? false) _debounce!.cancel();
-        //
-        //     setState(() { isLoading = true; }); // Show loading immediately
-        //
-        //     _debounce = Timer(const Duration(milliseconds: 500), () {
-        //     if (value.isEmpty) {
-        //     _enableCompanyTypeDropdown = true;
-        //     companyDisplayNameController.clear();
-        //     authNotifier.companyOptions = [];
-        //     setState(() { isLoading = false; }); // Stop loading
-        //     } else {
-        //     authNotifier.fetchCompanies(value).then((_) {
-        //     setState(() { isLoading = false; }); // Stop loading after response
-        //     });
-        //     }
-        //     });
-        //
-        //
-        //
-        //
-        //               },
-        //             );
-        //           },
-        //
-        //           optionsViewBuilder: (context, onSelected, options) {
-        //             return Align(
-        //               alignment: Alignment.topLeft,
-        //               child: Material(
-        //                 elevation: 4.0,
-        //                 child: Container(
-        //                   width: MediaQuery.of(context).size.width * 0.9,
-        //                   constraints: BoxConstraints(maxHeight: 250),
-        //                   child: ListView.builder(
-        //                     padding: EdgeInsets.zero,
-        //                     itemCount: options.length,
-        //                     itemBuilder: (BuildContext context, int index) {
-        //                       final option = options.elementAt(index);
-        //                       return ListTile(
-        //                         title: Text('${option.name}'),
-        //                         onTap: () => onSelected(option),
-        //                       );
-        //                     },
-        //                   ),
-        //                 ),
-        //               ),
-        //             );
-        //           },
-        //         ),
-        //       ],
-        //     );
-        //   },
-        // ),
-
-        // Consumer<AuthNotifier>(
-        //   builder: (context, authNotifier, child) {
-        //     return Column(
-        //       crossAxisAlignment: CrossAxisAlignment.start,
-        //       children: [
-        //         Autocomplete<Companies>(
-        //           optionsBuilder: (TextEditingValue textEditingValue) {
-        //             if (textEditingValue.text.isEmpty) {
-        //               return const Iterable<Companies>.empty();
-        //             }
-        //             return companyOptions.where((company) => company.name
-        //                 .toLowerCase()
-        //                 .contains(textEditingValue.text.toLowerCase()));
-        //           },
-        //           onSelected: (Companies selection) {
-        //             setState(() {
-        //               _textEditingController.text = selection.name;
-        //               companyDisplayNameController.text = selection.name;
-        //
-        //               // Disable dropdown when a company is selected
-        //               _enableCompanyTypeDropdown = false;
-        //
-        //               // Map company type
-        //               selectedCompanyType = authNotifier.companyTypeList?.firstWhere(
-        //                     (type) => type.name == selection.companyTypeName,
-        //                 orElse: () => null as CompanyType,
-        //               );
-        //
-        //               // If no valid match, set it to null
-        //               if (selectedCompanyType?.id == "") {
-        //                 selectedCompanyType = null;
-        //               }
-        //             });
-        //           },
-        //           // onSelected: (Companies selection) {
-        //           //   setState(() {
-        //           //     _textEditingController.text = selection.name;
-        //           //     companyDisplayNameController.text = selection.name;
-        //           //     _enableCompanyTypeDropdown=false;
-        //           //     selectedCompanyType =
-        //           //         authNotifier.companyTypeList?.firstWhere(
-        //           //       (type) => type.name == selection.companyTypeName,
-        //           //       orElse: () => null as CompanyType,
-        //           //     );
-        //           //   });
-        //           //
-        //           //   print(
-        //           //       "Selected: ${selection.name}, Type: ${selection.name}");
-        //           // },
-        //           displayStringForOption: (Companies option) => option.name,
-        //           fieldViewBuilder: (context, textEditingController, focusNode,
-        //               onFieldSubmitted) {
-        //             _textEditingController = textEditingController;
-        //             return TextFormField(
-        //               controller: textEditingController,
-        //               focusNode: focusNode,
-        //               decoration: InputDecoration(
-        //                 labelText: "Company Name",
-        //                 hintText: "Enter company name...",
-        //                 border: OutlineInputBorder(),
-        //                 suffixIcon: isLoading
-        //                     ? Padding(
-        //                         padding: EdgeInsets.all(10),
-        //                         child: SizedBox(
-        //                           width: 20,
-        //                           height: 20,
-        //                           child:
-        //                               CircularProgressIndicator(strokeWidth: 2),
-        //                         ),
-        //                       )
-        //                     : Icon(Icons.search),
-        //               ),
-        //
-        //               onChanged: (value) {
-        //                 if (value.isEmpty) {
-        //                   setState(() {
-        //                     _enableCompanyTypeDropdown = true; // Enable dropdown when cleared
-        //                     selectedCompanyType = null; // Reset selected type
-        //                     companyDisplayNameController.clear(); // Clear company display name
-        //                   });
-        //                 }
-        //                 onSearchChanged(value, authNotifier); // Uses debouncer
-        //               },
-        //             );
-        //           },
-        //           optionsViewBuilder: (context, onSelected, options) {
-        //             return Align(
-        //               alignment: Alignment.topLeft,
-        //               child: Material(
-        //                 elevation: 4.0,
-        //                 child: Container(
-        //                   width: MediaQuery.of(context).size.width * 0.9,
-        //                   constraints: BoxConstraints(maxHeight: 250),
-        //                   child: ListView.builder(
-        //                     padding: EdgeInsets.zero,
-        //                     itemCount: options.length,
-        //                     itemBuilder: (BuildContext context, int index) {
-        //                       final option = options.elementAt(index);
-        //                       return ListTile(
-        //                         title: Text(
-        //                             '${option.name} (${option.countryName})'),
-        //                         onTap: () {
-        //                           onSelected(option);
-        //                         },
-        //                       );
-        //                     },
-        //                   ),
-        //                 ),
-        //               ),
-        //             );
-        //           },
-        //         ),
-        //       ],
-        //     );
-        //   },
-        // ),
-
         SizedBox(height: CustomSpacing.four),
+        // Text(selectedCompanyType!.type.toString()),
         // Company Type
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
@@ -2306,82 +2177,209 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               builder: (FormFieldState<String> state) {
                 return _showCompanyType
                     ? IgnorePointer(
-                        ignoring: !_enableCompanyTypeDropdown,
-                        child: DropdownButtonFormField<CompanyType>(
-                          value: selectedCompanyType,
-                          // Provide the currently selected value
-
-                          onChanged: (CompanyType? newValue) {
-                            setState(() {
-                              _showRoles = false;
-                              selectedCompanyRole = null;
-                              selectedCompanyType =
-                                  newValue; // Update the selected value
-                              state.didChange(null); // Reset validation state
-                            });
-                            Future.delayed(Duration(milliseconds: 1), () {
-                              setState(() {
-                                _showRoles = true;
-                              });
-                            });
-                          },
-                          items: authNotifier.companyTypeList
-                                  ?.where((companyType) =>
-                                      companyType.type.toLowerCase() !=
-                                      'individual_account')
-                                  .map((CompanyType companyType) {
-                                return DropdownMenuItem<CompanyType>(
-                                  value: companyType,
-                                  child: Text(companyType.name),
-                                );
-                              }).toList() ??
-                              [],
-                          decoration: InputDecoration(
-                            enabled: _enableCompanyTypeDropdown,
-                            // labelText: LanguageService.getTranslated(context,
-                            //     "register_corporate_company_type_field_label"),
-                            label: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: LanguageService.getTranslated(context,
-                                        "register_corporate_company_type_field_label"), // Label text, // Black color for "Name"
-                                  ),
-                                  WidgetSpan(
-                                    child: Text(
-                                      " *",
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    alignment: PlaceholderAlignment
-                                        .bottom, // Center aligns the asterisk
-                                  ),
-                                ],
-                              ),
-                            ),
-                            hintText: LanguageService.getTranslated(context,
-                                "register_corporate_company_type_field_placeholder"),
-                            border: const OutlineInputBorder(),
-                            errorText: state.errorText,
-                          ),
-                          validator: (value) {
-                            if (value == null) {
-                              return 'Company Type is required'; // Add your validation logic here
-                            }
-                            return null;
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: CircularProgressIndicator(),
+                  ignoring: !_enableCompanyTypeDropdown,
+                  child: DropdownButtonFormField<CompanyType>(
+                    value: selectedCompanyType,
+                    onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
+                      setState(() {
+                        _showRoles = false;
+                        selectedCompanyRole = null;
+                        selectedCompanyType = newValue;
+                      });
+                      Future.delayed(Duration(milliseconds: 1), () {
+                        setState(() {
+                          _showRoles = true;
+                        });
+                      });
+                    } : null,
+                    items: authNotifier.companyTypeList
+                        ?.where((companyType) =>
+                    companyType.type.toLowerCase() != 'individual_account')
+                        .map((CompanyType companyType) {
+                      return DropdownMenuItem<CompanyType>(
+                        value: companyType,
+                        // Changed from companyType.name to companyType.type.toString()
+                        child: Text(companyType.type.toString()),
                       );
+                    }).toList(),
+                    decoration: InputDecoration(
+                      enabled: _enableCompanyTypeDropdown,
+                      label: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: LanguageService.getTranslated(context,
+                                  "register_corporate_company_type_field_label"),
+                            ),
+                            WidgetSpan(
+                              child: Text(
+                                " *",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              alignment: PlaceholderAlignment.bottom,
+                            ),
+                          ],
+                        ),
+                      ),
+                      hintText: LanguageService.getTranslated(context,
+                          "register_corporate_company_type_field_placeholder"),
+                      border: const OutlineInputBorder(),
+                      errorText: state.errorText,
+                    ),
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Company Type is required';
+                      }
+                      return null;
+                    },
+                  ),
+                )
+                    : Center(
+                  child: CircularProgressIndicator(),
+                );
               },
             );
           },
         ),
+        // Consumer<AuthNotifier>(
+        //   builder: (context, authNotifier, child) {
+        //     return FormField<String>(
+        //       builder: (FormFieldState<String> state) {
+        //         return _showCompanyType
+        //             ? IgnorePointer(
+        //                 ignoring: !_enableCompanyTypeDropdown,
+        //                 child:
+        //                 DropdownButtonFormField<CompanyType>(
+        //                   value: selectedCompanyType, // This must reference the updated state
+        //                   onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
+        //                     setState(() {
+        //                       _showRoles = false;
+        //                       selectedCompanyRole = null;
+        //                       selectedCompanyType = newValue;
+        //                     });
+        //                     Future.delayed(Duration(milliseconds: 1), () {
+        //                       setState(() {
+        //                         _showRoles = true;
+        //                       });
+        //                     });
+        //                   } : null, // disables interaction if editing is locked
+        //                   items: authNotifier.companyTypeList
+        //                       ?.where((companyType) =>
+        //                   companyType.type.toLowerCase() != 'individual_account')
+        //                       .map((CompanyType companyType) {
+        //                     return DropdownMenuItem<CompanyType>(
+        //                       value: companyType,
+        //                       child: Text(companyType.name),
+        //                     );
+        //                   }).toList(),
+        //                   decoration: InputDecoration(
+        //                     enabled: _enableCompanyTypeDropdown,
+        //                     label: RichText(
+        //                       text: TextSpan(
+        //                         children: [
+        //                           TextSpan(
+        //                             text: LanguageService.getTranslated(context,
+        //                                 "register_corporate_company_type_field_label"),
+        //                           ),
+        //                           WidgetSpan(
+        //                             child: Text(
+        //                               " *",
+        //                               style: TextStyle(
+        //                                 color: Colors.red,
+        //                                 fontSize: 16,
+        //                                 fontWeight: FontWeight.bold,
+        //                               ),
+        //                             ),
+        //                             alignment: PlaceholderAlignment.bottom,
+        //                           ),
+        //                         ],
+        //                       ),
+        //                     ),
+        //                     hintText: LanguageService.getTranslated(context,
+        //                         "register_corporate_company_type_field_placeholder"),
+        //                     border: const OutlineInputBorder(),
+        //                     errorText: state.errorText,
+        //                   ),
+        //                   validator: (value) {
+        //                     if (value == null) {
+        //                       return 'Company Type is required';
+        //                     }
+        //                     return null;
+        //                   },
+        //                 ),
+        //
+        //
+        //           // DropdownButtonFormField<CompanyType>(
+        //                 //   value: selectedCompanyType,
+        //                 //   onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
+        //                 //     setState(() {
+        //                 //       _showRoles = false;
+        //                 //       selectedCompanyRole = null;
+        //                 //       selectedCompanyType = newValue;
+        //                 //     });
+        //                 //     Future.delayed(Duration(milliseconds: 1), () {
+        //                 //       setState(() {
+        //                 //         _showRoles = true;
+        //                 //       });
+        //                 //     });
+        //                 //   } : null, // disables interaction if editing is locked
+        //                 //   items: authNotifier.companyTypeList
+        //                 //       ?.where((companyType) =>
+        //                 //   companyType.type.toLowerCase() != 'individual_account')
+        //                 //       .map((CompanyType companyType) {
+        //                 //     return DropdownMenuItem<CompanyType>(
+        //                 //       value: companyType,
+        //                 //       child: Text(companyType.name),
+        //                 //     );
+        //                 //   }).toList(),
+        //                 //   decoration: InputDecoration(
+        //                 //     enabled: _enableCompanyTypeDropdown,
+        //                 //     label: RichText(
+        //                 //       text: TextSpan(
+        //                 //         children: [
+        //                 //           TextSpan(
+        //                 //             text: LanguageService.getTranslated(context,
+        //                 //                 "register_corporate_company_type_field_label"),
+        //                 //           ),
+        //                 //           WidgetSpan(
+        //                 //             child: Text(
+        //                 //               " *",
+        //                 //               style: TextStyle(
+        //                 //                 color: Colors.red,
+        //                 //                 fontSize: 16,
+        //                 //                 fontWeight: FontWeight.bold,
+        //                 //               ),
+        //                 //             ),
+        //                 //             alignment: PlaceholderAlignment.bottom,
+        //                 //           ),
+        //                 //         ],
+        //                 //       ),
+        //                 //     ),
+        //                 //     hintText: LanguageService.getTranslated(context,
+        //                 //         "register_corporate_company_type_field_placeholder"),
+        //                 //     border: const OutlineInputBorder(),
+        //                 //     errorText: state.errorText,
+        //                 //   ),
+        //                 //   validator: (value) {
+        //                 //     if (value == null) {
+        //                 //       return 'Company Type is required';
+        //                 //     }
+        //                 //     return null;
+        //                 //   },
+        //                 // ),
+        //
+        //         )
+        //             : Center(
+        //                 child: CircularProgressIndicator(),
+        //               );
+        //       },
+        //     );
+        //   },
+        // ),
 
         SizedBox(height: CustomSpacing.four),
         // Company Display Name
@@ -2394,8 +2392,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
+                    text: 'Company Display Name', // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -2412,8 +2409,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ],
               ),
             ),
-            hintText: LanguageService.getTranslated(context,
-                "register_corporate_comapny_displayname_field_placeholder"),
+            hintText: "Enter display name of your company",
+        // .getTranslated(context,
+        //         "register_corporate_comapny_displayname_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           validator: (value) {

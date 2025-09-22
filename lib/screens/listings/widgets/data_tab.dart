@@ -190,10 +190,10 @@ class _DataTabState extends State<DataTab> {
           if (provider.isLoading == true) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (provider.parameters == null ||
-              provider.parameters!.result == null) {
-            return const Center(child: Text("No parameters found"));
-          }
+          // if (provider.parameters == null ||
+          //     provider.parameters!.result == null) {
+          //   return const Center(child: Text("No parameters found"));
+          // }
 
           // Grouping logic starts here
           Map<String, List<Result>> groupedResults = {};
@@ -2355,10 +2355,11 @@ class DataCompletenessCard extends StatelessWidget {
             style: TextStyle(color: Colors.white60, fontSize: 13),
           ),
           const SizedBox(height: 4),
-          Text(
-            parameterType.toLowerCase() == 'high'
-                ? weightage!.high.toString()
-                : weightage.low.toString(),
+      Text(
+        parameterType.toLowerCase() == 'high'
+            ? (weightage?.high ?? 0).toString()
+            : (weightage?.low ?? 0).toString(),
+
             style: const TextStyle(
               fontSize: 18,
               color: Colors.white,

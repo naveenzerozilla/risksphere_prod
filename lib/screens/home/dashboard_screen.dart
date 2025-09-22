@@ -39,6 +39,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> vendorList = [];
   var subscriptions = {};
   String isMaintenance = "";
+  String startDate = "";
+  String endDate = "";
   bool isPgAdmin = false;
   bool isAdmin = false;
   bool isSuperAdmin = false;
@@ -209,7 +211,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initializeData() async {
     await Future.wait([
-
       _setClaims(),
       Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed(),
     ]);
@@ -256,9 +257,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
     bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
-
-    showVerificationRequests =
-        showCorporateVerificationRequests || showUserVerificationRequests;
+        showVerificationRequests =
+            showCorporateVerificationRequests || showUserVerificationRequests;
 
     _getData();
     _getMaintainancePeriod();
@@ -268,6 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _getMaintainancePeriod() async {
     isMaintenance =
         await SharedPreferenceService.getScheduleInProgress() ?? "false";
+    startDate=await SharedPreferenceService.getUpcomingScheduleStartTime() ?? "";
+    endDate=await SharedPreferenceService.getUpcomingScheduleEndTime() ?? "";
   }
 
   Future<void> _getData() async {
@@ -381,7 +383,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Consumer<UserProfileProvider>(
                     builder: (context, userProfile, child) {
                       final trialStatus = userProfile.trialInfo['status'] ?? '';
-                      if (trialStatus.contains('Expired') && isHasAnyPlan == false ) {
+                      if (trialStatus.contains('Expired') &&
+                          isHasAnyPlan == false) {
                         return Container(
                           padding:
                               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -464,7 +467,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     if (isMaintenance.toString() == 'in_progress') ...[
                       Container(
-                        child: MaintenanceUI(isMaintenance: isMaintenance),
+                        child: MaintenanceUI(
+                            isMaintenance: "isMaintenance",
+                            startDate: startDate,
+                            endDate: endDate
+                        ),
                       )
                     ],
                     Text(

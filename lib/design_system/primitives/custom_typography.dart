@@ -5,6 +5,14 @@ class CustomTypography {
 
   CustomTypography(this.context);
 
+  TextStyle get ButtonLargeBlack => TextStyle(
+    fontFamily: 'General Sans',
+    fontWeight: FontWeight.w500,
+    fontSize: 16.0,
+    height: 26.0 / 16.0,
+    letterSpacing: 0.46,
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.grey,
+  );
   TextStyle get ButtonLarge => TextStyle(
     fontFamily: 'General Sans',
     fontWeight: FontWeight.w500,

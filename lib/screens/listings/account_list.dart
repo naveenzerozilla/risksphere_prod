@@ -91,7 +91,7 @@ class _AccountListScreenState extends State<AccountListScreen>
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       provider.page = 1;
       await provider.fetchAccountList(
-          context, _accountQuery, provider.page, 10);
+          context, _accountQuery, provider.page, 8);
     });
   }
 
@@ -243,7 +243,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
     accountListProvider.page = 1;
-    await accountListProvider.fetchAccountList(context, "", 1, 5);
+    await accountListProvider.fetchAccountList(context, "", 1, 8);
     setState(() {
       hasAnyPlan = hasAnyPlans ?? false;
       isPgAdmin = isPgAdmin;
@@ -1207,7 +1207,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                         context,
                                                                         _accountQuery,
                                                                         1,
-                                                                        5);
+                                                                        8);
                                                                   }
 
                                                                   setState(() {
@@ -1448,239 +1448,242 @@ class _AccountListScreenState extends State<AccountListScreen>
                 borderRadius: BorderRadius.circular(8.0),
               ),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      LanguageService.getTranslated(
-                          context, "account_list_app_add_account_title"),
-                      style: typography.H5_Regular,
-                    ),
-                    SizedBox(height: 16.0),
-                    Consumer<AccountListProvider>(
-                      builder: (context, accountListProvider, child) {
-                        return Column(
-                          children: [
-                            TextField(
-                              controller: _textEditingController,
-                              onChanged: (value) {
-                                setState(() {
-                                  _accountAlreadyExists = false;
-                                  _selectedAccount = null;
-                                  accountListProvider.clearAutoCompleteList();
-                                });
-
-                                _autocompleteText = value;
-
-                                // Cancel the previous debounce timer
-                                if (_debounce?.isActive ?? false)
-                                  _debounce!.cancel();
-
-                                // Start a new debounce timer
-                                _debounce =
-                                    Timer(const Duration(milliseconds: 500),
-                                        () async {
-                                  await autoCompleteAccountsSearchClient(
-                                      _autocompleteText);
-                                });
-                              },
-                              decoration: InputDecoration(
-                                suffixIcon:
-                                    _textEditingController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: Icon(Icons.clear),
-                                            onPressed: () {
-                                              setState(() {
-                                                _textEditingController.clear();
-                                                _accountAlreadyExists = false;
-                                                _selectedAccount = null;
-                                                accountListProvider
-                                                    .clearAutoCompleteList();
-                                              });
-                                            },
-                                          )
-                                        : null,
-                                labelText: LanguageService.getTranslated(
-                                    context,
-                                    "account_list_app_add_account_title"),
-                                hintText: LanguageService.getTranslated(context,
-                                    "account_list_app_add_account_title"),
-                                border: const OutlineInputBorder(),
-                              ),
-                            ),
-                            // TextField(
-                            //   controller: _textEditingController,
-                            //   focusNode: FocusNode(),
-                            //   onChanged: (value) async {
-                            //     setState(() {
-                            //       _accountAlreadyExists = false;
-                            //       _selectedAccount = null;
-                            //       // Clear the autocomplete list when user starts typing
-                            //       accountListProvider.clearAutoCompleteList();
-                            //     });
-                            //     _autocompleteText = value;
-                            //     await autoCompleteAccountsSearchClient(
-                            //         _autocompleteText);
-                            //   },
-                            //   decoration: InputDecoration(
-                            //     suffixIcon:
-                            //         _textEditingController.text.isNotEmpty
-                            //             ? IconButton(
-                            //                 icon: Icon(Icons.clear),
-                            //                 onPressed: () {
-                            //                   setState(() {
-                            //                     _textEditingController.clear();
-                            //                     _accountAlreadyExists = false;
-                            //                     _selectedAccount = null;
-                            //                     // Clear the autocomplete list when user clears the text
-                            //                     accountListProvider
-                            //                         .clearAutoCompleteList();
-                            //                   });
-                            //                 },
-                            //               )
-                            //             : null,
-                            //     labelText: LanguageService.getTranslated(
-                            //         context,
-                            //         "account_list_app_add_account_title"),
-                            //     hintText: LanguageService.getTranslated(context,
-                            //         "account_list_app_add_account_title"),
-                            //     border: const OutlineInputBorder(),
-                            //   ),
-                            // ),
-                            if (_textEditingController.text.isNotEmpty &&
-                                !_accountAlreadyExists)
-                              AutocompleteOptions(
-                                options:
-                                    accountListProvider.autoCompleteAccountList,
-                                onSelected: (Accounts selection) {
+                child: SizedBox(
+                  width: 500,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        LanguageService.getTranslated(
+                            context, "account_list_app_add_account_title"),
+                        style: typography.H5_Regular,
+                      ),
+                      SizedBox(height: 16.0),
+                      Consumer<AccountListProvider>(
+                        builder: (context, accountListProvider, child) {
+                          return Column(
+                            children: [
+                              TextField(
+                                controller: _textEditingController,
+                                onChanged: (value) {
                                   setState(() {
-                                    _accountAlreadyExists = true;
-                                    _selectedAccount = selection;
-                                    _textEditingController.text =
-                                        selection.accountName!;
-                                    // Clear the autocomplete list when an option is selected
+                                    _accountAlreadyExists = false;
+                                    _selectedAccount = null;
                                     accountListProvider.clearAutoCompleteList();
                                   });
+
+                                  _autocompleteText = value;
+
+                                  // Cancel the previous debounce timer
+                                  if (_debounce?.isActive ?? false)
+                                    _debounce!.cancel();
+
+                                  // Start a new debounce timer
+                                  _debounce =
+                                      Timer(const Duration(milliseconds: 500),
+                                          () async {
+                                    await autoCompleteAccountsSearchClient(
+                                        _autocompleteText);
+                                  });
                                 },
-                                isLoading:
-                                    accountListProvider.isAutoCompleteLoading,
-                              ),
-                            if (_accountAlreadyExists)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16.0),
-                                child: TextField(
-                                  controller: _messageController,
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(
-                                        context,
-                                        "account_list_app_comment_text"),
-                                    hintText: LanguageService.getTranslated(
-                                        context,
-                                        "account_list_app_comment_placeholder"),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  maxLines: 3,
+                                decoration: InputDecoration(
+                                  suffixIcon:
+                                      _textEditingController.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: Icon(Icons.clear),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _textEditingController.clear();
+                                                  _accountAlreadyExists = false;
+                                                  _selectedAccount = null;
+                                                  accountListProvider
+                                                      .clearAutoCompleteList();
+                                                });
+                                              },
+                                            )
+                                          : null,
+                                  labelText: LanguageService.getTranslated(
+                                      context,
+                                      "account_list_app_add_account_title"),
+                                  hintText: LanguageService.getTranslated(context,
+                                      "account_list_app_add_account_title"),
+                                  border: const OutlineInputBorder(),
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-                    SizedBox(height: CustomSpacing.six),
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Consumer<AccountListProvider>(
-                                  builder: (context, accountListProvider, _) {
-                                return accountListProvider.isAddAccountLoading
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                              width: 25,
-                                              height: 25,
-                                              child:
-                                                  CircularProgressIndicator()),
-                                        ],
-                                      )
-                                    : CustomButton(
-                                        onPressed: () async {
-                                          if (_autocompleteText.isEmpty) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                                    content: Text(
-                                              LanguageService.getTranslated(
-                                                  context,
-                                                  "account_list_app_add_account_empty_text_error"),
-                                              style: typography.Body1,
-                                            )));
-                                            return;
-                                          }
-
-                                          if (!_accountAlreadyExists) {
-                                            // Add account
-                                            await accountListProvider
-                                                .addAccount(
-                                                    context, _autocompleteText);
-                                          } else {
-                                            // Request access
-                                            if (_messageController
-                                                .text.isEmpty) {
+                              // TextField(
+                              //   controller: _textEditingController,
+                              //   focusNode: FocusNode(),
+                              //   onChanged: (value) async {
+                              //     setState(() {
+                              //       _accountAlreadyExists = false;
+                              //       _selectedAccount = null;
+                              //       // Clear the autocomplete list when user starts typing
+                              //       accountListProvider.clearAutoCompleteList();
+                              //     });
+                              //     _autocompleteText = value;
+                              //     await autoCompleteAccountsSearchClient(
+                              //         _autocompleteText);
+                              //   },
+                              //   decoration: InputDecoration(
+                              //     suffixIcon:
+                              //         _textEditingController.text.isNotEmpty
+                              //             ? IconButton(
+                              //                 icon: Icon(Icons.clear),
+                              //                 onPressed: () {
+                              //                   setState(() {
+                              //                     _textEditingController.clear();
+                              //                     _accountAlreadyExists = false;
+                              //                     _selectedAccount = null;
+                              //                     // Clear the autocomplete list when user clears the text
+                              //                     accountListProvider
+                              //                         .clearAutoCompleteList();
+                              //                   });
+                              //                 },
+                              //               )
+                              //             : null,
+                              //     labelText: LanguageService.getTranslated(
+                              //         context,
+                              //         "account_list_app_add_account_title"),
+                              //     hintText: LanguageService.getTranslated(context,
+                              //         "account_list_app_add_account_title"),
+                              //     border: const OutlineInputBorder(),
+                              //   ),
+                              // ),
+                              if (_textEditingController.text.isNotEmpty &&
+                                  !_accountAlreadyExists)
+                                AutocompleteOptions(
+                                  options:
+                                      accountListProvider.autoCompleteAccountList,
+                                  onSelected: (Accounts selection) {
+                                    setState(() {
+                                      _accountAlreadyExists = true;
+                                      _selectedAccount = selection;
+                                      _textEditingController.text =
+                                          selection.accountName!;
+                                      // Clear the autocomplete list when an option is selected
+                                      accountListProvider.clearAutoCompleteList();
+                                    });
+                                  },
+                                  isLoading:
+                                      accountListProvider.isAutoCompleteLoading,
+                                ),
+                              if (_accountAlreadyExists)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: TextField(
+                                    controller: _messageController,
+                                    decoration: InputDecoration(
+                                      labelText: LanguageService.getTranslated(
+                                          context,
+                                          "account_list_app_comment_text"),
+                                      hintText: LanguageService.getTranslated(
+                                          context,
+                                          "account_list_app_comment_placeholder"),
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                    maxLines: 3,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(height: CustomSpacing.six),
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Consumer<AccountListProvider>(
+                                    builder: (context, accountListProvider, _) {
+                                  return accountListProvider.isAddAccountLoading
+                                      ? Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            SizedBox(
+                                                width: 25,
+                                                height: 25,
+                                                child:
+                                                    CircularProgressIndicator()),
+                                          ],
+                                        )
+                                      : CustomButton(
+                                          onPressed: () async {
+                                            if (_autocompleteText.isEmpty) {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(SnackBar(
                                                       content: Text(
                                                 LanguageService.getTranslated(
                                                     context,
-                                                    "account_list_app_comment_empty_text_error"),
+                                                    "account_list_app_add_account_empty_text_error"),
+                                                style: typography.Body1,
                                               )));
                                               return;
                                             }
-                                            await accountListProvider
-                                                .requestAccess(
+
+                                            if (!_accountAlreadyExists) {
+                                              // Add account
+                                              await accountListProvider
+                                                  .addAccount(
+                                                      context, _autocompleteText);
+                                            } else {
+                                              // Request access
+                                              if (_messageController
+                                                  .text.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                        content: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "account_list_app_comment_empty_text_error"),
+                                                )));
+                                                return;
+                                              }
+                                              await accountListProvider
+                                                  .requestAccess(
+                                                      context,
+                                                      _selectedAccount
+                                                              ?.accountId ??
+                                                          "",
+                                                      _messageController.text);
+                                            }
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            _accountAlreadyExists
+                                                ? LanguageService.getTranslated(
                                                     context,
-                                                    _selectedAccount
-                                                            ?.accountId ??
-                                                        "",
-                                                    _messageController.text);
-                                          }
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text(
-                                          _accountAlreadyExists
-                                              ? LanguageService.getTranslated(
-                                                  context,
-                                                  "account_list_app_request_access_text")
-                                              : LanguageService.getTranslated(
-                                                  context,
-                                                  "account_list_app_submit_text"),
-                                          // style: typography.ButtonLarge,
-                                        ),
-                                        type: ButtonType.elevated,
-                                      );
-                              }),
-                            ),
-                          ],
-                        ),
-                        CustomButton(
-                          onPressed: () {
-                            // Cancel
-                            _uploadedFileName = null;
-                            _sovNameController.clear();
-                            Navigator.pop(context);
-                          },
-                          child: Text(
-                            LanguageService.getTranslated(
-                                context, "account_list_app_cancel_text"),
-                            style: typography.ButtonLarge,
+                                                    "account_list_app_request_access_text")
+                                                : LanguageService.getTranslated(
+                                                    context,
+                                                    "account_list_app_submit_text"),
+                                            style: typography.ButtonLargeBlack,
+                                          ),
+                                          type: ButtonType.elevated,
+                                        );
+                                }),
+                              ),
+                            ],
                           ),
-                          type: ButtonType.text,
-                        ),
-                      ],
-                    ),
-                  ],
+                          CustomButton(
+                            onPressed: () {
+                              // Cancel
+                              _uploadedFileName = null;
+                              _sovNameController.clear();
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              LanguageService.getTranslated(
+                                  context, "account_list_app_cancel_text"),
+                              style: typography.ButtonLarge,
+                            ),
+                            type: ButtonType.text,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1843,7 +1846,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                     : RefreshIndicator(
                         onRefresh: () async {
                           accountListProvider.fetchAccountList(
-                              context, _accountQuery, 1, 5);
+                              context, _accountQuery, 1, 8);
                         },
                         child: ListView.builder(
                             itemCount: accountListProvider.accountList.length,
@@ -1897,7 +1900,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     _accountQuery,
                                     // Pass the search query if any
                                     accountListProvider.page,
-                                    10, // Page size
+                                    8, // Page size
                                   );
                                   return SizedBox();
                                 }

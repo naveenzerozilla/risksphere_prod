@@ -7,8 +7,11 @@ import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:aad_oauth/aad_oauth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:RiskSphere/constants/enums.dart';
 import 'package:RiskSphere/design_system/components/custom_button.dart';
@@ -29,9 +32,13 @@ import '../utils/global_imports.dart' hide CompanyType;
 class AuthNotifier extends ChangeNotifier {
   ValueNotifier<List<Companies>> companyOptionsNotifier = ValueNotifier([]);
   List<Companies> companyOptions = [];
+  List<Companies> filteredCompanyOptions = [];
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FlutterAppAuth _appAuth = FlutterAppAuth();
+  String? accessToken;
+  Map<String, dynamic>? userProfile;
 
   // ✅ AadOAuth configuration
   final AadOAuth oauth = AadOAuth(
@@ -43,6 +50,21 @@ class AuthNotifier extends ChangeNotifier {
       navigatorKey: navigatorKey,
     ),
   );
+  static const String _clientId = 'eb81a783-765c-482d-8fcb-6440ab1d1201';
+  static const String _tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
+  static const String _redirectUrl = 'com.risksphere.green://oauth2redirect';
+
+  final String _discoveryUrl =
+      // 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration';
+
+      'https://login.microsoftonline.com/$_tenantId/v2.0/.well-known/openid-configuration';
+
+  final List<String> _scopes = const [
+    'openid',
+    'profile',
+    'email',
+    'User.Read'
+  ];
 
   bool isNewUser = false;
 
@@ -146,18 +168,61 @@ class AuthNotifier extends ChangeNotifier {
     });
   }
 
+  // Future<void> fetchCompanies(String name) async {
+  //   print("Fetching: $name");
+  //
+  //   if (name.trim().isEmpty) {
+  //     companyOptions = [];
+  //     notifyListeners();
+  //     return;
+  //   }
+  //
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse(
+  //           "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Accept': 'application/json'
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //
+  //       if (data is Map &&
+  //           data.containsKey("result") &&
+  //           data["result"] is List) {
+  //         final List<dynamic> companyList = data["result"];
+  //         companyOptions =
+  //             companyList.map((json) => Companies.fromJson(json)).toList();
+  //       } else {
+  //         companyOptions = [];
+  //       }
+  //     } else {
+  //       companyOptions = [];
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching companies: $e");
+  //     companyOptions = [];
+  //   }
+  //
+  //   notifyListeners();
+  // }
   Future<void> fetchCompanies(String name) async {
     print("Fetching: $name");
 
-    // if (name.isEmpty) {
-    //   companyOptionsNotifier.value = [];
-    //   return;
-    // }
+    if (name.trim().isEmpty) {
+      companyOptions = [];
+      filteredCompanyOptions = []; // clear filtered list as well
+      notifyListeners();
+      return;
+    }
 
     try {
       final response = await http.get(
         Uri.parse(
-            "https://us-central1-project-green-f4d78.cloudfunctions.net/send_default_data?name=${Uri.encodeComponent(name)}"),
+            "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -165,29 +230,85 @@ class AuthNotifier extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        print("object");
         final data = json.decode(response.body);
 
         if (data is Map &&
             data.containsKey("result") &&
             data["result"] is List) {
-          print("data");
           final List<dynamic> companyList = data["result"];
-          print(companyList);
-          companyOptionsNotifier.value =
+          companyOptions =
               companyList.map((json) => Companies.fromJson(json)).toList();
         } else {
-          companyOptionsNotifier.value = [];
+          companyOptions = [];
         }
       } else {
-        companyOptionsNotifier.value = [];
+        companyOptions = [];
       }
     } catch (e) {
       print("Error fetching companies: $e");
-      companyOptionsNotifier.value = [];
+      companyOptions = [];
     }
-    companyOptionsNotifier.notifyListeners();
+
+    // After fetching, filter based on the current input name
+    filterCompanies(name);
+
+    notifyListeners();
   }
+
+  void filterCompanies(String query) {
+    final input = query.trim().toLowerCase();
+    if (input.isEmpty) {
+      filteredCompanyOptions = [];
+    } else {
+      filteredCompanyOptions = companyOptions
+          .where((company) => company.name.toLowerCase().contains(input))
+          .toList();
+    }
+    notifyListeners();
+  }
+
+  // Future<void> fetchCompanies(String name) async {
+  //   print("Fetching: $name");
+  //
+  //   // if (name.isEmpty) {
+  //   //   companyOptionsNotifier.value = [];
+  //   //   return;
+  //   // }
+  //
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse(
+  //           "${AppConstant.baseURL}send_default_data?name=${Uri.encodeComponent(name)}"),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Accept': 'application/json'
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       print("object");
+  //       final data = json.decode(response.body);
+  //
+  //       if (data is Map &&
+  //           data.containsKey("result") &&
+  //           data["result"] is List) {
+  //         print("data");
+  //         final List<dynamic> companyList = data["result"];
+  //         print(companyList);
+  //         companyOptionsNotifier.value =
+  //             companyList.map((json) => Companies.fromJson(json)).toList();
+  //       } else {
+  //         companyOptionsNotifier.value = [];
+  //       }
+  //     } else {
+  //       companyOptionsNotifier.value = [];
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching companies: $e");
+  //     companyOptionsNotifier.value = [];
+  //   }
+  //   companyOptionsNotifier.notifyListeners();
+  // }
 
   /// Login
 
@@ -465,144 +586,75 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> signInWithMicrosoft(BuildContext context) async {
+  Future<void> signInWithMicrosoft({BuildContext? context}) async {
     try {
       _isSigningIn = true;
       notifyListeners();
 
-      // ✅ Microsoft OAuth provider
-      final microsoftProvider = OAuthProvider("microsoft.com");
-      final userCredential =
-          await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
+      final microsoftProvider = MicrosoftAuthProvider();
 
-      _user = userCredential.user;
-      isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+      microsoftProvider.addScope('email');
+      microsoftProvider.addScope('openid');
+      microsoftProvider.addScope('profile');
+      microsoftProvider.addScope('User.Read');
 
-      print("✅ Signed in as: ${_user?.email}");
-
-      if (_user != null) {
-        if (isNewUser) {
-          // 👇 Navigate new users to CreateAccountScreen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CreateAccountScreen(
-                userCredential: userCredential,
-              ),
-            ),
-          );
-        } else {
-          // 👇 Existing user → load profile then go to Home
-          Provider.of<UserProfileProvider>(context, listen: false)
-              .getAllUserData(context, '', '');
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  CreateAccountScreen(), // Change to your real HomePage
-            ),
-          );
-        }
+      UserCredential userCredential;
+      if (kIsWeb) {
+        userCredential =
+            await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
+      } else {
+        userCredential =
+            await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
       }
-    } on FirebaseAuthException catch (e) {
-      print("❌ Firebase Auth error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Sign-in failed')),
-      );
-    } catch (e) {
-      print("❌ Unexpected error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unexpected error: $e')),
-      );
-    } finally {
+
+      // Handle user data or token claims if necessary
+      // Example:
+      IdTokenResult token = await userCredential.user!.getIdTokenResult();
+      Map<String, dynamic>? claims = token.claims ?? {};
+      log("Claims: $claims");
+
+      await SharedPreferenceService.setClaims(claims);
+      await SharedPreferenceService.getAllClaims();
+
+      print('Is Individual? ${claims['isIndividual']}');
+
+      print('Current User: ${userCredential.user!.email}');
+      print('Current firebase user: ${_auth.currentUser!.email}');
+      _user = userCredential.user;
+      if (claims['isIndividual'] == null) {
+        isNewUser = true;
+        Navigator.push(
+          context!,
+          MaterialPageRoute(
+            builder: (context) => CreateAccountScreen(
+              userCredential: userCredential,
+            ),
+          ),
+        );
+      } else {
+        isNewUser = false;
+        await Navigator.pushAndRemoveUntil(
+          context!,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          (route) => false,
+        );
+      }
+
       _isSigningIn = false;
       notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      _isSigningIn = false;
+      notifyListeners();
+      print("Error signing in with Microsoft: $e");
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An error occurred'),
+          ),
+        );
+      }
     }
   }
-
-//old2
-  // Future<void> signInWithMicrosoft(BuildContext context) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     notifyListeners();
-  //
-  //     // ✅ Use Firebase's Microsoft provider directly
-  //     final microsoftProvider = OAuthProvider("microsoft.com");
-  //     final userCredential =
-  //     await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
-  //
-  //     _user = userCredential.user;
-  //     isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
-  //
-  //     print("✅ Signed in as: ${_user?.email}");
-  //   } on FirebaseAuthException catch (e) {
-  //     print("❌ Firebase Auth error: $e");
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(e.message ?? 'Sign-in failed')),
-  //     );
-  //   } catch (e) {
-  //     print("❌ Unexpected error: $e");
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Unexpected error: $e')),
-  //     );
-  //   } finally {
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-//old
-  // Future<void> signInWithMicrosoft({BuildContext? context}) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     notifyListeners();
-  //
-  //     // ✅ Login with Microsoft
-  //     await oauth.login();
-  //     print("✅ Signed in as1: ${_user?.email}");
-  //     final String? accessToken = await oauth.getAccessToken();
-  //     final String? idToken = await oauth.getIdToken();
-  //     print("✅ Signed in as2: ${_user?.email}");
-  //     if (idToken == null || accessToken == null) {
-  //       throw FirebaseAuthException(
-  //         code: "MISSING_TOKENS",
-  //         message: "Microsoft sign-in did not return valid tokens.",
-  //       );
-  //     }
-  //     print("✅ Signed in as3: ${_user?.email}");
-  //     final microsoftCredential = OAuthProvider("microsoft.com").credential(
-  //       idToken: idToken,
-  //       accessToken: accessToken,
-  //     );
-  //     print("✅ Signed in as4: ${_user?.email}");
-  //     final userCredential =
-  //         await _auth.signInWithCredential(microsoftCredential);
-  //     print("✅ Signed in as5: ${_user?.email}");
-  //     _user = userCredential.user;
-  //     isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
-  //
-  //     log("✅ Signed in as: ${_user?.email}");
-  //     print("✅ Signed in as: ${_user?.email}");
-  //   } on FirebaseAuthException catch (e) {
-  //     print("❌ Error signing in with Microsoft: $e");
-  //     if (context != null) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(e.message ?? 'An error occurred')),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     log("❌ Unexpected error: $e");
-  //     if (context != null) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Unexpected error: $e')),
-  //       );
-  //     }
-  //   } finally {
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //   }
-  // }
 
   Future<void> signOut() async {
     try {
@@ -610,12 +662,13 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-
+      await _secureStorage.deleteAll();
       final _googleSignIn = GoogleSignIn();
       var isSignedIn = await _googleSignIn.isSignedIn();
       if (isSignedIn) await _googleSignIn.disconnect();
       await _auth.signOut();
       _user = null;
+      userProfile = null;
       _isSigningOut = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -1358,7 +1411,9 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final data = response.data as Map<String, dynamic>;
-
+      print("data123");
+      print(data['upcoming_schedule_starttime']);
+      print(data['upcoming_schedule_endtime']);
       await Future.wait([
         SharedPreferenceService.setUserLicense(
             (data['has_user_license_count'] != null &&
@@ -1384,6 +1439,10 @@ class AuthNotifier extends ChangeNotifier {
             data['trial_locations'].toString()),
         SharedPreferenceService.setScheduleInProgress(
             data['schedule_inprogress'].toString()),
+        SharedPreferenceService.setUpcomingScheduleStartTime(
+            data['upcoming_schedule_starttime'] ?? ""),
+        SharedPreferenceService.setUpcomingScheduleEndTime(
+            data['upcoming_schedule_endtime'] ?? ""),
         SharedPreferenceService.saveHasAnyPlan(data['has_any_plan']),
         SharedPreferenceService.setSovUploadTempId(
             data['last_process_temp_id'] ?? ""),

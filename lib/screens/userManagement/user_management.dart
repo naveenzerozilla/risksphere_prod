@@ -195,8 +195,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       _isLoading = true;
     });
 
-    const String apiUrl =
-        "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/companies?role=external";
+    final String apiUrl = "${AppConstant.baseURL}/companies?role=external";
     // "https://us-central1-project-green-dev-429104"
 
     try {
@@ -9758,10 +9757,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 // Corporate Tab
                 if (showCorporateVerificationTab)
                   RefreshIndicator(
-                    onRefresh: () async {
-                      Provider.of<VerificationProvider>(context, listen: false)
-                          .getAllCorporateRequests(context);
-                    },
+                    onRefresh: _refreshCorporateRequests,
+                    // onRefresh: () async {
+                    //   Provider.of<VerificationProvider>(context, listen: false)
+                    //       .getAllCorporateRequests(context);
+                    // },
                     child: Column(
                       children: [
                         SizedBox(
@@ -9881,6 +9881,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     );
   }
 
+  Future<void> _refreshCorporateRequests() async {
+    await Provider.of<VerificationProvider>(context, listen: false)
+        .getAllCorporateRequests(context);
+  }
+
   _verificationCorporateRequestsListItem(
       int index, VerificationProvider verificationProvider) {
     var typography = CustomTypography(context);
@@ -9893,10 +9898,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  SizedBox(
-                    height: CustomSpacing.one,
-                  ),
-                  //Use rich Text and color inverted values to white
+                  SizedBox(height: CustomSpacing.one),
                   RichText(
                     text: TextSpan(
                       children: [
@@ -9930,37 +9932,42 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       ],
                     ),
                   ),
-                  SizedBox(
-                    height: CustomSpacing.one,
-                  ),
+                  SizedBox(height: CustomSpacing.one),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         CustomChip(
-                            label: Text(
-                                verificationProvider.corporateRequests[index]
-                                        .admin?.email ??
-                                    "",
-                                style: typography.InputLabel)),
+                          label: Text(
+                            verificationProvider
+                                    .corporateRequests[index].admin?.email ??
+                                "",
+                            style: typography.InputLabel,
+                          ),
+                        ),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
-                            label: Text(
-                                verificationProvider.corporateRequests[index]
-                                        .admin?.phone ??
-                                    "",
-                                style: typography.InputLabel)),
+                          label: Text(
+                            verificationProvider
+                                    .corporateRequests[index].admin?.phone ??
+                                "",
+                            style: typography.InputLabel,
+                          ),
+                        ),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
-                            label: Text(
-                                verificationProvider.corporateRequests[index]
-                                        .companyTypeName ??
-                                    "",
-                                style: typography.InputLabel)),
+                          label: Text(
+                            verificationProvider
+                                    .corporateRequests[index].companyTypeName ??
+                                "",
+                            style: typography.InputLabel,
+                          ),
+                        ),
                         SizedBox(width: CustomSpacing.two),
                         CustomChip(
-                            label: Text('Admin', style: typography.InputLabel)),
+                          label: Text('Admin', style: typography.InputLabel),
+                        ),
                       ],
                     ),
                   ),
@@ -9970,7 +9977,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                // bottom left and right corners curved
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
@@ -9981,87 +9987,117 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 children: [
                   verificationProvider.isCorporateAcceptLoading &&
                           selectedCorporateVerificationAcceptListIndex == index
-                      ? Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 24),
-                            height: 20,
-                            width: 20,
-                            child: const CircularProgressIndicator(),
-                          ),
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(),
                         )
                       : CustomButton(
                           type: ButtonType.outlined,
-                          onPressed: () {
-                            // Handle accept
+                          onPressed: () async {
                             selectedCorporateVerificationAcceptListIndex =
                                 index;
-                            verificationProvider
+                            final ok = await verificationProvider
                                 .changeCorporateVerificationStatus(
-                                    context,
-                                    verificationProvider
-                                            .corporateRequests[index].id ??
-                                        "",
-                                    true)
-                                .then((value) {
-                              if (value) {
-                                if (value) {
-                                  verificationProvider
-                                      .getAllCorporateRequests(context);
-                                }
+                              context,
+                              verificationProvider
+                                      .corporateRequests[index].id ??
+                                  "",
+                              true,
+                            );
+                            if (ok) {
+                              await verificationProvider
+                                  .getAllCorporateRequests(context);
+                              if (mounted) {
+                                setState(() {
+                                  selectedCorporateVerificationAcceptListIndex =
+                                      -1;
+                                  selectedCorporateVerificationRejectListIndex =
+                                      -1;
+                                });
                               }
-                            });
+                            }
                           },
-                          child: Text('Accept',
-                              style: typography.BottomNavigationActiveLabel
-                                  .copyWith(color: AppColors.primaryMain)),
+                          child: Text(
+                            'Accept',
+                            style:
+                                typography.BottomNavigationActiveLabel.copyWith(
+                                    color: AppColors.primaryMain),
+                          ),
                         ),
                   SizedBox(width: CustomSpacing.two),
                   verificationProvider.isCorporateRejectLoading &&
                           selectedCorporateVerificationRejectListIndex == index
-                      ? Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 16),
-                            height: 20,
-                            width: 20,
-                            child: const CircularProgressIndicator(),
-                          ),
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(),
                         )
                       : CustomButton(
                           type: ButtonType.text,
-                          onPressed: () {
-                            // Handle reject
+                          onPressed: () async {
                             selectedCorporateVerificationRejectListIndex =
                                 index;
-                            verificationProvider
+                            final ok = await verificationProvider
                                 .changeCorporateVerificationStatus(
-                                    context,
-                                    verificationProvider
-                                            .corporateRequests[index].id ??
-                                        "",
-                                    false)
-                                .then((value) {
-                              if (value) {
-                                if (value) {
-                                  verificationProvider
-                                      .getAllCorporateRequests(context);
-                                }
+                              context,
+                              verificationProvider
+                                      .corporateRequests[index].id ??
+                                  "",
+                              false,
+                            );
+                            if (ok) {
+                              await _refreshCorporateRequests(); // <--- automatically refresh list
+                              if (mounted) {
+                                setState(() {
+                                  selectedCorporateVerificationAcceptListIndex =
+                                      -1;
+                                  selectedCorporateVerificationRejectListIndex =
+                                      -1;
+                                });
                               }
-                            });
+                            }
                           },
-                          child: Text('Reject',
-                              style: typography.BottomNavigationActiveLabel
-                                  .copyWith(color: AppColors.primaryMain)),
+
+                          // onPressed: () async {
+                          //
+                          //   selectedCorporateVerificationRejectListIndex = index;
+                          //   final ok = await verificationProvider
+                          //       .changeCorporateVerificationStatus(
+                          //     context,
+                          //     verificationProvider
+                          //         .corporateRequests[index].id ??
+                          //         "",
+                          //     false,
+                          //   );
+                          //   if (ok) {
+                          //     print("object");
+                          //     Provider.of<VerificationProvider>(context, listen: false)
+                          //         .getAllUserRequests(context);
+                          //     if (mounted) {
+                          //       Provider.of<VerificationProvider>(context, listen: false)
+                          //           .getAllUserRequests(context);
+                          //     }
+                          //   }
+                          // },
+                          child: Text(
+                            'Reject',
+                            style:
+                                typography.BottomNavigationActiveLabel.copyWith(
+                                    color: AppColors.primaryMain),
+                          ),
                         ),
                   const Spacer(),
-                  //date
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today),
+                      const Icon(Icons.calendar_today, size: 16),
                       SizedBox(width: CustomSpacing.two),
                       Text(
-                          formatCreatedAt(
-                              verificationProvider.corporateRequests[index]),
-                          style: typography.Caption),
+                        formatCreatedAt(
+                          verificationProvider.corporateRequests[index],
+                        ),
+                        style: typography.Caption,
+                      ),
                     ],
                   ),
                 ],
@@ -10072,6 +10108,231 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       ),
     );
   }
+
+  // _verificationCorporateRequestsListItem(
+  //     int index, VerificationProvider verificationProvider) {
+  //   var typography = CustomTypography(context);
+  //   return Container(
+  //     margin: const EdgeInsets.only(top: 0.0, bottom: 8),
+  //     child: Card(
+  //       child: Column(
+  //         children: [
+  //           Padding(
+  //             padding: const EdgeInsets.all(8.0),
+  //             child: Column(
+  //               children: [
+  //                 SizedBox(
+  //                   height: CustomSpacing.one,
+  //                 ),
+  //                 //Use rich Text and color inverted values to white
+  //                 RichText(
+  //                   text: TextSpan(
+  //                     children: [
+  //                       TextSpan(
+  //                         text:
+  //                             '“${verificationProvider.corporateRequests[index].admin?.name ?? ""}”',
+  //                         style: typography.Body1_5.copyWith(
+  //                           color:
+  //                               Theme.of(context).brightness == Brightness.dark
+  //                                   ? AppColors.white
+  //                                   : AppColors.black,
+  //                           fontWeight: FontWeight.w500,
+  //                         ),
+  //                       ),
+  //                       TextSpan(
+  //                         text:
+  //                             ' has requested to create new corporate account for company name ',
+  //                         style: typography.Body1_5,
+  //                       ),
+  //                       TextSpan(
+  //                         text:
+  //                             '“${verificationProvider.corporateRequests[index].companyName}”',
+  //                         style: typography.Body1_5.copyWith(
+  //                           color:
+  //                               Theme.of(context).brightness == Brightness.dark
+  //                                   ? AppColors.white
+  //                                   : AppColors.black,
+  //                           fontWeight: FontWeight.w500,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 SizedBox(
+  //                   height: CustomSpacing.one,
+  //                 ),
+  //                 SingleChildScrollView(
+  //                   scrollDirection: Axis.horizontal,
+  //                   child: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //                     children: [
+  //                       CustomChip(
+  //                           label: Text(
+  //                               verificationProvider.corporateRequests[index]
+  //                                       .admin?.email ??
+  //                                   "",
+  //                               style: typography.InputLabel)),
+  //                       SizedBox(width: CustomSpacing.two),
+  //                       CustomChip(
+  //                           label: Text(
+  //                               verificationProvider.corporateRequests[index]
+  //                                       .admin?.phone ??
+  //                                   "",
+  //                               style: typography.InputLabel)),
+  //                       SizedBox(width: CustomSpacing.two),
+  //                       CustomChip(
+  //                           label: Text(
+  //                               verificationProvider.corporateRequests[index]
+  //                                       .companyTypeName ??
+  //                                   "",
+  //                               style: typography.InputLabel)),
+  //                       SizedBox(width: CustomSpacing.two),
+  //                       CustomChip(
+  //                           label: Text('Admin', style: typography.InputLabel)),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           Container(
+  //             decoration: BoxDecoration(
+  //               color: Theme.of(context).colorScheme.surface,
+  //               // bottom left and right corners curved
+  //               borderRadius: const BorderRadius.only(
+  //                 bottomLeft: Radius.circular(8),
+  //                 bottomRight: Radius.circular(8),
+  //               ),
+  //             ),
+  //             padding: const EdgeInsets.symmetric(horizontal: 8),
+  //             child: Row(
+  //               children: [
+  //                 verificationProvider.isCorporateAcceptLoading &&
+  //                         selectedCorporateVerificationAcceptListIndex == index
+  //                     ? Center(
+  //                         child: Container(
+  //                           margin: const EdgeInsets.only(left: 24),
+  //                           height: 20,
+  //                           width: 20,
+  //                           child: const CircularProgressIndicator(),
+  //                         ),
+  //                       )
+  //                     : CustomButton(
+  //                         type: ButtonType.outlined,
+  //                         onPressed: () {
+  //                           // Handle accept
+  //                           selectedCorporateVerificationAcceptListIndex =
+  //                               index;
+  //                           verificationProvider
+  //                               .changeCorporateVerificationStatus(
+  //                                   context,
+  //                                   verificationProvider
+  //                                           .corporateRequests[index].id ??
+  //                                       "",
+  //                                   true)
+  //                               .then((value) {
+  //                             if (value) {
+  //                               if (value) {
+  //                                 verificationProvider
+  //                                     .getAllCorporateRequests(context);
+  //                               }
+  //                             }
+  //                           });
+  //                         },
+  //                         child: Text('Accept',
+  //                             style: typography.BottomNavigationActiveLabel
+  //                                 .copyWith(color: AppColors.primaryMain)),
+  //                       ),
+  //                 SizedBox(width: CustomSpacing.two),
+  //                 verificationProvider.isCorporateRejectLoading &&
+  //                     selectedCorporateVerificationRejectListIndex == index
+  //                     ? const Center(
+  //                   child: SizedBox(
+  //                     height: 20,
+  //                     width: 20,
+  //                     child: CircularProgressIndicator(),
+  //                   ),
+  //                 )
+  //                     : CustomButton(
+  //                   type: ButtonType.text,
+  //                   onPressed: () async {
+  //                     selectedCorporateVerificationRejectListIndex = index;
+  //                     final success =
+  //                     await verificationProvider.changeCorporateVerificationStatus(
+  //                       context,
+  //                       verificationProvider.corporateRequests[index].id ?? "",
+  //                       false,
+  //                     );
+  //                     if (success) {
+  //                       // Re-fetch data (reload list)
+  //                       await verificationProvider.getAllCorporateRequests(context);
+  //                       if (mounted) {
+  //                         setState(() {}); // Force UI rebuild if needed
+  //                       }
+  //                     }
+  //                   },
+  //                   child: Text(
+  //                     'Reject',
+  //                     style: typography.BottomNavigationActiveLabel
+  //                         .copyWith(color: AppColors.primaryMain),
+  //                   ),
+  //                 ),
+  //                 // verificationProvider.isCorporateRejectLoading &&
+  //                 //         selectedCorporateVerificationRejectListIndex == index
+  //                 //     ? Center(
+  //                 //         child: Container(
+  //                 //           margin: const EdgeInsets.only(left: 16),
+  //                 //           height: 20,
+  //                 //           width: 20,
+  //                 //           child: const CircularProgressIndicator(),
+  //                 //         ),
+  //                 //       )
+  //                 //     : CustomButton(
+  //                 //         type: ButtonType.text,
+  //                 //         onPressed: () {
+  //                 //           // Handle reject
+  //                 //           selectedCorporateVerificationRejectListIndex =
+  //                 //               index;
+  //                 //           verificationProvider
+  //                 //               .changeCorporateVerificationStatus(
+  //                 //                   context,
+  //                 //                   verificationProvider
+  //                 //                           .corporateRequests[index].id ??
+  //                 //                       "",
+  //                 //                   false)
+  //                 //               .then((value) {
+  //                 //             if (value) {
+  //                 //               if (value) {
+  //                 //                 verificationProvider
+  //                 //                     .getAllCorporateRequests(context);
+  //                 //               }
+  //                 //             }
+  //                 //           });
+  //                 //         },
+  //                 //         child: Text('Reject',
+  //                 //             style: typography.BottomNavigationActiveLabel
+  //                 //                 .copyWith(color: AppColors.primaryMain)),
+  //                 //       ),
+  //                 const Spacer(),
+  //                 //date
+  //                 Row(
+  //                   children: [
+  //                     const Icon(Icons.calendar_today),
+  //                     SizedBox(width: CustomSpacing.two),
+  //                     Text(
+  //                         formatCreatedAt(
+  //                             verificationProvider.corporateRequests[index]),
+  //                         style: typography.Caption),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   String formatCreatedAt(Company? company) {
     DateTime dateTime = company?.createdAt?.toDateTime() ?? DateTime.now();
@@ -10152,92 +10413,93 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           SizedBox(width: CustomSpacing.two),
                           CustomChip(
                               onPressed: () {
+                                //future implementations
                                 //Show a dialog with outlined dropdown with allRoles, user can save or cancel (as column)
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text('Select Role',
-                                          style: typography.H6),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-                                          DropdownButtonFormField(
-                                            items: allRoles
-                                                .where((role) =>
-                                                    role.isApplicableForInternal ==
-                                                    true) // Filter out roles where isApplicableForTrial is not true
-                                                .map((role) {
-                                              return DropdownMenuItem(
-                                                child: Text(role.name ?? ""),
-                                                value: role,
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
-                                              // Handle dropdown value change
-                                              selectedRole =
-                                                  value as roleModel.Roles;
-                                            },
-                                            value: selectedRole,
-                                            decoration: InputDecoration(
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-                                          Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: CustomButton(
-                                                      type: ButtonType.filled,
-                                                      onPressed: () {
-                                                        // Handle save role
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: Text('Save',
-                                                          style: typography
-                                                              .BottomNavigationActiveLabel),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: CustomButton(
-                                                      type: ButtonType.text,
-                                                      onPressed: () {
-                                                        // Handle cancel
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: Text('Cancel',
-                                                          style: typography
-                                                                  .BottomNavigationActiveLabel
-                                                              .copyWith(
-                                                                  color: AppColors
-                                                                      .primaryMain)),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
+                                // showDialog(
+                                //   context: context,
+                                //   builder: (context) {
+                                //     return AlertDialog(
+                                //       title: Text('Select Role',
+                                //           style: typography.H6),
+                                //       content: Column(
+                                //         mainAxisSize: MainAxisSize.min,
+                                //         children: [
+                                //           SizedBox(
+                                //             height: CustomSpacing.two,
+                                //           ),
+                                //           DropdownButtonFormField(
+                                //             items: allRoles
+                                //                 .where((role) =>
+                                //                     role.isApplicableForInternal ==
+                                //                     true) // Filter out roles where isApplicableForTrial is not true
+                                //                 .map((role) {
+                                //               return DropdownMenuItem(
+                                //                 child: Text(role.name ?? ""),
+                                //                 value: role,
+                                //               );
+                                //             }).toList(),
+                                //             onChanged: (value) {
+                                //               // Handle dropdown value change
+                                //               selectedRole =
+                                //                   value as roleModel.Roles;
+                                //             },
+                                //             value: selectedRole,
+                                //             decoration: InputDecoration(
+                                //               border: OutlineInputBorder(
+                                //                 borderRadius:
+                                //                     BorderRadius.circular(8),
+                                //               ),
+                                //             ),
+                                //           ),
+                                //           SizedBox(
+                                //             height: CustomSpacing.two,
+                                //           ),
+                                //           Column(
+                                //             mainAxisAlignment:
+                                //                 MainAxisAlignment.spaceEvenly,
+                                //             children: [
+                                //               Row(
+                                //                 children: [
+                                //                   Expanded(
+                                //                     child: CustomButton(
+                                //                       type: ButtonType.filled,
+                                //                       onPressed: () {
+                                //                         // Handle save role
+                                //                         Navigator.pop(context);
+                                //                       },
+                                //                       child: Text('Save',
+                                //                           style: typography
+                                //                               .BottomNavigationActiveLabel),
+                                //                     ),
+                                //                   ),
+                                //                 ],
+                                //               ),
+                                //               Row(
+                                //                 children: [
+                                //                   Expanded(
+                                //                     child: CustomButton(
+                                //                       type: ButtonType.text,
+                                //                       onPressed: () {
+                                //                         // Handle cancel
+                                //                         Navigator.pop(context);
+                                //                       },
+                                //                       child: Text('Cancel',
+                                //                           style: typography
+                                //                                   .BottomNavigationActiveLabel
+                                //                               .copyWith(
+                                //                                   color: AppColors
+                                //                                       .primaryMain)),
+                                //                     ),
+                                //                   ),
+                                //                 ],
+                                //               ),
+                                //             ],
+                                //           ),
+                                //         ],
+                                //       ),
+                                //     );
+                                //   },
+                                // );
                               },
                               label: Text(
                                   verificationProvider
@@ -10367,33 +10629,55 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               child: const CircularProgressIndicator(),
                             ),
                           )
-                        : CustomButton(
-                            type: ButtonType.text,
-                            onPressed: () async {
-                              // Handle reject
-                              setState(() {
-                                selectedUserVerificationRejectListIndex = index;
-                              });
-                              // Perform reject API call
-                              bool isRejected = await verificationProvider
-                                  .changeUserVerificationStatus(
-                                      context,
-                                      verificationProvider
-                                              .userRequests[index].id ??
-                                          "",
-                                      false);
+                        : verificationProvider.isUserRejectLoading &&
+                                selectedUserVerificationRejectListIndex == index
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(),
+                              )
+                            : CustomButton(
+                                type: ButtonType.text,
+                                onPressed: () async {
+                                  setState(() {
+                                    selectedUserVerificationRejectListIndex =
+                                        index;
+                                  });
 
-                              if (isRejected) {
-                                // Fetch updated list and refresh UI
-                                await verificationProvider
-                                    .getAllUserRequests(context);
-                                setState(() {}); // Trigger UI rebuild
-                              }
-                            },
-                            child: Text('Reject',
-                                style: typography.BottomNavigationActiveLabel
-                                    .copyWith(color: AppColors.primaryMain)),
-                          ),
+                                  final rejected = await verificationProvider
+                                      .changeUserVerificationStatus(
+                                    context,
+                                    verificationProvider
+                                            .userRequests[index].id ??
+                                        "",
+                                    false,
+                                  );
+
+                                  if (rejected) {
+                                    await verificationProvider
+                                        .getAllUserRequests(context);
+                                    // If corporate counts depend on user changes
+                                    await Provider.of<VerificationProvider>(
+                                      context,
+                                      listen: false,
+                                    ).getAllCorporateRequests(context);
+                                  }
+
+                                  if (mounted) {
+                                    setState(() {
+                                      selectedUserVerificationRejectListIndex =
+                                          -1;
+                                      selectedUserVerificationAcceptListIndex =
+                                          -1;
+                                    });
+                                  }
+                                },
+                                child: Text(
+                                  'Reject',
+                                  style: typography.BottomNavigationActiveLabel
+                                      .copyWith(color: AppColors.primaryMain),
+                                ),
+                              ),
                     const Spacer(),
                     //date
                     // uncomment for time

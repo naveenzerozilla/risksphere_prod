@@ -90,12 +90,11 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     debounce(() async {
       if (!mounted) return;
       _subAccountQuery = query;
-      print("Query set to: $_subAccountQuery");
       var provider =
           Provider.of<SubAccountListProvider>(context, listen: false);
       provider.page = 1;
       await provider.fetchSubAccountList(
-          context, widget.accountId, _subAccountQuery, provider.page, 2);
+          context, widget.accountId, _subAccountQuery, provider.page, 8);
     });
   }
 
@@ -138,7 +137,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount =
         (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-        // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
+    // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
     _tryShowTutorialOnce();
   }
@@ -233,7 +232,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
-          .fetchSubAccountList(context, widget.accountId, "", 1, 5);
+          .fetchSubAccountList(context, widget.accountId, "", 1, 8);
     });
     setState(() {
       isPgAdmin = isPgAdmin;
@@ -614,6 +613,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+
                   Card(
                     color: isDisabled
                         ? Theme.of(context).colorScheme.scrim
@@ -1020,7 +1020,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   .getTranslated(
                                                                       context,
                                                                       "sub_account_list_app_duplicate_duplicate"),
-
                                                             ),
                                                             type: ButtonType
                                                                 .elevated,
@@ -1147,7 +1146,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                         _subAccountQuery,
                                                                         1,
                                                                         // Reset to the first page
-                                                                        10, // Page size
+                                                                        8, // Page size
                                                                         // isRefresh: true, // Optional flag for refresh
                                                                       );
                                                                     }
@@ -1160,7 +1159,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   },
                                                                   child: Text(
                                                                     "Delete",
-
                                                                   ),
                                                                   type: ButtonType
                                                                       .elevated,
@@ -1274,7 +1272,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     widget.accountId,
                                     _subAccountQuery,
                                     subAccountListProvider.page,
-                                    2);
+                                    8);
                               }
                             },
                           ),
@@ -1322,7 +1320,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     widget.accountId,
                                     _subAccountQuery,
                                     subAccountListProvider.page,
-                                    2);
+                                    8);
                               }
                             },
                           ),
@@ -1349,200 +1347,201 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      LanguageService.getTranslated(
-                          context, "sub_account_list_app_add_account_title"),
-                      style: typography.H5_Regular,
-                    ),
-                    SizedBox(height: 8.0),
-                    Consumer<SubAccountListProvider>(
-                      builder: (context, subAccountListProvider, child) {
-                        return Column(
-                          children: [
-                            // Chip with Account Name
-                            Chip(
-                              label: Text(
-                                widget.accountName ?? "",
-                                style: typography.Body1,
+                child: SizedBox(
+                  width: 500,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        LanguageService.getTranslated(
+                            context, "sub_account_list_app_add_account_title"),
+                        style: typography.H5_Regular,
+                      ),
+                      SizedBox(height: 8.0),
+                      Consumer<SubAccountListProvider>(
+                        builder: (context, subAccountListProvider, child) {
+                          return Column(
+                            children: [
+                              // Chip with Account Name
+                              Chip(
+                                label: Text(
+                                  widget.accountName ?? "",
+                                  style: typography.Body1,
+                                ),
                               ),
-                            ),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            TextField(
-                              controller: _textEditingController,
-                              // focusNode: FocusNode(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _subAccountAlreadyExists = false;
-                                  _selectedSubAccount = null;
-                                  subAccountListProvider
-                                      .clearAutoCompleteList();
-                                });
-
-                                _autocompleteText = value;
-
-                                // Cancel the previous debounce timer
-                                if (_debounce?.isActive ?? false)
-                                  _debounce!.cancel();
-
-                                // Start a new debounce timer
-                                _debounce =
-                                    Timer(const Duration(milliseconds: 500),
-                                        () async {
-                                  await autoCompleteAccountsSearchClient(
-                                      _autocompleteText);
-                                });
-                              },
-                              decoration: InputDecoration(
-                                labelText: LanguageService.getTranslated(
-                                    context,
-                                    "sub_account_list_app_account_name_field_label"),
-                                hintText: LanguageService.getTranslated(context,
-                                    "sub_account_list_app_account_name_field_hint"),
-                                border: const OutlineInputBorder(),
+                              SizedBox(
+                                height: 8,
                               ),
-                            ),
-
-                            if (_textEditingController.text.isNotEmpty &&
-                                !_subAccountAlreadyExists)
-                              AutocompleteOptionsSubAccount(
-                                options: subAccountListProvider
-                                    .autoCompleteSubAccountList,
-                                onSelected: (SubAccounts selection) {
+                              TextField(
+                                controller: _textEditingController,
+                                // focusNode: FocusNode(),
+                                onChanged: (value) {
                                   setState(() {
-                                    _subAccountAlreadyExists = true;
-                                    _selectedSubAccount = selection;
-                                    _textEditingController.text =
-                                        selection.name!;
-                                    // Clear the autocomplete list when an option is selected
+                                    _subAccountAlreadyExists = false;
+                                    _selectedSubAccount = null;
                                     subAccountListProvider
                                         .clearAutoCompleteList();
                                   });
+
+                                  _autocompleteText = value;
+
+                                  // Cancel the previous debounce timer
+                                  if (_debounce?.isActive ?? false)
+                                    _debounce!.cancel();
+
+                                  // Start a new debounce timer
+                                  _debounce =
+                                      Timer(const Duration(milliseconds: 500),
+                                          () async {
+                                    await autoCompleteAccountsSearchClient(
+                                        _autocompleteText);
+                                  });
                                 },
-                                isLoading: subAccountListProvider
-                                    .isAutoCompleteLoading,
-                              ),
-                            if (_subAccountAlreadyExists)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16.0),
-                                child: TextField(
-                                  controller: _messageController,
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(
-                                        context,
-                                        "sub_account_list_app_comment_text"),
-                                    hintText: LanguageService.getTranslated(
-                                        context,
-                                        "sub_account_list_app_comment_placeholder"),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: LanguageService.getTranslated(
+                                      context,
+                                      "sub_account_list_app_account_name_field_label"),
+                                  hintText: LanguageService.getTranslated(
+                                      context,
+                                      "sub_account_list_app_account_name_field_hint"),
+                                  border: const OutlineInputBorder(),
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-                    SizedBox(height: CustomSpacing.six),
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Consumer<SubAccountListProvider>(builder:
-                                  (context, subAccountListProvider, _) {
-                                return subAccountListProvider
-                                        .isAddSubAccountLoading
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                              width: 25,
-                                              height: 25,
-                                              child:
-                                                  CircularProgressIndicator()),
-                                        ],
-                                      )
-                                    : CustomButton(
-                                        onPressed: () async {
-                                          if (_autocompleteText.isEmpty) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                                    content: Text(
-                                              LanguageService.getTranslated(
-                                                  context,
-                                                  "sub_account_list_app_add_sub_account_empty_text_error"),
-                                            )));
-                                            return;
-                                          }
 
-                                          if (!_subAccountAlreadyExists) {
-                                            // Add account
-                                            await subAccountListProvider
-                                                .addSubAccount(
-                                                    context,
-                                                    _autocompleteText,
-                                                    widget.accountId);
-                                          } else {
-                                            // Request access
-                                            if (_messageController
-                                                .text.isEmpty) {
+                              if (_textEditingController.text.isNotEmpty &&
+                                  !_subAccountAlreadyExists)
+                                AutocompleteOptionsSubAccount(
+                                  options: subAccountListProvider
+                                      .autoCompleteSubAccountList,
+                                  onSelected: (SubAccounts selection) {
+                                    setState(() {
+                                      _subAccountAlreadyExists = true;
+                                      _selectedSubAccount = selection;
+                                      _textEditingController.text =
+                                          selection.name!;
+                                      // Clear the autocomplete list when an option is selected
+                                      subAccountListProvider
+                                          .clearAutoCompleteList();
+                                    });
+                                  },
+                                  isLoading: subAccountListProvider
+                                      .isAutoCompleteLoading,
+                                ),
+                              if (_subAccountAlreadyExists)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: TextField(
+                                    controller: _messageController,
+                                    decoration: InputDecoration(
+                                      labelText: LanguageService.getTranslated(
+                                          context,
+                                          "sub_account_list_app_comment_text"),
+                                      hintText: LanguageService.getTranslated(
+                                          context,
+                                          "sub_account_list_app_comment_placeholder"),
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                    maxLines: 3,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(height: CustomSpacing.six),
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Consumer<SubAccountListProvider>(builder:
+                                    (context, subAccountListProvider, _) {
+                                  return subAccountListProvider
+                                          .isAddSubAccountLoading
+                                      ? Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            SizedBox(
+                                                width: 25,
+                                                height: 25,
+                                                child:
+                                                    CircularProgressIndicator()),
+                                          ],
+                                        )
+                                      : CustomButton(
+                                          onPressed: () async {
+                                            if (_autocompleteText.isEmpty) {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(SnackBar(
                                                       content: Text(
                                                 LanguageService.getTranslated(
                                                     context,
-                                                    "sub_accouwnt_list_app_comment_empty_text_error"),
+                                                    "sub_account_list_app_add_sub_account_empty_text_error"),
                                               )));
                                               return;
                                             }
-                                            await subAccountListProvider
-                                                .requestAccess(
+                                            if (!_subAccountAlreadyExists) {
+                                              await subAccountListProvider
+                                                  .addSubAccount(
+                                                      context,
+                                                      _autocompleteText,
+                                                      widget.accountId);
+                                            } else {
+                                              if (_messageController
+                                                  .text.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                        content: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "sub_accouwnt_list_app_comment_empty_text_error"),
+                                                )));
+                                                return;
+                                              }
+                                              await subAccountListProvider
+                                                  .requestAccess(
+                                                      context,
+                                                      _selectedSubAccount
+                                                              ?.subAccountId ??
+                                                          "",
+                                                      _messageController.text,
+                                                      widget.accountId);
+                                            }
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            _subAccountAlreadyExists
+                                                ? LanguageService.getTranslated(
                                                     context,
-                                                    _selectedSubAccount
-                                                            ?.subAccountId ??
-                                                        "",
-                                                    _messageController.text,
-                                                    widget.accountId);
-                                          }
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text(
-                                          _subAccountAlreadyExists
-                                              ? LanguageService.getTranslated(
-                                                  context,
-                                                  "sub_account_list_app_request_access_text")
-                                              : LanguageService.getTranslated(
-                                                  context,
-                                                  "sub_account_list_app_submit_text"),
-                                          // style: typography.ButtonLarge,
-                                        ),
-                                        type: ButtonType.elevated,
-                                      );
-                              }),
-                            ),
-                          ],
-                        ),
-                        CustomButton(
-                          onPressed: () {
-                            // Cancel
-                            Navigator.pop(context);
-                          },
-                          child: Text(
-                            LanguageService.getTranslated(
-                                context, "sub_account_list_app_cancel_text"),
-                            style: typography.ButtonLarge,
+                                                    "sub_account_list_app_request_access_text")
+                                                : LanguageService.getTranslated(
+                                                    context,
+                                                    "sub_account_list_app_submit_text"),
+                                            style: typography.ButtonLargeBlack,
+                                          ),
+                                          type: ButtonType.elevated,
+                                        );
+                                }),
+                              ),
+                            ],
                           ),
-                          type: ButtonType.text,
-                        ),
-                      ],
-                    ),
-                  ],
+                          CustomButton(
+                            onPressed: () {
+                              // Cancel
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              LanguageService.getTranslated(
+                                  context, "sub_account_list_app_cancel_text"),
+                              style: typography.ButtonLarge,
+                            ),
+                            type: ButtonType.text,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -2131,7 +2130,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                   widget.accountId,
                   _subAccountQuery,
                   1, // Reset to the first page
-                  5, // Page size
+                  8, // Page size
                   // isRefresh: true, // Optional flag for refresh
                 );
               },
@@ -2204,7 +2203,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   _subAccountQuery,
                                   // Pass the search query if any
                                   subAccountListProvider.page,
-                                  10, // Page size
+                                  8, // Page size
                                 );
                                 return SizedBox();
                               }

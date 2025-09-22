@@ -161,9 +161,7 @@ class LocationDetailsPopup extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: MyScrollableScoresWidget(
                 geocodingScore: geocodingScore,
-                riskScore: (riskScore is int)
-                    ? riskScore
-                    : int.tryParse(riskScore.toString()) ?? 0,
+                riskScore:riskScore,
                 dataCompleteness: dataCompleteness,
                 hazardProcess: hazardProcess,
               ),
