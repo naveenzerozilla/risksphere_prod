@@ -148,15 +148,15 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
     if (widget.showGeoRatings) {
       Provider.of<MyLocationListProvider>(context, listen: false)
           .fetchLocationList(
-        context,
-        "",
-        1,
-        40,
-        widget.accountId,
-        widget.subAccountId,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-      );
+              context,
+              "",
+              1,
+              40,
+              widget.accountId,
+              widget.subAccountId,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
+              '');
     } else {
       Provider.of<MyLocationListProvider>(context, listen: false)
           .fetchCertifiedLocationList(
@@ -436,15 +436,15 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
                   if (widget.showGeoRatings) {
                     Provider.of<MyLocationListProvider>(context, listen: false)
                         .fetchLocationList(
-                      context,
-                      "",
-                      1,
-                      40,
-                      widget.accountId,
-                      widget.subAccountId,
-                      widget.initialProcessId,
-                      widget.initialSubProcessId,
-                    );
+                            context,
+                            "",
+                            1,
+                            40,
+                            widget.accountId,
+                            widget.subAccountId,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
+                            '');
                   } else {
                     Provider.of<MyLocationListProvider>(context, listen: false)
                         .fetchCertifiedLocationList(

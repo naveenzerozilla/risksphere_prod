@@ -154,6 +154,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         widget.subAccountId,
         widget.initialProcessId,
         widget.initialSubProcessId,
+        ''
       );
     } else {
       Provider.of<MyLocationListProvider>(context, listen: false)
@@ -386,7 +387,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                       widget.accountId,
                       widget.subAccountId,
                       widget.initialProcessId,
-                      widget.initialSubProcessId,
+                      widget.initialSubProcessId,''
                     );
                   } else {
                     Provider.of<MyLocationListProvider>(context, listen: false)

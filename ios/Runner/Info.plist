@@ -7,13 +7,9 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>RiskSphere</string>
+    <string>green</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
-    <key>firebase_performance_collection_enabled</key>
-    <false/>
-    <key>firebase_performance_logcat_enabled</key>
-    <true/>
     <key>CFBundleIcons~ipad</key>
     <dict>
         <key>CFBundlePrimaryIcon</key>
@@ -36,31 +32,29 @@
         <string>nb</string>
     </array>
     <key>CFBundleName</key>
-    <string>green</string>
+    <string>RiskSphere</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$(FLUTTER_BUILD_NAME)</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
 
-    <!-- URL Schemes for Google, Microsoft, and Firebase Auth -->
+    <!-- Version info -->
+    <key>CFBundleShortVersionString</key>
+    <string>5.2.11</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleSignature</key>
+    <string>RSph</string>
+
     <key>CFBundleURLTypes</key>
     <array>
-        <!-- Google Sign-In -->
-      <dict>
-          <key>CFBundleTypeRole</key>
-          <string>Editor</string>
-          <key>CFBundleURLSchemes</key>
-          <array>
-              <!-- Reversed iOS client ID -->
-              <string>com.googleusercontent.apps.863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
-              <!-- Firebase app-1 scheme from REVERSED_CLIENT_ID -->
-              <string>app-1-863607711683-ios-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
-          </array>
-      </dict>
-
-        <!-- Microsoft Auth -->
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
+                <string>app-1-863607711683-ios-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
+            </array>
+        </dict>
         <dict>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
@@ -70,8 +64,6 @@
                 <string>msaleb81a783-765c-482d-8fcb-6440ab1d1201</string>
             </array>
         </dict>
-
-        <!-- Firebase OAuth Redirect -->
         <dict>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
@@ -82,8 +74,6 @@
         </dict>
     </array>
 
-    <key>CFBundleVersion</key>
-    <string>$(FLUTTER_BUILD_NUMBER)</string>
     <key>FirebaseAppDelegateProxyEnabled</key>
     <true/>
     <key>LSRequiresIPhoneOS</key>
@@ -97,8 +87,6 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>This app needs camera access to take pictures.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>This app needs photo library access to save pictures.</string>
     <key>NSDocumentsFolderUsageDescription</key>
     <string>We need access to your documents folder to pick and upload files.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -131,5 +119,9 @@
         <string>UIInterfaceOrientationLandscapeRight</string>
         <string>UIInterfaceOrientationPortraitUpsideDown</string>
     </array>
+    <key>firebase_performance_collection_enabled</key>
+    <false/>
+    <key>firebase_performance_logcat_enabled</key>
+    <true/>
 </dict>
 </plist>

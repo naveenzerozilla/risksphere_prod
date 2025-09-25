@@ -36,22 +36,22 @@ import '../processMonitoringScreen/process_monitoring_system.dart';
 import 'widgets/maintenance_widget.dart';
 
 class SovLocationList extends StatefulWidget {
-  final String accountID;
-  final String subAccountID;
+  final String? accountID;
+  final String? subAccountID;
   final String accountName;
   final String subAccountName;
-  final String sovID;
+  final String? sovID;
   final String sovName;
   final String? initialProcessId;
   final String? initialSubProcessId;
 
   const SovLocationList({
     super.key,
-    this.accountID = '',
-    this.subAccountID = '',
+    this.accountID,
+    this.subAccountID,
     this.accountName = '',
     this.subAccountName = '',
-    this.sovID = '',
+    this.sovID,
     this.sovName = '',
     this.initialProcessId,
     this.initialSubProcessId,
@@ -118,9 +118,9 @@ class _SovLocationListState extends State<SovLocationList>
       Provider.of<LocationListProvider>(context, listen: false)
           .fetchLocationList(
         context,
-        "widget.accountId",
-        "widget.subAccountId",
-        widget.sovID,
+        widget.accountID!,
+        widget.subAccountID!,
+        widget.sovID!,
         query,
         0,
         "forward",
@@ -164,9 +164,9 @@ class _SovLocationListState extends State<SovLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
-              widget.sovID,
               widget.initialProcessId,
               widget.initialSubProcessId,
+              widget.sovID,
             )
             .then((value) => setState(() {}));
       } else {
@@ -183,9 +183,9 @@ class _SovLocationListState extends State<SovLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
-              widget.sovID,
               widget.initialProcessId,
               widget.initialSubProcessId,
+              widget.sovID,
             )
             .then((value) => setState(() {}));
         /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
@@ -210,6 +210,7 @@ class _SovLocationListState extends State<SovLocationList>
   // }
 
   _getData() async {
+    print("Fetching location list for SOV ID: ${widget.sovID}");
     // Fetch data from API
     Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchLocationList(
@@ -219,9 +220,9 @@ class _SovLocationListState extends State<SovLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
-          widget.sovID,
           widget.initialProcessId,
           widget.initialSubProcessId,
+          widget.sovID,
         )
         .then((value) => setState(() {}));
     Provider.of<MyLocationListProvider>(context, listen: false)
@@ -232,9 +233,9 @@ class _SovLocationListState extends State<SovLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
-          widget.sovID,
           widget.initialProcessId,
           widget.initialSubProcessId,
+          widget.sovID,
         )
         .then((value) => setState(() {}));
     //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
@@ -415,9 +416,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                         (BuildContext context) {
                                                       return ExportDialog(
                                                         accountId:
-                                                            widget.accountID,
-                                                        subAccountId:
-                                                            widget.subAccountID,
+                                                            widget.accountID!,
+                                                        subAccountId: widget
+                                                            .subAccountID!,
                                                         locationId:
                                                             selectedSovIds,
                                                       );
@@ -459,9 +460,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                         (BuildContext context) {
                                                       return ExportDialog(
                                                         accountId:
-                                                            widget.accountID,
-                                                        subAccountId:
-                                                            widget.subAccountID,
+                                                            widget.accountID!,
+                                                        subAccountId: widget
+                                                            .subAccountID!,
                                                         locationId:
                                                             selectedLoactionIds,
                                                       );
@@ -495,8 +496,8 @@ class _SovLocationListState extends State<SovLocationList>
                                       locationListProvider
                                           .addTagsToSelectedLocations(
                                               context,
-                                              widget.accountID,
-                                              widget.subAccountID);
+                                              widget.accountID!,
+                                              widget.subAccountID!);
                                     },
                                     icon: Icon(Symbols.note_stack_add),
                                     tooltip: 'Add Tag'),
@@ -521,8 +522,8 @@ class _SovLocationListState extends State<SovLocationList>
                                               locationListProvider
                                                   .deleteSelectedLocations(
                                                 context,
-                                                widget.accountID,
-                                                widget.subAccountID,
+                                                widget.accountID!,
+                                                widget.subAccountID!,
                                               );
                                               Navigator.pop(context);
                                             },
@@ -635,10 +636,10 @@ class _SovLocationListState extends State<SovLocationList>
                                             context: context,
                                             builder: (BuildContext context) {
                                               return ExportDialog(
-                                                accountId: widget.accountID,
+                                                accountId: widget.accountID!,
                                                 subAccountId:
-                                                    widget.subAccountID,
-                                                sovId: widget.sovID,
+                                                    widget.subAccountID!,
+                                                sovId: widget.sovID!,
                                                 locationId: selectedMainTab == 0
                                                     ? myLocationListProvider
                                                         .myLocationList
@@ -943,8 +944,8 @@ class _SovLocationListState extends State<SovLocationList>
                             ),
                             // Map View
                             LocationListMapView(
-                              accountId: widget.accountID,
-                              subAccountId: widget.subAccountID,
+                              accountId: widget.accountID!,
+                              subAccountId: widget.subAccountID!,
                             ),
                           ],
                         ),
@@ -957,9 +958,9 @@ class _SovLocationListState extends State<SovLocationList>
             endDrawer: Drawer(
               child: SafeArea(
                 child: ListingsFilterScreen(
-                  accountId: widget.accountID,
-                  subAccountId: widget.subAccountID,
-                  sovId: widget.sovID,
+                  accountId: widget.accountID!,
+                  subAccountId: widget.subAccountID!,
+                  sovId: widget.sovID!,
                   searchQuery: locationQuery,
                   showGeoRatings: selectedMainTab == 0 && selectedTab != 1,
                   initialProcessId: widget.initialProcessId,
@@ -1127,9 +1128,9 @@ class _SovLocationListState extends State<SovLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
-                                    widget.sovID,
                                     widget.initialProcessId,
                                     widget.initialSubProcessId,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -1153,9 +1154,9 @@ class _SovLocationListState extends State<SovLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
-                                    widget.sovID,
                                     widget.initialProcessId,
                                     widget.initialSubProcessId,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -1207,15 +1208,15 @@ class _SovLocationListState extends State<SovLocationList>
                                     locationListProvider
                                         .clearHazardFilter(hazard);
                                     locationListProvider.fetchLocationList(
-                                      context,
-                                      locationQuery,
-                                      1,
-                                      40,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                    );
+                                        context,
+                                        locationQuery,
+                                        1,
+                                        40,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                        '');
                                   },
                                 ),
                               ),
@@ -1237,9 +1238,9 @@ class _SovLocationListState extends State<SovLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
-                                    widget.sovID,
                                     widget.initialProcessId,
                                     widget.initialSubProcessId,
+                                    widget.sovID,
                                   );
                                 },
                               ),
@@ -1258,15 +1259,15 @@ class _SovLocationListState extends State<SovLocationList>
                         onPressed: () {
                           locationListProvider.clearAllFilters();
                           locationListProvider.fetchLocationList(
-                            context,
-                            locationQuery,
-                            1,
-                            40,
-                            widget.accountID,
-                            widget.subAccountID,
-                            widget.initialProcessId,
-                            widget.initialSubProcessId,
-                          );
+                              context,
+                              locationQuery,
+                              1,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
+                              '');
                         },
                         child: const Text(
                           'Clear All',
@@ -1307,9 +1308,9 @@ class _SovLocationListState extends State<SovLocationList>
                               40,
                               widget.accountID,
                               widget.subAccountID,
-                              widget.sovID,
                               widget.initialProcessId,
                               widget.initialSubProcessId,
+                              widget.sovID,
                             );
                           },
                           child: ListView.builder(
@@ -1394,7 +1395,7 @@ class _SovLocationListState extends State<SovLocationList>
                                         riskScore: locationListProvider
                                                 .myLocationList[index]
                                                 .overallScore ??
-                                            0,
+                                            5,
                                         dataCompletenessScore: 0,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
@@ -1414,9 +1415,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                       listen: false)
                                                   .deleteLocations(
                                                       context,
-                                                      widget.accountID,
-                                                      widget.subAccountID,
-                                                      widget.sovID,
+                                                      widget.accountID!,
+                                                      widget.subAccountID!,
+                                                      widget.sovID!,
                                                       [locationId]);
 
                                               // Refresh the list after deletion
@@ -1430,9 +1431,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                 40,
                                                 widget.accountID,
                                                 widget.subAccountID,
-                                                widget.sovID,
                                                 widget.initialProcessId,
                                                 widget.initialSubProcessId,
+                                                widget.sovID,
                                               );
 
                                               Navigator.of(context).pop();
@@ -1447,8 +1448,8 @@ class _SovLocationListState extends State<SovLocationList>
                                           locationListProvider
                                               .addTagsToSelectedLocations(
                                                   context,
-                                                  widget.accountID,
-                                                  widget.subAccountID,
+                                                  widget.accountID!,
+                                                  widget.subAccountID!,
                                                   locationId);
                                         },
                                         getData: () {
@@ -1460,9 +1461,9 @@ class _SovLocationListState extends State<SovLocationList>
                                             40,
                                             widget.accountID,
                                             widget.subAccountID,
-                                            widget.sovID,
                                             widget.initialProcessId,
                                             widget.initialSubProcessId,
+                                            widget.sovID,
                                           );
                                         },
                                         lat: locationListProvider
@@ -1505,17 +1506,17 @@ class _SovLocationListState extends State<SovLocationList>
                                   print(
                                       "Query: $locationQuery, Page: ${locationListProvider.page}");
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    // Pass the search query if any
-                                    locationListProvider.page,
-                                    40,
-                                    // Page size
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      // Pass the search query if any
+                                      locationListProvider.page,
+                                      40,
+                                      // Page size
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                   return SizedBox();
                                 }
                               }
@@ -1592,9 +1593,9 @@ class _SovLocationListState extends State<SovLocationList>
                                               listen: false)
                                           .deleteLocations(
                                               context,
-                                              widget.accountID,
-                                              widget.subAccountID,
-                                              widget.sovID,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
+                                              widget.sovID!,
                                               [locationId]);
 
                                       // Refresh the list after deletion
@@ -1602,15 +1603,15 @@ class _SovLocationListState extends State<SovLocationList>
                                               context,
                                               listen: false)
                                           .fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        1,
-                                        40,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                      );
+                                              context,
+                                              locationQuery,
+                                              1,
+                                              40,
+                                              widget.accountID,
+                                              widget.subAccountID,
+                                              widget.initialProcessId,
+                                              widget.initialSubProcessId,
+                                              '');
 
                                       Navigator.of(context).pop();
                                     },
@@ -1624,8 +1625,8 @@ class _SovLocationListState extends State<SovLocationList>
                                   locationListProvider
                                       .addTagsToSelectedLocations(
                                           context,
-                                          widget.accountID,
-                                          widget.subAccountID,
+                                          widget.accountID!,
+                                          widget.subAccountID!,
                                           locationId);
                                 },
                                 getData: () {
@@ -1636,9 +1637,9 @@ class _SovLocationListState extends State<SovLocationList>
                                     40,
                                     widget.accountID,
                                     widget.subAccountID,
-                                    widget.sovID,
                                     widget.initialProcessId,
                                     widget.initialSubProcessId,
+                                    widget.sovID,
                                   );
                                 },
                               );
@@ -1817,15 +1818,15 @@ class _SovLocationListState extends State<SovLocationList>
                         onPressed: () {
                           locationListProvider.clearAllFilters();
                           locationListProvider.fetchLocationList(
-                            context,
-                            locationQuery,
-                            1,
-                            40,
-                            widget.accountID,
-                            widget.subAccountID,
-                            widget.initialProcessId,
-                            widget.initialSubProcessId,
-                          );
+                              context,
+                              locationQuery,
+                              1,
+                              40,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
+                              '');
                         },
                         child: const Text(
                           'Clear All',
@@ -2006,8 +2007,8 @@ class _SovLocationListState extends State<SovLocationList>
             print("Deleting location $locationId");
             // Delete the location
             await Provider.of<MyLocationListProvider>(context, listen: false)
-                .deleteLocations(context, widget.accountID, widget.subAccountID,
-                    widget.sovID, [locationId]);
+                .deleteLocations(context, widget.accountID!,
+                    widget.subAccountID!, widget.sovID!, [locationId]);
 
             // Refresh the list after deletion
             Provider.of<MyLocationListProvider>(context, listen: false)
@@ -2018,9 +2019,9 @@ class _SovLocationListState extends State<SovLocationList>
               40,
               widget.accountID,
               widget.subAccountID,
-              widget.sovID,
               widget.initialProcessId,
               widget.initialSubProcessId,
+              widget.sovID,
             );
 
             Navigator.of(context).pop();
@@ -2033,7 +2034,7 @@ class _SovLocationListState extends State<SovLocationList>
         // Show add tag dialog
         // Implement bulk add tag
         locationListProvider.addTagsToSelectedLocations(
-            context, widget.accountID, widget.subAccountID, locationId);
+            context, widget.accountID!, widget.subAccountID!, locationId);
       },
       getData: () {
         locationListProvider.fetchLocationList(
@@ -2043,9 +2044,9 @@ class _SovLocationListState extends State<SovLocationList>
           40,
           widget.accountID,
           widget.subAccountID,
-          widget.sovID,
           widget.initialProcessId,
           widget.initialSubProcessId,
+          widget.sovID,
         );
       },
     );
@@ -2125,8 +2126,8 @@ class _SovLocationListState extends State<SovLocationList>
 
       // Make API call to delete locations
       await Provider.of<LocationListProvider>(context, listen: false)
-          .deleteLocations(context, widget.accountID, widget.subAccountID,
-              widget.sovID, locationList);
+          .deleteLocations(context, widget.accountID!, widget.subAccountID!,
+              widget.sovID!, locationList);
 
       // Clear selections
       setState(() {
@@ -2396,8 +2397,8 @@ class _SovLocationListState extends State<SovLocationList>
                                                         accountName: widget
                                                                 .accountName ??
                                                             "",
-                                                        subAccountId:
-                                                            widget.subAccountID,
+                                                        subAccountId: widget
+                                                            .subAccountID!,
                                                       )));
                                         }
                                       },

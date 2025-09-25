@@ -30,6 +30,7 @@
             android:name="firebase_performance_logcat_enabled"
             android:value="true" />
         <meta-data
+
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
         <meta-data

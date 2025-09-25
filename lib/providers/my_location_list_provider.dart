@@ -35,7 +35,6 @@ class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
   int currentPage = 1;
 
-
   void setLoading(bool value) {
     isLoading = value;
     notifyListeners();
@@ -404,7 +403,6 @@ class MyLocationListProvider extends ChangeNotifier {
     });
   }
 
-
   List<MyLocation> _myLocationList = [];
 
   List<MyLocation> get myLocationList => _myLocationList;
@@ -415,6 +413,7 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   List<MyLocation> _myLocationConflictList = [];
 
   List<MyLocation> get myLocationConflictList => _myLocationConflictList;
@@ -883,6 +882,7 @@ class MyLocationListProvider extends ChangeNotifier {
   Future<void> fetchAllLocationList(
       BuildContext context, String? accountID, String? subAccountID,
       {String? processId, String? subProcessId}) async {
+    print("Sovlist called");
     var typography = CustomTypography(context);
     try {
       isAllLocationLoading = true;
@@ -953,6 +953,7 @@ class MyLocationListProvider extends ChangeNotifier {
       // ));
     }
   }
+
 // Add this flag in your provider class
   bool _isFetching = false;
 
@@ -965,8 +966,9 @@ class MyLocationListProvider extends ChangeNotifier {
       String? subAccountID,
       String? processId,
       String? subProcessId,
-      [String? sovID]
+      String? sovID
       ) async {
+    print("sov id: $sovID");
     if (_isFetching) return; // Prevent multiple concurrent calls
     _isFetching = true;
 
@@ -987,9 +989,12 @@ class MyLocationListProvider extends ChangeNotifier {
       // Build URL
       var url;
       if (sovID != null && sovID.isNotEmpty) {
-        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
+        print("sov id: $sovID");
+        url =
+            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
       } else {
-        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+        url =
+            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
       }
 
       if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
@@ -1001,9 +1006,11 @@ class MyLocationListProvider extends ChangeNotifier {
           if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (hazardRatings.isNotEmpty)
+        url += "&hazard=${jsonEncode(hazardRatings)}";
       if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (_selectedCampusIds.isNotEmpty)
+        url += "&campus_id=${_selectedCampusIds.join(',')}";
       if (processId != null) url += "&process_id=$processId";
       if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
@@ -1016,7 +1023,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
 
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
@@ -1061,8 +1069,7 @@ class MyLocationListProvider extends ChangeNotifier {
       String? subAccountID,
       String? processId,
       String? subProcessId,
-      [String? sovID]
-      ) async {
+      [String? sovID]) async {
     if (_isFetching) return; // Prevent multiple concurrent calls
     _isFetching = true;
 
@@ -1082,9 +1089,11 @@ class MyLocationListProvider extends ChangeNotifier {
 
       var url;
       if (sovID != null) {
-        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
+        url =
+            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
       } else {
-        url = "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
+        url =
+            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
       }
 
       if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
@@ -1096,9 +1105,11 @@ class MyLocationListProvider extends ChangeNotifier {
           if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (hazardRatings.isNotEmpty)
+        url += "&hazard=${jsonEncode(hazardRatings)}";
       if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (_selectedCampusIds.isNotEmpty)
+        url += "&campus_id=${_selectedCampusIds.join(',')}";
       if (processId != null) url += "&process_id=$processId";
       if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
@@ -1111,7 +1122,8 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel =
+            MyLocationModel.fromJson(jsonResponse);
 
         // locationHits = locationListModel.totalRecords ?? 0;
         // certifiedLocationHits = locationListModel.totalCertified ?? 0;
@@ -1441,6 +1453,7 @@ class MyLocationListProvider extends ChangeNotifier {
     try {
       print("Condition: Certified fetch with rating 5");
       print("Rating: 5");
+      print(sovID.toString());
 
       if (page - 1 > certifiedTotalPages) return;
       if (page == 1) {
@@ -2328,7 +2341,6 @@ class MyLocationListProvider extends ChangeNotifier {
       }
 
       // Display the error message in a SnackBar
-
 
       return ''; // Return an empty string or handle the error as needed
     } catch (e, stackTrace) {

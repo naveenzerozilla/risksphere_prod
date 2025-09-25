@@ -502,15 +502,15 @@ class _MyLocationListState extends State<MyLocationList>
     if (_tabController?.index == 0) {
       _selectedScreen = Screens.locationList;
       locationListProvider.fetchLocationList(
-        context,
-        "",
-        1,
-        10,
-        widget.accountID,
-        widget.subAccountID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-      );
+          context,
+          "",
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          '');
     } else {
       _selectedScreen = Screens.certifiedLocationList;
       locationListProvider.clearRatingsFilter();
@@ -737,21 +737,27 @@ class _MyLocationListState extends State<MyLocationList>
 
   Future<void> getdata(String accountId, String subAccountId) async {
     if (!mounted) return;
-
+    final sovListProvider =
+        Provider.of<SOVListProvider>(context, listen: false);
     final locationListProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
 
     locationListProvider.certifiedPage = 1;
 
-    await locationListProvider.fetchLocationList(
+    await locationListProvider.fetchLocationList(context, "", 1, 8, accountId,
+        subAccountId, widget.initialProcessId, widget.initialSubProcessId, '');
+    sovListProvider.fetchSovList(
       context,
+      widget.accountID!,
+      widget.subAccountID!,
       "",
       1,
-      8,
-      accountId,
-      subAccountId,
-      widget.initialProcessId,
-      widget.initialSubProcessId,
+      10,
+    );
+    sovListProvider.fetchAutoCompleteSovListLocations(
+      context,
+      widget.accountID!,
+      widget.subAccountID!,
     );
 
     await locationListProvider.fetchAllLocationList(
@@ -1096,15 +1102,15 @@ class _MyLocationListState extends State<MyLocationList>
                                           context,
                                           listen: false)
                                       .fetchLocationList(
-                                    context,
-                                    "",
-                                    1,
-                                    10,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                          context,
+                                          "",
+                                          1,
+                                          10,
+                                          widget.accountID,
+                                          widget.subAccountID,
+                                          widget.initialProcessId,
+                                          widget.initialSubProcessId,
+                                          '');
                                   setState(() {});
                                 }
                               }
@@ -1664,15 +1670,16 @@ class _MyLocationListState extends State<MyLocationList>
                                               _buildCombinedStream();
                                               myLocationListProvider
                                                   .fetchLocationList(
-                                                context,
-                                                "",
-                                                1,
-                                                10,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                              );
+                                                      context,
+                                                      "",
+                                                      1,
+                                                      10,
+                                                      widget.accountID,
+                                                      widget.subAccountID,
+                                                      widget.initialProcessId,
+                                                      widget
+                                                          .initialSubProcessId,
+                                                      '');
                                               // myLocationListProvider
                                               //     .fetchLocationList(
                                               //   context,
@@ -2548,15 +2555,15 @@ class _MyLocationListState extends State<MyLocationList>
       // Fetch All locations
       _selectedScreen = Screens.locationList;
       locationListProvider.fetchLocationList(
-        context,
-        "",
-        1,
-        10,
-        widget.accountID,
-        widget.subAccountID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-      );
+          context,
+          "",
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          '');
     } else {
       // Fetch Certified locations
       _selectedScreen = Screens.certifiedLocationList;
@@ -2572,15 +2579,15 @@ class _MyLocationListState extends State<MyLocationList>
         widget.initialSubProcessId,
       );
       locationListProvider.fetchLocationList(
-        context,
-        "",
-        1,
-        10,
-        widget.accountID,
-        widget.subAccountID,
-        widget.initialProcessId,
-        widget.initialSubProcessId,
-      );
+          context,
+          "",
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          '');
     }
   }
 
@@ -3079,15 +3086,15 @@ class _MyLocationListState extends State<MyLocationList>
           )
           .then((_) => setState(() {}));
       await context.read<MyLocationListProvider>().fetchLocationList(
-            context,
-            locationQuery,
-            1,
-            8,
-            accountId,
-            subAccountId,
-            widget.initialProcessId,
-            widget.initialSubProcessId,
-          );
+          context,
+          locationQuery,
+          1,
+          8,
+          accountId,
+          subAccountId,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          '');
       setState(() {
         _buildCombinedStream(); // rebuild the stream
       });
@@ -5101,15 +5108,15 @@ class _MyLocationListState extends State<MyLocationList>
                                 onDeleted: () {
                                   locationListProvider.clearCountryFilter();
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    1,
-                                    10,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      10,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                 },
                               ),
                             ),
@@ -5126,15 +5133,15 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider
                                       .clearCertificationsFilter();
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    1,
-                                    10,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      10,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                 },
                               ),
                             ),
@@ -5185,15 +5192,15 @@ class _MyLocationListState extends State<MyLocationList>
                                     locationListProvider
                                         .clearHazardFilter(hazard);
                                     locationListProvider.fetchLocationList(
-                                      context,
-                                      locationQuery,
-                                      1,
-                                      10,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                    );
+                                        context,
+                                        locationQuery,
+                                        1,
+                                        10,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                        '');
                                   },
                                 ),
                               ),
@@ -5210,15 +5217,15 @@ class _MyLocationListState extends State<MyLocationList>
                                   locationListProvider.clearRatingsFilter();
 
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    1,
-                                    8,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      8,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                 },
                               ),
                             ),
@@ -5236,15 +5243,15 @@ class _MyLocationListState extends State<MyLocationList>
                         onPressed: () {
                           locationListProvider.clearAllFilters();
                           locationListProvider.fetchLocationList(
-                            context,
-                            locationQuery,
-                            1,
-                            8,
-                            widget.accountID,
-                            widget.subAccountID,
-                            widget.initialProcessId,
-                            widget.initialSubProcessId,
-                          );
+                              context,
+                              locationQuery,
+                              1,
+                              8,
+                              widget.accountID,
+                              widget.subAccountID,
+                              widget.initialProcessId,
+                              widget.initialSubProcessId,
+                              '');
                         },
                         child: const Text(
                           'Clear All',
@@ -5330,15 +5337,15 @@ class _MyLocationListState extends State<MyLocationList>
                                                     conflictLocations);
                                             locationListProvider
                                                 .fetchLocationList(
-                                              context,
-                                              locationQuery,
-                                              1,
-                                              1,
-                                              widget.accountID,
-                                              widget.subAccountID,
-                                              widget.initialProcessId,
-                                              widget.initialSubProcessId,
-                                            );
+                                                    context,
+                                                    locationQuery,
+                                                    1,
+                                                    1,
+                                                    widget.accountID,
+                                                    widget.subAccountID,
+                                                    widget.initialProcessId,
+                                                    widget.initialSubProcessId,
+                                                    '');
                                             locationListProvider
                                                 .fetchLocationConflictList(
                                                   context,
@@ -5468,15 +5475,15 @@ class _MyLocationListState extends State<MyLocationList>
                                   )
                                   .then((_) => setState(() {})),
                               locationListProvider.fetchLocationList(
-                                context,
-                                locationQuery,
-                                1,
-                                8,
-                                widget.accountID,
-                                widget.subAccountID,
-                                widget.initialProcessId,
-                                widget.initialSubProcessId,
-                              ),
+                                  context,
+                                  locationQuery,
+                                  1,
+                                  8,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                  widget.initialProcessId,
+                                  widget.initialSubProcessId,
+                                  ''),
 
                               // locationListProvider.fetchAllLocationList(
                               //   context,
@@ -5620,15 +5627,16 @@ class _MyLocationListState extends State<MyLocationList>
                                                       context,
                                                       listen: false)
                                                   .fetchLocationList(
-                                                context,
-                                                locationQuery,
-                                                1,
-                                                8,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                              );
+                                                      context,
+                                                      locationQuery,
+                                                      1,
+                                                      8,
+                                                      widget.accountID,
+                                                      widget.subAccountID,
+                                                      widget.initialProcessId,
+                                                      widget
+                                                          .initialSubProcessId,
+                                                      '');
 
                                               Navigator.of(context).pop();
                                             },
@@ -5696,15 +5704,15 @@ class _MyLocationListState extends State<MyLocationList>
                                                   conflictLocations);
                                           locationListProvider
                                               .fetchLocationList(
-                                            context,
-                                            locationQuery,
-                                            1,
-                                            8,
-                                            widget.accountID,
-                                            widget.subAccountID,
-                                            widget.initialProcessId,
-                                            widget.initialSubProcessId,
-                                          );
+                                                  context,
+                                                  locationQuery,
+                                                  1,
+                                                  8,
+                                                  widget.accountID,
+                                                  widget.subAccountID,
+                                                  widget.initialProcessId,
+                                                  widget.initialSubProcessId,
+                                                  '');
                                         },
                                       ),
                                       Padding(
@@ -5729,17 +5737,17 @@ class _MyLocationListState extends State<MyLocationList>
                                   print(
                                       "Query: $locationQuery, Page: ${locationListProvider.page}");
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    // Pass the search query if any
-                                    locationListProvider.page,
-                                    8,
-                                    // Page size
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      // Pass the search query if any
+                                      locationListProvider.page,
+                                      8,
+                                      // Page size
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                   return SizedBox();
                                 }
                               }
@@ -5844,15 +5852,15 @@ class _MyLocationListState extends State<MyLocationList>
                                               context,
                                               listen: false)
                                           .fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        1,
-                                        8,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                      );
+                                              context,
+                                              locationQuery,
+                                              1,
+                                              8,
+                                              widget.accountID,
+                                              widget.subAccountID,
+                                              widget.initialProcessId,
+                                              widget.initialSubProcessId,
+                                              '');
 
                                       Navigator.of(context).pop();
                                     },
@@ -5908,15 +5916,15 @@ class _MyLocationListState extends State<MyLocationList>
                                   _StartHazardConflict(
                                       conflictLocations: conflictLocations);
                                   locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    1,
-                                    5,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                  );
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      5,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      '');
                                 },
                               );
                             },
@@ -6159,15 +6167,15 @@ class _MyLocationListState extends State<MyLocationList>
                               widget.initialSubProcessId,
                             );
                             locationListProvider.fetchLocationList(
-                              context,
-                              locationQuery,
-                              1,
-                              8,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
-                            );
+                                context,
+                                locationQuery,
+                                1,
+                                8,
+                                widget.accountID,
+                                widget.subAccountID,
+                                widget.initialProcessId,
+                                widget.initialSubProcessId,
+                                '');
                             locationListProvider.fetchAllLocationList(
                               context,
                               widget.accountID,
@@ -6340,15 +6348,15 @@ class _MyLocationListState extends State<MyLocationList>
             // Refresh the list after deletion
             Provider.of<MyLocationListProvider>(context, listen: false)
                 .fetchLocationList(
-              context,
-              locationQuery,
-              1,
-              5,
-              widget.accountID,
-              widget.subAccountID,
-              widget.initialProcessId,
-              widget.initialSubProcessId,
-            );
+                    context,
+                    locationQuery,
+                    1,
+                    5,
+                    widget.accountID,
+                    widget.subAccountID,
+                    widget.initialProcessId,
+                    widget.initialSubProcessId,
+                    '');
 
             Navigator.of(context).pop();
           },
@@ -6401,15 +6409,15 @@ class _MyLocationListState extends State<MyLocationList>
       onNavigateBack: () {
         _StartHazardConflict(conflictLocations: conflictLocations);
         locationListProvider.fetchLocationList(
-          context,
-          locationQuery,
-          1,
-          5,
-          widget.accountID,
-          widget.subAccountID,
-          widget.initialProcessId,
-          widget.initialSubProcessId,
-        );
+            context,
+            locationQuery,
+            1,
+            5,
+            widget.accountID,
+            widget.subAccountID,
+            widget.initialProcessId,
+            widget.initialSubProcessId,
+            '');
       },
     );
   }
@@ -7213,6 +7221,10 @@ class _MyLocationListState extends State<MyLocationList>
                     });
                   });
                 }*/
+                print(sOVListProvider.sovList[index].id ?? "");
+                print(
+                    "accountID1: ${widget.accountID!}, subAccountID: ${widget.subAccountID!}");
+                print(sOVListProvider.sovList[index].accountId ?? "");
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return SovLocationList(
                     accountID: widget.accountID!,
@@ -7749,140 +7761,213 @@ class _MyLocationListState extends State<MyLocationList>
       });
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Dialog(
               child: Container(
-                width: 304,
+                width: MediaQuery.of(context).size.width * 0.9,
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                  maxHeight: MediaQuery.of(context).size.height / 0.2,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Transfer SOV',
-                        style: typography.H5_Regular.copyWith(height: 1.2),
+                    // Padding(
+                    //   padding: EdgeInsets.all(16),
+                    //   child: Text(
+                    //     'Transfer SOV',
+                    //     style: typography.H5_Regular.copyWith(height: 1.2),
+                    //   ),
+                    // ),
+                    // Padding(
+                    //   padding: EdgeInsets.symmetric(horizontal: 16),
+                    //   child: TextField(
+                    //     controller: _userSearchController,
+                    //     onChanged: (query) {
+                    //       setState(() {
+                    //         _selectedUser = null;
+                    //       });
+                    //       _onSearchChanged(query, setState);
+                    //     },
+                    //     decoration: InputDecoration(
+                    //       hintText: 'Search for a user to transfer sov',
+                    //       hintStyle: typography.Body1,
+                    //       border: OutlineInputBorder(),
+                    //       suffixIcon: _isSearching
+                    //           ? Container(
+                    //               margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
+                    //               width: 20,
+                    //               height: 20,
+                    //               child: CircularProgressIndicator())
+                    //           : null,
+                    //     ),
+                    //   ),
+                    // ),
+                    // SizedBox(height: 10),
+                    // Flexible(
+                    //   child: _selectedUser == null
+                    //       ? ListView.builder(
+                    //           shrinkWrap: true,
+                    //           itemCount: _autocompleteUsersList.length,
+                    //           itemBuilder: (context, index) {
+                    //             final user = _autocompleteUsersList[index];
+                    //             return ListTile(
+                    //               leading: user.imageUrl.isNotEmpty
+                    //                   ? CircleAvatar(
+                    //                       backgroundImage:
+                    //                           NetworkImage(user.imageUrl),
+                    //                     )
+                    //                   : CircleAvatar(
+                    //                       child:
+                    //                           Text(user.name[0].toUpperCase()),
+                    //                     ),
+                    //               title: Text(user.name),
+                    //               subtitle: Text(user.email),
+                    //               onTap: () {
+                    //                 setState(() {
+                    //                   _selectedUser = user;
+                    //                   _userSearchController.text = user.name;
+                    //                 });
+                    //               },
+                    //             );
+                    //           },
+                    //         )
+                    //       : Padding(
+                    //           padding: EdgeInsets.all(16),
+                    //           child:
+                    //               Text('Selected User: ${_selectedUser!.name}'),
+                    //         ),
+                    // ),
+                    // Padding(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    //     children: [
+                    //       TextButton(
+                    //         onPressed: () => Navigator.pop(dialogContext),
+                    //         child: Text(
+                    //           'Cancel',
+                    //           style: CustomTypography(context).Body1,
+                    //         ),
+                    //       ),
+                    //       CustomButton(
+                    //         type: ButtonType.elevated,
+                    //         onPressed: _selectedUser != null &&
+                    //                 !_isTransferLoading
+                    //             ? () async {
+                    //                 setState(() {
+                    //                   _isTransferLoading = true;
+                    //                 });
+                    //                 var provider = Provider.of<SOVListProvider>(
+                    //                     context,
+                    //                     listen: false);
+                    //                 await provider
+                    //                     .transferSOV(
+                    //                         context,
+                    //                         widget.accountID!,
+                    //                         widget.subAccountID,
+                    //                         sov.id,
+                    //                         _selectedUser!.id)
+                    //                     .then((value) {
+                    //                   if (value) {
+                    //                     getdata(widget.accountID!,
+                    //                         widget.accountID!);
+                    //                   }
+                    //                 });
+                    //                 setState(() {
+                    //                   _isTransferLoading = false;
+                    //                 });
+                    //
+                    //                 Navigator.pop(dialogContext);
+                    //               }
+                    //             : null,
+                    //         child: _isTransferLoading
+                    //             ? CircularProgressIndicator(strokeWidth: 2.0)
+                    //             : Text(
+                    //                 'Transfer',
+                    //                 style: CustomTypography(context).Body1,
+                    //               ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // SizedBox(height: 10),
+                    const Text(
+                      "Share SOV",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Dropdown
+                    DropdownButtonFormField<String>(
+                      value: "All",
+                      items: const [
+                        DropdownMenuItem(value: "All", child: Text("All")),
+                        DropdownMenuItem(value: "List1", child: Text("List 1")),
+                        DropdownMenuItem(value: "List2", child: Text("List 2")),
+                      ],
+                      onChanged: (value) {},
+                      decoration: const InputDecoration(
+                        labelText: "SOV List",
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _userSearchController,
-                        onChanged: (query) {
-                          setState(() {
-                            _selectedUser = null;
-                          });
-                          _onSearchChanged(query, setState);
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search for a user to transfer sov',
-                          hintStyle: typography.Body1,
-                          border: OutlineInputBorder(),
-                          suffixIcon: _isSearching
-                              ? Container(
-                                  margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator())
-                              : null,
+                    const SizedBox(height: 12),
+
+                    const Text("5 SOV Lists selected"),
+
+                    const SizedBox(height: 16),
+
+                    // Search field
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: "Name or Email",
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Flexible(
-                      child: _selectedUser == null
-                          ? ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _autocompleteUsersList.length,
-                              itemBuilder: (context, index) {
-                                final user = _autocompleteUsersList[index];
-                                return ListTile(
-                                  leading: user.imageUrl.isNotEmpty
-                                      ? CircleAvatar(
-                                          backgroundImage:
-                                              NetworkImage(user.imageUrl),
-                                        )
-                                      : CircleAvatar(
-                                          child:
-                                              Text(user.name[0].toUpperCase()),
-                                        ),
-                                  title: Text(user.name),
-                                  subtitle: Text(user.email),
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedUser = user;
-                                      _userSearchController.text = user.name;
-                                    });
-                                  },
-                                );
-                              },
-                            )
-                          : Padding(
-                              padding: EdgeInsets.all(16),
-                              child:
-                                  Text('Selected User: ${_selectedUser!.name}'),
-                            ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            child: Text(
-                              'Cancel',
-                              style: CustomTypography(context).Body1,
-                            ),
-                          ),
-                          CustomButton(
-                            type: ButtonType.elevated,
-                            onPressed: _selectedUser != null &&
-                                    !_isTransferLoading
-                                ? () async {
-                                    setState(() {
-                                      _isTransferLoading = true;
-                                    });
-                                    var provider = Provider.of<SOVListProvider>(
-                                        context,
-                                        listen: false);
-                                    await provider
-                                        .transferSOV(
-                                            context,
-                                            widget.accountID!,
-                                            widget.subAccountID,
-                                            sov.id,
-                                            _selectedUser!.id)
-                                        .then((value) {
-                                      if (value) {
-                                        getdata(widget.accountID!,
-                                            widget.accountID!);
-                                      }
-                                    });
-                                    setState(() {
-                                      _isTransferLoading = false;
-                                    });
+                    const SizedBox(height: 16),
 
-                                    Navigator.pop(dialogContext);
-                                  }
-                                : null,
-                            child: _isTransferLoading
-                                ? CircularProgressIndicator(strokeWidth: 2.0)
-                                : Text(
-                                    'Transfer',
-                                    style: CustomTypography(context).Body1,
-                                  ),
-                          ),
-                        ],
-                      ),
+                    // User list
+                    _userTile("DS", "Darrell Steward", "View, Edit, Comment",
+                        "Cat Modeller"),
+                    _userTile("CH", "Cillian Henry", "View, Edit, Comment",
+                        "Risk Engineer"),
+                    _userTile(
+                        "SB", "Stuart Benny", "View, Comment", "Underwriter"),
+
+                    const SizedBox(height: 12),
+
+                    const Text(
+                      "Note: Users with multiple roles must be assigned one role per SOV.",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                    SizedBox(height: 10),
+
+                    const SizedBox(height: 20),
+
+                    // Action Buttons
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        backgroundColor: Colors.lightBlue,
+                      ),
+                      onPressed: () {},
+                      child: const Text("Share SOV"),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Cancel"),
+                    ),
                   ],
                 ),
               ),
@@ -7895,24 +7980,56 @@ class _MyLocationListState extends State<MyLocationList>
     });
   }
 
-  Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
-      String query) async {
-    try {
-      ApiService apiService =
-          ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
-      String url = '?search=$query';
-      var response = await apiService.get(url);
+  Widget _userTile(
+      String initials, String name, String role, String dropdownValue) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(child: Text(initials)),
+        title: Text(name),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(role),
+            const SizedBox(height: 5),
+            DropdownButtonFormField<String>(
+              value: dropdownValue,
+              items: [
+                DropdownMenuItem(
+                    value: dropdownValue, child: Text(dropdownValue)),
+                const DropdownMenuItem(value: "Role2", child: Text("Role 2")),
+                const DropdownMenuItem(value: "Role3", child: Text("Role 3")),
+              ],
+              onChanged: (value) {},
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        trailing: Checkbox(value: true, onChanged: (val) {}),
+      ),
+    );
+  }
+}
 
-      // Parse the response to extract user data
-      List<TransferAutocompleteModel> users = (response['result'] as List)
-          .map((user) => TransferAutocompleteModel.fromJson(user))
-          .toList();
+Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
+    String query) async {
+  try {
+    ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+    String url = '?search=$query';
+    var response = await apiService.get(url);
 
-      return users;
-    } catch (e) {
-      print(e.toString());
-      return [];
-    }
+    // Parse the response to extract user data
+    List<TransferAutocompleteModel> users = (response['result'] as List)
+        .map((user) => TransferAutocompleteModel.fromJson(user))
+        .toList();
+
+    return users;
+  } catch (e) {
+    print(e.toString());
+    return [];
   }
 }
 

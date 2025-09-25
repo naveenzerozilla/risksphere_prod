@@ -652,9 +652,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                //check the processing status
                 if (widget.hazardProcess == true ||
                     title == 'Geocoding' ||
-                    title == 'Completeness') ...[
+                    title == 'Completeness' ||
+                    title == 'Risk Score') ...[
                   title == 'Risk Score'
                       ? SvgPicture.asset('assets/images/hazard_icon.svg',
                           width: 24, height: 24)

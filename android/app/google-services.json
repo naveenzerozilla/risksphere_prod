@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "863607711683-nd67f6915ps0lb97jjoov4deolm4b06a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green",
+            "certificate_hash": "e3017ed8954f0cfc56e8056ef2eb9d3e1baeab31"
+          }
+        },
+        {
           "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
           "client_type": 3
         }
