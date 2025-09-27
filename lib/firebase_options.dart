@@ -57,13 +57,13 @@ class DefaultFirebaseOptions {
   /// Config for package: com.example.green
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBdxubbXu3Kv56rn6lqoLyoj7aoMIJ-ZCc',
-    appId: '1:863607711683:ios:f0160ac7f584c6bdbcff76',
-    messagingSenderId: '863607711683',
-    projectId: 'project-green-prod',
-    storageBucket: 'project-green-prod.firebasestorage.app',
-    androidClientId: '863607711683-7uq9vqs3uhibq7esnholk6u286d2fukl.apps.googleusercontent.com',
-    iosClientId: '863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
+    appId: '1:857135835532:ios:dce11826e3313f03c84ea9',
+    messagingSenderId: '857135835532',
+    projectId: 'project-green-r5-1-qa',
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
+    iosClientId: '857135835532-al09g5oa31ue7i0ikttr6r1m97t9tep0.apps.googleusercontent.com',
     iosBundleId: 'com.sonofthunder.risksphere',
   );
 
