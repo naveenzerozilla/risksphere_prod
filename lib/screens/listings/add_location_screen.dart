@@ -110,7 +110,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   // radio group for rented and leased
   bool rented = false;
-  bool leased = false;Timer? _debounce;
+  bool leased = false;
+  Timer? _debounce;
 
   @override
   initState() {
@@ -385,6 +386,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         //     .toString()),
                                         // if (trialStatus.isNotEmpty ||
                                         //     hasGeocodingStatus!.isNotEmpty)
+
                                         //   Padding(
                                         //     padding: const EdgeInsets.all(8.0),
                                         //     child:
@@ -444,17 +446,29 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Autocomplete<Suggestion>(
-                                            optionsBuilder: (TextEditingValue textEditingValue) async {
-                                              if (textEditingValue.text.isEmpty || _isSelectedFromAutocomplete) {
-                                                return const Iterable<Suggestion>.empty();
+                                            optionsBuilder: (TextEditingValue
+                                                textEditingValue) async {
+                                              if (textEditingValue
+                                                      .text.isEmpty ||
+                                                  _isSelectedFromAutocomplete) {
+                                                return const Iterable<
+                                                    Suggestion>.empty();
                                               }
 
                                               // ✅ Debounce logic
                                               _debounce?.cancel();
-                                              final completer = Completer<List<Suggestion>>();
-                                              _debounce = Timer(const Duration(milliseconds: 400), () async {
-                                                final apiProvider = PlaceApiProvider(sessionToken);
-                                                final results = await apiProvider.fetchSuggestions(
+                                              final completer =
+                                                  Completer<List<Suggestion>>();
+                                              _debounce = Timer(
+                                                  const Duration(
+                                                      milliseconds: 400),
+                                                  () async {
+                                                final apiProvider =
+                                                    PlaceApiProvider(
+                                                        sessionToken);
+                                                final results =
+                                                    await apiProvider
+                                                        .fetchSuggestions(
                                                   textEditingValue.text,
                                                   'en',
                                                 );
@@ -465,17 +479,22 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
                                               return completer.future;
                                             },
-                                            displayStringForOption: (option) => option.description,
-                                            fieldViewBuilder:
-                                                (context, controller, focusNode, onFieldSubmitted) {
-                                              _locationNameController = controller;
+                                            displayStringForOption: (option) =>
+                                                option.description,
+                                            fieldViewBuilder: (context,
+                                                controller,
+                                                focusNode,
+                                                onFieldSubmitted) {
+                                              _locationNameController =
+                                                  controller;
                                               return TextField(
                                                 enabled: !areFieldsDisabled(),
                                                 controller: controller,
                                                 focusNode: focusNode,
                                                 onChanged: (value) {
                                                   if (_isSelectedFromAutocomplete) {
-                                                    _isSelectedFromAutocomplete = false;
+                                                    _isSelectedFromAutocomplete =
+                                                        false;
                                                     return;
                                                   }
                                                   if (value.isEmpty) {
@@ -483,19 +502,24 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   }
                                                 },
                                                 decoration: InputDecoration(
-                                                  labelText: LanguageService.getTranslated(
-                                                      context, "addlocation_location_name"),
-                                                  border: const OutlineInputBorder(),
-                                                  prefixIcon: const Icon(Icons.search),
+                                                  labelText: LanguageService
+                                                      .getTranslated(context,
+                                                          "addlocation_location_name"),
+                                                  border:
+                                                      const OutlineInputBorder(),
+                                                  prefixIcon:
+                                                      const Icon(Icons.search),
                                                 ),
                                               );
                                             },
                                             onSelected: areFieldsDisabled()
                                                 ? null
                                                 : (Suggestion selection) {
-                                              _isSelectedFromAutocomplete = true;
-                                              _handlePlaceSelection(selection);
-                                            },
+                                                    _isSelectedFromAutocomplete =
+                                                        true;
+                                                    _handlePlaceSelection(
+                                                        selection);
+                                                  },
                                           ),
                                         )
 
@@ -560,7 +584,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         //           },
                                         //   ),
                                         // ),
-,
+                                        ,
                                         SizedBox(height: CustomSpacing.four),
                                         // Location Address
                                         Padding(
@@ -962,6 +986,34 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             ],
                                           ),
                                         ),
+                                        if (int.parse(hasHazardLicenseStatus
+                                                .toString()) >
+                                            0) ...[
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.only(left: 10),
+                                            child: Text(
+                                              "Available Locations: $hasHazardLicenseStatus",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                          )
+                                        ] else ...[
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.only(left: 10),
+                                            child: const Text(
+                                              "No locations. Upgrade Now to create SOV!",
+                                              style: TextStyle(
+                                                color: Colors.redAccent,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                         if (addToSOVCheck)
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
@@ -1060,13 +1112,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                           AutocompleteOptionsSovs(
                                                             options: sovProvider
                                                                 .filteredAutoCompleteList,
-                                                            onSelected:
-                                                                (SovAccount
-                                                                    selection) {
+                                                            onSelected: (Result
+                                                                selection) {
                                                               setState(() {
                                                                 selectedSovId =
                                                                     selection
-                                                                            .id ??
+                                                                            .sovId ??
                                                                         "";
                                                                 sovController
                                                                         .text =

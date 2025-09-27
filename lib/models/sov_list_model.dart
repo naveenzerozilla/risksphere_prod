@@ -1,132 +1,320 @@
 class SovListModel {
-  int? totalHits;
-  List<SovAccount>? results;
-  int? totalPages;
-  Settings? settings;
   int? totalRecords;
+  int? page;
+  int? pageSize;
+  List<Result>? result;
+  Settings? settings;
+  Role? role;
+  TotalCountHeader? totalCountHeader;
 
-  SovListModel({this.totalHits, this.results, this.totalPages, this.settings});
+  SovListModel(
+      {this.totalRecords,
+      this.page,
+      this.pageSize,
+      this.result,
+      this.settings,
+      this.role,
+      this.totalCountHeader});
 
   SovListModel.fromJson(Map<String, dynamic> json) {
-    totalHits = json['totalHits'];
-    if (json['results'] != null) {
-      results = <SovAccount>[];
-      json['results'].forEach((v) {
-        results!.add(SovAccount.fromJson(v));
+    totalRecords = json['totalRecords'];
+    page = json['page'];
+    pageSize = json['pageSize'];
+    if (json['result'] != null) {
+      result = <Result>[];
+      json['result'].forEach((v) {
+        result!.add(new Result.fromJson(v));
       });
     }
-    totalPages = json['totalPages'];
-    settings = json['settings'] != null ? Settings.fromJson(json['settings']) : null;
-    totalRecords = json['totalRecords'];
+    settings = json['settings'] != null
+        ? new Settings.fromJson(json['settings'])
+        : null;
+    role = json['role'] != null ? new Role.fromJson(json['role']) : null;
+    totalCountHeader = json['total_count_header'] != null
+        ? new TotalCountHeader.fromJson(json['total_count_header'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['totalHits'] = totalHits;
-    if (results != null) {
-      data['results'] = results!.map((v) => v.toJson()).toList();
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['totalRecords'] = this.totalRecords;
+    data['page'] = this.page;
+    data['pageSize'] = this.pageSize;
+    if (this.result != null) {
+      data['result'] = this.result!.map((v) => v.toJson()).toList();
     }
-    data['totalPages'] = totalPages;
-    if (settings != null) {
-      data['settings'] = settings!.toJson();
+    if (this.settings != null) {
+      data['settings'] = this.settings!.toJson();
     }
-    data['totalRecords'] = totalRecords;
+    if (this.role != null) {
+      data['role'] = this.role!.toJson();
+    }
+    if (this.totalCountHeader != null) {
+      data['total_count_header'] = this.totalCountHeader!.toJson();
+    }
     return data;
   }
 }
 
-class SovAccount {
-  String? id;
-  String? path;
-  String? name;
+class Result {
+  String? sovId;
   Owner? owner;
-  int? createdAt;
-  String? accountId;
+  String? companyId;
   String? subAccountId;
-  String? objectID;
-  double? overAllScore;
+  String? accountId;
+  String? name;
+  CreatedAt? createdAt;
+
+  // DataParamIndex? dataParamIndex;
+  List<Null>? allDataParameters;
+  List<Null>? dataParameters;
+  bool? isShared;
+  List<String>? accessibleTo;
+  SharingStatus? sharingStatus;
   int? locationCount;
-  bool isChecked = false; // Local variable, not part of JSON serialization
-  bool disabled = false;
+  Null? role;
+  String? companyName;
 
-  SovAccount({
-    this.id,
-    this.path,
-    this.name,
-    this.owner,
-    this.createdAt,
-    this.accountId,
-    this.subAccountId,
-    this.objectID,
-    this.overAllScore,
-    this.locationCount,
-    this.isChecked = false,
-    this.disabled = false,
-  });
+  Result(
+      {this.sovId,
+      this.owner,
+      this.companyId,
+      this.subAccountId,
+      this.accountId,
+      this.name,
+      this.createdAt,
+      this.allDataParameters,
+      this.dataParameters,
+      this.isShared,
+      this.accessibleTo,
+      this.sharingStatus,
+      this.locationCount,
+      this.role,
+      this.companyName});
 
-  SovAccount.fromJson(Map<String, dynamic> json) {
-    id = json['sov_id'];
-    path = json['path'];
-    name = json['name'];
-    owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
-    //createdAt = json['created_at'];
-    accountId = json['account_id'];
+  Result.fromJson(Map<String, dynamic> json) {
+    sovId = json['sov_id'];
+    owner = json['owner'] != null ? new Owner.fromJson(json['owner']) : null;
+    companyId = json['company_id'];
     subAccountId = json['sub_account_id'];
-    objectID = json['objectID'];
-    if(json['over_all_score'].runtimeType == int) {
-      overAllScore = json['over_all_score'].toDouble();
-    } else {
-      overAllScore = json['over_all_score'];
-    }
+    accountId = json['account_id'];
+    name = json['name'];
+    createdAt = json['created_at'] != null
+        ? new CreatedAt.fromJson(json['created_at'])
+        : null;
+    // dataParamIndex = json['data_param_index'] != null ? new DataParamIndex.fromJson(json['data_param_index']) : null;
+    // if (json['all_data_parameters'] != null) {
+    //   allDataParameters = <Null>[];
+    //   json['all_data_parameters'].forEach((v) { allDataParameters!.add(new Null.fromJson(v)); });
+    // }
+    // if (json['data_parameters'] != null) {
+    //   dataParameters = <Null>[];
+    //   json['data_parameters'].forEach((v) { dataParameters!.add(new Null.fromJson(v)); });
+    // }
+    isShared = json['is_shared'];
+    accessibleTo = json['accessible_to'].cast<String>();
+    sharingStatus = json['sharing_status'] != null
+        ? new SharingStatus.fromJson(json['sharing_status'])
+        : null;
     locationCount = json['location_count'];
-    disabled = json['is_disabled'] ?? false;
+    role = json['role'];
+    companyName = json['company_name'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['path'] = path;
-    data['name'] = name;
-    if (owner != null) {
-      data['owner'] = owner!.toJson();
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['sov_id'] = this.sovId;
+    if (this.owner != null) {
+      data['owner'] = this.owner!.toJson();
     }
-    //data['created_at'] = createdAt;
-    data['account_id'] = accountId;
-    data['sub_account_id'] = subAccountId;
-    data['objectID'] = objectID;
-    data['overAllScore'] = overAllScore;
-    data['locationCount'] = locationCount;
-    data['sov_id'] = id;
-    data['is_disabled'] = disabled;
+    data['company_id'] = this.companyId;
+    data['sub_account_id'] = this.subAccountId;
+    data['account_id'] = this.accountId;
+    data['name'] = this.name;
+    if (this.createdAt != null) {
+      data['created_at'] = this.createdAt!.toJson();
+    }
+    // if (this.dataParamIndex != null) {
+    //   data['data_param_index'] = this.dataParamIndex!.toJson();
+    // }
+    // if (this.allDataParameters != null) {
+    //   data['all_data_parameters'] = this.allDataParameters!.map((v) => v.toJson()).toList();
+    // }
+    // if (this.dataParameters != null) {
+    //   data['data_parameters'] = this.dataParameters!.map((v) => v.toJson()).toList();
+    // }
+    data['is_shared'] = this.isShared;
+    data['accessible_to'] = this.accessibleTo;
+    if (this.sharingStatus != null) {
+      data['sharing_status'] = this.sharingStatus!.toJson();
+    }
+    data['location_count'] = this.locationCount;
+    data['role'] = this.role;
+    data['company_name'] = this.companyName;
     return data;
-  }
-
-  @override
-  String toString() {
-    return 'SovAccount(subAccountId: $subAccountId, name: $name, isChecked: $isChecked, path: $path, owner: $owner, createdAt: $createdAt, accountId: $accountId, objectID: $objectID, overAllScore: $overAllScore, locationCount: $locationCount, disabled: $disabled)';
   }
 }
 
 class Owner {
   String? date;
-  String? email;
-  String? id;
   String? name;
+  String? id;
+  String? email;
 
-  Owner({this.date, this.email, this.id, this.name});
+  Owner({this.date, this.name, this.id, this.email});
 
   Owner.fromJson(Map<String, dynamic> json) {
     date = json['date'];
-    email = json['email'];
-    id = json['id'];
     name = json['name'];
+    id = json['id'];
+    email = json['email'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['date'] = date;
-    data['email'] = email;
-    data['id'] = id;
-    data['name'] = name;
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['date'] = this.date;
+    data['name'] = this.name;
+    data['id'] = this.id;
+    data['email'] = this.email;
+    return data;
+  }
+}
+
+class CreatedAt {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  CreatedAt({this.iSeconds, this.iNanoseconds});
+
+  CreatedAt.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
+    return data;
+  }
+}
+
+class SharingStatus {
+  WyoNUpPF1DZbdKX3HCKIE7IGjyA3? wyoNUpPF1DZbdKX3HCKIE7IGjyA3;
+  Fkdol2eUvvN6HX0EPFQAClhDSgv1? fkdol2eUvvN6HX0EPFQAClhDSgv1;
+
+  SharingStatus(
+      {this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3, this.fkdol2eUvvN6HX0EPFQAClhDSgv1});
+
+  SharingStatus.fromJson(Map<String, dynamic> json) {
+    wyoNUpPF1DZbdKX3HCKIE7IGjyA3 = json['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'] != null
+        ? new WyoNUpPF1DZbdKX3HCKIE7IGjyA3.fromJson(
+            json['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'])
+        : null;
+    fkdol2eUvvN6HX0EPFQAClhDSgv1 = json['fkdol2eUvvN6HX0EPFQAClhDSgv1'] != null
+        ? new Fkdol2eUvvN6HX0EPFQAClhDSgv1.fromJson(
+            json['fkdol2eUvvN6HX0EPFQAClhDSgv1'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3 != null) {
+      data['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'] =
+          this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3!.toJson();
+    }
+    if (this.fkdol2eUvvN6HX0EPFQAClhDSgv1 != null) {
+      data['fkdol2eUvvN6HX0EPFQAClhDSgv1'] =
+          this.fkdol2eUvvN6HX0EPFQAClhDSgv1!.toJson();
+    }
+    return data;
+  }
+}
+
+class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
+  String? userId;
+  String? status;
+  String? comment;
+  Role? role;
+  CreatedAt? updatedAt;
+  String? updatedBy;
+  String? user;
+
+  WyoNUpPF1DZbdKX3HCKIE7IGjyA3(
+      {this.userId,
+      this.status,
+      this.comment,
+      this.role,
+      this.updatedAt,
+      this.updatedBy,
+      this.user});
+
+  WyoNUpPF1DZbdKX3HCKIE7IGjyA3.fromJson(Map<String, dynamic> json) {
+    userId = json['user_id'];
+    status = json['status'];
+    comment = json['comment'];
+    role = json['role'] != null ? new Role.fromJson(json['role']) : null;
+    updatedAt = json['updated_at'] != null
+        ? new CreatedAt.fromJson(json['updated_at'])
+        : null;
+    updatedBy = json['updated_by'];
+    user = json['user'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['user_id'] = this.userId;
+    data['status'] = this.status;
+    data['comment'] = this.comment;
+    if (this.role != null) {
+      data['role'] = this.role!.toJson();
+    }
+    if (this.updatedAt != null) {
+      data['updated_at'] = this.updatedAt!.toJson();
+    }
+    data['updated_by'] = this.updatedBy;
+    data['user'] = this.user;
+    return data;
+  }
+}
+
+class Role {
+  String? roleId;
+  String? roleName;
+
+  Role({this.roleId, this.roleName});
+
+  Role.fromJson(Map<String, dynamic> json) {
+    roleId = json['role_id'];
+    roleName = json['role_name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['role_id'] = this.roleId;
+    data['role_name'] = this.roleName;
+    return data;
+  }
+}
+
+class Fkdol2eUvvN6HX0EPFQAClhDSgv1 {
+  String? status;
+  String? comment;
+  String? user;
+
+  Fkdol2eUvvN6HX0EPFQAClhDSgv1({this.status, this.comment, this.user});
+
+  Fkdol2eUvvN6HX0EPFQAClhDSgv1.fromJson(Map<String, dynamic> json) {
+    status = json['status'];
+    comment = json['comment'];
+    user = json['user'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['status'] = this.status;
+    data['comment'] = this.comment;
+    data['user'] = this.user;
     return data;
   }
 }
@@ -143,9 +331,34 @@ class Settings {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['location_count'] = locationCount;
-    data['over_all_score'] = overAllScore;
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['location_count'] = this.locationCount;
+    data['over_all_score'] = this.overAllScore;
+    return data;
+  }
+}
+
+class TotalCountHeader {
+  int? my;
+  int? shared;
+  int? received;
+  int? all;
+
+  TotalCountHeader({this.my, this.shared, this.received, this.all});
+
+  TotalCountHeader.fromJson(Map<String, dynamic> json) {
+    my = json['my'];
+    shared = json['shared'];
+    received = json['received'];
+    all = json['all'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['my'] = this.my;
+    data['shared'] = this.shared;
+    data['received'] = this.received;
+    data['all'] = this.all;
     return data;
   }
 }

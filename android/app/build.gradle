@@ -47,7 +47,7 @@ android {
         applicationId "com.risksphere.green"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
-        versionCode 45
+        versionCode 51
         versionName "5.2.11"
         multiDexEnabled true
         manifestPlaceholders = [

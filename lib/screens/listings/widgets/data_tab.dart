@@ -198,17 +198,15 @@ class _DataTabState extends State<DataTab> {
           // Grouping logic starts here
           Map<String, List<Result>> groupedResults = {};
 
-          for (var result in provider.parameters!.result!) {
-            final impactType = result.criticality?.impactType?.toString() ?? '';
+         for (final result in (provider.parameters?.result ?? const <Result>[])) {
+           final impactType = result.criticality?.impactType?.toString() ?? 'Unknown';
 
-            groupedResults.putIfAbsent(impactType, () => []);
+           final list = groupedResults.putIfAbsent(impactType, () => []);
 
-            // Avoid duplicate entries (optional check based on a unique property like name)
-            if (!groupedResults[impactType]!
-                .any((r) => r.name == result.name)) {
-              groupedResults[impactType]!.add(result);
-            }
-          }
+           if (!list.any((r) => r.name == result.name)) {
+             list.add(result);
+           }
+         }
           final uniqueResultList = uniqueResults.values.toList();
           return RefreshIndicator(
             onRefresh: () async {

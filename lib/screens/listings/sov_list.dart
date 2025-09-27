@@ -110,7 +110,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
       _sovQuery = query;
       var provider = Provider.of<SOVListProvider>(context, listen: false);
       provider.page = 0;
-      await provider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, provider.page, 10);
+      await provider.fetchSovList(context, widget.accountId, widget.subAccountId, _sovQuery, provider.page, 10,'');
     });
   }
 
@@ -167,7 +167,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SOVListProvider>(context, listen: false).page = 0;
       Provider.of<SOVListProvider>(context, listen: false)
-          .fetchSovList(context, widget.accountId, widget.subAccountId, "", 0, 10);
+          .fetchSovList(context, widget.accountId, widget.subAccountId, "", 0, 10,'');
     });
   }
 
@@ -229,31 +229,31 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                   label: 'Export',
                   onTap: () {
                     // On export button click
-                    List<String> selectedSovIds = Provider.of<SOVListProvider>(context, listen: false)
-                        .sovList
-                        .where((sov) => sov.isChecked ?? false)
-                        .map((sov) => sov.id!)
-                        .toList();
+                    // List<String> selectedSovIds = Provider.of<SOVListProvider>(context, listen: false)
+                    //     .sovList
+                    //     .where((sov) => sov.isChecked ?? false)
+                    //     .map((sov) => sov.id!)
+                    //     .toList();
 
-                    if (selectedSovIds.isNotEmpty) {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return ExportDialog(
-                            accountId: widget.accountId,
-                            subAccountId: widget.subAccountId,
-                            locationId: selectedSovIds,
-                          );
-                        },
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                          LanguageService.getTranslated(context, "no_items_selected_error"),
-                          style: typography.Body1,
-                        ),
-                      ));
-                    }
+                    // if (selectedSovIds.isNotEmpty) {
+                    //   showDialog(
+                    //     context: context,
+                    //     builder: (BuildContext context) {
+                    //       return ExportDialog(
+                    //         accountId: widget.accountId,
+                    //         subAccountId: widget.subAccountId,
+                    //         locationId: selectedSovIds,
+                    //       );
+                    //     },
+                    //   );
+                    // } else {
+                    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    //     content: Text(
+                    //       LanguageService.getTranslated(context, "no_items_selected_error"),
+                    //       style: typography.Body1,
+                    //     ),
+                    //   ));
+                    // }
                   },
                 ),
               ],
@@ -488,7 +488,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                             widget.subAccountId,
                                             _sovQuery,
                                             sovListProvider.page,
-                                            10, // Page size
+                                            10,'' // Page size
                                           );
                                           return SizedBox();
                                         }
@@ -538,30 +538,32 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
     var typography = CustomTypography(context);
-    bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
+    // bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: isDisabled
-            ? null
-            : () {
+        onTap:
+        // isDisabled
+        //     ? null
+        //     :
+            () {
           // On tap of card
-          if (showCheckbox) {
-            setState(() {
-              sOVListProvider.sovList[index].isChecked =
-              !(sOVListProvider.sovList[index].isChecked ?? false);
-            });
-          }
+          // if (showCheckbox) {
+          //   // setState(() {
+          //   //   sOVListProvider.sovList[index].isChecked =
+          //   //   !(sOVListProvider.sovList[index].isChecked ?? false);
+          //   // });
+          // }
           // if all are unselected then hide checkbox
-          if (sOVListProvider.sovList
-              .every((element) => element.isChecked == false)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                showCheckbox = false;
-              });
-            });
-          }
+          // if (sOVListProvider.sovList
+          //     .every((element) => element.isChecked == false)) {
+          //   WidgetsBinding.instance.addPostFrameCallback((_) {
+          //     setState(() {
+          //       showCheckbox = false;
+          //     });
+          //   });
+          // }
           Navigator.push(context, MaterialPageRoute(builder: (context) {
             return LocationList(
               userId: sOVListProvider.sovList[index].accountId ?? "",
@@ -569,10 +571,11 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
               accountId: widget.accountId,
               accountName: widget.accountName,
               subAccountId: widget.subAccountId,
-              sovId: sOVListProvider.sovList[index].id ?? "",
+              sovId: sOVListProvider.sovList[index].sovId ?? "",
               sovName: sOVListProvider.sovList[index].name ?? "",
               subAccountName: widget.subAccountName,
-              rating: sOVListProvider.sovList[index].overAllScore?.toString() ??
+              rating:
+              // sOVListProvider.sovList[index].overallRating?.toString() ??
                   "0",
             );
           }));
@@ -581,13 +584,13 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
           setState(() {
             if (showCheckbox) {
               showCheckbox = false;
-              sOVListProvider.sovList[index].isChecked = false;
+              // sOVListProvider.sovList[index].isChecked = false;
             } else {
               sOVListProvider.sovList.forEach((element) {
-                element.isChecked = false;
+                // element.isChecked = false;
               });
               showCheckbox = true;
-              sOVListProvider.sovList[index].isChecked = true;
+              // sOVListProvider.sovList[index].isChecked = true;
             }
           });
         },
@@ -595,23 +598,24 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Add Checkbox here
-            showCheckbox?
-            Checkbox(
-              value: sOVListProvider.sovList[index].isChecked ?? false,
-              onChanged: isDisabled?null:(value) {
-                setState(() {
-                  sOVListProvider.sovList[index].isChecked = value??false;
-                });
-              },
-            ):SizedBox(),
+            // showCheckbox?
+            // Checkbox(
+            //   value: sOVListProvider.sovList[index].isChecked ?? false,
+            //   onChanged: isDisabled?null:(value) {
+            //     setState(() {
+            //       sOVListProvider.sovList[index].isChecked = value??false;
+            //     });
+            //   },
+            // ):SizedBox(),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Card(
-                    color: isDisabled
-                        ? Theme.of(context).colorScheme.scrim
-                        : Theme.of(context).colorScheme.surface,
+                    color:
+                    //     ? Theme.of(context).colorScheme.scrim
+                    //     :
+                    Theme.of(context).colorScheme.surface,
                     margin: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.only(
@@ -650,7 +654,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                               sOVListProvider.sovList[index]
                                                   .name!
                                                   .substring(1)
-                                              : ""*/sOVListProvider.sovList[index].id??"",
+                                              : ""*/sOVListProvider.sovList[index].sovId??"",
                                           style:
                                           typography.Body2.copyWith(
                                             color: Theme.of(context)
@@ -666,7 +670,8 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                       SizedBox(
                                         width: CustomSpacing.two,
                                       ),
-                                      isDisabled?SizedBox():InkWell(
+                                      // isDisabled?SizedBox():
+                                      InkWell(
                                         onTap: () {
                                           _sovEditNameController.text =
                                           (sOVListProvider
@@ -811,7 +816,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                                                         sovListProvider
                                                                             .sovList[
                                                                         index]
-                                                                            .id ??
+                                                                            .sovId ??
                                                                             "",
                                                                         _sovEditNameController
                                                                             .text);
@@ -892,15 +897,16 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                               EdgeInsets.only(top: CustomSpacing.one),
                               child: CustomGradientCircularProgressBar(
                                 radius: 23,
-                                value: double.parse(
-                                  (sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(3),
+                                value: double.parse("2"
+                                  // (sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(3),
                                 ),
                                 strokeWidth: 6,
                                 showText: true,
                                 textColor: Theme.of(context).brightness == Brightness.dark
                                     ? AppColors.white
                                     : AppColors.black,
-                                text: (sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(2),
+                                text: ("2"),
+                                    // sOVListProvider.sovList[index].overAllScore ?? 0).toStringAsFixed(2),
                               ),
 
                             ),
@@ -915,7 +921,8 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  isDisabled?SizedBox():Container(
+                  // isDisabled?SizedBox():
+                  Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceVariant,
                       // bottom left and right corners curved
@@ -1009,7 +1016,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                                     widget.subAccountId,
                                                     sOVListProvider
                                                         .sovList[index]
-                                                        .id??"");
+                                                        .sovId??"");
                                                 Navigator.pop(context);
                                               },
                                               child: Text(
@@ -1108,7 +1115,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                   widget.subAccountId,
                                   _sovQuery,
                                   sovListProvider.page,
-                                  10);
+                                  10,'');
                             }
                           },
                         ),
@@ -1156,7 +1163,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                                   widget.subAccountId,
                                   _sovQuery,
                                   sovListProvider.page,
-                                  10);
+                                  10,'');
                             }
                           },
                         ),
@@ -1174,7 +1181,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _showTransferDialog(BuildContext context, SovAccount sov) async {
+  Future<void> _showTransferDialog(BuildContext context, Result sov) async {
     var typography = CustomTypography(context);
     TextEditingController _userSearchController = TextEditingController();
     TransferAutocompleteModel? _selectedUser;
@@ -1294,7 +1301,7 @@ class _SovListScreenState extends State<SovListScreen> with TickerProviderStateM
                               _isTransferLoading = true;
                             });
                             var provider = Provider.of<SOVListProvider>(context, listen: false);
-                            await provider.transferSOV(context, widget.accountId, widget.subAccountId, sov.id, _selectedUser!.id);
+                            await provider.transferSOV(context, widget.accountId, widget.subAccountId, sov.sovId, _selectedUser!.id);
                             setState(() {
                               _isTransferLoading = false;
                             });

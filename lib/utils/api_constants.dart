@@ -193,7 +193,8 @@ class AppConstant {
   // Sov
   static String get GET_SOV_LIST => '$baseURL/accounts';
 
-  static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/sov';
+  static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/accessible_sov';
+  static String get GET_SEARCH_LIST_BY_SOV => '$baseURL/user_management_new';
 
   static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations/sov';
 

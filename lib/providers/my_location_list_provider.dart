@@ -1844,9 +1844,9 @@ class MyLocationListProvider extends ChangeNotifier {
                             if (sovController.text.isNotEmpty)
                               AutocompleteOptionsSovs(
                                 options: sovProvider.filteredAutoCompleteList,
-                                onSelected: (SovAccount selection) {
+                                onSelected: (Result selection) {
                                   setState(() {
-                                    selectedSovId = selection.id ?? "";
+                                    selectedSovId = selection.sovId ?? "";
                                     sovController.text = selection.name ?? "";
                                     sovProvider.clearAutoCompleteList();
                                   });

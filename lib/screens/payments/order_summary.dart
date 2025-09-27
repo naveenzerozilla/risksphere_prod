@@ -87,16 +87,14 @@ class _OrderSummaryState extends State<OrderSummary> {
                   ),
                   const SizedBox(height: 32),
                   _OrderSummaryCard(
-                    invoiceNo: paymentProvider.invoiceId?.toString() ?? '',
-                    transactionNo:
-                        paymentProvider.paymentIntent?.toString() ?? '—',
-                    paymentMethod: paymentProvider
-                            .sessionData?.paymentMethodTypes?.first ??
-                        '—',
-                    totalPayment: paymentProvider.sessionData?.amountTotal
-                            ?.toStringAsFixed(2) ??
-                        '0.00',
-                  ),
+                      invoiceNo: paymentProvider.invoiceId?.toString() ?? '',
+                      transactionNo:
+                          paymentProvider.paymentIntent?.toString() ?? '—',
+                      paymentMethod: paymentProvider
+                              .sessionData?.paymentMethodTypes?.first ??
+                          '—',
+                      totalPayment:
+                          paymentProvider.sessionData!.amountTotal.toString()),
                   const SizedBox(height: 32),
                   Text(
                     'Subscription summary',
@@ -156,7 +154,7 @@ class _OrderSummaryState extends State<OrderSummary> {
                         ),
                       ),
                       Text(
-                        '\$${paymentProvider.sessionData?.amountTotal?.toStringAsFixed(2) ?? '0.00'}',
+                        '\$${((paymentProvider.sessionData?.amountTotal ?? 0) / 100).toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
@@ -221,7 +219,7 @@ class _OrderSummaryCard extends StatelessWidget {
           const SizedBox(height: 13),
           _KeyValueRow(
             label: 'Total Payment',
-            value: '\$${totalPayment}',
+            value: '\$${(double.parse(totalPayment) / 100).toStringAsFixed(2)}',
             highlight: true,
           ),
         ],

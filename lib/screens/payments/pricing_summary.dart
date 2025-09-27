@@ -246,7 +246,7 @@ class _PricingSummaryState extends State<PricingSummary> {
                           if (item['licenseprice'] != null)
                             _buildRow(
                               "License pricing",
-                              "\$${item['licenseprice'][index]} "
+                              "\$${item['priceperuser'][index]} "
                                   "${item['titles'][index].toString() == "User License" ?
                               "/ user"
                            :   item['titles'][index].toString() ==

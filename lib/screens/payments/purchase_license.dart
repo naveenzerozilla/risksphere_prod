@@ -116,7 +116,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                 priceperuser.add(selection.priceperuser!);
               }
               if (selection.planType == "event_cost") {
-                licensePrice.add(selection.priceperuser!);
+                licensePrice.add(selection.licensePrice!);
               } else if (selection.licensePrice != null &&
                   selection.licensePrice!.isNotEmpty) {
                 licensePrice.add(selection.licensePrice!);
@@ -176,9 +176,11 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(),
-                      child: Platform.isIOS
+                      child:
+                      Platform.isIOS
                           ? Container(height: 10)
-                          : Column(
+                          :
+                      Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -198,7 +200,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                             ),
                                           ),
                                           Text(
-                                            '\$${getSummary()['total'] ?? 0}',
+                                            '\$${getSummary()['total'].toStringAsFixed(2)}',
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 20,
@@ -779,6 +781,8 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           }
                         },
                       ),
+
+
                 SizedBox(height: 2),
                 if (item.planName == "Event Count Cost" ||
                     item.planName!.contains('event')) ...[
@@ -1066,7 +1070,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                 selection.licensePrice =
                                     selectedRange.rangePrice.toString();
                                 selection.priceperuser =
-                                    selection.licensePrice.toString();
+                                    selectedRange.pricePerUser.toString();
 
                                 print(
                                     'Selected Range → Start: $start, End: $end');
@@ -1075,7 +1079,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                     'Total price → ${selectedRange.rangePrice}');
                                 print('Total price → ${selection.totalPrice}');
                                 print(
-                                    'Total price → ${selectedRange.pricePerUser}');
+                                    'Total price1 → ${selectedRange.pricePerUser}');
                               });
                             },
                             validator: (value) {

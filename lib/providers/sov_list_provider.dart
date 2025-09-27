@@ -13,13 +13,15 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
+import '../models/transfer_autocomplete_model.dart';
 import '../service/language_service.dart';
 import '../utils/common_headers.dart';
 
 class SOVListProvider extends ChangeNotifier {
-
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
+
   set isLoading(bool value) {
     _isLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -28,7 +30,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isNextPageLoading = false;
+
   bool get isNextPageLoading => _isNextPageLoading;
+
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -37,7 +41,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isRenameLoading = false;
+
   bool get isRenameLoading => _isRenameLoading;
+
   set isRenameLoading(bool value) {
     _isRenameLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -46,7 +52,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isDuplicateLoading = false;
+
   bool get isDuplicateLoading => _isDuplicateLoading;
+
   set isDuplicateLoading(bool value) {
     _isDuplicateLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -54,10 +62,10 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
-
-
   bool _showLocationCountLoading = false;
+
   bool get showLocationCountLoading => _showLocationCountLoading;
+
   set showLocationCountLoading(bool value) {
     _showLocationCountLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -66,7 +74,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _showOverallScoreLoading = false;
+
   bool get showOverallScoreLoading => _showOverallScoreLoading;
+
   set showOverallScoreLoading(bool value) {
     _showOverallScoreLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -75,7 +85,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isAddAccountLoading = false;
+
   bool get isAddAccountLoading => _isAddAccountLoading;
+
   set isAddAccountLoading(bool value) {
     _isAddAccountLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -84,7 +96,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isAutoCompleteLoading = false;
+
   bool get isAutoCompleteLoading => _isAutoCompleteLoading;
+
   set isAutoCompleteLoading(bool value) {
     _isAutoCompleteLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -93,7 +107,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isExportLoading = false;
+
   bool get isExportLoading => _isExportLoading;
+
   set isExportLoading(bool value) {
     _isExportLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -102,7 +118,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _isTransferLoading = false;
+
   bool get isTransferLoading => _isTransferLoading;
+
   set isTransferLoading(bool value) {
     _isTransferLoading = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -112,7 +130,9 @@ class SOVListProvider extends ChangeNotifier {
 
   // columns
   bool _showLocationCount = true;
+
   bool get showLocationCount => _showLocationCount;
+
   set showLocationCount(bool value) {
     _showLocationCount = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -121,7 +141,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   bool _showOverallScore = true;
+
   bool get showOverallScore => _showOverallScore;
+
   set showOverallScore(bool value) {
     _showOverallScore = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -131,7 +153,9 @@ class SOVListProvider extends ChangeNotifier {
 
   // Pagination
   int _page = 1;
+
   int get page => _page;
+
   set page(int value) {
     _page = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -140,7 +164,9 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   int _totalPages = 1;
+
   int get totalPages => _totalPages;
+
   set totalPages(int value) {
     _totalPages = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -148,52 +174,99 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
-  List<SovAccount> _sovList = [];
-  List<SovAccount> get sovList => _sovList;
-  set sovList(List<SovAccount> value) {
+  List<Result> _sovList = [];
+
+  List<Result> get sovList => _sovList;
+
+  set sovList(List<Result> value) {
     _sovList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
-  void addToSovList(List<SovAccount> newAccounts) {
+
+  TotalCountHeader _sovCounterList = TotalCountHeader();
+
+  TotalCountHeader get sovCounterList => _sovCounterList;
+
+  set sovCounterList(TotalCountHeader value) {
+    _sovCounterList = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void addToSovList(List<Result> newAccounts) {
     _sovList.addAll(newAccounts);
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
-  List<SovAccount> _autoCompleteSovList = [];
-  List<SovAccount> get autoCompleteSovList => _autoCompleteSovList;
-  set autoCompleteSovList(List<SovAccount> value) {
+  List<Result> _autoCompleteSovList = [];
+
+  List<Result> get autoCompleteSovList => _autoCompleteSovList;
+
+  set autoCompleteSovList(List<Result> value) {
     _autoCompleteSovList = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
+
   void clearAutoCompleteList() {
     autoCompleteSovList = [];
   }
 
   int sovHits = 0;
 
+  List<Result> filteredAutoCompleteList = [];
 
+  Future<List<TransferAutocompleteModel>> fetchcompanySearchList(
+      String searchQuery) async {
+    try {
+      ApiService apiService = ApiService(AppConstant.GET_SEARCH_LIST_BY_SOV);
+      String url = '';
+      if (searchQuery.isNotEmpty) {
+        url += '&user_search=$searchQuery';
+      }
 
-  List<SovAccount> filteredAutoCompleteList = [];
+      var response = await apiService.get(url);
+      SovListModel sovListModel = SovListModel.fromJson(response);
+      log(response.toString());
+
+      final List<dynamic> items = (response['result'] as List?) ?? [];
+      return items
+          .map((e) =>
+              TransferAutocompleteModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, stack) {
+      print("Error fetching company search list: $e");
+      print(stack);
+      return [];
+    }
+  }
 
   /// Fetch sov list with pagination and search query
-  Future<void> fetchSovList(BuildContext context, String selectedAccountId, String selectedSubAccountId, String searchQuery, int page, int pageSize) async {
+  Future<void> fetchSovList(
+      BuildContext context,
+      String selectedAccountId,
+      String selectedSubAccountId,
+      String searchQuery,
+      int page,
+      int pageSize,
+      String? type) async {
     var typography = CustomTypography(context);
     try {
-      if(isLoading || isNextPageLoading) return;
+      if (isLoading || isNextPageLoading) return;
       if (page == 1) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV+"?account_id=$selectedAccountId&sub_account_id=$selectedSubAccountId");
-      String url = '&page=$page&pageSize=$pageSize';
+      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
+      String url = '?page=$page&pageSize=$pageSize&type=${type}';
       if (searchQuery.isNotEmpty) {
         url += '&search=$searchQuery';
       }
@@ -205,12 +278,14 @@ class SOVListProvider extends ChangeNotifier {
 
       showLocationCount = sovListModel.settings?.locationCount ?? true;
       showOverallScore = sovListModel.settings?.overAllScore ?? true;
-      sovHits = sovListModel.totalRecords??0;
-      totalPages = sovHits~/pageSize;
+      sovHits = sovListModel.totalRecords ?? 0;
+      totalPages = sovHits ~/ pageSize;
+      sovList = sovListModel.result ?? [];
+      sovCounterList = sovListModel.totalCountHeader!;
       if (page == 1) {
-        sovList = sovListModel.results ?? [];
+        sovList = sovListModel.result ?? [];
       } else {
-        addToSovList(sovListModel.results ?? []);
+        addToSovList(sovListModel.result ?? []);
       }
       log(sovList.toString());
       log(totalPages.toString());
@@ -239,21 +314,25 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Rename sov
-  Future<void> renameSov(BuildContext context, String accountId, String subAccountId, String sovId, String newName) async {
+  Future<void> renameSov(BuildContext context, String accountId,
+      String subAccountId, String sovId, String newName) async {
     var typography = CustomTypography(context);
     try {
       isRenameLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
-      var response = await apiService.patch({'data': {
-        'sov_id': sovId,  // Updated field
-        "rename_sov":true,
-        'name': newName,  // Updated field
-      }});
+      ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT +
+          "/$accountId/subaccount/$subAccountId/sov"); // Updated URL
+      var response = await apiService.patch({
+        'data': {
+          'sov_id': sovId, // Updated field
+          "rename_sov": true,
+          'name': newName, // Updated field
+        }
+      });
       log(response.toString());
 
       // Update account name in the list
-      int index = sovList.indexWhere((element) => element.id == sovId);
+      int index = sovList.indexWhere((element) => element.sovId == sovId);
       if (index != -1) {
         sovList[index].name = newName;
       }
@@ -262,31 +341,41 @@ class SOVListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
       ));
     } catch (e) {
       isRenameLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
+        content: Text(
+          e.toString(),
+          style: typography.Body1,
+        ),
       ));
     }
   }
 
   /// Duplicate sov
-  Future<void> duplicateSov(BuildContext context, String accountId, String subAccountId, String sovId) async {
+  Future<void> duplicateSov(BuildContext context, String accountId,
+      String subAccountId, String sovId) async {
     var typography = CustomTypography(context);
     try {
       isDuplicateLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");
-      var response = await apiService.post({'data': {
-        'sov_id': sovId,
-        'duplicate': true,
-      }});
+      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT +
+          "/$accountId/subaccount/$subAccountId/sov");
+      var response = await apiService.post({
+        'data': {
+          'sov_id': sovId,
+          'duplicate': true,
+        }
+      });
       log(response.toString());
 
       // Parse the response to get the duplicated SOV account
-      SovAccount duplicatedSovAccount = SovAccount.fromJson(response['updated_record']);
+      Result duplicatedSovAccount = Result.fromJson(response['updated_record']);
 
       // Prepend the duplicated SOV account to the beginning of the list
       sovList = [duplicatedSovAccount, ...sovList];
@@ -309,24 +398,31 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-
   /// Change column visibility
-  Future<bool> changeColumnVisibility(BuildContext context, String accountId, String subAccountId, {required bool showLocationCount, required bool showOverallScore, required String type}) async {
+  Future<bool> changeColumnVisibility(
+      BuildContext context, String accountId, String subAccountId,
+      {required bool showLocationCount,
+      required bool showOverallScore,
+      required String type}) async {
     var typography = CustomTypography(context);
     try {
-    if (type == 'location_count') {
+      if (type == 'location_count') {
         showLocationCountLoading = true;
       } else if (type == 'over_all_score') {
         showOverallScoreLoading = true;
       }
 
-      ApiService apiService = ApiService(AppConstant.CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");  // Updated URL
+      ApiService apiService = ApiService(
+          AppConstant.CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT +
+              "/$accountId/subaccount/$subAccountId/sov"); // Updated URL
 
-      var response = await apiService.patch({'data': {
-        'table_setting': true,
-        'location_count': showLocationCount,
-        'over_all_score': showOverallScore,
-      }});
+      var response = await apiService.patch({
+        'data': {
+          'table_setting': true,
+          'location_count': showLocationCount,
+          'over_all_score': showOverallScore,
+        }
+      });
       log(response.toString());
       showLocationCountLoading = false;
       showOverallScoreLoading = false;
@@ -335,43 +431,56 @@ class SOVListProvider extends ChangeNotifier {
       showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
       ));
       return false;
     } catch (e) {
       showLocationCountLoading = false;
       showOverallScoreLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
+        content: Text(
+          e.toString(),
+          style: typography.Body1,
+        ),
       ));
       return false;
     }
   }
 
   /// Fetch autocomplete sov list
-  Future<void> fetchAutoCompleteSovList(BuildContext context, String searchQuery) async {
+  Future<void> fetchAutoCompleteSovList(
+      BuildContext context, String searchQuery) async {
     var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
 
       print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
-      String url = '?sub_account_name=$searchQuery';  // Updated field
+      String url = '?sub_account_name=$searchQuery'; // Updated field
       var response = await apiService.get(url);
       log(response.toString());
 
       SovListModel accountListModel = SovListModel.fromJson(response);
 
-      autoCompleteSovList = accountListModel.results ?? [];
+      autoCompleteSovList = accountListModel.result ?? [];
       log(autoCompleteSovList.toString());
       print("Updated autoCompleteAccountList: $autoCompleteSovList");
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
+        content: Text(
+          e.toString(),
+          style: typography.Body1,
+        ),
       ));
     } finally {
       isAutoCompleteLoading = false;
@@ -379,7 +488,8 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Fetch autocomplete sov list
-  Future<void> fetchAutoCompleteSovListLocations(BuildContext context, String accountId, String subAccountId) async {
+  Future<void> fetchAutoCompleteSovListLocations(
+      BuildContext context, String accountId, String subAccountId) async {
     var typography = CustomTypography(context);
     try {
       isAutoCompleteLoading = true;
@@ -388,13 +498,15 @@ class SOVListProvider extends ChangeNotifier {
       });
 
       ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
-      String url = '?account_id=$accountId&sub_account_id=$subAccountId&show_full_list=true';  // Updated field
+      String url =
+          '?account_id=$accountId&sub_account_id=$subAccountId&show_full_list=true'; // Updated field
       var response = await apiService.get(url);
       log(response.toString());
 
       SovListModel accountListModel = SovListModel.fromJson(response);
-      autoCompleteSovList = accountListModel.results ?? [];
-      filteredAutoCompleteList = autoCompleteSovList; // Initialize with the full list
+      autoCompleteSovList = accountListModel.result ?? [];
+      filteredAutoCompleteList =
+          autoCompleteSovList; // Initialize with the full list
       log(autoCompleteSovList.toString());
       print("Updated autoCompleteAccountList: $autoCompleteSovList");
     } on BackendException catch (e) {
@@ -416,27 +528,31 @@ class SOVListProvider extends ChangeNotifier {
       filteredAutoCompleteList = autoCompleteSovList;
     } else {
       filteredAutoCompleteList = autoCompleteSovList
-          .where((sov) => sov.name?.toLowerCase().contains(query.toLowerCase()) ?? false)
+          .where((sov) =>
+              sov.name?.toLowerCase().contains(query.toLowerCase()) ?? false)
           .toList();
     }
     notifyListeners();
   }
 
-
   /// Add sov
-  Future<void> addSubAccount(BuildContext context, String accountId, String subAccountId, String accountName) async {
+  Future<void> addSubAccount(BuildContext context, String accountId,
+      String subAccountId, String accountName) async {
     var typography = CustomTypography(context);
     try {
       isAddAccountLoading = true;
 
-      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT+"/$accountId/subaccount/$subAccountId/sov");
-      var response = await apiService.post({'data': {
-        'sub_account_name': accountName,
-      }});
+      ApiService apiService = ApiService(AppConstant.ADD_SUB_ACCOUNT +
+          "/$accountId/subaccount/$subAccountId/sov");
+      var response = await apiService.post({
+        'data': {
+          'sub_account_name': accountName,
+        }
+      });
       log(response.toString());
 
       // Parse the response to get the newly added SOV account
-      SovAccount newSovAccount = SovAccount.fromJson(response['updated_record']);
+      Result newSovAccount = Result.fromJson(response['updated_record']);
 
       // Prepend the new SOV account to the beginning of the list
       sovList = [newSovAccount, ...sovList];
@@ -455,36 +571,48 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-
-
   // Request access with message
-  Future<void> requestAccess(BuildContext context, String accountId, String message) async {
+  Future<void> requestAccess(
+      BuildContext context, String accountId, String message) async {
     var typography = CustomTypography(context);
     try {
       ApiService apiService = ApiService(AppConstant.REQUEST_ACCESS);
-      var response = await apiService.post({'data':{
-        'account_id': accountId,
-        'message': message,
-      }});
+      var response = await apiService.post({
+        'data': {
+          'account_id': accountId,
+          'message': message,
+        }
+      });
       log(response.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Request sent successfully!', style: typography.Body1,),
-
+        content: Text(
+          'Request sent successfully!',
+          style: typography.Body1,
+        ),
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
-
+        content: Text(
+          e.message,
+          style: typography.Body1,
+        ),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
-
+        content: Text(
+          e.toString(),
+          style: typography.Body1,
+        ),
       ));
     }
   }
 
-  Future<void> exportData(BuildContext context, String accountId, String subAccountId, List<Map<String, dynamic>> exportData, String sovId) async {
+  Future<void> exportData(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      List<Map<String, dynamic>> exportData,
+      String sovId) async {
     try {
       _isExportLoading = true;
       notifyListeners();
@@ -495,27 +623,26 @@ class SOVListProvider extends ChangeNotifier {
       print('SOV ID: $sovId');
       print('Export Data: $exportData');
 
-      final URL = '${AppConstant.EXPORT}/$accountId/$subAccountId/${sovId.isEmpty?null:sovId}';
+      final URL =
+          '${AppConstant.EXPORT}/$accountId/$subAccountId/${sovId.isEmpty ? null : sovId}';
       print('Request URL: $URL');
 
       final dio = Dio();
       dio.options.headers = await CommonHeaders.createDownloadHeaders();
 
       log('Headers: ${dio.options.headers}');
-      dio.interceptors.add(InterceptorsWrapper(
-          onRequest: (options, handler) {
-            print('REQUEST[${options.method}] => PATH: ${options.path}');
-            return handler.next(options);
-          },
-          onResponse: (response, handler) {
-            print('RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
-            return handler.next(response);
-          },
-          onError: (DioError e, handler) {
-            print('ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
-            return handler.next(e);
-          }
-      ));
+      dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+        print('REQUEST[${options.method}] => PATH: ${options.path}');
+        return handler.next(options);
+      }, onResponse: (response, handler) {
+        print(
+            'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
+        return handler.next(response);
+      }, onError: (DioError e, handler) {
+        print(
+            'ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
+        return handler.next(e);
+      }));
 
       // Log the payload
       print('Request Payload: ${json.encode(exportData)}');
@@ -539,7 +666,9 @@ class SOVListProvider extends ChangeNotifier {
         print('Error: received status code ${response.statusCode}');
         print('Response data: ${utf8.decode(response.data)}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error during export data process: ${response.statusCode}')),
+          SnackBar(
+              content: Text(
+                  'Error during export data process: ${response.statusCode}')),
         );
         return;
       }
@@ -547,7 +676,8 @@ class SOVListProvider extends ChangeNotifier {
       final contentDisposition = response.headers.value('content-disposition');
       var filename = 'downloaded_file.xlsx';
       if (contentDisposition != null) {
-        final filenameMatch = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
+        final filenameMatch =
+            RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
         if (filenameMatch != null) {
           filename = filenameMatch.group(1)!;
         }
@@ -572,7 +702,9 @@ class SOVListProvider extends ChangeNotifier {
       print('File opened.');
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$filePath ${LanguageService.getTranslated(context, "export_sov_modal_success_message")}')),
+        SnackBar(
+            content: Text(
+                '$filePath ${LanguageService.getTranslated(context, "export_sov_modal_success_message")}')),
       );
     } catch (e) {
       if (e is DioException) {
@@ -585,7 +717,9 @@ class SOVListProvider extends ChangeNotifier {
       }
       print('Error during export data process: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(LanguageService.getTranslated(context, "export_sov_modal_failure_message"))),
+        SnackBar(
+            content: Text(LanguageService.getTranslated(
+                context, "export_sov_modal_failure_message"))),
       );
     } finally {
       _isExportLoading = false;
@@ -595,9 +729,9 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-
   /// Transfer sov
-  Future<bool> transferSOV(BuildContext context, String accountId, String? subAccountId, String? sovId, String newOwnerId) async {
+  Future<bool> transferSOV(BuildContext context, String accountId,
+      String? subAccountId, String? sovId, String newOwnerId) async {
     try {
       isTransferLoading = true;
 
@@ -614,9 +748,10 @@ class SOVListProvider extends ChangeNotifier {
       ));
 
       // Update the account list UI
-      int index = sovList.indexWhere((element) => element.subAccountId == subAccountId);
+      int index =
+          sovList.indexWhere((element) => element.subAccountId == subAccountId);
       if (index != -1) {
-        sovList[index].disabled = true;
+        // sovList[index].disabled = true;
       }
 
       isTransferLoading = false;
@@ -633,5 +768,4 @@ class SOVListProvider extends ChangeNotifier {
       return false;
     }
   }
-
 }

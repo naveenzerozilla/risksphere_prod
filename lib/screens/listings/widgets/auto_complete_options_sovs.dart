@@ -5,8 +5,8 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../models/account_list_model.dart';
 
 class AutocompleteOptionsSovs extends StatelessWidget {
-  final List<SovAccount> options;
-  final ValueChanged<SovAccount> onSelected;
+  final List<Result> options;
+  final ValueChanged<Result> onSelected;
   final bool isLoading;
 
   const AutocompleteOptionsSovs({

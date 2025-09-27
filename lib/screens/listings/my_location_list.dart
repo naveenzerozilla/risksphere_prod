@@ -1,5 +1,6 @@
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
 
+import '../../design_system/repo/constants.dart';
 import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
@@ -737,6 +738,26 @@ class _MyLocationListState extends State<MyLocationList>
 
   Future<void> getdata(String accountId, String subAccountId) async {
     if (!mounted) return;
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+    String? geoCodingStatus =
+        await SharedPreferenceService.getGeocodingLicense();
+    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
+    String? hazardLicenseStatus =
+        await SharedPreferenceService.getHazardLicense();
+    setState(() {
+      isPgAdmin = isPgAdmin;
+      isSuperAdmin = isSuperAdmin;
+      hasAnyPlan = hasAnyPlans ?? false;
+      hasLicenseStatus = userLicenseStatus ?? "1";
+      hasGeocodingStatus = geoCodingStatus ?? "1";
+      hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
+    });
     final sovListProvider =
         Provider.of<SOVListProvider>(context, listen: false);
     final locationListProvider =
@@ -747,18 +768,12 @@ class _MyLocationListState extends State<MyLocationList>
     await locationListProvider.fetchLocationList(context, "", 1, 8, accountId,
         subAccountId, widget.initialProcessId, widget.initialSubProcessId, '');
     sovListProvider.fetchSovList(
-      context,
-      widget.accountID!,
-      widget.subAccountID!,
-      "",
-      1,
-      10,
-    );
-    sovListProvider.fetchAutoCompleteSovListLocations(
-      context,
-      widget.accountID!,
-      widget.subAccountID!,
-    );
+        context, widget.accountID!, widget.subAccountID!, "", 1, 10, 'all');
+    // sovListProvider.fetchAutoCompleteSovListLocations(
+    //   context,
+    //   widget.accountID!,
+    //   widget.subAccountID!,
+    // );
 
     await locationListProvider.fetchAllLocationList(
       context,
@@ -952,6 +967,13 @@ class _MyLocationListState extends State<MyLocationList>
 //   }
 
   ScrollController _scrollController = ScrollController();
+  String selectedSov = 'All SOVs';
+  final List<String> sovOptions = [
+    'All SOVs',
+    'My SOVs',
+    'Shared SOVs',
+    'Received SOVs'
+  ];
 
   void _scrollLeft() {
     _scrollController.animateTo(
@@ -1624,8 +1646,107 @@ class _MyLocationListState extends State<MyLocationList>
                                                       text: 'Locations',
                                                     ),
                                                     Tab(
-                                                      text: 'SOVs',
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Flexible(
+                                                            child: Text(
+                                                              selectedSov,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 4),
+                                                          PopupMenuButton<
+                                                              String>(
+                                                            tooltip:
+                                                                'Select SOV filter',
+                                                            color: const Color(
+                                                                0xFF1E1E1E),
+                                                            padding:
+                                                                EdgeInsets.zero,
+                                                            onSelected:
+                                                                (value) {
+                                                              setState(() =>
+                                                                  selectedSov =
+                                                                      value);
+                                                              final sovListProvider =
+                                                                  Provider.of<
+                                                                          SOVListProvider>(
+                                                                      context,
+                                                                      listen:
+                                                                          false);
+                                                              final filter =
+                                                                  value ==
+                                                                          'All SOVs'
+                                                                      ? ''
+                                                                      : value;
+                                                              sovListProvider.fetchSovList(
+                                                                  context,
+                                                                  widget.accountID ?? '',
+                                                                  widget.subAccountID ?? '',
+                                                                  "",
+                                                                  1,
+                                                                  100,
+                                                                  selectedSov == 'All SOVs'
+                                                                      ? 'all'
+                                                                      : selectedSov == 'Shared SOVs'
+                                                                          ? 'shared'
+                                                                          : selectedSov == 'My SOVs'
+                                                                              ? 'my'
+                                                                              : 'received');
+                                                            },
+                                                            itemBuilder:
+                                                                (context) =>
+                                                                    sovOptions
+                                                                        .map(
+                                                                          (item) =>
+                                                                              PopupMenuItem<String>(
+                                                                            value:
+                                                                                item,
+                                                                            child:
+                                                                                Text(
+                                                                              item,
+                                                                              style: const TextStyle(color: Colors.white),
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                        .toList(),
+                                                            child: const Icon(
+                                                                Icons
+                                                                    .arrow_drop_down,
+                                                                color:
+                                                                    Colors.grey,
+                                                                size: 22),
+                                                          ),
+                                                          // PopupMenuButton<String>(
+                                                          //   tooltip: 'Select SOV filter',
+                                                          //   color: const Color(0xFF1E1E1E),
+                                                          //   padding: EdgeInsets.zero,
+                                                          //   onSelected: (value) => setState(() => selectedSov = value),
+                                                          //   itemBuilder: (context) => sovOptions
+                                                          //       .map(
+                                                          //         (item) => PopupMenuItem<String>(
+                                                          //       value: item,
+                                                          //       child: Text(item,
+                                                          //           style: const TextStyle(color: Colors.white)),
+                                                          //     ),
+                                                          //   )
+                                                          //       .toList(),
+                                                          //   child: const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 22),
+                                                          // ),
+                                                        ],
+                                                      ),
                                                     ),
+                                                    // Tab(
+                                                    //   text: 'SOVs',
+                                                    // ),
                                                     Tab(text: 'Shared'),
                                                     if (isSuperAdmin ||
                                                         isPgAdmin)
@@ -2014,13 +2135,13 @@ class _MyLocationListState extends State<MyLocationList>
                                         )
                                             .then((value) {
                                           provider.fetchSovList(
-                                            context,
-                                            widget.accountID!,
-                                            widget.subAccountID!,
-                                            "",
-                                            1,
-                                            10,
-                                          );
+                                              context,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
+                                              "",
+                                              1,
+                                              10,
+                                              'all');
                                         }).whenComplete(() {
                                           // Stop loading after API call
                                         });
@@ -6857,15 +6978,32 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
                         ),
 
-                        if (int.parse(hasHazardLicenseStatus.toString()) > 10)
+                        if (int.parse(hasHazardLicenseStatus.toString()) >
+                            0) ...[
                           Container(
-                            padding: EdgeInsets.only(left: 10),
+                            padding: const EdgeInsets.only(left: 10),
                             child: Text(
-                                "Available Locations: " +
-                                    hasHazardLicenseStatus.toString(),
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 20)),
+                              "Available Locations: $hasHazardLicenseStatus",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                              ),
+                            ),
+                          )
+                        ] else ...[
+                          Container(
+                            padding: const EdgeInsets.only(left: 10),
+                            child: const Text(
+                              "No locations. Upgrade Now to create SOV!",
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
+                        ],
+
                         SizedBox(height: 20),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -7083,20 +7221,23 @@ class _MyLocationListState extends State<MyLocationList>
       var provider = Provider.of<SOVListProvider>(context, listen: false);
       provider.page = 0;
       await provider.fetchSovList(context, widget.accountID!,
-          widget.subAccountID!, _sovQuery, provider.page, 10);
+          widget.subAccountID!, _sovQuery, provider.page, 10, 'all');
     });
+  }
+
+  int safeParseInt(dynamic value) {
+    if (value == null) return 0;
+    try {
+      return int.parse(value.toString());
+    } catch (e) {
+      return 0;
+    }
   }
 
   Widget sovBody(CustomTypography typography) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: CustomSpacing.two),
-        Text(
-          '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
-          style: typography.Body1,
-        ),
-        SizedBox(height: CustomSpacing.four),
         // Search
         SizedBox(
           height: 50,
@@ -7117,78 +7258,185 @@ class _MyLocationListState extends State<MyLocationList>
           ),
         ),
         SizedBox(height: CustomSpacing.four),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child:
+              Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
+            // if (sovListProvider.isLoading) {
+            return Row(
+              children: [
+                InfoCard(
+                  title: "All SOVs",
+                  count: safeParseInt(sovListProvider.sovCounterList.all),
+                  icon: Icons.file_copy_outlined,
+                ),
+                InfoCard(
+                  title: "My SOVs",
+                  count: safeParseInt(sovListProvider.sovCounterList.my),
+                  icon: Icons.file_copy_outlined,
+                ),
+                InfoCard(
+                  title: "Shared SOVs",
+                  count: safeParseInt(sovListProvider.sovCounterList.shared),
+                  icon: Icons.ios_share_outlined,
+                ),
+                InfoCard(
+                  title: "Received SOVs",
+                  count: safeParseInt(sovListProvider.sovCounterList.received),
+                  icon: Icons.call_received,
+                ),
+                InfoCard(
+                  title: "Completed SOVs",
+                  count: safeParseInt(sovListProvider.sovCounterList.all),
+                  icon: Icons.done_all,
+                ),
+
+                // InfoCard(
+                //     title: "All SOVs",
+                //     count: int.tryParse(
+                //             sovListProvider.sovCounterList.all?.toString() ??
+                //                 '') ??
+                //         0,
+                //     icon: Icons.file_copy_outlined),
+                // InfoCard(
+                //     title: "My  SOVs",
+                //     count: int.tryParse(
+                //             sovListProvider.sovCounterList.my?.toString() ??
+                //                 '') ??
+                //         0,
+                //     // int.parse(sovListProvider.sovCounterList.my?.toString() ?? '') ?? 0,
+                //     icon: Icons.file_copy_outlined),
+                // InfoCard(
+                //     title: "Shared SOVs",
+                //     count: int.tryParse(
+                //             sovListProvider.sovCounterList.shared?.toString() ??
+                //                 '') ??
+                //         0,
+                //     icon: Icons.ios_share_outlined),
+                // InfoCard(
+                //     title: "Received SOVs",
+                //     count: int.tryParse(sovListProvider.sovCounterList.received
+                //                 ?.toString() ??
+                //             '') ??
+                //         0,
+                //     icon: Icons.call_received),
+                // InfoCard(
+                //     title: "Completed SOVs",
+                //     count: int.tryParse(
+                //             sovListProvider.sovCounterList.all?.toString() ??
+                //                 '') ??
+                //         0,
+                //     icon: Icons.done_all),
+              ],
+            );
+          }
+                  // }
+                  ),
+        ),
+
+        SizedBox(height: CustomSpacing.two),
+        // Text(
+        //   '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
+        //   style: typography.Body1,
+        // ),
+        SizedBox(height: CustomSpacing.four),
+
         // List of accounts
         Expanded(
           child:
               Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
-            return sovListProvider.isLoading
-                ? Column(
-                    children: [
-                      SizedBox(
-                        height: 100,
-                      ),
-                      Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ],
-                  )
-                : sovListProvider.sovList.isEmpty
-                    ? Center(
+            if (sovListProvider.isLoading) {
+              return Column(
+                children: [
+                  SizedBox(height: 100),
+                  Center(child: CircularProgressIndicator()),
+                ],
+              );
+            }
+
+            if (sovListProvider.sovList.isEmpty) {
+              return RefreshIndicator(
+                onRefresh: () async {
+                  sovListProvider.page = 0;
+                  await sovListProvider.fetchSovList(
+                      context,
+                      widget.accountID!,
+                      widget.subAccountID!,
+                      _sovQuery,
+                      sovListProvider.page,
+                      5,
+                      'all');
+                },
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.5,
+                      child: Center(
                         child: Text(
-                          "Looks like you don't have a sov yet. No worries! Just create a new one and start adding your locations.",
+                          "Looks like you don\'t have a sov yet. No worries! Just create a new one and start adding your locations.",
                           style: typography.Body1,
+                          textAlign: TextAlign.center,
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: sovListProvider.sovList.length,
-                        itemBuilder: (context, index) {
-                          if (index == sovListProvider.sovList.length - 1) {
-                            // Check if it's the last item
-                            if (sovListProvider.isNextPageLoading) {
-                              // Display loading indicator
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            } else if (sovListProvider.page >=
-                                    sovListProvider.totalPages &&
-                                sovListProvider.sovList.isNotEmpty) {
-                              // Display end of list message
-                              return Column(
-                                children: [
-                                  _buildSovCard(index, sovListProvider),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Center(
-                                      child: Text(
-                                        LanguageService.getTranslated(context,
-                                            "sov_list_app_end_of_list_text"),
-                                        style: typography.Body1,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              // Trigger fetching the next page
-                              sovListProvider.page = sovListProvider.page + 1;
-                              sovListProvider.fetchSovList(
-                                context,
-                                widget.accountID!,
-                                widget.subAccountID!,
-                                _sovQuery,
-                                sovListProvider.page,
-                                5, // Page size
-                              );
-                              return SizedBox();
-                            }
-                          } else {
-                            return _buildSovCard(index, sovListProvider);
-                          }
-                        },
-                      );
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                sovListProvider.page;
+                await sovListProvider.fetchSovList(context, widget.accountID!,
+                    widget.subAccountID!, _sovQuery, 1, 100, selectedSov);
+              },
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: sovListProvider.sovList.length,
+                itemBuilder: (context, index) {
+                  // if (index == sovListProvider.sovList.length - 1) {
+                  //   if (sovListProvider.isNextPageLoading) {
+                  //     return Padding(
+                  //       padding: const EdgeInsets.all(8.0),
+                  //       child: Center(child: CircularProgressIndicator()),
+                  //     );
+                  //   } else if (sovListProvider.page >= sovListProvider.totalPages &&
+                  //       sovListProvider.sovList.isNotEmpty) {
+                  //     return Column(
+                  //       children: [
+                  //         _buildSovCard(index, sovListProvider),
+                  //         Padding(
+                  //           padding: const EdgeInsets.all(8.0),
+                  //           child: Center(
+                  //             child: Text(
+                  //               LanguageService.getTranslated(
+                  //                 context,
+                  //                 "sov_list_app_end_of_list_text",
+                  //               ),
+                  //               style: typography.Body1,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     );
+                  //   } else {
+                  //     sovListProvider.page = sovListProvider.page + 1;
+                  //     sovListProvider.fetchSovList(
+                  //       context,
+                  //       widget.accountID!,
+                  //       widget.subAccountID!,
+                  //       _sovQuery,
+                  //       sovListProvider.page,
+                  //       5,
+                  //     );
+                  //     return const SizedBox();
+                  //   }
+                  // }
+                  return _buildSovCard(index, sovListProvider);
+                },
+              ),
+            );
           }),
         ),
       ],
@@ -7197,16 +7445,18 @@ class _MyLocationListState extends State<MyLocationList>
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
     var typography = CustomTypography(context);
-    bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
+    // bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: isDisabled
-            ? null
-            : () {
-                // On tap of card
-                /*if (showCheckbox) {
+        onTap:
+            // isDisabled
+            //     ? null
+            //     :
+            () {
+          // On tap of card
+          /*if (showCheckbox) {
                   setState(() {
                     sOVListProvider.sovList[index].isChecked =
                         !(sOVListProvider.sovList[index].isChecked ?? false);
@@ -7221,21 +7471,21 @@ class _MyLocationListState extends State<MyLocationList>
                     });
                   });
                 }*/
-                print(sOVListProvider.sovList[index].id ?? "");
-                print(
-                    "accountID1: ${widget.accountID!}, subAccountID: ${widget.subAccountID!}");
-                print(sOVListProvider.sovList[index].accountId ?? "");
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return SovLocationList(
-                    accountID: widget.accountID!,
-                    subAccountID: widget.subAccountID!,
-                    accountName: widget.accountName,
-                    subAccountName: widget.subAccountName,
-                    sovID: sOVListProvider.sovList[index].id ?? "",
-                    sovName: sOVListProvider.sovList[index].name ?? "",
-                  );
-                }));
-              },
+          // print(sOVListProvider.sovList[index].id ?? "");
+          print(
+              "accountID1: ${widget.accountID!}, subAccountID: ${widget.subAccountID!}");
+          print(sOVListProvider.sovList[index].accountId ?? "");
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return SovLocationList(
+              accountID: widget.accountID!,
+              subAccountID: widget.subAccountID!,
+              accountName: widget.accountName,
+              subAccountName: widget.subAccountName,
+              sovID: sOVListProvider.sovList[index].sovId ?? "",
+              sovName: sOVListProvider.sovList[index].name ?? "",
+            );
+          }));
+        },
         /* onLongPress: () {
           setState(() {
             if (showCheckbox) {
@@ -7271,456 +7521,341 @@ class _MyLocationListState extends State<MyLocationList>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Card(
-                    color: isDisabled
-                        ? Theme.of(context).colorScheme.scrim
-                        : Theme.of(context).colorScheme.surface,
-                    margin: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: CustomSpacing.three,
-                        ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: CustomSpacing.two,
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          sOVListProvider.sovList[index].name
-                                              .toString(),
-                                          // (sOVListProvider.sovList[index]
-                                          //                 .name ??
-                                          //             "")
-                                          //         .isNotEmpty
-                                          //     ? sOVListProvider
-                                          //             .sovList[index].name!
-                                          //             .substring(0, 1)
-                                          //             .toUpperCase() +
-                                          //         sOVListProvider
-                                          //             .sovList[index].name!
-                                          //             .substring(1)
-                                          //     : "",
-                                          //sOVListProvider.sovList[index].id??"",
-                                          style: typography.Body2.copyWith(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? AppColors.white
-                                                    : AppColors.black,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      // Add edit icon and on tap show edit dialog
-                                      SizedBox(
-                                        width: CustomSpacing.two,
-                                      ),
-                                      isDisabled
-                                          ? SizedBox()
-                                          : InkWell(
-                                              onTap: () {
-                                                _sovEditNameController
-                                                    .text = (sOVListProvider
-                                                                .sovList[index]
-                                                                .name ??
-                                                            "")
-                                                        .isNotEmpty
-                                                    ? sOVListProvider
-                                                            .sovList[index]
-                                                            .name!
-                                                            .substring(0, 1)
-                                                            .toUpperCase() +
-                                                        sOVListProvider
-                                                            .sovList[index]
-                                                            .name!
-                                                            .substring(1)
-                                                    : "";
-                                                // Show edit dialog
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return AlertDialog(
-                                                      title: Text(
-                                                        LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "sov_list_app_edit_sov_title"),
-                                                        style: typography
-                                                            .H5_Regular,
-                                                      ),
-                                                      content: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Column(
-                                                            children: [
-                                                              Chip(
-                                                                label: Text(
-                                                                  widget.accountName +
-                                                                      " / " +
-                                                                      widget
-                                                                          .subAccountName,
-                                                                  style:
-                                                                      typography
-                                                                          .Body1,
-                                                                ),
-                                                              ),
-                                                              SizedBox(
-                                                                height:
-                                                                    CustomSpacing
-                                                                        .two,
-                                                              ),
-                                                              TextField(
-                                                                controller:
-                                                                    _sovEditNameController,
-                                                                decoration:
-                                                                    InputDecoration(
-                                                                  border:
-                                                                      OutlineInputBorder(),
-                                                                  labelText: LanguageService
-                                                                      .getTranslated(
-                                                                          context,
-                                                                          "sov_list_app_edit_label_text"),
-                                                                  labelStyle:
-                                                                      typography
-                                                                          .Body1,
-                                                                  hintText: LanguageService
-                                                                      .getTranslated(
-                                                                          context,
-                                                                          "sov_list_app_edit_label_hint_text"),
-                                                                  hintStyle:
-                                                                      typography
-                                                                          .Body1,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          SizedBox(
-                                                            height:
-                                                                CustomSpacing
-                                                                    .two,
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Expanded(
-                                                                child:
-                                                                    CustomButton(
-                                                                  onPressed:
-                                                                      () {
-                                                                    // Cancel
-                                                                    Navigator.pop(
-                                                                        context);
-                                                                  },
-                                                                  child: Text(
-                                                                    LanguageService.getTranslated(
-                                                                        context,
-                                                                        "sov_list_app_edit_cancel_text"),
-                                                                    style: typography
-                                                                        .ButtonLarge,
-                                                                  ),
-                                                                  type:
-                                                                      ButtonType
-                                                                          .text,
-                                                                ),
-                                                              ),
-                                                              Consumer<
-                                                                      SOVListProvider>(
-                                                                  builder: (context,
-                                                                      sovListProvider,
-                                                                      _) {
-                                                                return sovListProvider
-                                                                        .isRenameLoading
-                                                                    ? const Expanded(
-                                                                        child:
-                                                                            Row(
-                                                                        mainAxisAlignment:
-                                                                            MainAxisAlignment.center,
-                                                                        children: [
-                                                                          SizedBox(
-                                                                              width: 25,
-                                                                              height: 25,
-                                                                              child: CircularProgressIndicator()),
-                                                                        ],
-                                                                      ))
-                                                                    : Expanded(
-                                                                        child:
-                                                                            CustomButton(
-                                                                          onPressed:
-                                                                              () async {
-                                                                            if (_sovEditNameController.text.isEmpty) {
-                                                                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                                                                  content: Text(
-                                                                                LanguageService.getTranslated(context, "sub_account_list_app_rename_sub_account_empty_text_error"),
-                                                                                style: typography.Body1,
-                                                                              )));
-                                                                              return;
-                                                                            }
-                                                                            // Update account details
-                                                                            await sovListProvider.renameSov(
-                                                                                context,
-                                                                                widget.accountID!,
-                                                                                widget.subAccountID!,
-                                                                                sovListProvider.sovList[index].id ?? "",
-                                                                                _sovEditNameController.text);
-                                                                            Navigator.pop(context);
-                                                                          },
-                                                                          child:
-                                                                              Text(
-                                                                            LanguageService.getTranslated(context,
-                                                                                "sov_list_app_edit_update_text"),
-                                                                            style:
-                                                                                typography.ButtonLarge,
-                                                                          ),
-                                                                          type:
-                                                                              ButtonType.elevated,
-                                                                        ),
-                                                                      );
-                                                              }),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: Icon(
-                                                Icons.edit,
-                                                size: 16,
-                                              ),
-                                            ),
-                                    ],
-                                  ),
-                                  /*!sOVListProvider.showLocationCount
-                                      ? SizedBox()
-                                      : */
-                                  Row(
-                                    children: [
-                                      Text(
-                                          sOVListProvider.sovList[index]
-                                                          .locationCount !=
-                                                      null &&
-                                                  sOVListProvider.sovList[index]
-                                                          .locationCount ==
-                                                      1
-                                              ? LanguageService.getTranslated(
-                                                  context,
-                                                  "sov_list_app_column_location_count_text")
-                                              : sOVListProvider.sovList[index]
-                                                          .locationCount ==
-                                                      null
-                                                  ? ""
-                                                  : LanguageService.getTranslated(
-                                                      context,
-                                                      "sov_list_app_column_location_count_text"),
-                                          style: typography.Caption),
-                                      SizedBox(
-                                        width: CustomSpacing.two,
-                                      ),
-                                      Text(
-                                          sOVListProvider
-                                                  .sovList[index].locationCount
-                                                  ?.toString() ??
-                                              "",
-                                          style: typography.Caption),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            true
-                                ? SizedBox()
-                                : Padding(
-                                    padding:
-                                        EdgeInsets.only(top: CustomSpacing.one),
-                                    child: CustomGradientCircularProgressBar(
-                                      radius: 23,
-                                      value: double.parse(sOVListProvider
-                                              .sovList[index].overAllScore
-                                              ?.toString() ??
-                                          "0"),
-                                      strokeWidth: 6,
-                                      showText: true,
-                                      textColor: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? AppColors.white
-                                          : AppColors.black,
-                                      text: sOVListProvider
-                                              .sovList[index].overAllScore
-                                              ?.toStringAsFixed(2) ??
-                                          "0",
-                                    ),
-                                  ),
-                            SizedBox(
-                              width: CustomSpacing.four,
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: CustomSpacing.two,
-                        ),
-                      ],
-                    ),
-                  ),
-                  isDisabled
-                      ? SizedBox()
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            // bottom left and right corners curved
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
+                  SizedBox(
+                    height: 150,
+                    width: MediaQuery.of(context).size.width,
+                    child: Card(
+                      color: Colors.white12,
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                            bottomLeft: Radius.circular(8),
+                            bottomRight: Radius.circular(8)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: CustomSpacing.three,
                           ),
-                          child: Row(
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Transfer account
-                                  _showTransferDialog(
-                                      context, sOVListProvider.sovList[index]);
-                                },
-                                icon: const Icon(Symbols.share_windows),
-                                label: Text('Transfer',
-                                    style: typography.Caption.copyWith(
+                              SizedBox(
+                                width: CustomSpacing.two,
+                              ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            sOVListProvider.sovList[index].name
+                                                .toString(),
+                                            style: typography.Body2.copyWith(
+                                              color: Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark
+                                                  ? AppColors.white
+                                                  : AppColors.black,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        // Add edit icon and on tap show edit dialog
+                                        SizedBox(
+                                          width: CustomSpacing.two,
+                                        ),
+                                        // isDisabled
+                                        //     ? SizedBox()
+                                        //     :
+                                        InkWell(
+                                          onTap: () {
+                                            // Transfer account
+                                            _showTransferDialog(context,
+                                                sOVListProvider.sovList[index]);
+                                          },
+                                          child: Icon(
+                                            Icons.more_vert_outlined,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "Owner: ${sOVListProvider.sovList[index].owner!.name ?? ""}",
+                                      style: typography.Body2.copyWith(
                                         color: Theme.of(context).brightness ==
                                                 Brightness.dark
                                             ? AppColors.white
-                                            : AppColors.black)),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: const Icon(Icons.file_copy_rounded),
-                                color: AppColors.primaryMain,
-                                onPressed: () {
-                                  // Show duplicate dialog
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: Text(
-                                          LanguageService.getTranslated(context,
-                                              "sov_list_app_duplicate_title"),
-                                          style: typography.H5_Regular,
+                                            : AppColors.black,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 15),
+                                    Text(
+                                      "Locations : ${sOVListProvider.sovList[index].accountId ?? ""}",
+                                      style: typography.Body2.copyWith(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.white
+                                            : AppColors.black,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "Company: ${sOVListProvider.sovList[index].companyName ?? ""}",
+                                      style: typography.Body2.copyWith(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.white
+                                            : AppColors.black,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 5),
+                                    if ((sOVListProvider.sovList[index].role ??
+                                            '')
+                                        .trim()
+                                        .isNotEmpty)
+                                      Text(
+                                        "Role: ${sOVListProvider.sovList[index].role}",
+                                        style: typography.Body2.copyWith(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.white
+                                              : AppColors.black,
                                         ),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              LanguageService.getTranslated(
-                                                  context,
-                                                  "sov_list_app_duplicate_text"),
-                                              style: typography.Body1,
-                                            ),
-                                            SizedBox(
-                                              height: CustomSpacing.two,
-                                            ),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: CustomButton(
-                                                    onPressed: () {
-                                                      // Cancel
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "sov_list_app_duplicate_cancel"),
-                                                      style: typography
-                                                          .ButtonLarge,
-                                                    ),
-                                                    type: ButtonType.text,
-                                                  ),
-                                                ),
-                                                sOVListProvider
-                                                        .isDuplicateLoading
-                                                    ? const Expanded(
-                                                        child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          SizedBox(
-                                                              width: 25,
-                                                              height: 25,
-                                                              child:
-                                                                  CircularProgressIndicator()),
-                                                        ],
-                                                      ))
-                                                    : Expanded(
-                                                        child: CustomButton(
-                                                          onPressed: () async {
-                                                            // Duplicate
-                                                            await sOVListProvider.duplicateSov(
-                                                                context,
-                                                                widget
-                                                                    .accountID!,
-                                                                widget
-                                                                    .subAccountID!,
-                                                                sOVListProvider
-                                                                        .sovList[
-                                                                            index]
-                                                                        .id ??
-                                                                    "");
-                                                            Navigator.pop(
-                                                                context);
-                                                          },
-                                                          child: Text(
-                                                            LanguageService
-                                                                .getTranslated(
-                                                                    context,
-                                                                    "sov_list_app_duplicate_duplicate"),
-                                                            style: typography
-                                                                .ButtonLarge,
-                                                          ),
-                                                          type: ButtonType
-                                                              .elevated,
-                                                        ),
-                                                      ),
-                                              ],
-                                            ),
-                                          ],
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    /*!sOVListProvider.showLocationCount
+                                        ? SizedBox()
+                                        : */
+                                    SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        Text(
+                                            sOVListProvider.sovList[index]
+                                                            .locationCount !=
+                                                        null &&
+                                                    sOVListProvider
+                                                            .sovList[index]
+                                                            .locationCount ==
+                                                        1
+                                                ? LanguageService.getTranslated(
+                                                    context,
+                                                    "sov_list_app_column_location_count_text")
+                                                : sOVListProvider.sovList[index]
+                                                            .locationCount ==
+                                                        null
+                                                    ? ""
+                                                    : LanguageService.getTranslated(
+                                                        context,
+                                                        "sov_list_app_column_location_count_text"),
+                                            style: typography.Caption),
+                                        SizedBox(
+                                          width: CustomSpacing.two,
                                         ),
-                                      );
-                                    },
-                                  );
-                                },
-                                tooltip: LanguageService.getTranslated(context,
-                                    "sov_list_app_duplicate_tooltip_text"),
-                              ),
-                              /*IconButton(
-                                icon: Icon(
-                                  Icons.settings,
-                                  color: AppColors.primaryMain,
+                                        Text(
+                                            sOVListProvider.sovList[index]
+                                                    .locationCount
+                                                    ?.toString() ??
+                                                "",
+                                            style: typography.Caption),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                onPressed: () {
-                                  _showSettingsModal(context, index);
-                                },
-                                tooltip: LanguageService.getTranslated(context,
-                                    "sov_list_app_settings_tooltip_text"),
-                              ),*/
+                              ),
+                              // true
+                              //     ? SizedBox()
+                              //     : Padding(
+                              //         padding: EdgeInsets.only(
+                              //             top: CustomSpacing.one),
+                              //         child: CustomGradientCircularProgressBar(
+                              //           radius: 23,
+                              //           value: double.parse(sOVListProvider
+                              //                   .sovList[index].overAllScore
+                              //                   ?.toString() ??
+                              //               "0"),
+                              //           strokeWidth: 6,
+                              //           showText: true,
+                              //           textColor:
+                              //               Theme.of(context).brightness ==
+                              //                       Brightness.dark
+                              //                   ? AppColors.white
+                              //                   : AppColors.black,
+                              //           text: sOVListProvider
+                              //                   .sovList[index].overAllScore
+                              //                   ?.toStringAsFixed(2) ??
+                              //               "0",
+                              //         ),
+                              //       ),
+                              SizedBox(
+                                width: CustomSpacing.four,
+                              ),
                             ],
                           ),
-                        ),
+                          SizedBox(
+                            height: CustomSpacing.two,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // isDisabled
+                  //     ? SizedBox()
+                  //     : Container(
+                  //         decoration: BoxDecoration(
+                  //           // color: Theme.of(context).colorScheme.surfaceVariant,
+                  //           // bottom left and right corners curved
+                  //           borderRadius: const BorderRadius.only(
+                  //             bottomLeft: Radius.circular(8),
+                  //             bottomRight: Radius.circular(8),
+                  //           ),
+                  //         ),
+                  //         child: Row(
+                  //           children: [
+                  //             TextButton.icon(
+                  //               onPressed: () {
+                  //                 // Transfer account
+                  //                 _showTransferDialog(
+                  //                     context, sOVListProvider.sovList[index]);
+                  //               },
+                  //               icon: const Icon(Symbols.share_windows),
+                  //               label: Text('Transfer',
+                  //                   style: typography.Caption.copyWith(
+                  //                       color: Theme.of(context).brightness ==
+                  //                               Brightness.dark
+                  //                           ? AppColors.white
+                  //                           : AppColors.black)),
+                  //             ),
+                  //             const Spacer(),
+                  //             IconButton(
+                  //               icon: const Icon(Icons.file_copy_rounded),
+                  //               color: AppColors.primaryMain,
+                  //               onPressed: () {
+                  //                 // Show duplicate dialog
+                  //                 showDialog(
+                  //                   context: context,
+                  //                   builder: (context) {
+                  //                     return AlertDialog(
+                  //                       title: Text(
+                  //                         LanguageService.getTranslated(context,
+                  //                             "sov_list_app_duplicate_title"),
+                  //                         style: typography.H5_Regular,
+                  //                       ),
+                  //                       content: Column(
+                  //                         mainAxisSize: MainAxisSize.min,
+                  //                         children: [
+                  //                           Text(
+                  //                             LanguageService.getTranslated(
+                  //                                 context,
+                  //                                 "sov_list_app_duplicate_text"),
+                  //                             style: typography.Body1,
+                  //                           ),
+                  //                           SizedBox(
+                  //                             height: CustomSpacing.two,
+                  //                           ),
+                  //                           Row(
+                  //                             children: [
+                  //                               Expanded(
+                  //                                 child: CustomButton(
+                  //                                   onPressed: () {
+                  //                                     // Cancel
+                  //                                     Navigator.pop(context);
+                  //                                   },
+                  //                                   child: Text(
+                  //                                     LanguageService.getTranslated(
+                  //                                         context,
+                  //                                         "sov_list_app_duplicate_cancel"),
+                  //                                     style: typography
+                  //                                         .ButtonLarge,
+                  //                                   ),
+                  //                                   type: ButtonType.text,
+                  //                                 ),
+                  //                               ),
+                  //                               sOVListProvider
+                  //                                       .isDuplicateLoading
+                  //                                   ? const Expanded(
+                  //                                       child: Row(
+                  //                                       mainAxisAlignment:
+                  //                                           MainAxisAlignment
+                  //                                               .center,
+                  //                                       children: [
+                  //                                         SizedBox(
+                  //                                             width: 25,
+                  //                                             height: 25,
+                  //                                             child:
+                  //                                                 CircularProgressIndicator()),
+                  //                                       ],
+                  //                                     ))
+                  //                                   : Expanded(
+                  //                                       child: CustomButton(
+                  //                                         onPressed: () async {
+                  //                                           // Duplicate
+                  //                                           await sOVListProvider.duplicateSov(
+                  //                                               context,
+                  //                                               widget
+                  //                                                   .accountID!,
+                  //                                               widget
+                  //                                                   .subAccountID!,
+                  //                                               sOVListProvider
+                  //                                                       .sovList[
+                  //                                                           index]
+                  //                                                       .id ??
+                  //                                                   "");
+                  //                                           Navigator.pop(
+                  //                                               context);
+                  //                                         },
+                  //                                         child: Text(
+                  //                                           LanguageService
+                  //                                               .getTranslated(
+                  //                                                   context,
+                  //                                                   "sov_list_app_duplicate_duplicate"),
+                  //                                           style: typography
+                  //                                               .ButtonLarge,
+                  //                                         ),
+                  //                                         type: ButtonType
+                  //                                             .elevated,
+                  //                                       ),
+                  //                                     ),
+                  //                             ],
+                  //                           ),
+                  //                         ],
+                  //                       ),
+                  //                     );
+                  //                   },
+                  //                 );
+                  //               },
+                  //               tooltip: LanguageService.getTranslated(context,
+                  //                   "sov_list_app_duplicate_tooltip_text"),
+                  //             ),
+                  //             /*IconButton(
+                  //               icon: Icon(
+                  //                 Icons.settings,
+                  //                 color: AppColors.primaryMain,
+                  //               ),
+                  //               onPressed: () {
+                  //                 _showSettingsModal(context, index);
+                  //               },
+                  //               tooltip: LanguageService.getTranslated(context,
+                  //                   "sov_list_app_settings_tooltip_text"),
+                  //             ),*/
+                  //           ],
+                  //         ),
+                  //       ),
                 ],
               ),
             ),
@@ -7730,14 +7865,16 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  Future<void> _showTransferDialog(BuildContext context, SovAccount sov) async {
+  Future<void> _showTransferDialog(BuildContext context, Result sov) async {
     var typography = CustomTypography(context);
     TextEditingController _userSearchController = TextEditingController();
     TransferAutocompleteModel? _selectedUser;
     List<TransferAutocompleteModel> _autocompleteUsersList = [];
-    bool _isTransferLoading = false;
-    bool _isSearching = false;
+    SignUpOptions _selectedOption =
+        SignUpOptions.individual; // default is Individual
+
     Timer? _debounce;
+    bool _isSearching = false; // <-- was missing
 
     void _onSearchChanged(String query, StateSetter setState) {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
@@ -7763,213 +7900,307 @@ class _MyLocationListState extends State<MyLocationList>
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width,
+      ),
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return Dialog(
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height / 0.2,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Padding(
-                    //   padding: EdgeInsets.all(16),
-                    //   child: Text(
-                    //     'Transfer SOV',
-                    //     style: typography.H5_Regular.copyWith(height: 1.2),
-                    //   ),
-                    // ),
-                    // Padding(
-                    //   padding: EdgeInsets.symmetric(horizontal: 16),
-                    //   child: TextField(
-                    //     controller: _userSearchController,
-                    //     onChanged: (query) {
-                    //       setState(() {
-                    //         _selectedUser = null;
-                    //       });
-                    //       _onSearchChanged(query, setState);
-                    //     },
-                    //     decoration: InputDecoration(
-                    //       hintText: 'Search for a user to transfer sov',
-                    //       hintStyle: typography.Body1,
-                    //       border: OutlineInputBorder(),
-                    //       suffixIcon: _isSearching
-                    //           ? Container(
-                    //               margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
-                    //               width: 20,
-                    //               height: 20,
-                    //               child: CircularProgressIndicator())
-                    //           : null,
-                    //     ),
-                    //   ),
-                    // ),
-                    // SizedBox(height: 10),
-                    // Flexible(
-                    //   child: _selectedUser == null
-                    //       ? ListView.builder(
-                    //           shrinkWrap: true,
-                    //           itemCount: _autocompleteUsersList.length,
-                    //           itemBuilder: (context, index) {
-                    //             final user = _autocompleteUsersList[index];
-                    //             return ListTile(
-                    //               leading: user.imageUrl.isNotEmpty
-                    //                   ? CircleAvatar(
-                    //                       backgroundImage:
-                    //                           NetworkImage(user.imageUrl),
-                    //                     )
-                    //                   : CircleAvatar(
-                    //                       child:
-                    //                           Text(user.name[0].toUpperCase()),
-                    //                     ),
-                    //               title: Text(user.name),
-                    //               subtitle: Text(user.email),
-                    //               onTap: () {
-                    //                 setState(() {
-                    //                   _selectedUser = user;
-                    //                   _userSearchController.text = user.name;
-                    //                 });
-                    //               },
-                    //             );
-                    //           },
-                    //         )
-                    //       : Padding(
-                    //           padding: EdgeInsets.all(16),
-                    //           child:
-                    //               Text('Selected User: ${_selectedUser!.name}'),
-                    //         ),
-                    // ),
-                    // Padding(
-                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    //   child: Row(
-                    //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    //     children: [
-                    //       TextButton(
-                    //         onPressed: () => Navigator.pop(dialogContext),
-                    //         child: Text(
-                    //           'Cancel',
-                    //           style: CustomTypography(context).Body1,
-                    //         ),
-                    //       ),
-                    //       CustomButton(
-                    //         type: ButtonType.elevated,
-                    //         onPressed: _selectedUser != null &&
-                    //                 !_isTransferLoading
-                    //             ? () async {
-                    //                 setState(() {
-                    //                   _isTransferLoading = true;
-                    //                 });
-                    //                 var provider = Provider.of<SOVListProvider>(
-                    //                     context,
-                    //                     listen: false);
-                    //                 await provider
-                    //                     .transferSOV(
-                    //                         context,
-                    //                         widget.accountID!,
-                    //                         widget.subAccountID,
-                    //                         sov.id,
-                    //                         _selectedUser!.id)
-                    //                     .then((value) {
-                    //                   if (value) {
-                    //                     getdata(widget.accountID!,
-                    //                         widget.accountID!);
-                    //                   }
-                    //                 });
-                    //                 setState(() {
-                    //                   _isTransferLoading = false;
-                    //                 });
-                    //
-                    //                 Navigator.pop(dialogContext);
-                    //               }
-                    //             : null,
-                    //         child: _isTransferLoading
-                    //             ? CircularProgressIndicator(strokeWidth: 2.0)
-                    //             : Text(
-                    //                 'Transfer',
-                    //                 style: CustomTypography(context).Body1,
-                    //               ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    // SizedBox(height: 10),
-                    const Text(
-                      "Share SOV",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Dropdown
-                    DropdownButtonFormField<String>(
-                      value: "All",
-                      items: const [
-                        DropdownMenuItem(value: "All", child: Text("All")),
-                        DropdownMenuItem(value: "List1", child: Text("List 1")),
-                        DropdownMenuItem(value: "List2", child: Text("List 2")),
-                      ],
-                      onChanged: (value) {},
-                      decoration: const InputDecoration(
-                        labelText: "SOV List",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    const Text("5 SOV Lists selected"),
-
-                    const SizedBox(height: 16),
-
-                    // Search field
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: "Name or Email",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(height: CustomSpacing.two),
+                  const Text(
+                    "Share SOV",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<SignUpOptions>(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(LanguageService.getTranslated(context,
+                              "register_non_corporate_radio_Individual")),
+                          value: SignUpOptions.individual,
+                          groupValue: _selectedOption,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOption = value!;
+                              // _removeAllChips();
+                            });
+                          },
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // User list
-                    _userTile("DS", "Darrell Steward", "View, Edit, Comment",
-                        "Cat Modeller"),
-                    _userTile("CH", "Cillian Henry", "View, Edit, Comment",
-                        "Risk Engineer"),
-                    _userTile(
-                        "SB", "Stuart Benny", "View, Comment", "Underwriter"),
-
-                    const SizedBox(height: 12),
-
-                    const Text(
-                      "Note: Users with multiple roles must be assigned one role per SOV.",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Action Buttons
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        backgroundColor: Colors.lightBlue,
+                      Expanded(
+                        child: RadioListTile<SignUpOptions>(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(LanguageService.getTranslated(context,
+                              "register_non_corporate_radio_Corporate")),
+                          value: SignUpOptions.corporate,
+                          groupValue: _selectedOption,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOption = value!;
+                            });
+                          },
+                        ),
                       ),
-                      onPressed: () {},
-                      child: const Text("Share SOV"),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(_selectedOption.toString()),
+                  TextField(
+                    controller: _userSearchController,
+                    onChanged: (value) => _onSearchChanged(value, setState),
+                    decoration: InputDecoration(
+                      labelText: "Name or Email",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Cancel"),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Show search loading or results
+                  if (_isSearching)
+                    const CircularProgressIndicator()
+                  else if (_autocompleteUsersList.isNotEmpty)
+                    ListView.builder(
+                      shrinkWrap: true,
+                      itemExtent: 88.0, // fixed item height; adjust as needed
+                      itemCount: _autocompleteUsersList.length,
+                      itemBuilder: (context, index) {
+                        final isSelected = false;
+
+                        final user = _autocompleteUsersList[index];
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: isSelected,
+                                onChanged: (value) {
+                                  setState(() {
+                                    // user.isSelected = value ?? false;
+                                  });
+                                },
+                              ),
+                              CircleAvatar(
+                                backgroundColor: Colors.grey[700],
+                                child: Text(
+                                  (user.name != null && user.name!.isNotEmpty)
+                                      ? user.name!.substring(0, 2).toUpperCase()
+                                      : "?",
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user.name ?? "Unknown",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      "View, Comment",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+
+                  // SizedBox(
+                  //   height: 300,
+                  //   child: ListView.builder(
+                  //     shrinkWrap: true,
+                  //     itemCount: _autocompleteUsersList.length,
+                  //     itemBuilder: (context, index) {
+                  //       final isSelected = false;
+                  //
+                  //       final user = _autocompleteUsersList[index];
+                  //       // final isSelected = user.isSelected ?? false;
+                  //
+                  //       return Container(
+                  //         margin: const EdgeInsets.symmetric(vertical: 6),
+                  //         padding: const EdgeInsets.all(8),
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.black.withOpacity(0.05),
+                  //           borderRadius: BorderRadius.circular(8),
+                  //         ),
+                  //         child: Row(
+                  //           crossAxisAlignment: CrossAxisAlignment.start,
+                  //           children: [
+                  //             // Checkbox
+                  //             Checkbox(
+                  //               value: isSelected,
+                  //               onChanged: (value) {
+                  //                 setState(() {
+                  //                   // user.isSelected = value ?? false;
+                  //                 });
+                  //               },
+                  //             ),
+                  //
+                  //             // Avatar
+                  //             CircleAvatar(
+                  //               backgroundColor: Colors.grey[700],
+                  //               child: Text(
+                  //                 (user.name != null && user.name!.isNotEmpty)
+                  //                     ? user.name!
+                  //                         .substring(0, 2)
+                  //                         .toUpperCase()
+                  //                     : "?",
+                  //                 style: const TextStyle(color: Colors.white),
+                  //               ),
+                  //             ),
+                  //             const SizedBox(width: 12),
+                  //
+                  //             // Name + role info
+                  //             Expanded(
+                  //               child: Column(
+                  //                 crossAxisAlignment:
+                  //                     CrossAxisAlignment.start,
+                  //                 children: [
+                  //                   Text(
+                  //                     user.name ?? "Unknown",
+                  //                     style: const TextStyle(
+                  //                       fontWeight: FontWeight.bold,
+                  //                       fontSize: 16,
+                  //                     ),
+                  //                   ),
+                  //                   const SizedBox(height: 4),
+                  //                   Text(
+                  //                     "View, Comment",
+                  //                     // user.permissions ?? "View, Comment",
+                  //                     style: const TextStyle(
+                  //                       fontSize: 14,
+                  //                       color: Colors.grey,
+                  //                     ),
+                  //                   ),
+                  //                   const SizedBox(height: 6),
+                  //                   // Dropdown for roles
+                  //                  // DropdownButtonFormField<String>(
+                  //                  //   value: (user.role != null && user.role!.isNotEmpty) ? user.role : null,
+                  //                  //   items: const [
+                  //                  //     DropdownMenuItem<String>(
+                  //                  //       value: 'I4VeSDvt5yDNXhoEdkOx', // role id
+                  //                  //       child: Text(item.ro), // role name
+                  //                  //     ),
+                  //                  //   ],
+                  //                  //   onChanged: (value) {
+                  //                  //     if (value == null) return;
+                  //                  //     setState(() {
+                  //                  //       // user.role! = value; // store selected role id
+                  //                  //     });
+                  //                  //   },
+                  //                  //   decoration: InputDecoration(
+                  //                  //     contentPadding:
+                  //                  //         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  //                  //     border: OutlineInputBorder(
+                  //                  //       borderRadius: BorderRadius.circular(6),
+                  //                  //     ),
+                  //                  //   ),
+                  //                  // ),
+                  //                 ],
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
+
+                  // else if (_autocompleteUsersList.isNotEmpty)
+                  //   SizedBox(
+                  //     height: 200,
+                  //     child: ListView.builder(
+                  //       shrinkWrap: true,
+                  //       itemCount: _autocompleteUsersList.length,
+                  //       itemBuilder: (context, index) {
+                  //         final user = _autocompleteUsersList[index];
+                  //         return ListTile(
+                  //           title: Text(user.name ?? "Unknown"),
+                  //           subtitle: Text(user.email ?? ""),
+                  //           onTap: () {
+                  //             setState(() {
+                  //               _selectedUser = user;
+                  //             });
+                  //           },
+                  //         );
+                  //       },
+                  //     ),
+                  //   ),
+
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Note: Users with multiple roles must be assigned one role per SOV.",
+                    style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          type: ButtonType.elevated,
+                          onPressed: () async {
+                            // TODO: handle share with _selectedUser
+                          },
+                          child: _buildButtonChild(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: CustomSpacing.two),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          type: ButtonType.outlined,
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            LanguageService.getTranslated(
+                                context, "addlocation_cancel_button_text"),
+                            style: typography.ButtonLarge.copyWith(
+                                color: Colors.lightBlue),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: CustomSpacing.five),
+                ],
               ),
             );
           },
@@ -7980,45 +8211,157 @@ class _MyLocationListState extends State<MyLocationList>
     });
   }
 
-  Widget _userTile(
-      String initials, String name, String role, String dropdownValue) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(child: Text(initials)),
-        title: Text(name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(role),
-            const SizedBox(height: 5),
-            DropdownButtonFormField<String>(
-              value: dropdownValue,
-              items: [
-                DropdownMenuItem(
-                    value: dropdownValue, child: Text(dropdownValue)),
-                const DropdownMenuItem(value: "Role2", child: Text("Role 2")),
-                const DropdownMenuItem(value: "Role3", child: Text("Role 3")),
-              ],
-              onChanged: (value) {},
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
+  // Future<void> _showTransferDialog(BuildContext context, Result sov) async {
+  //   var typography = CustomTypography(context);
+  //   TextEditingController _userSearchController = TextEditingController();
+  //   TransferAutocompleteModel? _selectedUser;
+  //   List<dynamic> _autocompleteUsersList = [];
+  //
+  //   Timer? _debounce;
+  //
+  //   void _onSearchChanged(String query, StateSetter setState) {
+  //     if (_debounce?.isActive ?? false) _debounce?.cancel();
+  //     _debounce = Timer(const Duration(milliseconds: 500), () async {
+  //       if (query.isNotEmpty) {
+  //         setState(() {
+  //           _isSearching = true;
+  //         });
+  //
+  //         _autocompleteUsersList = await fetchcompanySearchList(query);
+  //
+  //         setState(() {
+  //           _isSearching = false;
+  //         });
+  //       } else {
+  //         setState(() {
+  //           _autocompleteUsersList.clear();
+  //           _isSearching = false;
+  //         });
+  //       }
+  //     });
+  //   }
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     // backgroundColor: Colors.transparent,
+  //     constraints: BoxConstraints(
+  //       maxWidth: MediaQuery.of(context).size.width,
+  //     ),
+  //     builder: (BuildContext dialogContext) {
+  //       return StatefulBuilder(
+  //         builder: (BuildContext context, StateSetter setState) {
+  //           return Container(
+  //             width: double.infinity,
+  //             padding: const EdgeInsets.all(16),
+  //             decoration: const BoxDecoration(
+  //               // color: Colors.black,
+  //               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  //             ),
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 SizedBox(height: CustomSpacing.two),
+  //                 const Text(
+  //                   "Share SOV",
+  //                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  //                 ),
+  //                 const SizedBox(height: 16),
+  //                 TextField(
+  //                   controller: _userSearchController,
+  //                   onChanged: (value) => _onSearchChanged(value, setState),
+  //                   decoration: InputDecoration(
+  //                     labelText: "Name or Email",
+  //                     prefixIcon: const Icon(Icons.search),
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(8),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 16),
+  //                 // _userTile("DS", "Darrell Steward", "View, Edit, Comment",
+  //                 //     "Cat Modeller"),
+  //                 const SizedBox(height: 12),
+  //                 const Text(
+  //                   "Note: Users with multiple roles must be assigned one role per SOV.",
+  //                   style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+  //                 ),
+  //                 const SizedBox(height: 20),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: CustomButton(
+  //                         type: ButtonType.elevated,
+  //                         onPressed: () async {},
+  //                         child: _buildButtonChild(context),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 SizedBox(height: CustomSpacing.two),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: CustomButton(
+  //                         type: ButtonType.outlined,
+  //                         onPressed: () {
+  //                           Navigator.pop(context);
+  //                         },
+  //                         child: Text(
+  //                           LanguageService.getTranslated(
+  //                               context, "addlocation_cancel_button_text"),
+  //                           style: typography.ButtonLarge.copyWith(
+  //                               color: Colors.lightBlue),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 SizedBox(height: CustomSpacing.five),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   ).whenComplete(() {
+  //     if (_debounce?.isActive ?? false) _debounce?.cancel();
+  //   });
+  // }
+
+  Widget _buildButtonChild(BuildContext context) {
+    final locationListProvider = Provider.of<LocationListProvider>(context);
+    final locationProfileProvider =
+        Provider.of<MyLocationListProvider>(context);
+
+    var typography = CustomTypography(context);
+    if (locationListProvider.isAddLocationLoading ||
+        locationProfileProvider.isLoading) {
+      return Center(
+        child: SizedBox(
+          height: 25,
+          width: 25,
+          child: CircularProgressIndicator(
+            color: AppColors.black,
+          ),
         ),
-        trailing: Checkbox(value: true, onChanged: (val) {}),
-      ),
-    );
+      );
+    } else {
+      return Text(
+        "Share SOV",
+        style: typography.ButtonLarge.copyWith(
+          color: Colors.black,
+        ),
+      );
+    }
   }
 }
 
 Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
     String query) async {
   try {
-    ApiService apiService = ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
-    String url = '?search=$query';
+    ApiService apiService = ApiService(AppConstant.GET_SEARCH_LIST_BY_SOV);
+    String url = '/user_search?search=$query';
     var response = await apiService.get(url);
 
     // Parse the response to extract user data
@@ -8064,6 +8407,61 @@ class _AutoHideCompletedRowState extends State<_AutoHideCompletedRow> {
         const SizedBox(width: 8),
         Text("Completed (${widget.percentage}%)"),
       ],
+    );
+  }
+}
+
+class InfoCard extends StatelessWidget {
+  final String title;
+  final int count;
+  final IconData icon;
+
+  const InfoCard({
+    super.key,
+    required this.title,
+    required this.count,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 160,
+      width: 170,
+      child: Card(
+        color: Colors.white12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.white38, width: 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: const Color(0xFF9FA6AD), size: 32),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.17),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                count.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

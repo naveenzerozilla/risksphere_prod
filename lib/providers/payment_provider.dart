@@ -87,7 +87,6 @@ class PaymentProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-
       final paymentIntentData = await _createPaymentIntent(
           amount, currency, summary, hazardName!, vendorName);
       if (paymentIntentData != null &&
@@ -161,15 +160,14 @@ class PaymentProvider extends ChangeNotifier {
         // "currency": currency,
         "plans": List.generate(
           summary['planId']?.length ?? 0,
-              (i) {
+          (i) {
             String planTypeId = summary['planType']?[i] ?? "";
             Map<String, dynamic> plan = {
               "plan_id": summary['planId']?[i] ?? "",
               "plan_type_id": planTypeId,
-              "plan_type": summary['selectedPlanType']?[i]
-                  ?.toString()
-                  .toLowerCase() ??
-                  "",
+              "plan_type":
+                  summary['selectedPlanType']?[i]?.toString().toLowerCase() ??
+                      "",
               "selected_plan": summary['usercount']?[i] ?? "",
               "plan_name": summary['titles']?[i] ?? "",
               "price": summary['licenseprice']?[i] ?? "",
