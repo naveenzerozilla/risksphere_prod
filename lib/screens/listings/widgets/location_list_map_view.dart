@@ -16,6 +16,7 @@ import 'package:RiskSphere/providers/my_location_list_provider.dart';
 
 import '../../../providers/custom_tile_providers.dart';
 import '../../../providers/custom_tile_providers_main_hazards.dart';
+import '../location_profile.dart';
 import 'location_details_popup.dart';
 import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart'
     as cluster_manager;
@@ -25,10 +26,16 @@ import 'message_card.dart';
 class LocationListMapView extends StatefulWidget {
   final String accountId;
   final String subAccountId;
+  // final String accountName;
+  // final String subAccountName;
+  // final String sovName;
+
   final String? sovId;
 
   LocationListMapView(
-      {required this.accountId, required this.subAccountId, this.sovId = ""});
+      {required this.accountId, required this.subAccountId,
+        // ,required this.accountName,required this.subAccountName,required this.sovName,
+        this.sovId = ""});
 
   @override
   _LocationListMapViewState createState() => _LocationListMapViewState();
@@ -185,7 +192,30 @@ class _LocationListMapViewState extends State<LocationListMapView>
         visible:
             _showPins && (_selectedScore == null || _selectedScore == score),
         onTap: () {
-          showLocationDetailsPopup(context, location);
+          // Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //         builder: (context) => LocationProfile(
+          //           accountId: widget.accountId!,
+          //           accountName: widget.accountName!,
+          //           subAccountId: widget.subAccountId!,
+          //           subAccountName: widget.subAccountName!,
+          //           sovId: widget.sovId ?? "",
+          //           sovName: widget.sovName ?? "",
+          //           searchQuery: widget.locationQuery ?? "",
+          //           page: (widget.index + 1).toString(),
+          //           totalPages: Provider.of<MyLocationListProvider>(context,
+          //               listen: false)
+          //               .locationHits
+          //               .toString(),
+          //           hazardProcess: widget.hazardProcess,
+          //           onConfirmCallback: widget.getData,
+          //           onNavigateBack: widget.onNavigateBack,
+          //           tab: 1,
+          //         ),
+          //     ),
+          // );
+          // showLocationDetailsPopup(context, location);
         },
       );
     }

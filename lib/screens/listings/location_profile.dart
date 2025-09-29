@@ -7,6 +7,8 @@ import 'package:RiskSphere/providers/custom_tile_providers_main_hazards.dart';
 import 'package:RiskSphere/screens/listings/account_list.dart';
 import 'package:RiskSphere/screens/listings/sub_account_list.dart';
 import 'package:RiskSphere/screens/listings/widgets/data_tab.dart';
+import 'package:RiskSphere/screens/listings/widgets/hazard_page.dart';
+import 'package:RiskSphere/screens/listings/widgets/hazard_section_widget.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_card.dart'
     show GeocodingDialog;
 import 'package:RiskSphere/screens/listings/widgets/status_card.dart';
@@ -107,6 +109,7 @@ class _LocationProfileState extends State<LocationProfile>
   bool isLoadingAddToCampus = false;
   bool isLoadingAddToMultiple = false;
   bool showViewMore = true;
+  final TextEditingController _commentController = TextEditingController();
 
   late int tabIndex = widget.tab ?? 0;
   bool isLoading = false;
@@ -139,6 +142,7 @@ class _LocationProfileState extends State<LocationProfile>
   int selectedIndex = 0;
   bool isSelectionMode = false;
   Set<String> selectedIds = {};
+  bool _isSending = false;
 
   TabController? _tabController;
   TextEditingController _nameController = TextEditingController();
@@ -1256,7 +1260,31 @@ class _LocationProfileState extends State<LocationProfile>
                                               NeverScrollableScrollPhysics(),
                                           children: [
                                             _geocodingScore(),
-                                            _riskScore(),
+                                            // _riskScore(),
+                                            Consumer<MyLocationListProvider>(
+                                              builder: (context,
+                                                  locationProfileProvider,
+                                                  child) {
+                                                return SizedBox(
+                                                  child: locationProfileProvider
+                                                          .isLoading
+                                                      ? Center(
+                                                          child:
+                                                              CircularProgressIndicator(),
+                                                        )
+                                                      : SingleChildScrollView(
+                                                          child:
+                                                              HazardsSectionPage(
+                                                            hazards: locationProfileProvider
+                                                                    .locationProfile
+                                                                    ?.hazard ??
+                                                                {},
+                                                          ),
+                                                        ),
+                                                );
+                                              },
+                                            ),
+
                                             Consumer2<AccountListProvider,
                                                 SubAccountListProvider>(
                                               builder: (context,
@@ -1673,7 +1701,7 @@ class _LocationProfileState extends State<LocationProfile>
                           minHeight: 10,
                           maxHeight: Platform.isAndroid
                               ? MediaQuery.of(context).size.height * 0.50
-                              : MediaQuery.of(context).size.height * 0.45,
+                              : MediaQuery.of(context).size.height * 0.50,
                         ),
                         child: TabBarView(
                           physics: NeverScrollableScrollPhysics(),
@@ -1681,7 +1709,7 @@ class _LocationProfileState extends State<LocationProfile>
                             _campusWidget(),
                             _mediaImageWidget(),
                             _activityLogWidget(),
-                            _mediaDocumentWidget(),
+                            _activityCommentsWidget()
                           ],
                         ),
                       ),
@@ -3150,63 +3178,79 @@ class _LocationProfileState extends State<LocationProfile>
                     child: ListView(
                       children: [
                         SizedBox(height: 10),
-                        DottedBorder(
-                          options: RectDottedBorderOptions(
-                            padding: const EdgeInsets.all(21),
-                            color: Colors.white24,
-                            strokeWidth: 2,
-                            dashPattern: [4, 4],
-                          ), // line length, gap length
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 6, horizontal: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              // color: const Color(0xFF1E1E1E), // background color inside the border
-                              borderRadius: BorderRadius.circular(12),
+                        Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: DottedBorder(
+                            options: RectDottedBorderOptions(
+                              padding: const EdgeInsets.all(21),
+                              color: Colors.white24,
+                              strokeWidth: 2,
+                              dashPattern: [0, 0],
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                /// Date + Time
-                                Text(
-                                  "6 Aug 2025 at 04:32 PM",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.grey[400],
-                                        fontSize: 12,
-                                      ),
-                                ),
-                                const SizedBox(height: 6),
-
-                                /// Message
-                                Text(
-                                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                ),
-                                const SizedBox(height: 6),
-
-                                /// Sender
-                                Text(
-                                  "Courtney Henry (Risk Manager)",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.grey[400],
-                                        fontSize: 13,
-                                      ),
-                                ),
-                              ],
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: locationProfileProvider
+                                    .locationProfile!.activityLogs!.length,
+                                itemBuilder: (context, index) {
+                                  final log = locationProfileProvider
+                                      .locationProfile!.activityLogs![index];
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 16.0),
+                                    // spacing between logs
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _formatTimestamp(
+                                              log.timestamp!.iSeconds),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Colors.grey[400],
+                                                fontSize: 12,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          log.newValue.toString() ?? "",
+                                          // Replace with your actual field
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          log.actor!.name! ?? "",
+                                          // Replace with your actual field
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Colors.grey[400],
+                                                fontSize: 13,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -3220,6 +3264,341 @@ class _LocationProfileState extends State<LocationProfile>
       },
     );
   }
+
+  Widget _activityCommentsWidget() {
+    return Consumer<MyLocationListProvider>(
+      builder: (context, locationProfileProvider, child) {
+        return Stack(
+          children: [
+            if (_isBottomSheetExpanded)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 60),
+                // space for input box
+
+                child: ScrollbarTheme(
+                  data: ScrollbarThemeData(
+                    thumbColor:
+                        MaterialStateProperty.all(Colors.lightBlueAccent),
+                    trackColor: MaterialStateProperty.all(Colors.black26),
+                    thickness: MaterialStateProperty.all(3),
+                    // move thickness here
+                    radius: const Radius.circular(8),
+                  ),
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    thumbVisibility: true,
+                    thickness: 3,
+                    radius: const Radius.circular(8),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: locationProfileProvider
+                          .locationProfile!.locationComments!.length,
+                      itemBuilder: (context, index) {
+                        final log = locationProfileProvider
+                            .locationProfile!.locationComments![index];
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.grey[800],
+                                    child: Text(
+                                      log.user != null &&
+                                              log.user!.name!.isNotEmpty
+                                          ? log.user!.name![0].toUpperCase()
+                                          : "?",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+
+                                  /// Comment content
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          log.user?.name ?? "Unknown",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _formatTimestamp(
+                                              log.updatedAt!.iSeconds),
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              /// Message
+                              Container(
+                                padding:
+                                    const EdgeInsets.only(top: 12, left: 5),
+                                child: Text(
+                                  log.comment ?? "",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+            /// Input Box
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                color: Colors.black,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _commentController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "Enter message here",
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white24),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Add this as a state variable
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.lightBlue,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        icon: _isSending
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.send, color: Colors.black),
+                        onPressed: _isSending
+                            ? null
+                            : () async {
+                                final commentText =
+                                    _commentController.text.trim();
+                                if (commentText.isNotEmpty) {
+                                  setState(() {
+                                    _isSending = true; // start loader
+                                  });
+
+                                  try {
+                                    await locationProfileProvider
+                                        .addCommentsLocation(
+                                      context,
+                                      locationProfileProvider.locationProfile!
+                                          .finalAddress!.locationId
+                                          .toString(),
+                                      commentText,
+                                    );
+
+                                    _commentController.clear();
+
+                                    // Reload your data after successful comment
+                                    await _getData();
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content:
+                                              Text("Failed to send comment")),
+                                    );
+                                  } finally {
+                                    setState(() {
+                                      _isSending = false; // stop loader
+                                    });
+                                  }
+                                }
+                              },
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Widget _activityCommentsWidget() {
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, locationProfileProvider, child) {
+  //       return Builder(
+  //         builder: (context) {
+  //           return Stack(
+  //             children: [
+  //               if (_isBottomSheetExpanded)
+  //                 Scrollbar(
+  //                   thumbVisibility: true,
+  //                   child: ListView(
+  //                     padding: const EdgeInsets.all(12),
+  //                     children: [
+  //                       Padding(
+  //                         padding: const EdgeInsets.all(8.0),
+  //                         child: DottedBorder(
+  //                           options: RectDottedBorderOptions(
+  //                             padding: const EdgeInsets.all(12),
+  //                             color: Colors.white24,
+  //                             strokeWidth: 2,
+  //                             dashPattern: [6, 6],
+  //                           ),
+  //                           child: ListView.builder(
+  //                             shrinkWrap: true,
+  //                             physics: const NeverScrollableScrollPhysics(),
+  //                             itemCount: locationProfileProvider
+  //                                 .locationProfile!.locationComments!.length,
+  //                             itemBuilder: (context, index) {
+  //                               final log = locationProfileProvider
+  //                                   .locationProfile!.locationComments![index];
+  //
+  //                               return Padding(
+  //                                 padding: const EdgeInsets.only(bottom: 16.0),
+  //                                 child: Row(
+  //                                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                                   children: [
+  //                                     // Avatar Circle with Initials
+  //                                     CircleAvatar(
+  //                                       backgroundColor: Colors.grey[800],
+  //                                       child: Text(
+  //                                         log.user != null &&
+  //                                                 log.user!.name!.isNotEmpty
+  //                                             ? log.user!.name![0].toUpperCase()
+  //                                             : "?",
+  //                                         style: const TextStyle(
+  //                                           color: Colors.white,
+  //                                           fontWeight: FontWeight.bold,
+  //                                         ),
+  //                                       ),
+  //                                     ),
+  //                                     const SizedBox(width: 10),
+  //
+  //                                     Expanded(
+  //                                       child: Column(
+  //                                         crossAxisAlignment:
+  //                                             CrossAxisAlignment.start,
+  //                                         children: [
+  //                                           // Name + Role / Tag
+  //                                           Row(
+  //                                             children: [
+  //                                               Text(
+  //                                                 log.user!.name ?? "Unknown",
+  //                                                 style: const TextStyle(
+  //                                                   color: Colors.white,
+  //                                                   fontWeight: FontWeight.bold,
+  //                                                 ),
+  //                                               ),
+  //                                               const SizedBox(width: 6),
+  //                                               // if (log.user?.name != null)
+  //                                               //   Container(
+  //                                               //     padding: const EdgeInsets.symmetric(
+  //                                               //         horizontal: 8, vertical: 4),
+  //                                               //     decoration: BoxDecoration(
+  //                                               //       color: Colors.blue,
+  //                                               //       borderRadius: BorderRadius.circular(12),
+  //                                               //     ),
+  //                                               //     child: Text(
+  //                                               //       log.comment!,
+  //                                               //       style: const TextStyle(
+  //                                               //         color: Colors.white,
+  //                                               //         fontSize: 12,
+  //                                               //       ),
+  //                                               //     ),
+  //                                               //   ),
+  //                                             ],
+  //                                           ),
+  //
+  //                                           const SizedBox(height: 6),
+  //
+  //                                           // Message
+  //                                           Text(
+  //                                             log.comment ?? "",
+  //                                             style: const TextStyle(
+  //                                               color: Colors.white,
+  //                                               fontSize: 14,
+  //                                             ),
+  //                                           ),
+  //
+  //                                           const SizedBox(height: 6),
+  //
+  //                                           // Date
+  //                                           Text(
+  //                                             _formatTimestamp(
+  //                                                 log.updatedAt!.iSeconds),
+  //                                             style: TextStyle(
+  //                                               color: Colors.grey[400],
+  //                                               fontSize: 12,
+  //                                             ),
+  //                                           ),
+  //                                         ],
+  //                                       ),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                               );
+  //                             },
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   void showLocationDetailsPopup(BuildContext context, MyLocation location,
       [bool hideNavigation = false]) {

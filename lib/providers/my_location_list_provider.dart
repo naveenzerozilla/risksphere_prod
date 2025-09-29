@@ -743,6 +743,36 @@ class MyLocationListProvider extends ChangeNotifier {
       isAddToSOVLoading = false;
     }
   }
+  Future<void> addCommentsLocation(BuildContext context, String locationId,
+      String comment) async {
+    try {
+      isAddTagsLoading = true;
+      ApiService apiService = ApiService(AppConstant.ADD_COMMENT);
+      var body = {
+
+          "location_id": locationId,
+          "comment": comment,
+
+      };
+      var response = await apiService.post(body);
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+
+    } on BackendException catch (e, stackTrace) {
+      log("Error adding tags to location: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+    } catch (e, stackTrace) {
+      log("Error adding tags to location: $e");
+      log(e.toString());
+      log(stackTrace.toString());
+
+    } finally {
+      isAddTagsLoading = false;
+    }
+  }
+
+
 
   // Add Tags to location
   Future<void> addTagsToLocation(BuildContext context, String accountId,

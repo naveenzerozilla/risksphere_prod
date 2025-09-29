@@ -30,7 +30,7 @@ export 'package:flutter/gestures.dart';
 export 'package:flutter_speed_dial/flutter_speed_dial.dart';
 export 'package:flutter_svg/svg.dart';
 export 'package:google_nav_bar/google_nav_bar.dart';
-export 'package:RiskSphere/models/my_location_list_model.dart';
+// export 'package:RiskSphere/models/my_location_list_model.dart';
 export 'package:RiskSphere/providers/location_list_provider.dart';
 export 'package:RiskSphere/providers/my_location_list_provider.dart';
 export 'package:RiskSphere/providers/user_profile_provider.dart';

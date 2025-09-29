@@ -216,6 +216,7 @@ class AppConstant {
   static String get ADD_LOCATION => '$baseURL/accounts';
 
   static String get MY_LOCATION => '$baseURL/locations';
+  static String get ADD_COMMENT => '$MY_LOCATION/update_location_comment';
 
   static String get ADD_TO_SOV => '$baseURL/locations/add_to_sov';
 

@@ -1,6 +1,7 @@
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
 
 import '../../design_system/repo/constants.dart';
+import '../../models/my_location_list_model.dart';
 import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
@@ -33,7 +34,7 @@ class _MyLocationListState extends State<MyLocationList>
     with TickerProviderStateMixin {
   String? _activeSubAccountId;
   String? _activeProcessId;
-
+  String? _selectedMapView;
   Timer? _refreshTimer;
   static bool _hasActiveTimer = false;
   bool _isExpanded = false;
@@ -2546,11 +2547,43 @@ class _MyLocationListState extends State<MyLocationList>
                     icon: Remix.bar_chart_box_ai_line,
                     text: 'Overall Score',
                   ),
+                  // Replace the third GButton with a GestureDetector or PopupMenuButton
                   GButton(
                     key: keyFeature3,
                     icon: Remix.road_map_line,
-                    text: 'Map View',
+                    text: _selectedMapView ?? 'Map View',
+                    onPressed: () async {
+                      // Show dropdown when this button is pressed
+                      final selected = await showMenu<String>(
+                        context: context,
+                        position: RelativeRect.fromLTRB(100, 1, 0, 100), // adjust as needed
+                        items: [
+                          const PopupMenuItem(
+                            value: 'Geocoding',
+                            child: Text('Geocoding'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'RiskScore',
+                            child: Text('Risk Score'),
+                          ),
+                        ],
+                      );
+
+                      if (selected != null) {
+                        setState(() {
+                          _selectedMapView = selected;
+                          selectedMainTab = 2; // ensure Map View tab is selected
+                          _mainTabController?.animateTo(2);
+                        });
+                      }
+                    },
                   ),
+
+                  // GButton(
+                  //   key: keyFeature3,
+                  //   icon: Remix.road_map_line,
+                  //   text: 'Map View',
+                  // ),
                 ]),
           ),
         ),
@@ -2659,6 +2692,12 @@ class _MyLocationListState extends State<MyLocationList>
               LocationListMapView(
                 accountId: widget.accountID!,
                 subAccountId: widget.subAccountID!,
+                // accountName: widget.accountName,
+                // subAccountName: widget.subAccountName,
+                // sovName:"",
+
+
+
               ),
             ],
           ),
@@ -8438,6 +8477,7 @@ class InfoCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, color: const Color(0xFF9FA6AD), size: 32),
               const SizedBox(height: 8),

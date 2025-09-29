@@ -85,6 +85,8 @@ class MyLocation with ClusterItem {
   int? overallScore;
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
   String? geocodedAddress;
+  List<LocationComments>? locationComments;
+  List<ActivityLogs>? activityLogs;
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
@@ -102,6 +104,8 @@ class MyLocation with ClusterItem {
       this.overallScore,
       this.hazard,
       this.geocodedAddress,
+        this.locationComments,
+        this.activityLogs,
       this.subdestinations,
       this.screenshots,
       this.isHazardProcess,
@@ -121,6 +125,14 @@ class MyLocation with ClusterItem {
       json['conflicts'].forEach((v) {
         conflicts!.add(new Conflicts.fromJson(v));
       });
+    }
+    if (json['location_comments'] != null) {
+      locationComments = <LocationComments>[];
+      json['location_comments'].forEach((v) { locationComments!.add(new LocationComments.fromJson(v)); });
+    }
+    if (json['activity_logs'] != null) {
+      activityLogs = <ActivityLogs>[];
+      json['activity_logs'].forEach((v) { activityLogs!.add(new ActivityLogs.fromJson(v)); });
     }
 
     defaultConflictindex = json['default_conflict_index'] is int
@@ -188,6 +200,13 @@ class MyLocation with ClusterItem {
     data['tags'] = tags;
     data['overall_score'] = overallScore;
     data['geocoded_address'] = geocodedAddress;
+    if (this.locationComments != null) {
+      data['location_comments'] = this.locationComments!.map((v) => v.toJson()).toList();
+    }
+    if (this.activityLogs != null) {
+      data['activity_logs'] = this.activityLogs!.map((v) => v.toJson()).toList();
+    }
+
     if (hazard != null) {
       data['hazard'] =
           hazard!.map((key, value) => MapEntry(key, value.toJson()));
@@ -452,6 +471,117 @@ class GeocodeInputAddress {
     data['formatted_address'] = this.formattedAddress;
     data['process_id'] = this.processId;
     data['id'] = this.id;
+    return data;
+  }
+}
+class LocationComments {
+  String? commentId;
+  String? comment;
+  Date? updatedAt;
+  User? user;
+
+  LocationComments({this.commentId, this.comment, this.updatedAt, this.user});
+
+  LocationComments.fromJson(Map<String, dynamic> json) {
+    commentId = json['comment_id'];
+    comment = json['comment'];
+    updatedAt = json['updated_at'] != null ? new Date.fromJson(json['updated_at']) : null;
+    user = json['user'] != null ? new User.fromJson(json['user']) : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['comment_id'] = this.commentId;
+    data['comment'] = this.comment;
+    if (this.updatedAt != null) {
+      data['updated_at'] = this.updatedAt!.toJson();
+    }
+    if (this.user != null) {
+      data['user'] = this.user!.toJson();
+    }
+    return data;
+  }
+}
+
+class ActivityLogs {
+  String? id;
+  String? type;
+  String? field;
+  String? previousValue;
+  String? newValue;
+  User? actor;
+  String? locationId;
+  Date? timestamp;
+
+  ActivityLogs({this.id, this.type, this.field, this.previousValue, this.newValue, this.actor, this.locationId, this.timestamp});
+
+  ActivityLogs.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    type = json['type'];
+    field = json['field'];
+    previousValue = json['previous_value'];
+    newValue = json['new_value'];
+    actor = json['actor'] != null ? new User.fromJson(json['actor']) : null;
+    locationId = json['location_id'];
+    timestamp = json['timestamp'] != null ? new Date.fromJson(json['timestamp']) : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    data['type'] = this.type;
+    data['field'] = this.field;
+    data['previous_value'] = this.previousValue;
+    data['new_value'] = this.newValue;
+    if (this.actor != null) {
+      data['actor'] = this.actor!.toJson();
+    }
+    data['location_id'] = this.locationId;
+    if (this.timestamp != null) {
+      data['timestamp'] = this.timestamp!.toJson();
+    }
+    return data;
+  }
+}
+class User {
+  Null? imageUrl;
+  String? userId;
+  String? email;
+  String? name;
+
+  User({this.imageUrl, this.userId, this.email, this.name});
+
+  User.fromJson(Map<String, dynamic> json) {
+    imageUrl = json['image_url'];
+    userId = json['user_id'];
+    email = json['email'];
+    name = json['name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['image_url'] = this.imageUrl;
+    data['user_id'] = this.userId;
+    data['email'] = this.email;
+    data['name'] = this.name;
+    return data;
+  }
+}
+class Date {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  Date({this.iSeconds, this.iNanoseconds});
+
+  Date.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
     return data;
   }
 }
