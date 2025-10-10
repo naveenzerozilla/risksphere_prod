@@ -26,7 +26,7 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode', '3')
 def flutterVersionName = localProperties.getProperty('flutter.versionName', '2.0')
 
 android {
-    namespace "com.risksphere.green"
+    namespace "com.risksphere.green.qa"
     compileSdk 36
     ndkVersion flutter.ndkVersion
     compileOptions {
@@ -44,7 +44,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.risksphere.green"
+        applicationId "com.risksphere.green.qa"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode 51

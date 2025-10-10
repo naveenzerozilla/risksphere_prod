@@ -1,4 +1,4 @@
-package com.risksphere.green
+package com.risksphere.green.qa
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

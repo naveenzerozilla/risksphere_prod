@@ -1122,7 +1122,7 @@ class _LocationProfileState extends State<LocationProfile>
                                     Consumer<MyLocationListProvider>(
                                       builder: (context,
                                           locationProfileProvider, child) {
-                                        int rating = 0;
+                                        int? rating = 0;
                                         if (tabIndex == 0) {
                                           rating = int.tryParse(
                                                   locationProfileProvider
@@ -1132,30 +1132,11 @@ class _LocationProfileState extends State<LocationProfile>
                                                       '0') ??
                                               0;
                                         } else if (tabIndex == 1) {
-                                          rating = (locationProfileProvider
-                                                          .locationProfile
-                                                          ?.overallScore ??
-                                                      0) ==
-                                                  0
-                                              ? 5
-                                              : (locationProfileProvider
-                                                      .locationProfile
-                                                      ?.overallScore ??
-                                                  0);
+                                     rating = (locationProfileProvider.locationProfile?.overallScore as int? ?? 0) == 0
+                                         ? 5
+                                         : (locationProfileProvider.locationProfile?.overallScore as int? ?? 0);
                                         } else {
-                                          rating = scoreToStar(
-                                              (locationProfileProvider
-                                                              .locationProfile
-                                                              ?.dataCompleteness ==
-                                                          null ||
-                                                      locationProfileProvider
-                                                              .locationProfile
-                                                              ?.dataCompleteness ==
-                                                          0)
-                                                  ? 1
-                                                  : locationProfileProvider
-                                                      .locationProfile
-                                                      ?.dataCompleteness);
+                                          rating = int.parse(locationProfileProvider.locationProfile!.dataCompleteness!.scorePd.toString());
                                         }
                                         return Row(
                                           children: [
@@ -3611,8 +3592,9 @@ class _LocationProfileState extends State<LocationProfile>
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.overallScore ?? 5,
-          dataCompleteness: scoreToStar(
-              location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
+          dataCompleteness: location.dataCompleteness!.scorePd.toString(),
+          // scoreToStar(
+          //     location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
           occupancy: location.finalAddress?.placeTypes ?? ["--"],

@@ -47,11 +47,11 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAaTjxnFgG55q7C1eZ4JrFWUeFTO5rs5AY',
-    appId: '1:863607711683:android:3f822b45f25191a7bcff76',
-    messagingSenderId: '863607711683',
-    projectId: 'project-green-prod',
-    storageBucket: 'project-green-prod.firebasestorage.app',
+    apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
+    appId: '1:857135835532:android:1ac1bb46dab75e11c84ea9',
+    messagingSenderId: '857135835532',
+    projectId: 'project-green-r5-1-qa',
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
   );
 
   /// Config for package: com.example.green
@@ -78,7 +78,7 @@ class DefaultFirebaseOptions {
 //   iosBundleId: 'com.zerozilla.green',
 // );
 
-  /// Config for package: com.risksphere.green
+  /// Config for package: com.risksphere.green.qa
 // static const FirebaseOptions android = FirebaseOptions(
 //   apiKey: 'AIzaSyBVuZ3q3ztDvt6lSfwtmLzttJmI6WKxTy4',
 //   appId: '1:37861143894:android:3f15059cd05d48e1bd12f7',

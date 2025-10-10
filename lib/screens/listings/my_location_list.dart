@@ -1,4 +1,5 @@
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../design_system/repo/constants.dart';
 import '../../models/my_location_list_model.dart';
@@ -38,11 +39,13 @@ class _MyLocationListState extends State<MyLocationList>
   Timer? _refreshTimer;
   static bool _hasActiveTimer = false;
   bool _isExpanded = false;
+  bool sovDeleteStatus = false;
   bool _showNotificationDot = true;
   TabController? _masterTabController;
   late TabController _tabController;
   String selectedProcessId = "";
-
+  bool isSelectionMode = false;
+  List<bool> selectedList = [];
   String isMaintenance = "";
   Screens _selectedScreen = Screens.locationList;
   TextEditingController _locationSearchController = TextEditingController();
@@ -81,6 +84,7 @@ class _MyLocationListState extends State<MyLocationList>
   int selectedTab = 0;
   int selectedMasterTab = 0;
   String _lastProcessStatus = '';
+  Set<String> selectedSovIds = {};
 
   /// Sov Things
   TextEditingController _textEditingController = TextEditingController();
@@ -968,13 +972,8 @@ class _MyLocationListState extends State<MyLocationList>
 //   }
 
   ScrollController _scrollController = ScrollController();
-  String selectedSov = 'All SOVs';
-  final List<String> sovOptions = [
-    'All SOVs',
-    'My SOVs',
-    'Shared SOVs',
-    'Received SOVs'
-  ];
+  String selectedSov = 'My SOVs';
+  final List<String> sovOptions = ['My SOVs', 'Shared SOVs', 'Received SOVs'];
 
   void _scrollLeft() {
     _scrollController.animateTo(
@@ -1050,329 +1049,201 @@ class _MyLocationListState extends State<MyLocationList>
                   },
                 ),
                 drawer: CustomDrawer(),
-                floatingActionButton: Builder(builder: (context) {
-                  return Container(
-                    key: keyFeature4,
-                    margin: EdgeInsets.only(bottom: 42.0),
-                    child: SpeedDial(
-                      animatedIcon: AnimatedIcons.menu_close,
-                      animatedIconTheme: IconThemeData(size: 22.0),
-                      backgroundColor: AppColors.primaryMain,
-                      foregroundColor:
-                          themeProvider.getTheme.colorScheme.onPrimary,
-                      children: [
-                        if ((selectedMasterTab) == 0)
-                          // Add this to your state
-
-                          SpeedDialChild(
-                              child: _isLoading
-                                  ? SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          themeProvider
-                                              .getTheme.colorScheme.onPrimary,
-                                        ),
-                                      ),
-                                    )
-                                  : Icon(Icons.add),
-                              backgroundColor: AppColors.primaryMain,
-                              foregroundColor:
-                                  themeProvider.getTheme.colorScheme.onPrimary,
-                              label: 'Add Location',
-                              labelStyle: typography.Body1,
-                              onTap: () async {
-                                setState(() {
-                                  _isLoading = true;
-                                });
-
-                                await _setClaims();
-                                await Future.delayed(Duration(seconds: 1));
-
-                                // Cancel timers and debounce before navigating
-                                _isDisposed = true;
-                                _refreshTimer?.isActive;
-                                deBouncer?.cancel();
-
-                                final result = await Navigator.of(context)
-                                    .push(MaterialPageRoute(
-                                        builder: (_) => AddLocationScreen(
-                                              accountId: widget.accountID!,
-                                              subAccountId:
-                                                  widget.subAccountID!,
-                                              sovId: "",
-                                              accountName: widget.accountName,
-                                              subAccountName:
-                                                  widget.subAccountName,
-                                            )));
-
-                                _isDisposed = false;
-                                _startRefreshTimer(widget.accountID!,
-                                    widget.subAccountID!); // recreate timer
-                                // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
-                                _getSovUploadStatus();
-                                setState(() => _isLoading = false);
-
-                                if (result == true) {
-                                  await getdata(
-                                      widget.accountID!, widget.subAccountID!);
-                                  _startRefreshTimer(
-                                      widget.accountID!, widget.subAccountID!);
-                                  await Provider.of<MyLocationListProvider>(
-                                          context,
-                                          listen: false)
-                                      .fetchLocationList(
-                                          context,
-                                          "",
-                                          1,
-                                          10,
-                                          widget.accountID,
-                                          widget.subAccountID,
-                                          widget.initialProcessId,
-                                          widget.initialSubProcessId,
-                                          '');
-                                  setState(() {});
-                                }
-                              }
-
-                              // onTap: () async {
-                              //   setState(() {
-                              //     _isLoading = true;
-                              //   });
-                              //   // setState(() => _isLoading = true);
-                              //
-                              //   await _setClaims(); // Step 1
-                              //   // deBouncer!.cancel();
-                              //
-                              //
-                              //   await Future.delayed(
-                              //       Duration(seconds: 1)); // Step 2
-                              //   _isDisposed = true;
-                              //   _refreshTimer?.cancel();
-                              //   deBouncer?.cancel();
-                              //   final result = await Navigator.of(context).push(
-                              //     MaterialPageRoute(
-                              //       builder: (_) =>
-                              //           StaticDropdownExample(),
-                              //       //     AddLocationScreen(
-                              //       //   accountId: widget.accountID!,
-                              //       //   subAccountId: widget.subAccountID!,
-                              //       //   sovId: "",
-                              //       //   accountName: widget.accountName,
-                              //       //   subAccountName: widget.subAccountName,
-                              //       // ),
-                              //     ),
-                              //   );
-                              //
-                              //   setState(
-                              //       () => _isLoading = false); // Reset loading
-                              //
-                              //   if (result == true) {
-                              //     await _getData();
-                              //     await Provider.of<MyLocationListProvider>(
-                              //             context,
-                              //             listen: false)
-                              //         .fetchLocationList(
-                              //       context,
-                              //       "",
-                              //       1,
-                              //       40,
-                              //       widget.accountID,
-                              //       widget.subAccountID,
-                              //       widget.initialProcessId,
-                              //       widget.initialSubProcessId,
-                              //     );
-                              //     setState(() {});
-                              //   }
-                              // },
-                              ),
-
-                        // SpeedDialChild(
-                        //   child: Icon(Icons.add),
-                        //   backgroundColor: AppColors.primaryMain,
-                        //   foregroundColor: themeProvider.getTheme.colorScheme.onPrimary,
-                        //   label: 'Add Location',
-                        //   labelStyle: typography.Body1,
-                        //     onTap: () async {
-                        //       await _setClaims(); // Step 1: Run your setup method
-                        //
-                        //       // Step 2: Wait for 2 seconds before showing the loader
-                        //       await Future.delayed(Duration(seconds: 1));
-                        //
-                        //       // Step 3: Show loader
-                        //       showDialog(
-                        //         context: context,
-                        //         barrierDismissible: false,
-                        //         builder: (_) => Center(
-                        //           child: CircularProgressIndicator(),
-                        //         ),
-                        //       );
-                        //
-                        //       // Step 4: Navigate to AddLocationScreen
-                        //       final result = await Navigator.of(context).push(
-                        //         MaterialPageRoute(
-                        //           builder: (_) => AddLocationScreen(
-                        //             accountId: widget.accountID!,
-                        //             subAccountId: widget.subAccountID!,
-                        //             sovId: "",
-                        //             accountName: widget.accountName,
-                        //             subAccountName: widget.subAccountName,
-                        //           ),
-                        //         ),
-                        //       );
-                        //
-                        //       // Step 5: Dismiss loader
-                        //       Navigator.of(context, rootNavigator: true).pop();
-                        //
-                        //       if (result == true) {
-                        //         await _getData();
-                        //         await Provider.of<MyLocationListProvider>(context, listen: false).fetchLocationList(
-                        //           context,
-                        //           "",
-                        //           1,
-                        //           40,
-                        //           widget.accountID,
-                        //           widget.subAccountID,
-                        //           widget.initialProcessId,
-                        //           widget.initialSubProcessId,
-                        //         );
-                        //         setState(() {});
-                        //       }
-                        //     }
-                        //
-                        //   // onTap: () {
-                        //     //   _setClaims().then((_) async {
-                        //     //     final result = await Navigator.of(context).push(
-                        //     //       MaterialPageRoute(
-                        //     //         builder: (_) => AddLocationScreen(
-                        //     //           accountId: widget.accountID!,
-                        //     //           subAccountId: widget.subAccountID!,
-                        //     //           sovId: "",
-                        //     //           accountName: widget.accountName,
-                        //     //           subAccountName: widget.subAccountName,
-                        //     //         ),
-                        //     //       ),
-                        //     //     );
-                        //     //
-                        //     //     if (result == true) {
-                        //     //       await _getData();
-                        //     //       await Provider.of<MyLocationListProvider>(context, listen: false)
-                        //     //           .fetchLocationList(
-                        //     //         context,
-                        //     //         "",
-                        //     //         1,
-                        //     //         40,
-                        //     //         widget.accountID,
-                        //     //         widget.subAccountID,
-                        //     //         widget.initialProcessId,
-                        //     //         widget.initialSubProcessId,
-                        //     //       );
-                        //     //       setState(() {});
-                        //     //     }
-                        //     //   });
-                        //     // }
-                        //
-                        // ),
-                        SpeedDialChild(
-                          child: Icon(Icons.upload),
-                          backgroundColor: AppColors.primaryMain,
-                          foregroundColor:
-                              themeProvider.getTheme.colorScheme.onPrimary,
-                          label: isUploadInProgress
-                              ? 'Continue'
-                              : 'Import Locations',
-                          labelStyle: typography.Body1,
-                          onTap: () async {
-                            tagController.text = "";
-                            if (isMaintenance.toString() == 'in_progress') {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        'SOV upload is disabled during maintenance period.')),
-                              );
-                            } else if (isUploadInProgress) {
-                              print("TestA");
-                              print(isUploadInProgress);
-                              String tempProcessId =
-                                  await SharedPreferenceService
-                                          .getSovUploadTempId() ??
-                                      "";
-                              String state = await SharedPreferenceService
-                                      .getSovUploadState() ??
-                                  "";
-
-                              // Fetch API data when tapped
-                              await Provider.of<UploadSovProvider>(context,
-                                      listen: false)
-                                  .fetchSovUploadData(
-                                      context,
-                                      widget.accountID!,
-                                      widget.accountName,
-                                      widget.subAccountName,
-                                      widget.subAccountID!,
-                                      tempProcessId,
-                                      state);
-                            } else {
-                              _showUploadBottomSheet(
-                                  widget.accountID!, widget.subAccountID!, "");
-                            }
-                          },
-                        ),
-                        if ((_masterTabController?.index ?? 0) == 0)
-                          SpeedDialChild(
-                            child: Icon(Icons.download),
-                            backgroundColor: trialStatus.isNotEmpty
-                                ? Colors.grey
-                                : AppColors.primaryMain,
+                floatingActionButton: ((_masterTabController?.index ?? 0) == 0)
+                    ? Builder(builder: (context) {
+                        return Container(
+                          key: keyFeature4,
+                          margin: EdgeInsets.only(bottom: 42.0),
+                          child: SpeedDial(
+                            animatedIcon: AnimatedIcons.menu_close,
+                            animatedIconTheme: IconThemeData(size: 22.0),
+                            backgroundColor: AppColors.primaryMain,
                             foregroundColor:
                                 themeProvider.getTheme.colorScheme.onPrimary,
-                            label: 'Export Locations',
-                            labelStyle: typography.Body1,
-                            onTap: trialStatus.isNotEmpty
-                                ? null
-                                : () async {
-                                    await getdata(
-                                        widget.accountID!,
-                                        widget
-                                            .subAccountID!); // API call only when tapped
-                                    setState(() {});
+                            children: [
+                              if ((selectedMasterTab) == 0)
+                                // Add this to your state
 
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return ExportDialog(
-                                          accountId: widget.accountID!,
-                                          subAccountId: widget.subAccountID!,
-                                          sovId: "",
-                                          locationId: selectedMainTab == 0
-                                              ? Provider.of<
-                                                          MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .myLocationList
-                                                  .map((location) =>
-                                                      location.id ?? "")
-                                                  .toList()
-                                              : Provider.of<
-                                                          MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .certifiedLocationList
-                                                  .map((location) =>
-                                                      location.id ?? "")
-                                                  .toList(),
-                                        );
-                                      },
+                                SpeedDialChild(
+                                    child: _isLoading
+                                        ? SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                themeProvider.getTheme
+                                                    .colorScheme.onPrimary,
+                                              ),
+                                            ),
+                                          )
+                                        : Icon(Icons.add),
+                                    backgroundColor: AppColors.primaryMain,
+                                    foregroundColor: themeProvider
+                                        .getTheme.colorScheme.onPrimary,
+                                    label: 'Add Location',
+                                    labelStyle: typography.Body1,
+                                    onTap: () async {
+                                      setState(() {
+                                        _isLoading = true;
+                                      });
+
+                                      await _setClaims();
+                                      await Future.delayed(
+                                          Duration(seconds: 1));
+
+                                      // Cancel timers and debounce before navigating
+                                      _isDisposed = true;
+                                      _refreshTimer?.isActive;
+                                      deBouncer?.cancel();
+
+                                      final result = await Navigator.of(context)
+                                          .push(MaterialPageRoute(
+                                              builder: (_) => AddLocationScreen(
+                                                    accountId:
+                                                        widget.accountID!,
+                                                    subAccountId:
+                                                        widget.subAccountID!,
+                                                    sovId: "",
+                                                    accountName:
+                                                        widget.accountName,
+                                                    subAccountName:
+                                                        widget.subAccountName,
+                                                  )));
+
+                                      _isDisposed = false;
+                                      _startRefreshTimer(
+                                          widget.accountID!,
+                                          widget
+                                              .subAccountID!); // recreate timer
+                                      // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
+                                      _getSovUploadStatus();
+                                      setState(() => _isLoading = false);
+
+                                      if (result == true) {
+                                        await getdata(widget.accountID!,
+                                            widget.subAccountID!);
+                                        _startRefreshTimer(widget.accountID!,
+                                            widget.subAccountID!);
+                                        await Provider.of<
+                                                    MyLocationListProvider>(
+                                                context,
+                                                listen: false)
+                                            .fetchLocationList(
+                                                context,
+                                                "",
+                                                1,
+                                                10,
+                                                widget.accountID,
+                                                widget.subAccountID,
+                                                widget.initialProcessId,
+                                                widget.initialSubProcessId,
+                                                '');
+                                        setState(() {});
+                                      }
+                                    }),
+                              SpeedDialChild(
+                                child: Icon(Icons.upload),
+                                backgroundColor: AppColors.primaryMain,
+                                foregroundColor: themeProvider
+                                    .getTheme.colorScheme.onPrimary,
+                                label: isUploadInProgress
+                                    ? 'Continue'
+                                    : 'Import Locations',
+                                labelStyle: typography.Body1,
+                                onTap: () async {
+                                  tagController.text = "";
+                                  if (isMaintenance.toString() ==
+                                      'in_progress') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'SOV upload is disabled during maintenance period.')),
                                     );
-                                  },
+                                  } else if (isUploadInProgress) {
+                                    print("TestA");
+                                    print(isUploadInProgress);
+                                    String tempProcessId =
+                                        await SharedPreferenceService
+                                                .getSovUploadTempId() ??
+                                            "";
+                                    String state = await SharedPreferenceService
+                                            .getSovUploadState() ??
+                                        "";
+
+                                    // Fetch API data when tapped
+                                    await Provider.of<UploadSovProvider>(
+                                            context,
+                                            listen: false)
+                                        .fetchSovUploadData(
+                                            context,
+                                            widget.accountID!,
+                                            widget.accountName,
+                                            widget.subAccountName,
+                                            widget.subAccountID!,
+                                            tempProcessId,
+                                            state);
+                                  } else {
+                                    _showUploadBottomSheet(widget.accountID!,
+                                        widget.subAccountID!, "");
+                                  }
+                                },
+                              ),
+                              if ((_masterTabController?.index ?? 0) == 0)
+                                SpeedDialChild(
+                                  child: Icon(Icons.download),
+                                  backgroundColor: trialStatus.isNotEmpty
+                                      ? Colors.grey
+                                      : AppColors.primaryMain,
+                                  foregroundColor: themeProvider
+                                      .getTheme.colorScheme.onPrimary,
+                                  label: 'Export Locations',
+                                  labelStyle: typography.Body1,
+                                  onTap: trialStatus.isNotEmpty
+                                      ? null
+                                      : () async {
+                                          await getdata(
+                                              widget.accountID!,
+                                              widget
+                                                  .subAccountID!); // API call only when tapped
+                                          setState(() {});
+
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return ExportDialog(
+                                                accountId: widget.accountID!,
+                                                subAccountId:
+                                                    widget.subAccountID!,
+                                                sovId: "",
+                                                locationId: selectedMainTab == 0
+                                                    ? Provider.of<
+                                                                MyLocationListProvider>(
+                                                            context,
+                                                            listen: false)
+                                                        .myLocationList
+                                                        .map((location) =>
+                                                            location.id ?? "")
+                                                        .toList()
+                                                    : Provider.of<
+                                                                MyLocationListProvider>(
+                                                            context,
+                                                            listen: false)
+                                                        .certifiedLocationList
+                                                        .map((location) =>
+                                                            location.id ?? "")
+                                                        .toList(),
+                                              );
+                                            },
+                                          );
+                                        },
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
-                  );
-                }),
+                        );
+                      })
+                    : null,
                 body: Stack(
                   children: [
                     /*  Positioned.fill(
@@ -1622,7 +1493,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                   color: Colors.grey),
                                               onPressed: _scrollLeft,
                                             ),
-                                            // Scrollable TabBar
                                             Expanded(
                                               child: SingleChildScrollView(
                                                 controller: _scrollController,
@@ -1643,122 +1513,376 @@ class _MyLocationListState extends State<MyLocationList>
                                                   unselectedLabelColor:
                                                       Colors.white,
                                                   tabs: [
+                                                    const Tab(
+                                                        text: 'Locations'),
+
+                                                    // 🔽 Tab with dropdown
                                                     Tab(
-                                                      text: 'Locations',
-                                                    ),
-                                                    Tab(
-                                                      child: Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Flexible(
-                                                            child: Text(
-                                                              selectedSov,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white),
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 4),
-                                                          PopupMenuButton<
-                                                              String>(
-                                                            tooltip:
-                                                                'Select SOV filter',
-                                                            color: const Color(
-                                                                0xFF1E1E1E),
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            onSelected:
-                                                                (value) {
-                                                              setState(() =>
-                                                                  selectedSov =
-                                                                      value);
-                                                              final sovListProvider =
-                                                                  Provider.of<
-                                                                          SOVListProvider>(
-                                                                      context,
-                                                                      listen:
-                                                                          false);
-                                                              final filter =
-                                                                  value ==
-                                                                          'All SOVs'
-                                                                      ? ''
-                                                                      : value;
-                                                              sovListProvider.fetchSovList(
+                                                      child: Builder(
+                                                        builder: (context) {
+                                                          return GestureDetector(
+                                                            behavior:
+                                                                HitTestBehavior
+                                                                    .translucent,
+                                                            onTapDown:
+                                                                (TapDownDetails
+                                                                    details) async {
+                                                              final tabController =
+                                                                  _masterTabController;
+                                                              final tabIndex =
+                                                                  1; // index for this tab
+
+                                                              // 🟡 Don't switch tab immediately — first show dropdown
+                                                              final RenderBox
+                                                                  button =
+                                                                  context.findRenderObject()
+                                                                      as RenderBox;
+                                                              final RenderBox
+                                                                  overlay =
+                                                                  Overlay.of(context)
+                                                                          .context
+                                                                          .findRenderObject()
+                                                                      as RenderBox;
+
+                                                              // dropdown below the tab
+                                                              final position =
+                                                                  RelativeRect
+                                                                      .fromRect(
+                                                                Rect.fromPoints(
+                                                                  button.localToGlobal(
+                                                                      Offset(
+                                                                          0,
+                                                                          button
+                                                                              .size
+                                                                              .height),
+                                                                      ancestor:
+                                                                          overlay),
+                                                                  button.localToGlobal(
+                                                                      button
+                                                                          .size
+                                                                          .bottomRight(Offset
+                                                                              .zero),
+                                                                      ancestor:
+                                                                          overlay),
+                                                                ),
+                                                                Offset.zero &
+                                                                    overlay
+                                                                        .size,
+                                                              );
+
+                                                              // show dropdown
+                                                              final selected =
+                                                                  await showMenu<
+                                                                      String>(
+                                                                context:
+                                                                    context,
+                                                                position:
+                                                                    position,
+                                                                color: const Color(
+                                                                    0xFF1E1E1E),
+                                                                items: sovOptions
+                                                                    .map(
+                                                                      (item) =>
+                                                                          PopupMenuItem<
+                                                                              String>(
+                                                                        value:
+                                                                            item,
+                                                                        child:
+                                                                            Text(
+                                                                          item,
+                                                                          style:
+                                                                              const TextStyle(color: Colors.white),
+                                                                        ),
+                                                                      ),
+                                                                    )
+                                                                    .toList(),
+                                                              );
+
+                                                              // 🟢 Only when dropdown item is selected → go to tab
+                                                              if (selected !=
+                                                                  null) {
+                                                                setState(() =>
+                                                                    selectedSov =
+                                                                        selected);
+
+                                                                // Switch to tab after selection
+                                                                tabController!
+                                                                    .animateTo(
+                                                                        tabIndex);
+
+                                                                // Fetch data based on selection
+                                                                final sovListProvider =
+                                                                    Provider.of<
+                                                                            SOVListProvider>(
+                                                                        context,
+                                                                        listen:
+                                                                            false);
+
+                                                                sovListProvider
+                                                                    .fetchSovList(
                                                                   context,
-                                                                  widget.accountID ?? '',
-                                                                  widget.subAccountID ?? '',
+                                                                  widget.accountID ??
+                                                                      '',
+                                                                  widget.subAccountID ??
+                                                                      '',
                                                                   "",
                                                                   1,
-                                                                  100,
-                                                                  selectedSov == 'All SOVs'
-                                                                      ? 'all'
-                                                                      : selectedSov == 'Shared SOVs'
-                                                                          ? 'shared'
-                                                                          : selectedSov == 'My SOVs'
-                                                                              ? 'my'
-                                                                              : 'received');
+                                                                  5,
+                                                                  selected ==
+                                                                          'Shared SOVs'
+                                                                      ? 'shared'
+                                                                      : selected ==
+                                                                              'My SOVs'
+                                                                          ? 'my'
+                                                                          : 'received',
+                                                                );
+                                                              }
                                                             },
-                                                            itemBuilder:
-                                                                (context) =>
-                                                                    sovOptions
-                                                                        .map(
-                                                                          (item) =>
-                                                                              PopupMenuItem<String>(
-                                                                            value:
-                                                                                item,
-                                                                            child:
-                                                                                Text(
-                                                                              item,
-                                                                              style: const TextStyle(color: Colors.white),
-                                                                            ),
-                                                                          ),
-                                                                        )
-                                                                        .toList(),
-                                                            child: const Icon(
-                                                                Icons
-                                                                    .arrow_drop_down,
-                                                                color:
-                                                                    Colors.grey,
-                                                                size: 22),
-                                                          ),
-                                                          // PopupMenuButton<String>(
-                                                          //   tooltip: 'Select SOV filter',
-                                                          //   color: const Color(0xFF1E1E1E),
-                                                          //   padding: EdgeInsets.zero,
-                                                          //   onSelected: (value) => setState(() => selectedSov = value),
-                                                          //   itemBuilder: (context) => sovOptions
-                                                          //       .map(
-                                                          //         (item) => PopupMenuItem<String>(
-                                                          //       value: item,
-                                                          //       child: Text(item,
-                                                          //           style: const TextStyle(color: Colors.white)),
-                                                          //     ),
-                                                          //   )
-                                                          //       .toList(),
-                                                          //   child: const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 22),
-                                                          // ),
-                                                        ],
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Flexible(
+                                                                  child: Text(
+                                                                    selectedSov,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                    style: const TextStyle(
+                                                                        color: Colors
+                                                                            .white),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 4),
+                                                                const Icon(
+                                                                    Icons
+                                                                        .arrow_drop_down,
+                                                                    color: Colors
+                                                                        .grey,
+                                                                    size: 22),
+                                                              ],
+                                                            ),
+                                                          );
+                                                        },
                                                       ),
                                                     ),
-                                                    // Tab(
-                                                    //   text: 'SOVs',
-                                                    // ),
-                                                    Tab(text: 'Shared'),
+
+                                                    const Tab(text: 'Shared'),
+
                                                     if (isSuperAdmin ||
                                                         isPgAdmin)
-                                                      Tab(
+                                                      const Tab(
                                                           text:
                                                               'Configuration'),
-                                                    Tab(text: 'Data'),
+
+                                                    const Tab(text: 'Data'),
                                                   ],
                                                 ),
                                               ),
                                             ),
+
+                                            // Scrollable TabBar
+                                            // Expanded(
+                                            //   child: SingleChildScrollView(
+                                            //     controller: _scrollController,
+                                            //     scrollDirection:
+                                            //         Axis.horizontal,
+                                            //     child: TabBar(
+                                            //       controller:
+                                            //           _masterTabController,
+                                            //       tabAlignment:
+                                            //           TabAlignment.start,
+                                            //       labelStyle:
+                                            //           typography.Subtitle2,
+                                            //       isScrollable: true,
+                                            //       indicatorColor:
+                                            //           Colors.lightBlueAccent,
+                                            //       labelColor:
+                                            //           Colors.lightBlueAccent,
+                                            //       unselectedLabelColor:
+                                            //           Colors.white,
+                                            //       tabs: [
+                                            //         Tab(
+                                            //           text: 'Locations',
+                                            //         ),
+                                            //         Tab(
+                                            //           child: Builder(
+                                            //             builder: (context) {
+                                            //               return GestureDetector(
+                                            //                 behavior: HitTestBehavior.translucent,
+                                            //                 onTapDown: (TapDownDetails details) async {
+                                            //                   // 1️⃣ Always switch to this tab
+                                            //                   final tabController = DefaultTabController.of(context);
+                                            //                   final tabIndex = 0; // 👈 set your tab index here (e.g., 0 for first tab)
+                                            //                   tabController?.animateTo(tabIndex);
+                                            //
+                                            //                   // 2️⃣ Show dropdown right below the tab
+                                            //                   final RenderBox button = context.findRenderObject() as RenderBox;
+                                            //                   final RenderBox overlay =
+                                            //                   Overlay.of(context).context.findRenderObject() as RenderBox;
+                                            //
+                                            //                   final position = RelativeRect.fromRect(
+                                            //                     Rect.fromPoints(
+                                            //                       button.localToGlobal(
+                                            //                           Offset(0, button.size.height), ancestor: overlay),
+                                            //                       button.localToGlobal(
+                                            //                           button.size.bottomRight(Offset.zero), ancestor: overlay),
+                                            //                     ),
+                                            //                     Offset.zero & overlay.size,
+                                            //                   );
+                                            //
+                                            //                   final selected = await showMenu<String>(
+                                            //                     context: context,
+                                            //                     position: position,
+                                            //                     color: const Color(0xFF1E1E1E),
+                                            //                     items: sovOptions
+                                            //                         .map(
+                                            //                           (item) => PopupMenuItem<String>(
+                                            //                         value: item,
+                                            //                         child: Text(
+                                            //                           item,
+                                            //                           style: const TextStyle(color: Colors.white),
+                                            //                         ),
+                                            //                       ),
+                                            //                     )
+                                            //                         .toList(),
+                                            //                   );
+                                            //
+                                            //                   // 3️⃣ If something is selected, update and call API
+                                            //                   if (selected != null) {
+                                            //                     setState(() => selectedSov = selected);
+                                            //
+                                            //                     final sovListProvider =
+                                            //                     Provider.of<SOVListProvider>(context, listen: false);
+                                            //
+                                            //                     sovListProvider.fetchSovList(
+                                            //                       context,
+                                            //                       widget.accountID ?? '',
+                                            //                       widget.subAccountID ?? '',
+                                            //                       "",
+                                            //                       1,
+                                            //                       5,
+                                            //                       selected == 'Shared SOVs'
+                                            //                           ? 'shared'
+                                            //                           : selected == 'My SOVs'
+                                            //                           ? 'my'
+                                            //                           : 'received',
+                                            //                     );
+                                            //                   }
+                                            //                 },
+                                            //                 child: Row(
+                                            //                   mainAxisSize: MainAxisSize.min,
+                                            //                   children: [
+                                            //                     Flexible(
+                                            //                       child: Text(
+                                            //                         selectedSov,
+                                            //                         overflow: TextOverflow.ellipsis,
+                                            //                         style: const TextStyle(color: Colors.white),
+                                            //                       ),
+                                            //                     ),
+                                            //                     const SizedBox(width: 4),
+                                            //                     const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 22),
+                                            //                   ],
+                                            //                 ),
+                                            //               );
+                                            //             },
+                                            //           ),
+                                            //         ),
+                                            //
+                                            //
+                                            //
+                                            //         // Tab(
+                                            //         //   child: Row(
+                                            //         //     mainAxisSize:
+                                            //         //         MainAxisSize.min,
+                                            //         //     children: [
+                                            //         //       Flexible(
+                                            //         //         child: Text(
+                                            //         //           selectedSov,
+                                            //         //           overflow:
+                                            //         //               TextOverflow
+                                            //         //                   .ellipsis,
+                                            //         //           style: const TextStyle(
+                                            //         //               color: Colors
+                                            //         //                   .white),
+                                            //         //         ),
+                                            //         //       ),
+                                            //         //       const SizedBox(
+                                            //         //           width: 4),
+                                            //         //       PopupMenuButton<
+                                            //         //           String>(
+                                            //         //         tooltip:
+                                            //         //             'Select SOV filter',
+                                            //         //         color: const Color(
+                                            //         //             0xFF1E1E1E),
+                                            //         //         padding:
+                                            //         //             EdgeInsets.zero,
+                                            //         //         onSelected:
+                                            //         //             (value) {
+                                            //         //           setState(() =>
+                                            //         //               selectedSov =
+                                            //         //                   value);
+                                            //         //           final sovListProvider =
+                                            //         //               Provider.of<
+                                            //         //                       SOVListProvider>(
+                                            //         //                   context,
+                                            //         //                   listen:
+                                            //         //                       false);
+                                            //         //
+                                            //         //           sovListProvider.fetchSovList(
+                                            //         //               context,
+                                            //         //               widget.accountID ?? '',
+                                            //         //               widget.subAccountID ?? '',
+                                            //         //               "",
+                                            //         //               1,
+                                            //         //               5,
+                                            //         //               selectedSov == 'Shared SOVs'
+                                            //         //                   ? 'shared'
+                                            //         //                   : selectedSov == 'My SOVs'
+                                            //         //                       ? 'my'
+                                            //         //                       : 'received');
+                                            //         //         },
+                                            //         //         itemBuilder:
+                                            //         //             (context) =>
+                                            //         //                 sovOptions
+                                            //         //                     .map(
+                                            //         //                       (item) =>
+                                            //         //                           PopupMenuItem<String>(
+                                            //         //                         value:
+                                            //         //                             item,
+                                            //         //                         child:
+                                            //         //                             Text(
+                                            //         //                           item,
+                                            //         //                           style: const TextStyle(color: Colors.white),
+                                            //         //                         ),
+                                            //         //                       ),
+                                            //         //                     )
+                                            //         //                     .toList(),
+                                            //         //         child: const Icon(
+                                            //         //             Icons
+                                            //         //                 .arrow_drop_down,
+                                            //         //             color:
+                                            //         //                 Colors.grey,
+                                            //         //             size: 22),
+                                            //         //       ),
+                                            //         //
+                                            //         //     ],
+                                            //         //   ),
+                                            //         // ),
+                                            //
+                                            //         Tab(text: 'Shared'),
+                                            //         if (isSuperAdmin ||
+                                            //             isPgAdmin)
+                                            //           Tab(
+                                            //               text:
+                                            //                   'Configuration'),
+                                            //         Tab(text: 'Data'),
+                                            //       ],
+                                            //     ),
+                                            //   ),
+                                            // ),
                                             // Right arrow button
                                             IconButton(
                                               icon: Icon(Icons.arrow_right,
@@ -2556,7 +2680,8 @@ class _MyLocationListState extends State<MyLocationList>
                       // Show dropdown when this button is pressed
                       final selected = await showMenu<String>(
                         context: context,
-                        position: RelativeRect.fromLTRB(100, 1, 0, 100), // adjust as needed
+                        position: RelativeRect.fromLTRB(100, 1, 0, 100),
+                        // adjust as needed
                         items: [
                           const PopupMenuItem(
                             value: 'Geocoding',
@@ -2572,7 +2697,8 @@ class _MyLocationListState extends State<MyLocationList>
                       if (selected != null) {
                         setState(() {
                           _selectedMapView = selected;
-                          selectedMainTab = 2; // ensure Map View tab is selected
+                          selectedMainTab =
+                              2; // ensure Map View tab is selected
                           _mainTabController?.animateTo(2);
                         });
                       }
@@ -2695,9 +2821,6 @@ class _MyLocationListState extends State<MyLocationList>
                 // accountName: widget.accountName,
                 // subAccountName: widget.subAccountName,
                 // sovName:"",
-
-
-
               ),
             ],
           ),
@@ -2974,7 +3097,7 @@ class _MyLocationListState extends State<MyLocationList>
                   if (isFailed) return const SizedBox.shrink();
                   if (isCompleted) return _CompletedRow(data);
                   if (isProcessing) return _ProcessingRow(data);
-                  if (heatmapStatus == 'initiated') return _HeatmapRow();
+                  // if (heatmapStatus == 'initiated') return _HeatmapRow();
                   return const SizedBox.shrink();
                 },
               ),
@@ -5745,20 +5868,18 @@ class _MyLocationListState extends State<MyLocationList>
                                                 .finalAddress
                                                 ?.score ??
                                             0,
-                                        riskScore: locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore ??
-                                            5,
-                                        dataCompletenessScore: scoreToStar(
+                                        riskScore:
+
+                                     int.parse(
+                                         locationListProvider
+                                             .myLocationList[index]
+                                             .overallScore.toString()),
+                                        dataCompletenessScore: int.parse(
                                             locationListProvider
-                                                        .myLocationList[index]
-                                                        .dataCompleteness ==
-                                                    null
-                                                ? 1
-                                                : locationListProvider
-                                                        .myLocationList[index]
-                                                        .dataCompleteness ??
-                                                    1),
+                                                .myLocationList[index]
+                                                .dataCompleteness!
+                                                .scorePd
+                                                .toString()),
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -5970,21 +6091,21 @@ class _MyLocationListState extends State<MyLocationList>
                                         .finalAddress
                                         ?.score ??
                                     0,
-                                riskScore: locationListProvider
-                                        .myLocationList[index].overallScore ??
-                                    0,
+                                riskScore:
+                                int.parse(
+                                    locationListProvider
+                                        .myLocationList[index]
+                                        .overallScore.toString()),
+
+
 
                                 // locationListProvider
                                 //         .myLocationList[index].overallScore ??
                                 //     0,
-                                dataCompletenessScore: scoreToStar(
+                                dataCompletenessScore: int.parse(
                                     locationListProvider.myLocationList[index]
-                                                .dataCompleteness ==
-                                            null
-                                        ? 1
-                                        : locationListProvider
-                                            .myLocationList[index]
-                                            .dataCompleteness),
+                                        .dataCompleteness!.scorePd
+                                        .toString()),
 
                                 isAutoCertified: true,
                                 tags: (locationListProvider
@@ -6486,12 +6607,14 @@ class _MyLocationListState extends State<MyLocationList>
       geocodingScore:
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
-          locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: scoreToStar(locationListProvider
-                  .certifiedLocationList[index].dataCompleteness ==
-              null
-          ? 1
-          : locationListProvider.certifiedLocationList[index].dataCompleteness),
+      int.parse(
+          locationListProvider
+              .certifiedLocationList[index]
+              .overallScore.toString()),
+
+      dataCompletenessScore: int.parse(locationListProvider
+          .certifiedLocationList[index].dataCompleteness!.scorePd
+          .toString()),
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -7253,16 +7376,38 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
+// ✅ Search API call
   void sovSearchClient(String query) async {
     debounce(() async {
       if (!mounted) return;
-      _sovQuery = query;
-      var provider = Provider.of<SOVListProvider>(context, listen: false);
+
+      setState(() => _sovQuery = query.trim());
+
+      final provider = Provider.of<SOVListProvider>(context, listen: false);
       provider.page = 0;
-      await provider.fetchSovList(context, widget.accountID!,
-          widget.subAccountID!, _sovQuery, provider.page, 10, 'all');
+
+      await provider.fetchSovList(
+        context,
+        widget.accountID!,
+        widget.subAccountID!,
+        _sovQuery,
+        provider.page,
+        10,
+        selectedSov,
+      );
     });
   }
+
+  // void sovSearchClient(String query) async {
+  //   debounce(() async {
+  //     if (!mounted) return;
+  //     _sovQuery = query;
+  //     var provider = Provider.of<SOVListProvider>(context, listen: false);
+  //     provider.page = 0;
+  //     await provider.fetchSovList(context, widget.accountID!,
+  //         widget.subAccountID!, _sovQuery, provider.page, 10, 'my');
+  //   });
+  // }
 
   int safeParseInt(dynamic value) {
     if (value == null) return 0;
@@ -7274,294 +7419,469 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   Widget sovBody(CustomTypography typography) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Search
-        SizedBox(
-          height: 50,
-          child: TextField(
-            controller: _textEditingController,
-            onChanged: (query) {
-              sovSearchClient(query);
-            },
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+    return Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ Show "Select All" only when any item is selected
+          if (selectedList.contains(true)) ...[
+            Container(
+              margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  // Set your border color here
+                  width: 1.0, // Set the width of the border
+                ),
+                //color: Theme.of(context).colorScheme.surfaceContainerHigh,
               ),
-              hintText: LanguageService.getTranslated(
-                  context, "sov_list_search_hint"),
-              hintStyle: typography.Body2,
-              prefixIcon: Icon(Icons.search),
+              child: Consumer<UserProfileProvider>(
+                  builder: (context, userProfileProvider, child) {
+                final trialStatus =
+                    userProfileProvider.trialInfo['status'] ?? '';
+                return Consumer<MyLocationListProvider>(
+                    builder: (context, locationListProvider, child) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (selectedList.contains(true)) ...[
+                        // Show selection count and select all button
+                        SizedBox(width: CustomSpacing.two),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${selectedList.where((s) => s).length}",
+                            style: typography.Body1.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 2),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              final bool selectAll =
+                                  selectedList.any((s) => s == false);
+
+                              // Apply the same toggle logic as Checkbox
+                              for (int i = 0; i < selectedList.length; i++) {
+                                selectedList[i] = selectAll;
+                              }
+                              if (!selectAll) {
+                                isSelectionMode = false;
+                              }
+                            });
+                          },
+                          child: Text(
+                            // Dynamically show "Select All" or "Deselect All"
+                            selectedList.any((s) => s == false)
+                                ? 'Select All'
+                                : 'Deselect All',
+                            style: typography.Body1.copyWith(
+                              color: AppColors.primaryMain,
+                            ),
+                          ),
+                        ),
+
+                        Spacer(),
+                        // Action buttons for selected items
+                        // export
+                        IconButton(
+                          onPressed: trialStatus.isNotEmpty
+                              ? null
+                              : () {
+                                  // Implement bulk export
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Export Selected Locations'),
+                                      content: Text(
+                                          'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            print(_selectedScreen);
+                                            if (_selectedScreen ==
+                                                Screens.locationList) {
+                                              print(
+                                                  'Selected ids: ${locationListProvider.selectedLocations.map((sov) => sov.id).toList()}');
+                                              // On export button click
+                                              List<
+                                                  String> selectedSovIds = Provider
+                                                      .of<MyLocationListProvider>(
+                                                          context,
+                                                          listen: false)
+                                                  .selectedLocations
+                                                  .map((sov) => sov.id!)
+                                                  .toList();
+                                              print(
+                                                  'Selected ids: $selectedSovIds');
+
+                                              if (selectedSovIds.isNotEmpty) {
+                                                Navigator.pop(context);
+                                                showDialog(
+                                                  context: context,
+                                                  builder:
+                                                      (BuildContext context) {
+                                                    return ExportDialog(
+                                                      accountId:
+                                                          widget.accountID!,
+                                                      subAccountId:
+                                                          widget.subAccountID!,
+                                                      locationId:
+                                                          selectedSovIds,
+                                                    );
+                                                  },
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "no_items_selected_error"),
+                                                    style: typography.Body1,
+                                                  ),
+                                                ));
+                                              }
+                                            } else if (_selectedScreen ==
+                                                Screens.certifiedLocationList) {
+                                              // On export button click
+                                              List<String> selectedLoactionIds =
+                                                  Provider.of<MyLocationListProvider>(
+                                                          context,
+                                                          listen: false)
+                                                      .certifiedLocationList
+                                                      .where((location) =>
+                                                          location.isSelected ??
+                                                          false)
+                                                      .map((sov) => sov.id!)
+                                                      .toList();
+
+                                              if (selectedLoactionIds
+                                                  .isNotEmpty) {
+                                                showDialog(
+                                                  context: context,
+                                                  builder:
+                                                      (BuildContext context) {
+                                                    return ExportDialog(
+                                                      accountId:
+                                                          widget.accountID!,
+                                                      subAccountId:
+                                                          widget.subAccountID!,
+                                                      locationId:
+                                                          selectedLoactionIds,
+                                                    );
+                                                  },
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "no_items_selected_error"),
+                                                    style: typography.Body1,
+                                                  ),
+                                                ));
+                                              }
+                                            }
+                                          },
+                                          child: Text('Export',
+                                              style: typography.Body1),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                          icon: Icon(Icons.download),
+                          tooltip: 'Export Selected',
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (selectedList.length !=
+                                sovListProvider.sovList.length) {
+                              selectedList = List.generate(
+                                sovListProvider.sovList.length,
+                                (_) => false,
+                              );
+                            }
+
+                            final selectedSovs = sovListProvider.sovList
+                                .asMap()
+                                .entries
+                                .where((entry) => selectedList[entry.key])
+                                .map((entry) => entry.value)
+                                .toList();
+
+                            if (selectedSovs.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        "Please select at least one SOV to share.")),
+                              );
+                              return;
+                            }
+
+                            _showTransferDialog(context, selectedSovs);
+                          },
+                          icon: const Icon(
+                            Symbols.share,
+                            color: Color(0xFF90CAF9),
+                          ),
+                          tooltip: 'Share Selected',
+                        ),
+                      ]
+                    ],
+                  );
+                });
+              }),
+            ),
+          ],
+          // Search
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 50,
+            child: TextField(
+              controller: _textEditingController,
+              onChanged: (query) => sovSearchClient(query),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                hintText: "Search Keyword",
+                hintStyle: typography.Body2,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _textEditingController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _textEditingController.clear();
+                          sovSearchClient('');
+                        },
+                      )
+                    : null,
+              ),
             ),
           ),
-        ),
-        SizedBox(height: CustomSpacing.four),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child:
-              Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
-            // if (sovListProvider.isLoading) {
-            return Row(
-              children: [
-                InfoCard(
-                  title: "All SOVs",
-                  count: safeParseInt(sovListProvider.sovCounterList.all),
-                  icon: Icons.file_copy_outlined,
-                ),
-                InfoCard(
-                  title: "My SOVs",
-                  count: safeParseInt(sovListProvider.sovCounterList.my),
-                  icon: Icons.file_copy_outlined,
-                ),
-                InfoCard(
-                  title: "Shared SOVs",
-                  count: safeParseInt(sovListProvider.sovCounterList.shared),
-                  icon: Icons.ios_share_outlined,
-                ),
-                InfoCard(
-                  title: "Received SOVs",
-                  count: safeParseInt(sovListProvider.sovCounterList.received),
-                  icon: Icons.call_received,
-                ),
-                InfoCard(
-                  title: "Completed SOVs",
-                  count: safeParseInt(sovListProvider.sovCounterList.all),
-                  icon: Icons.done_all,
-                ),
-
-                // InfoCard(
-                //     title: "All SOVs",
-                //     count: int.tryParse(
-                //             sovListProvider.sovCounterList.all?.toString() ??
-                //                 '') ??
-                //         0,
-                //     icon: Icons.file_copy_outlined),
-                // InfoCard(
-                //     title: "My  SOVs",
-                //     count: int.tryParse(
-                //             sovListProvider.sovCounterList.my?.toString() ??
-                //                 '') ??
-                //         0,
-                //     // int.parse(sovListProvider.sovCounterList.my?.toString() ?? '') ?? 0,
-                //     icon: Icons.file_copy_outlined),
-                // InfoCard(
-                //     title: "Shared SOVs",
-                //     count: int.tryParse(
-                //             sovListProvider.sovCounterList.shared?.toString() ??
-                //                 '') ??
-                //         0,
-                //     icon: Icons.ios_share_outlined),
-                // InfoCard(
-                //     title: "Received SOVs",
-                //     count: int.tryParse(sovListProvider.sovCounterList.received
-                //                 ?.toString() ??
-                //             '') ??
-                //         0,
-                //     icon: Icons.call_received),
-                // InfoCard(
-                //     title: "Completed SOVs",
-                //     count: int.tryParse(
-                //             sovListProvider.sovCounterList.all?.toString() ??
-                //                 '') ??
-                //         0,
-                //     icon: Icons.done_all),
-              ],
-            );
-          }
-                  // }
-                  ),
-        ),
-
-        SizedBox(height: CustomSpacing.two),
-        // Text(
-        //   '${LanguageService.getTranslated(context, "sov_list_app_title")} ',
-        //   style: typography.Body1,
-        // ),
-        SizedBox(height: CustomSpacing.four),
-
-        // List of accounts
-        Expanded(
-          child:
-              Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
-            if (sovListProvider.isLoading) {
-              return Column(
+          SizedBox(height: CustomSpacing.four),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Consumer<SOVListProvider>(
+                builder: (context, sovListProvider, _) {
+              // if (sovListProvider.isLoading) {
+              return Row(
                 children: [
-                  SizedBox(height: 100),
-                  Center(child: CircularProgressIndicator()),
+                  InfoCard(
+                    title: "Total SOVs",
+                    count: safeParseInt(sovListProvider.sovCounterList.all),
+                    icon: Icons.file_copy_outlined,
+                  ),
+                  InfoCard(
+                    title: "My SOVs",
+                    count: safeParseInt(sovListProvider.sovCounterList.my),
+                    icon: Icons.file_copy_outlined,
+                  ),
+                  InfoCard(
+                    title: "Shared SOVs",
+                    count: safeParseInt(sovListProvider.sovCounterList.shared),
+                    icon: Icons.ios_share_outlined,
+                  ),
+                  InfoCard(
+                    title: "Received SOVs",
+                    count:
+                        safeParseInt(sovListProvider.sovCounterList.received),
+                    icon: Icons.call_received,
+                  ),
+                  InfoCard(
+                    title: "Completed SOVs",
+                    count: safeParseInt(sovListProvider.sovCounterList.all),
+                    icon: Icons.done_all,
+                  ),
                 ],
               );
             }
+                // }
+                ),
+          ),
 
-            if (sovListProvider.sovList.isEmpty) {
-              return RefreshIndicator(
-                onRefresh: () async {
-                  sovListProvider.page = 0;
-                  await sovListProvider.fetchSovList(
+          SizedBox(height: CustomSpacing.four),
+
+          // List of accounts
+          Expanded(
+            child: Consumer<SOVListProvider>(
+              builder: (context, sovListProvider, _) {
+                if (sovListProvider.isLoading) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 100),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (sovListProvider.sovList.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      sovListProvider.page = 0;
+                      await sovListProvider.fetchSovList(
+                        context,
+                        widget.accountID!,
+                        widget.subAccountID!,
+                        _sovQuery,
+                        sovListProvider.page,
+                        5,
+                        'all',
+                      );
+                    },
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: Center(
+                            child: Text(
+                              "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
+                              style: typography.Body1,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await sovListProvider.fetchSovList(
                       context,
                       widget.accountID!,
                       widget.subAccountID!,
                       _sovQuery,
-                      sovListProvider.page,
+                      1,
                       5,
-                      'all');
-                },
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.5,
-                      child: Center(
-                        child: Text(
-                          "Looks like you don\'t have a sov yet. No worries! Just create a new one and start adding your locations.",
-                          style: typography.Body1,
-                          textAlign: TextAlign.center,
+                      selectedSov,
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      // ✅ List of SOV Cards
+                      Expanded(
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: sovListProvider.sovList.length,
+                          itemBuilder: (context, index) {
+                            return _buildSovCard(index, sovListProvider);
+                          },
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return RefreshIndicator(
-              onRefresh: () async {
-                sovListProvider.page;
-                await sovListProvider.fetchSovList(context, widget.accountID!,
-                    widget.subAccountID!, _sovQuery, 1, 100, selectedSov);
+                    ],
+                  ),
+                );
               },
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: sovListProvider.sovList.length,
-                itemBuilder: (context, index) {
-                  // if (index == sovListProvider.sovList.length - 1) {
-                  //   if (sovListProvider.isNextPageLoading) {
-                  //     return Padding(
-                  //       padding: const EdgeInsets.all(8.0),
-                  //       child: Center(child: CircularProgressIndicator()),
-                  //     );
-                  //   } else if (sovListProvider.page >= sovListProvider.totalPages &&
-                  //       sovListProvider.sovList.isNotEmpty) {
-                  //     return Column(
-                  //       children: [
-                  //         _buildSovCard(index, sovListProvider),
-                  //         Padding(
-                  //           padding: const EdgeInsets.all(8.0),
-                  //           child: Center(
-                  //             child: Text(
-                  //               LanguageService.getTranslated(
-                  //                 context,
-                  //                 "sov_list_app_end_of_list_text",
-                  //               ),
-                  //               style: typography.Body1,
-                  //             ),
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     );
-                  //   } else {
-                  //     sovListProvider.page = sovListProvider.page + 1;
-                  //     sovListProvider.fetchSovList(
-                  //       context,
-                  //       widget.accountID!,
-                  //       widget.subAccountID!,
-                  //       _sovQuery,
-                  //       sovListProvider.page,
-                  //       5,
-                  //     );
-                  //     return const SizedBox();
-                  //   }
-                  // }
-                  return _buildSovCard(index, sovListProvider);
-                },
-              ),
-            );
-          }),
-        ),
-      ],
-    );
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
     var typography = CustomTypography(context);
+    Offset _tapPosition = Offset.zero;
     // bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap:
-            // isDisabled
-            //     ? null
-            //     :
-            () {
-          // On tap of card
-          /*if (showCheckbox) {
-                  setState(() {
-                    sOVListProvider.sovList[index].isChecked =
-                        !(sOVListProvider.sovList[index].isChecked ?? false);
-                  });
-                }
-                // if all are unselected then hide checkbox
-                if (sOVListProvider.sovList
-                    .every((element) => element.isChecked == false)) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    setState(() {
-                      showCheckbox = false;
-                    });
-                  });
-                }*/
-          // print(sOVListProvider.sovList[index].id ?? "");
-          print(
-              "accountID1: ${widget.accountID!}, subAccountID: ${widget.subAccountID!}");
-          print(sOVListProvider.sovList[index].accountId ?? "");
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return SovLocationList(
-              accountID: widget.accountID!,
-              subAccountID: widget.subAccountID!,
-              accountName: widget.accountName,
-              subAccountName: widget.subAccountName,
-              sovID: sOVListProvider.sovList[index].sovId ?? "",
-              sovName: sOVListProvider.sovList[index].name ?? "",
-            );
-          }));
-        },
-        /* onLongPress: () {
+        onTap: () {
           setState(() {
-            if (showCheckbox) {
-              showCheckbox = false;
-              sOVListProvider.sovList[index].isChecked = false;
+            if (isSelectionMode) {
+              selectedList[index] = !selectedList[index];
+              if (!selectedList.contains(true)) {
+                isSelectionMode = false;
+              }
+              // Update selectedSovIds and selectedCount
+              selectedSovIds = sOVListProvider.sovList
+                  .asMap()
+                  .entries
+                  .where((entry) => selectedList[entry.key])
+                  .map((entry) => entry.value.sovId)
+                  .whereType<String>()
+                  .toSet();
+              final selectedCount = selectedSovIds.length;
+              print('Selected SOV IDs: $selectedSovIds');
+              print('Selected count: $selectedCount');
             } else {
-              sOVListProvider.sovList.forEach((element) {
-                element.isChecked = false;
-              });
-              showCheckbox = true;
-              sOVListProvider.sovList[index].isChecked = true;
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return SovLocationList(
+                  accountID: widget.accountID!,
+                  subAccountID: widget.subAccountID!,
+                  accountName: widget.accountName,
+                  subAccountName: widget.subAccountName,
+                  sovID: sOVListProvider.sovList[index].sovId ?? "",
+                  sovName: sOVListProvider.sovList[index].name ?? "",
+                );
+              }));
             }
           });
-        },*/
+        },
+        onLongPress: () {
+          setState(() {
+            if (selectedList.length != sOVListProvider.sovList.length) {
+              selectedList = List.generate(
+                sOVListProvider.sovList.length,
+                (_) => false,
+              );
+            }
+
+            if (isSelectionMode) {
+              selectedList[index] = !selectedList[index];
+              if (!selectedList.contains(true)) {
+                isSelectionMode = false;
+              }
+            } else {
+              selectedList[index] = true;
+              isSelectionMode = true;
+            }
+
+            // Collect selected SOV IDs and count
+            selectedSovIds = sOVListProvider.sovList
+                .asMap()
+                .entries
+                .where((entry) => selectedList[entry.key])
+                .map((entry) => entry.value.sovId)
+                .whereType<String>()
+                .toSet();
+
+            final selectedCount = selectedSovIds.length;
+          });
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /*// Add Checkbox here
-            showCheckbox
-                ? Checkbox(
-                    value: sOVListProvider.sovList[index].isChecked ?? false,
-                    onChanged: isDisabled
-                        ? null
-                        : (value) {
-                            setState(() {
-                              sOVListProvider.sovList[index].isChecked =
-                                  value ?? false;
-                            });
-                          },
-                  )
-                : SizedBox(),*/
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    height: 150,
+                    height: 222,
                     width: MediaQuery.of(context).size.width,
                     child: Card(
                       color: Colors.white12,
@@ -7577,12 +7897,44 @@ class _MyLocationListState extends State<MyLocationList>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: CustomSpacing.three,
-                          ),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (isSelectionMode)
+                                Checkbox(
+                                  value: (index < selectedList.length)
+                                      ? selectedList[index]
+                                      : false,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (selectedList.length !=
+                                          sOVListProvider.sovList.length) {
+                                        selectedList = List.generate(
+                                          sOVListProvider.sovList.length,
+                                          (_) => false,
+                                        );
+                                      }
+                                      selectedList[index] = value ?? false;
+
+                                      if (!selectedList.contains(true)) {
+                                        isSelectionMode = false;
+                                      }
+                                    });
+                                  },
+                                ),
+
+                              // if (isSelectionMode)
+                              //   Checkbox(
+                              //     value: selectedList[index],
+                              //     onChanged: (value) {
+                              //       setState(() {
+                              //         selectedList[index] = value ?? false;
+                              //         if (!selectedList.contains(true)) {
+                              //           isSelectionMode = false;
+                              //         }
+                              //       });
+                              //     },
+                              //   ),
                               SizedBox(
                                 width: CustomSpacing.two,
                               ),
@@ -7591,310 +7943,528 @@ class _MyLocationListState extends State<MyLocationList>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Flexible(
-                                          child: Text(
-                                            sOVListProvider.sovList[index].name
-                                                .toString(),
-                                            style: typography.Body2.copyWith(
-                                              color: Theme.of(context)
-                                                          .brightness ==
-                                                      Brightness.dark
-                                                  ? AppColors.white
-                                                  : AppColors.black,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
+                                        Text(
+                                          sOVListProvider.sovList[index].name
+                                              .toString(),
+                                          style: typography.Body2.copyWith(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w400,
+                                            color: const Color(0xFF90CAF9),
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                         // Add edit icon and on tap show edit dialog
-                                        SizedBox(
-                                          width: CustomSpacing.two,
+                                        Container(
+                                          padding:
+                                              const EdgeInsets.only(right: 10),
+                                          child: Consumer2<
+                                              SubAccountListProvider,
+                                              SOVListProvider>(
+                                            builder: (context,
+                                                subAccountListProvider,
+                                                sovprovider,
+                                                child) {
+                                              return PopupMenuButton<String>(
+                                                color: const Color(0xFF1E1E1E),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                icon: const Icon(
+                                                    Icons.more_vert,
+                                                    color: Colors.white),
+                                                // More icon
+                                                onSelected: (value) async {
+                                                  if (value == 'delete') {
+                                                    bool sovDeleteStatus =
+                                                        false;
+
+                                                    showDialog(
+                                                      context: context,
+                                                      barrierDismissible: false,
+                                                      builder: (context) {
+                                                        return StatefulBuilder(
+                                                          builder: (context,
+                                                              setState) {
+                                                            return AlertDialog(
+                                                              backgroundColor:
+                                                                  const Color(
+                                                                      0xFF1E1E1E),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                              title: const Text(
+                                                                'Confirm Deletion',
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                              ),
+                                                              content:
+                                                                  const Text(
+                                                                'This action will permanently delete the SOV and its data. Proceed?',
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .white70),
+                                                              ),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                          context),
+                                                                  child: const Text(
+                                                                      'Cancel',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              Colors.grey)),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    setState(
+                                                                        () {
+                                                                      sovDeleteStatus =
+                                                                          true;
+                                                                    });
+
+                                                                    bool
+                                                                        isSuccess =
+                                                                        false;
+                                                                    try {
+                                                                      isSuccess =
+                                                                          await subAccountListProvider
+                                                                              .deleteSOVAccount(
+                                                                        context,
+                                                                        subAccountListProvider
+                                                                            .subAccountList[index]
+                                                                            .accountId!,
+                                                                        subAccountListProvider
+                                                                            .subAccountList[index]
+                                                                            .subAccountId!,
+                                                                        sovprovider
+                                                                            .sovList[index]
+                                                                            .sovId!,
+                                                                      );
+                                                                    } catch (e) {
+                                                                      debugPrint(
+                                                                          "Error deleting account: $e");
+                                                                      ScaffoldMessenger.of(
+                                                                              context)
+                                                                          .showSnackBar(
+                                                                        const SnackBar(
+                                                                          content:
+                                                                              Text("Failed to delete SOV. Please try again."),
+                                                                        ),
+                                                                      );
+                                                                    }
+
+                                                                    if (isSuccess) {
+                                                                      Navigator.pop(
+                                                                          context);
+                                                                      await sovprovider
+                                                                          .fetchSovList(
+                                                                        context,
+                                                                        widget
+                                                                            .accountID!,
+                                                                        widget
+                                                                            .subAccountID!,
+                                                                        _sovQuery,
+                                                                        1,
+                                                                        100,
+                                                                        selectedSov,
+                                                                      );
+                                                                      ScaffoldMessenger.of(
+                                                                              context)
+                                                                          .showSnackBar(
+                                                                        const SnackBar(
+                                                                          content:
+                                                                              Text("SOV deleted successfully."),
+                                                                        ),
+                                                                      );
+                                                                    }
+
+                                                                    setState(
+                                                                        () {
+                                                                      sovDeleteStatus =
+                                                                          false;
+                                                                    });
+                                                                  },
+                                                                  child: sovDeleteStatus
+                                                                      ? const SizedBox(
+                                                                          width:
+                                                                              24,
+                                                                          height:
+                                                                              24,
+                                                                          child:
+                                                                              CircularProgressIndicator(
+                                                                            strokeWidth:
+                                                                                2,
+                                                                            color:
+                                                                                Colors.red,
+                                                                          ),
+                                                                        )
+                                                                      : const Text(
+                                                                          'Delete',
+                                                                          style: TextStyle(
+                                                                              color: Colors.redAccent,
+                                                                              fontSize: 16),
+                                                                        ),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      },
+                                                    );
+                                                  }
+                                                },
+                                                itemBuilder:
+                                                    (BuildContext context) => [
+                                                  PopupMenuItem<String>(
+                                                    value: 'delete',
+                                                    child: Row(
+                                                      children: const [
+                                                        Icon(Icons.delete,
+                                                            color: Colors
+                                                                .redAccent),
+                                                        SizedBox(width: 8),
+                                                        Text(
+                                                          'Delete',
+                                                          style: TextStyle(
+                                                              color:
+                                                                  Colors.white),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
                                         ),
-                                        // isDisabled
-                                        //     ? SizedBox()
-                                        //     :
-                                        InkWell(
-                                          onTap: () {
-                                            // Transfer account
-                                            _showTransferDialog(context,
-                                                sOVListProvider.sovList[index]);
-                                          },
-                                          child: Icon(
-                                            Icons.more_vert_outlined,
-                                            size: 16,
+
+                                        // Container(
+                                        //   padding:
+                                        //       const EdgeInsets.only(right: 10),
+                                        //   child: Consumer2<
+                                        //       SubAccountListProvider,
+                                        //       SOVListProvider>(
+                                        //     builder: (context,
+                                        //         subAccountListProvider,
+                                        //         sovprovider,
+                                        //         child) {
+                                        //       return InkWell(
+                                        //         onTap: () async {
+                                        //           bool sovDeleteStatus = false;
+                                        //
+                                        //           showDialog(
+                                        //             context: context,
+                                        //             barrierDismissible: false,
+                                        //             // Prevent closing while deleting
+                                        //             builder: (context) {
+                                        //               return StatefulBuilder(
+                                        //                 builder: (context,
+                                        //                     setState) {
+                                        //                   return AlertDialog(
+                                        //                     title: const Text(
+                                        //                         'Confirm Deletion'),
+                                        //                     content: const Text(
+                                        //                       'This action will permanently delete the SOV and its data. Proceed?',
+                                        //                     ),
+                                        //                     actions: [
+                                        //                       TextButton(
+                                        //                         onPressed: () =>
+                                        //                             Navigator.pop(
+                                        //                                 context),
+                                        //                         child: const Text(
+                                        //                             'Cancel'),
+                                        //                       ),
+                                        //                       TextButton(
+                                        //                         onPressed:
+                                        //                             () async {
+                                        //                           setState(() {
+                                        //                             sovDeleteStatus =
+                                        //                                 true;
+                                        //                           });
+                                        //
+                                        //                           bool
+                                        //                               isSuccess =
+                                        //                               false;
+                                        //                           try {
+                                        //                             isSuccess =
+                                        //                                 await subAccountListProvider
+                                        //                                     .deleteSOVAccount(
+                                        //                               context,
+                                        //                               subAccountListProvider
+                                        //                                   .subAccountList[
+                                        //                                       index]
+                                        //                                   .accountId!,
+                                        //                               subAccountListProvider
+                                        //                                   .subAccountList[
+                                        //                                       index]
+                                        //                                   .subAccountId!,
+                                        //                               sOVListProvider
+                                        //                                   .sovList[
+                                        //                                       index]
+                                        //                                   .sovId!,
+                                        //                             );
+                                        //                           } catch (e) {
+                                        //                             debugPrint(
+                                        //                                 "Error deleting account: $e");
+                                        //                             ScaffoldMessenger.of(
+                                        //                                     context)
+                                        //                                 .showSnackBar(
+                                        //                               const SnackBar(
+                                        //                                 content:
+                                        //                                     Text("Failed to delete SOV. Please try again."),
+                                        //                               ),
+                                        //                             );
+                                        //                           }
+                                        //
+                                        //                           if (isSuccess) {
+                                        //                             Navigator.pop(
+                                        //                                 context);
+                                        //                             await sovprovider
+                                        //                                 .fetchSovList(
+                                        //                               context,
+                                        //                               widget
+                                        //                                   .accountID!,
+                                        //                               widget
+                                        //                                   .subAccountID!,
+                                        //                               _sovQuery,
+                                        //                               1,
+                                        //                               100,
+                                        //                               selectedSov,
+                                        //                             );
+                                        //                             ScaffoldMessenger.of(
+                                        //                                     context)
+                                        //                                 .showSnackBar(
+                                        //                               const SnackBar(
+                                        //                                 content:
+                                        //                                     Text("SOV deleted successfully."),
+                                        //                               ),
+                                        //                             );
+                                        //                           }
+                                        //
+                                        //                           setState(() {
+                                        //                             sovDeleteStatus =
+                                        //                                 false;
+                                        //                           });
+                                        //                         },
+                                        //                         child: sovDeleteStatus
+                                        //                             ? const SizedBox(
+                                        //                                 width:
+                                        //                                     24,
+                                        //                                 height:
+                                        //                                     24,
+                                        //                                 child: CircularProgressIndicator(
+                                        //                                     strokeWidth:
+                                        //                                         2),
+                                        //                               )
+                                        //                             : const Text(
+                                        //                                 'Delete',
+                                        //                                 style: TextStyle(
+                                        //                                     color:
+                                        //                                         Colors.red,
+                                        //                                     fontSize: 16),
+                                        //                               ),
+                                        //                       ),
+                                        //                     ],
+                                        //                   );
+                                        //                 },
+                                        //               );
+                                        //             },
+                                        //           );
+                                        //         },
+                                        //         child: const Icon(Icons.delete,
+                                        //             color: Colors
+                                        //                 .red), // You can change this widget
+                                        //       );
+                                        //     },
+                                        //   ),
+                                        // ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor: Colors.grey[800],
+                                          child: Text(
+                                            (sOVListProvider.sovList[index]
+                                                            .owner!.name !=
+                                                        null &&
+                                                    sOVListProvider
+                                                        .sovList[index]
+                                                        .owner!
+                                                        .name!
+                                                        .isNotEmpty)
+                                                ? sOVListProvider
+                                                    .sovList[index].owner!.name!
+                                                    .substring(0, 2)
+                                                    .toUpperCase()
+                                                : "?",
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            sOVListProvider.sovList[index]
+                                                    .owner!.name ??
+                                                "Unknown",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 5),
+                                    Container(
+                                        padding: EdgeInsets.only(
+                                            right: 5, left: 5, top: 5),
+                                        child: Divider()),
+                                    SizedBox(height: 8),
                                     Text(
-                                      "Owner: ${sOVListProvider.sovList[index].owner!.name ?? ""}",
+                                      "Locations : ${sOVListProvider.sovList[index].locationCount?.toString() ?? ""}",
                                       style: typography.Body2.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? AppColors.white
-                                            : AppColors.black,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 15),
-                                    Text(
-                                      "Locations : ${sOVListProvider.sovList[index].accountId ?? ""}",
-                                      style: typography.Body2.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? AppColors.white
-                                            : AppColors.black,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 5),
-                                    Text(
-                                      "Company: ${sOVListProvider.sovList[index].companyName ?? ""}",
-                                      style: typography.Body2.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? AppColors.white
-                                            : AppColors.black,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 5),
-                                    if ((sOVListProvider.sovList[index].role ??
-                                            '')
-                                        .trim()
-                                        .isNotEmpty)
-                                      Text(
-                                        "Role: ${sOVListProvider.sovList[index].role}",
-                                        style: typography.Body2.copyWith(
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
                                               ? AppColors.white
                                               : AppColors.black,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    /*!sOVListProvider.showLocationCount
-                                        ? SizedBox()
-                                        : */
-                                    SizedBox(height: 5),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 8),
+                                if(sOVListProvider.sovList[index].companyName != null &&
+                                   sOVListProvider.sovList[index].companyName!.isNotEmpty)...[
+                                        Text(
+                                           "Company: ${sOVListProvider.sovList[index].companyName}",
+                                           style: typography.Body2.copyWith(
+                                               color: Theme.of(context).brightness == Brightness.dark
+                                                   ? AppColors.white
+                                                   : AppColors.black,
+                                               fontSize: 14,
+                                               fontWeight: FontWeight.w500),
+                                           overflow: TextOverflow.ellipsis,
+                                         )
+                                      ],
+
+                                    SizedBox(height: 8),
+                                    // Row(
+                                    //   children: [
+                                    //     Text(
+                                    //       "Role : ",
+                                    //       style: typography.Body2.copyWith(
+                                    //         color:
+                                    //         Theme.of(context).brightness ==
+                                    //             Brightness.dark
+                                    //             ? AppColors.white
+                                    //             : AppColors.black,
+                                    //         fontSize: 14,
+                                    //         fontWeight: FontWeight.w500,
+                                    //       ),
+                                    //     ),
+                                    //     SizedBox(width: 6),
+                                    //     Text(
+                                    //       "${sOVListProvider.sovList[index].roles!.length.toString() ?? ""}",
+                                    //       style: typography.Body2.copyWith(
+                                    //         color:
+                                    //         Theme.of(context).brightness ==
+                                    //             Brightness.dark
+                                    //             ? AppColors.white
+                                    //             : AppColors.black,
+                                    //         fontSize: 14,
+                                    //         fontWeight: FontWeight.w500,
+                                    //       ),
+                                    //     ),
+                                    //   ],
+                                    // ),
                                     Row(
                                       children: [
                                         Text(
-                                            sOVListProvider.sovList[index]
-                                                            .locationCount !=
-                                                        null &&
-                                                    sOVListProvider
-                                                            .sovList[index]
-                                                            .locationCount ==
-                                                        1
-                                                ? LanguageService.getTranslated(
-                                                    context,
-                                                    "sov_list_app_column_location_count_text")
-                                                : sOVListProvider.sovList[index]
-                                                            .locationCount ==
-                                                        null
-                                                    ? ""
-                                                    : LanguageService.getTranslated(
-                                                        context,
-                                                        "sov_list_app_column_location_count_text"),
-                                            style: typography.Caption),
-                                        SizedBox(
-                                          width: CustomSpacing.two,
+                                          "Status : ",
+                                          style: typography.Body2.copyWith(
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? AppColors.white
+                                                    : AppColors.black,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                        Text(
-                                            sOVListProvider.sovList[index]
-                                                    .locationCount
-                                                    ?.toString() ??
-                                                "",
-                                            style: typography.Caption),
+                                        SizedBox(width: 6),
+                                        Chip(
+                                          label: Text(
+                                            "Pending",
+                                            style: typography.Body2.copyWith(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 4, vertical: 0),
+                                        ),
                                       ],
                                     ),
+
+                                    SizedBox(height: 5),
+                                      // Row(
+                                      //   children: [
+                                      //     Text(
+                                      //       "Role:  ",
+                                      //       style: typography.Body2.copyWith(
+                                      //         color: Theme.of(context)
+                                      //                     .brightness ==
+                                      //                 Brightness.dark
+                                      //             ? AppColors.white
+                                      //             : AppColors.black,
+                                      //       ),
+                                      //       overflow: TextOverflow.ellipsis,
+                                      //     ),
+                                      //     Text(
+                                      //       "${sOVListProvider}",
+                                      //       style: typography.Body2.copyWith(
+                                      //         color: const Color(0xFF90CAF9),
+                                      //       ),
+                                      //       overflow: TextOverflow.ellipsis,
+                                      //     ),
+                                      //   ],
+                                      // ),
+                                    /*!sOVListProvider.showLocationCount
+                                        ? SizedBox()
+                                        : */
+                                    // SizedBox(height: 5),
                                   ],
                                 ),
                               ),
-                              // true
-                              //     ? SizedBox()
-                              //     : Padding(
-                              //         padding: EdgeInsets.only(
-                              //             top: CustomSpacing.one),
-                              //         child: CustomGradientCircularProgressBar(
-                              //           radius: 23,
-                              //           value: double.parse(sOVListProvider
-                              //                   .sovList[index].overAllScore
-                              //                   ?.toString() ??
-                              //               "0"),
-                              //           strokeWidth: 6,
-                              //           showText: true,
-                              //           textColor:
-                              //               Theme.of(context).brightness ==
-                              //                       Brightness.dark
-                              //                   ? AppColors.white
-                              //                   : AppColors.black,
-                              //           text: sOVListProvider
-                              //                   .sovList[index].overAllScore
-                              //                   ?.toStringAsFixed(2) ??
-                              //               "0",
-                              //         ),
-                              //       ),
-                              SizedBox(
-                                width: CustomSpacing.four,
-                              ),
                             ],
                           ),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
+                          // SizedBox(
+                          //   height: CustomSpacing.two,
+                          // ),
                         ],
                       ),
                     ),
                   ),
-                  // isDisabled
-                  //     ? SizedBox()
-                  //     : Container(
-                  //         decoration: BoxDecoration(
-                  //           // color: Theme.of(context).colorScheme.surfaceVariant,
-                  //           // bottom left and right corners curved
-                  //           borderRadius: const BorderRadius.only(
-                  //             bottomLeft: Radius.circular(8),
-                  //             bottomRight: Radius.circular(8),
-                  //           ),
-                  //         ),
-                  //         child: Row(
-                  //           children: [
-                  //             TextButton.icon(
-                  //               onPressed: () {
-                  //                 // Transfer account
-                  //                 _showTransferDialog(
-                  //                     context, sOVListProvider.sovList[index]);
-                  //               },
-                  //               icon: const Icon(Symbols.share_windows),
-                  //               label: Text('Transfer',
-                  //                   style: typography.Caption.copyWith(
-                  //                       color: Theme.of(context).brightness ==
-                  //                               Brightness.dark
-                  //                           ? AppColors.white
-                  //                           : AppColors.black)),
-                  //             ),
-                  //             const Spacer(),
-                  //             IconButton(
-                  //               icon: const Icon(Icons.file_copy_rounded),
-                  //               color: AppColors.primaryMain,
-                  //               onPressed: () {
-                  //                 // Show duplicate dialog
-                  //                 showDialog(
-                  //                   context: context,
-                  //                   builder: (context) {
-                  //                     return AlertDialog(
-                  //                       title: Text(
-                  //                         LanguageService.getTranslated(context,
-                  //                             "sov_list_app_duplicate_title"),
-                  //                         style: typography.H5_Regular,
-                  //                       ),
-                  //                       content: Column(
-                  //                         mainAxisSize: MainAxisSize.min,
-                  //                         children: [
-                  //                           Text(
-                  //                             LanguageService.getTranslated(
-                  //                                 context,
-                  //                                 "sov_list_app_duplicate_text"),
-                  //                             style: typography.Body1,
-                  //                           ),
-                  //                           SizedBox(
-                  //                             height: CustomSpacing.two,
-                  //                           ),
-                  //                           Row(
-                  //                             children: [
-                  //                               Expanded(
-                  //                                 child: CustomButton(
-                  //                                   onPressed: () {
-                  //                                     // Cancel
-                  //                                     Navigator.pop(context);
-                  //                                   },
-                  //                                   child: Text(
-                  //                                     LanguageService.getTranslated(
-                  //                                         context,
-                  //                                         "sov_list_app_duplicate_cancel"),
-                  //                                     style: typography
-                  //                                         .ButtonLarge,
-                  //                                   ),
-                  //                                   type: ButtonType.text,
-                  //                                 ),
-                  //                               ),
-                  //                               sOVListProvider
-                  //                                       .isDuplicateLoading
-                  //                                   ? const Expanded(
-                  //                                       child: Row(
-                  //                                       mainAxisAlignment:
-                  //                                           MainAxisAlignment
-                  //                                               .center,
-                  //                                       children: [
-                  //                                         SizedBox(
-                  //                                             width: 25,
-                  //                                             height: 25,
-                  //                                             child:
-                  //                                                 CircularProgressIndicator()),
-                  //                                       ],
-                  //                                     ))
-                  //                                   : Expanded(
-                  //                                       child: CustomButton(
-                  //                                         onPressed: () async {
-                  //                                           // Duplicate
-                  //                                           await sOVListProvider.duplicateSov(
-                  //                                               context,
-                  //                                               widget
-                  //                                                   .accountID!,
-                  //                                               widget
-                  //                                                   .subAccountID!,
-                  //                                               sOVListProvider
-                  //                                                       .sovList[
-                  //                                                           index]
-                  //                                                       .id ??
-                  //                                                   "");
-                  //                                           Navigator.pop(
-                  //                                               context);
-                  //                                         },
-                  //                                         child: Text(
-                  //                                           LanguageService
-                  //                                               .getTranslated(
-                  //                                                   context,
-                  //                                                   "sov_list_app_duplicate_duplicate"),
-                  //                                           style: typography
-                  //                                               .ButtonLarge,
-                  //                                         ),
-                  //                                         type: ButtonType
-                  //                                             .elevated,
-                  //                                       ),
-                  //                                     ),
-                  //                             ],
-                  //                           ),
-                  //                         ],
-                  //                       ),
-                  //                     );
-                  //                   },
-                  //                 );
-                  //               },
-                  //               tooltip: LanguageService.getTranslated(context,
-                  //                   "sov_list_app_duplicate_tooltip_text"),
-                  //             ),
-                  //             /*IconButton(
-                  //               icon: Icon(
-                  //                 Icons.settings,
-                  //                 color: AppColors.primaryMain,
-                  //               ),
-                  //               onPressed: () {
-                  //                 _showSettingsModal(context, index);
-                  //               },
-                  //               tooltip: LanguageService.getTranslated(context,
-                  //                   "sov_list_app_settings_tooltip_text"),
-                  //             ),*/
-                  //           ],
-                  //         ),
-                  //       ),
                 ],
               ),
             ),
@@ -7904,342 +8474,1029 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  Future<void> _showTransferDialog(BuildContext context, Result sov) async {
-    var typography = CustomTypography(context);
-    TextEditingController _userSearchController = TextEditingController();
-    TransferAutocompleteModel? _selectedUser;
+  Future<void> _showTransferDialog(
+      BuildContext context, List<Result> sovs) async {
+    final _userSearchController = TextEditingController();
     List<TransferAutocompleteModel> _autocompleteUsersList = [];
-    SignUpOptions _selectedOption =
-        SignUpOptions.individual; // default is Individual
-
+    SignUpOptions _selectedOption = SignUpOptions.corporate;
+    Set<int> _selectedIndexes = {};
+    List<String?> _selectedRoles = [];
+    List<DateTime?> _selectedDeadlines = [];
     Timer? _debounce;
-    bool _isSearching = false; // <-- was missing
+    bool _isSearching = false;
+    bool _isShareEnabled = false;
 
-    void _onSearchChanged(String query, StateSetter setState) {
+    List<Map<String, dynamic>> selectedUsersJson = []; // Store selected data
+    void _onSearchChanged(String query, StateSetter setState, String type) {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
+
       _debounce = Timer(const Duration(milliseconds: 500), () async {
         if (query.isNotEmpty) {
-          setState(() {
-            _isSearching = true;
-          });
+          setState(() => _isSearching = true);
+          final results = await fetchAutocompleteUsers(query, type);
 
-          _autocompleteUsersList = await fetchAutocompleteUsers(query);
-
+          // Update autocomplete list but preserve existing selections
           setState(() {
+            _autocompleteUsersList = results;
+
+            // Expand lists if new items appear (without resetting old ones)
+            if (_selectedRoles.length < results.length) {
+              _selectedRoles.addAll(
+                List<String?>.filled(
+                    results.length - _selectedRoles.length, null),
+              );
+            }
+
+            if (_selectedDeadlines.length < results.length) {
+              _selectedDeadlines.addAll(
+                List<DateTime?>.filled(
+                    results.length - _selectedDeadlines.length, null),
+              );
+            }
+
             _isSearching = false;
           });
         } else {
           setState(() {
             _autocompleteUsersList.clear();
+
             _isSearching = false;
           });
         }
       });
     }
 
-    showModalBottomSheet(
+    // void _onSearchChanged(String query, StateSetter setState, String type) {
+    //   if (_debounce?.isActive ?? false) _debounce?.cancel();
+    //   _debounce = Timer(const Duration(milliseconds: 500), () async {
+    //     if (query.isNotEmpty) {
+    //       setState(() => _isSearching = true);
+    //       _autocompleteUsersList = await fetchAutocompleteUsers(query, type);
+    //
+    //       // Initialize role & deadline lists to match result length
+    //       _selectedRoles =
+    //           List<String?>.filled(_autocompleteUsersList.length, null);
+    //       _selectedDeadlines =
+    //           List<DateTime?>.filled(_autocompleteUsersList.length, null);
+    //
+    //       setState(() => _isSearching = false);
+    //     } else {
+    //       setState(() {
+    //         _autocompleteUsersList.clear();
+    //         // _selectedRoles.clear();
+    //         // _selectedDeadlines.clear();
+    //         _isSearching = false;
+    //       });
+    //     }
+    //   });
+    // }
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width,
+      backgroundColor: const Color(0xFF121212),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(height: CustomSpacing.two),
-                  const Text(
-                    "Share SOV",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RadioListTile<SignUpOptions>(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(LanguageService.getTranslated(context,
-                              "register_non_corporate_radio_Individual")),
-                          value: SignUpOptions.individual,
-                          groupValue: _selectedOption,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedOption = value!;
-                              // _removeAllChips();
-                            });
-                          },
-                        ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Share SOV",
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    const SizedBox(height: 16),
+
+                    // --- User Type Dropdown ---
+                    DropdownButtonFormField<SignUpOptions>(
+                      value: _selectedOption,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                       ),
-                      Expanded(
-                        child: RadioListTile<SignUpOptions>(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(LanguageService.getTranslated(context,
-                              "register_non_corporate_radio_Corporate")),
-                          value: SignUpOptions.corporate,
-                          groupValue: _selectedOption,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedOption = value!;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(_selectedOption.toString()),
-                  TextField(
-                    controller: _userSearchController,
-                    onChanged: (value) => _onSearchChanged(value, setState),
-                    decoration: InputDecoration(
-                      labelText: "Name or Email",
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      items: const [
+                        DropdownMenuItem(
+                            value: SignUpOptions.corporate,
+                            child: Text("Corporate")),
+                        DropdownMenuItem(
+                            value: SignUpOptions.individual,
+                            child: Text("Individual")),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _selectedOption = value!),
+                      dropdownColor: const Color(0xFF1E1E1E),
+                      alignment: Alignment.bottomLeft,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- Search Box ---
+                    TextField(
+                      controller: _userSearchController,
+                      onChanged: (value) => _onSearchChanged(
+                          value, setState, _selectedOption.name),
+                      decoration: InputDecoration(
+                        labelText: "Search user",
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Show search loading or results
-                  if (_isSearching)
-                    const CircularProgressIndicator()
-                  else if (_autocompleteUsersList.isNotEmpty)
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemExtent: 88.0, // fixed item height; adjust as needed
-                      itemCount: _autocompleteUsersList.length,
-                      itemBuilder: (context, index) {
-                        final isSelected = false;
+                    if (_isSearching)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_autocompleteUsersList.isNotEmpty)
+                      SizedBox(
+                        height: 300,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: List.generate(
+                                _autocompleteUsersList.length, (index) {
+                              final user = _autocompleteUsersList[index];
+                              final isSelected =
+                                  _selectedIndexes.contains(index);
+                              final selectedRole = _selectedRoles[index];
+                              final deadline = _selectedDeadlines[index];
 
-                        final user = _autocompleteUsersList[index];
+                              String? roleError;
+                              String? deadlineError;
 
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Checkbox(
-                                value: isSelected,
-                                onChanged: (value) {
-                                  setState(() {
-                                    // user.isSelected = value ?? false;
-                                  });
+                              bool canShareAll() {
+                                for (int i in _selectedIndexes) {
+                                  if (_selectedRoles[i] == null ||
+                                      _selectedDeadlines[i] == null) {
+                                    return false;
+                                  }
+                                }
+                                return _selectedIndexes.isNotEmpty;
+                              }
+
+                              void updateSelectedUsersJson() {
+                                selectedUsersJson.clear();
+                                for (var i in _selectedIndexes) {
+                                  final selectedUser =
+                                      _autocompleteUsersList[i];
+                                  final selectedRole = _selectedRoles[i];
+                                  final selectedDeadline =
+                                      _selectedDeadlines[i];
+
+                                  if (selectedRole != null &&
+                                      selectedDeadline != null) {
+                                    final roleObj =
+                                        selectedUser.roles!.firstWhere(
+                                      (r) => r.name == selectedRole,
+                                    );
+
+                                    selectedUsersJson.add({
+                                      "user_id": selectedUser.userid ?? '',
+                                      "role": {
+                                        "role_id": roleObj.role ?? '',
+                                        "role_name": roleObj.name ?? '',
+                                      },
+                                      "share_expiry": selectedDeadline
+                                          .toUtc()
+                                          .toIso8601String(),
+                                    });
+                                  }
+                                }
+
+                                // Enable/disable Share button
+                                setState(() {
+                                  _isShareEnabled = canShareAll();
+                                });
+
+                                debugPrint(
+                                    "✅ Selected Users JSON: $selectedUsersJson");
+                              }
+
+                              void toggleSelection(bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedIndexes.add(index);
+                                  } else {
+                                    _selectedIndexes.remove(index);
+                                    _selectedRoles[index] = null;
+                                    _selectedDeadlines[index] = null;
+                                  }
+                                  updateSelectedUsersJson();
+                                });
+                              }
+
+                              return StatefulBuilder(
+                                builder: (context, setInnerState) {
+                                  return Container(
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1E1E1E),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.blue
+                                            : Colors.grey.shade700,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor: Colors.grey[800],
+                                              child: Text(
+                                                (user.name != null &&
+                                                        user.name!.isNotEmpty)
+                                                    ? user.name!
+                                                        .substring(0, 2)
+                                                        .toUpperCase()
+                                                    : "?",
+                                                style: const TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                user.name ?? "Unknown",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                            Checkbox(
+                                              value: isSelected,
+                                              activeColor:
+                                                  const Color(0xFF90CAF9),
+                                              onChanged: (value) =>
+                                                  toggleSelection(value),
+                                            ),
+                                          ],
+                                        ),
+
+                                        // Role dropdown (enabled only if checkbox selected)
+                                        const SizedBox(height: 12),
+                                        IgnorePointer(
+                                          ignoring: !isSelected,
+                                          child: Opacity(
+                                            opacity: isSelected ? 1 : 0.4,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color:
+                                                        Colors.grey.shade700),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child:
+                                                  DropdownButtonHideUnderline(
+                                                child: DropdownButton<String>(
+                                                  value: selectedRole,
+                                                  hint: const Text(
+                                                    'Select Role',
+                                                    style: TextStyle(
+                                                        color: Colors.white70),
+                                                  ),
+                                                  dropdownColor:
+                                                      const Color(0xFF2C2C2C),
+                                                  icon: const Icon(
+                                                      Icons.arrow_drop_down,
+                                                      color: Colors.white70),
+                                                  isExpanded: true,
+                                                  items: user.roles!
+                                                      .map(
+                                                        (role) =>
+                                                            DropdownMenuItem<
+                                                                String>(
+                                                          value: role.name,
+                                                          child: Text(
+                                                            role.name ?? '',
+                                                            style:
+                                                                const TextStyle(
+                                                                    color: Colors
+                                                                        .white),
+                                                          ),
+                                                        ),
+                                                      )
+                                                      .toList(),
+                                                  onChanged: (value) {
+                                                    setInnerState(() {
+                                                      _selectedRoles[index] =
+                                                          value;
+                                                      roleError = null;
+                                                    });
+                                                    updateSelectedUsersJson();
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+
+                                        if (roleError != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                top: 4, left: 12),
+                                            child: Text(
+                                              roleError!,
+                                              style: const TextStyle(
+                                                  color: Colors.redAccent,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+
+                                        const SizedBox(height: 12),
+                                        const Text("Set Deadline",
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey)),
+                                        const SizedBox(height: 6),
+
+                                        // Deadline picker (enabled only if checkbox selected)
+                                        IgnorePointer(
+                                          ignoring: !isSelected,
+                                          child: Opacity(
+                                            opacity: isSelected ? 1 : 0.4,
+                                            child: InkWell(
+                                              onTap: () async {
+                                                if (!isSelected) return;
+                                                final now = DateTime.now();
+                                                final pickedDate =
+                                                    await showDatePicker(
+                                                  context: context,
+                                                  initialDate: now,
+                                                  firstDate: DateTime(now.year,
+                                                      now.month, now.day),
+                                                  lastDate: DateTime(2100),
+                                                );
+                                                if (pickedDate != null) {
+                                                  setInnerState(() {
+                                                    _selectedDeadlines[index] =
+                                                        pickedDate;
+                                                    deadlineError = null;
+                                                  });
+                                                  updateSelectedUsersJson();
+                                                }
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                      color:
+                                                          Colors.grey.shade700),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        deadline != null
+                                                            ? DateFormat(
+                                                                    'MM/dd/yyyy')
+                                                                .format(
+                                                                    deadline)
+                                                            : "Select Date",
+                                                        style: const TextStyle(
+                                                            color:
+                                                                Colors.white70),
+                                                      ),
+                                                    ),
+                                                    const Icon(
+                                                        Icons
+                                                            .calendar_today_outlined,
+                                                        color: Colors.white70,
+                                                        size: 20),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        if (deadlineError != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                top: 4, left: 12),
+                                            child: Text(
+                                              deadlineError!,
+                                              style: const TextStyle(
+                                                  color: Colors.redAccent,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
                                 },
-                              ),
-                              CircleAvatar(
-                                backgroundColor: Colors.grey[700],
-                                child: Text(
-                                  (user.name != null && user.name!.isNotEmpty)
-                                      ? user.name!.substring(0, 2).toUpperCase()
-                                      : "?",
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      user.name ?? "Unknown",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      "View, Comment",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              );
+                            }),
                           ),
-                        );
-                      },
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+
+                    const Text(
+                      "Note: Users with multiple roles must be assigned one role per SOV.",
+                      style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
                     ),
+                    const SizedBox(height: 24),
 
-                  // SizedBox(
-                  //   height: 300,
-                  //   child: ListView.builder(
-                  //     shrinkWrap: true,
-                  //     itemCount: _autocompleteUsersList.length,
-                  //     itemBuilder: (context, index) {
-                  //       final isSelected = false;
-                  //
-                  //       final user = _autocompleteUsersList[index];
-                  //       // final isSelected = user.isSelected ?? false;
-                  //
-                  //       return Container(
-                  //         margin: const EdgeInsets.symmetric(vertical: 6),
-                  //         padding: const EdgeInsets.all(8),
-                  //         decoration: BoxDecoration(
-                  //           color: Colors.black.withOpacity(0.05),
-                  //           borderRadius: BorderRadius.circular(8),
-                  //         ),
-                  //         child: Row(
-                  //           crossAxisAlignment: CrossAxisAlignment.start,
-                  //           children: [
-                  //             // Checkbox
-                  //             Checkbox(
-                  //               value: isSelected,
-                  //               onChanged: (value) {
-                  //                 setState(() {
-                  //                   // user.isSelected = value ?? false;
-                  //                 });
-                  //               },
-                  //             ),
-                  //
-                  //             // Avatar
-                  //             CircleAvatar(
-                  //               backgroundColor: Colors.grey[700],
-                  //               child: Text(
-                  //                 (user.name != null && user.name!.isNotEmpty)
-                  //                     ? user.name!
-                  //                         .substring(0, 2)
-                  //                         .toUpperCase()
-                  //                     : "?",
-                  //                 style: const TextStyle(color: Colors.white),
-                  //               ),
-                  //             ),
-                  //             const SizedBox(width: 12),
-                  //
-                  //             // Name + role info
-                  //             Expanded(
-                  //               child: Column(
-                  //                 crossAxisAlignment:
-                  //                     CrossAxisAlignment.start,
-                  //                 children: [
-                  //                   Text(
-                  //                     user.name ?? "Unknown",
-                  //                     style: const TextStyle(
-                  //                       fontWeight: FontWeight.bold,
-                  //                       fontSize: 16,
-                  //                     ),
-                  //                   ),
-                  //                   const SizedBox(height: 4),
-                  //                   Text(
-                  //                     "View, Comment",
-                  //                     // user.permissions ?? "View, Comment",
-                  //                     style: const TextStyle(
-                  //                       fontSize: 14,
-                  //                       color: Colors.grey,
-                  //                     ),
-                  //                   ),
-                  //                   const SizedBox(height: 6),
-                  //                   // Dropdown for roles
-                  //                  // DropdownButtonFormField<String>(
-                  //                  //   value: (user.role != null && user.role!.isNotEmpty) ? user.role : null,
-                  //                  //   items: const [
-                  //                  //     DropdownMenuItem<String>(
-                  //                  //       value: 'I4VeSDvt5yDNXhoEdkOx', // role id
-                  //                  //       child: Text(item.ro), // role name
-                  //                  //     ),
-                  //                  //   ],
-                  //                  //   onChanged: (value) {
-                  //                  //     if (value == null) return;
-                  //                  //     setState(() {
-                  //                  //       // user.role! = value; // store selected role id
-                  //                  //     });
-                  //                  //   },
-                  //                  //   decoration: InputDecoration(
-                  //                  //     contentPadding:
-                  //                  //         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  //                  //     border: OutlineInputBorder(
-                  //                  //       borderRadius: BorderRadius.circular(6),
-                  //                  //     ),
-                  //                  //   ),
-                  //                  // ),
-                  //                 ],
-                  //               ),
-                  //             ),
-                  //           ],
-                  //         ),
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
+                    // --- Share Button ---
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Consumer<SOVListProvider>(
+                            builder: (context, sovListProvider, _) {
+                              return CustomButton(
+                                type: ButtonType.elevated,
+                                onPressed: (!_isShareEnabled ||
+                                        sovListProvider.isLoading)
+                                    ? null
+                                    : () async {
+                                        List<Map<String, dynamic>>
+                                            shareWithList = [];
 
-                  // else if (_autocompleteUsersList.isNotEmpty)
-                  //   SizedBox(
-                  //     height: 200,
-                  //     child: ListView.builder(
-                  //       shrinkWrap: true,
-                  //       itemCount: _autocompleteUsersList.length,
-                  //       itemBuilder: (context, index) {
-                  //         final user = _autocompleteUsersList[index];
-                  //         return ListTile(
-                  //           title: Text(user.name ?? "Unknown"),
-                  //           subtitle: Text(user.email ?? ""),
-                  //           onTap: () {
-                  //             setState(() {
-                  //               _selectedUser = user;
-                  //             });
-                  //           },
-                  //         );
-                  //       },
-                  //     ),
-                  //   ),
+                                        for (int index in _selectedIndexes) {
+                                          final user =
+                                              _autocompleteUsersList[index];
+                                          final roleName =
+                                              _selectedRoles[index];
+                                          final deadline =
+                                              _selectedDeadlines[index];
 
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Note: Users with multiple roles must be assigned one role per SOV.",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomButton(
-                          type: ButtonType.elevated,
-                          onPressed: () async {
-                            // TODO: handle share with _selectedUser
-                          },
-                          child: _buildButtonChild(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomButton(
-                          type: ButtonType.outlined,
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: Text(
-                            LanguageService.getTranslated(
-                                context, "addlocation_cancel_button_text"),
-                            style: typography.ButtonLarge.copyWith(
-                                color: Colors.lightBlue),
+                                          final selectedRole = user.roles
+                                              ?.firstWhere(
+                                                  (r) => r.name == roleName);
+
+                                          shareWithList.add({
+                                            "user_id": user.userid ?? '',
+                                            "role": {
+                                              "role_id":
+                                                  selectedRole?.role ?? '',
+                                              "role_name":
+                                                  selectedRole?.name ?? '',
+                                            },
+                                            "share_expiry":
+                                                deadline!.toIso8601String(),
+                                          });
+                                        }
+
+                                        bool success =
+                                            await sovListProvider.shareSov(
+                                          sovId: selectedSovIds,
+                                          shareWithList: shareWithList,
+                                        );
+
+                                        if (success) {
+                                          Navigator.pop(context);
+                                          setState(() {
+                                            selectedList = List.filled(
+                                                selectedList.length, false);
+                                            isSelectionMode = false;
+                                          });
+                                          // setState(() {
+                                          //   isSelectionMode = false;
+                                          // });
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    "Failed to share SOV.")),
+                                          );
+                                        }
+                                      },
+                                child: sovListProvider.isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2)
+                                    : const Text("Share",
+                                        style: TextStyle(color: Colors.black)),
+                              );
+                            },
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: CustomSpacing.five),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // await showModalBottomSheet(
+                    //   context: context,
+                    //   isScrollControlled: true,
+                    //   backgroundColor: const Color(0xFF121212),
+                    //   shape: const RoundedRectangleBorder(
+                    //     borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    //   ),
+                    //   builder: (BuildContext dialogContext) {
+                    //     return StatefulBuilder(
+                    //       builder: (BuildContext context, StateSetter setState) {
+                    //         return Padding(
+                    //           padding: EdgeInsets.only(
+                    //             left: 16,
+                    //             right: 16,
+                    //             top: 16,
+                    //             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                    //           ),
+                    //           child: SingleChildScrollView(
+                    //             child: Column(
+                    //               mainAxisSize: MainAxisSize.min,
+                    //               children: [
+                    //                 const Text("Share SOV",
+                    //                     style: TextStyle(
+                    //                         fontSize: 20,
+                    //                         fontWeight: FontWeight.bold,
+                    //                         color: Colors.white)),
+                    //                 const SizedBox(height: 16),
+                    //
+                    //                 // --- User Type Dropdown ---
+                    //                 DropdownButtonFormField<SignUpOptions>(
+                    //                   value: _selectedOption,
+                    //                   decoration: InputDecoration(
+                    //                     border: OutlineInputBorder(
+                    //                         borderRadius: BorderRadius.circular(8)),
+                    //                     contentPadding: const EdgeInsets.symmetric(
+                    //                         horizontal: 12, vertical: 8),
+                    //                   ),
+                    //                   items: [
+                    //                     DropdownMenuItem(
+                    //                         value: SignUpOptions.individual,
+                    //                         child: Text("Individual")),
+                    //                     DropdownMenuItem(
+                    //                         value: SignUpOptions.corporate,
+                    //                         child: Text("Corporate")),
+                    //                   ],
+                    //                   onChanged: (value) =>
+                    //                       setState(() => _selectedOption = value!),
+                    //                 ),
+                    //                 const SizedBox(height: 16),
+                    //
+                    //                 // --- Search Box ---
+                    //                 TextField(
+                    //                   controller: _userSearchController,
+                    //                   onChanged: (value) => _onSearchChanged(
+                    //                       value, setState, _selectedOption.name),
+                    //                   decoration: InputDecoration(
+                    //                     labelText: "Search user",
+                    //                     prefixIcon: const Icon(Icons.search),
+                    //                     border: OutlineInputBorder(
+                    //                         borderRadius: BorderRadius.circular(8)),
+                    //                   ),
+                    //                 ),
+                    //                 const SizedBox(height: 16),
+                    //
+                    //                 if (_isSearching)
+                    //                   const Center(child: CircularProgressIndicator())
+                    //                 else if (_autocompleteUsersList.isNotEmpty)
+                    //                   SizedBox(
+                    //                     height: 300,
+                    //                     child: SingleChildScrollView(
+                    //                       child: Column(
+                    //                         children: List.generate(
+                    //                             _autocompleteUsersList.length, (index) {
+                    //                           final user = _autocompleteUsersList[index];
+                    //                           final isSelected =
+                    //                               _selectedIndexes.contains(index);
+                    //                           final selectedRole = _selectedRoles[index];
+                    //                           final deadline = _selectedDeadlines[index];
+                    //
+                    //                           String? roleError;
+                    //                           String? deadlineError;
+                    //
+                    //                           void updateSelectedUsersJson() {
+                    //                             selectedUsersJson.clear();
+                    //                             for (var i in _selectedIndexes) {
+                    //                               final selectedUser =
+                    //                                   _autocompleteUsersList[i];
+                    //                               final selectedRole = _selectedRoles[i];
+                    //                               final selectedDeadline =
+                    //                                   _selectedDeadlines[i];
+                    //
+                    //                               if (selectedRole != null &&
+                    //                                   selectedDeadline != null) {
+                    //                                 final roleObj =
+                    //                                     selectedUser.roles!.firstWhere(
+                    //                                   (r) => r.name == selectedRole,
+                    //                                 );
+                    //
+                    //                                 selectedUsersJson.add({
+                    //                                   "user_id": user.userid ?? '',
+                    //                                   "role": {
+                    //                                     "role_id": roleObj.role ?? '',
+                    //                                     "role_name": roleObj.name ?? '',
+                    //                                   },
+                    //                                   "share_expiry": selectedDeadline
+                    //                                       .toUtc()
+                    //                                       .toIso8601String(),
+                    //                                 });
+                    //                               }
+                    //                             }
+                    //                             debugPrint(
+                    //                                 "✅ Selected Users JSON: $selectedUsersJson");
+                    //                           }
+                    //
+                    //                           void toggleSelection() {
+                    //                             setState(() {
+                    //                               roleError = null;
+                    //                               deadlineError = null;
+                    //
+                    //                               if (!isSelected) {
+                    //                                 if (selectedRole == null ||
+                    //                                     selectedRole.isEmpty) {
+                    //                                   roleError = ' Please select a role first';
+                    //                                   return;
+                    //                                 }
+                    //                                 if (deadline == null) {
+                    //                                   deadlineError =
+                    //                                       'Please select a deadline first';
+                    //                                   return;
+                    //                                 }
+                    //                                 _selectedIndexes.add(index);
+                    //                               } else {
+                    //                                 _selectedIndexes.remove(index);
+                    //                               }
+                    //
+                    //                               updateSelectedUsersJson();
+                    //                             });
+                    //                           }
+                    //
+                    //                           return StatefulBuilder(
+                    //                             builder: (context, setInnerState) {
+                    //                               return GestureDetector(
+                    //                                 onTap: () {
+                    //                                   setInnerState(() {
+                    //                                     roleError = null;
+                    //                                     deadlineError = null;
+                    //                                   });
+                    //                                   toggleSelection();
+                    //                                 },
+                    //                                 onLongPress: () {
+                    //                                   setInnerState(() {
+                    //                                     roleError = null;
+                    //                                     deadlineError = null;
+                    //                                   });
+                    //                                   toggleSelection();
+                    //                                 },
+                    //                                 child: Container(
+                    //                                   margin: const EdgeInsets.symmetric(
+                    //                                       vertical: 8),
+                    //                                   padding: const EdgeInsets.all(12),
+                    //                                   decoration: BoxDecoration(
+                    //                                     color: const Color(0xFF1E1E1E),
+                    //                                     borderRadius: BorderRadius.circular(12),
+                    //                                     border: Border.all(
+                    //                                       color: isSelected
+                    //                                           ? Colors.blue
+                    //                                           : Colors.grey.shade700,
+                    //                                       width: 1.5,
+                    //                                     ),
+                    //                                   ),
+                    //                                   child: Column(
+                    //                                     crossAxisAlignment:
+                    //                                         CrossAxisAlignment.start,
+                    //                                     children: [
+                    //                                       Row(
+                    //                                         crossAxisAlignment:
+                    //                                             CrossAxisAlignment.center,
+                    //                                         children: [
+                    //                                           CircleAvatar(
+                    //                                             backgroundColor:
+                    //                                                 Colors.grey[800],
+                    //                                             child: Text(
+                    //                                               (user.name != null &&
+                    //                                                       user.name!.isNotEmpty)
+                    //                                                   ? user.name!
+                    //                                                       .substring(0, 2)
+                    //                                                       .toUpperCase()
+                    //                                                   : "?",
+                    //                                               style: const TextStyle(
+                    //                                                   color: Colors.white),
+                    //                                             ),
+                    //                                           ),
+                    //                                           const SizedBox(width: 10),
+                    //                                           Expanded(
+                    //                                             child: Text(
+                    //                                               user.name ?? "Unknown",
+                    //                                               style: const TextStyle(
+                    //                                                 fontWeight: FontWeight.bold,
+                    //                                                 fontSize: 16,
+                    //                                                 color: Colors.white,
+                    //                                               ),
+                    //                                             ),
+                    //                                           ),
+                    //                                           Checkbox(
+                    //                                             value: isSelected,
+                    //                                             activeColor:
+                    //                                                 const Color(0xFF90CAF9),
+                    //                                             onChanged: (value) {
+                    //                                               setInnerState(() {
+                    //                                                 roleError = null;
+                    //                                                 deadlineError = null;
+                    //                                               });
+                    //                                               toggleSelection();
+                    //                                             },
+                    //                                           ),
+                    //                                         ],
+                    //                                       ),
+                    //                                       const SizedBox(height: 12),
+                    //                                       Container(
+                    //                                         padding: const EdgeInsets.symmetric(
+                    //                                             horizontal: 12),
+                    //                                         decoration: BoxDecoration(
+                    //                                           border: Border.all(
+                    //                                               color: Colors.grey.shade700),
+                    //                                           borderRadius:
+                    //                                               BorderRadius.circular(8),
+                    //                                         ),
+                    //                                         child: DropdownButtonHideUnderline(
+                    //                                           child: DropdownButton<String>(
+                    //                                             value: selectedRole,
+                    //                                             hint: const Text(
+                    //                                               'Select Role',
+                    //                                               style: TextStyle(
+                    //                                                   color: Colors.white70),
+                    //                                             ),
+                    //                                             dropdownColor:
+                    //                                                 const Color(0xFF2C2C2C),
+                    //                                             icon: const Icon(
+                    //                                                 Icons.arrow_drop_down,
+                    //                                                 color: Colors.white70),
+                    //                                             isExpanded: true,
+                    //                                             items: user.roles!
+                    //                                                 .map(
+                    //                                                   (role) =>
+                    //                                                       DropdownMenuItem<
+                    //                                                           String>(
+                    //                                                     value: role.name,
+                    //                                                     child: Text(
+                    //                                                       role.name ?? '',
+                    //                                                       style:
+                    //                                                           const TextStyle(
+                    //                                                               color: Colors
+                    //                                                                   .white),
+                    //                                                     ),
+                    //                                                   ),
+                    //                                                 )
+                    //                                                 .toList(),
+                    //                                             onChanged: (value) {
+                    //                                               setInnerState(() {
+                    //                                                 _selectedRoles[index] =
+                    //                                                     value;
+                    //                                                 roleError = null;
+                    //                                               });
+                    //                                               setState(() {});
+                    //                                             },
+                    //                                           ),
+                    //                                         ),
+                    //                                       ),
+                    //                                       if (roleError != null)
+                    //                                         Padding(
+                    //                                           padding: const EdgeInsets.only(
+                    //                                               top: 4, left: 12),
+                    //                                           child: Text(
+                    //                                             roleError!,
+                    //                                             style: const TextStyle(
+                    //                                                 color: Colors.redAccent,
+                    //                                                 fontSize: 12),
+                    //                                           ),
+                    //                                         ),
+                    //                                       const SizedBox(height: 12),
+                    //                                       const Text("View, Edit, Comment",
+                    //                                           style: TextStyle(
+                    //                                               fontSize: 13,
+                    //                                               color: Colors.grey)),
+                    //                                       const SizedBox(height: 12),
+                    //                                       const Text("Set Deadline",
+                    //                                           style: TextStyle(
+                    //                                               fontSize: 13,
+                    //                                               color: Colors.grey)),
+                    //                                       const SizedBox(height: 6),
+                    //                                       InkWell(
+                    //                                         onTap: () async {
+                    //                                           final now = DateTime.now();
+                    //                                           final pickedDate =
+                    //                                               await showDatePicker(
+                    //                                             context: context,
+                    //                                             initialDate: now,
+                    //                                             firstDate: DateTime(now.year,
+                    //                                                 now.month, now.day),
+                    //                                             lastDate: DateTime(2100),
+                    //                                           );
+                    //                                           if (pickedDate != null) {
+                    //                                             setInnerState(() {
+                    //                                               _selectedDeadlines[index] =
+                    //                                                   pickedDate;
+                    //                                               deadlineError = null;
+                    //                                             });
+                    //                                             setState(() {});
+                    //                                           }
+                    //                                         },
+                    //                                         child: Container(
+                    //                                           padding:
+                    //                                               const EdgeInsets.symmetric(
+                    //                                                   horizontal: 12,
+                    //                                                   vertical: 12),
+                    //                                           decoration: BoxDecoration(
+                    //                                             border: Border.all(
+                    //                                                 color:
+                    //                                                     Colors.grey.shade700),
+                    //                                             borderRadius:
+                    //                                                 BorderRadius.circular(8),
+                    //                                           ),
+                    //                                           child: Row(
+                    //                                             children: [
+                    //                                               Expanded(
+                    //                                                 child: Text(
+                    //                                                   deadline != null
+                    //                                                       ? DateFormat(
+                    //                                                               'MM/dd/yyyy')
+                    //                                                           .format(deadline)
+                    //                                                       : "Select Date",
+                    //                                                   style: const TextStyle(
+                    //                                                       color:
+                    //                                                           Colors.white70),
+                    //                                                 ),
+                    //                                               ),
+                    //                                               const Icon(
+                    //                                                   Icons
+                    //                                                       .calendar_today_outlined,
+                    //                                                   color: Colors.white70,
+                    //                                                   size: 20),
+                    //                                             ],
+                    //                                           ),
+                    //                                         ),
+                    //                                       ),
+                    //                                       if (deadlineError != null)
+                    //                                         Padding(
+                    //                                           padding: const EdgeInsets.only(
+                    //                                               top: 4, left: 12),
+                    //                                           child: Text(
+                    //                                             deadlineError!,
+                    //                                             style: const TextStyle(
+                    //                                                 color: Colors.redAccent,
+                    //                                                 fontSize: 12),
+                    //                                           ),
+                    //                                         ),
+                    //                                     ],
+                    //                                   ),
+                    //                                 ),
+                    //                               );
+                    //                             },
+                    //                           );
+                    //                         }),
+                    //                       ),
+                    //                     ),
+                    //                   ),
+                    //                 const SizedBox(height: 24),
+                    //
+                    //                 const Text(
+                    //                   "Note: Users with multiple roles must be assigned one role per SOV.",
+                    //                   style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+                    //                 ),
+                    //                 const SizedBox(height: 24),
+                    //
+                    //
+                    //                 Row(
+                    //                   children: [
+                    //                     Expanded(
+                    //                       child: Consumer<SOVListProvider>(
+                    //                         builder: (context, sovListProvider, _) {
+                    //                           return CustomButton(
+                    //                             type: ButtonType.elevated,
+                    //                             onPressed: sovListProvider.isLoading
+                    //                                 ? null
+                    //                                 : () async {
+                    //                                     if (_selectedIndexes.isEmpty) {
+                    //                                       ScaffoldMessenger.of(context)
+                    //                                           .showSnackBar(
+                    //                                         const SnackBar(
+                    //                                             content: Text(
+                    //                                                 "Please select at least one user")),
+                    //                                       );
+                    //                                       return;
+                    //                                     }
+                    //
+                    //                                     // Build share_with array
+                    //                                     List<Map<String, dynamic>>
+                    //                                         shareWithList = [];
+                    //
+                    //                                     for (int index in _selectedIndexes) {
+                    //                                       final user =
+                    //                                           _autocompleteUsersList[index];
+                    //                                       final roleName =
+                    //                                           _selectedRoles[index];
+                    //                                       final deadline =
+                    //                                           _selectedDeadlines[index];
+                    //
+                    //                                       // Validate role and deadline
+                    //                                       if (roleName == null ||
+                    //                                           roleName.isEmpty ||
+                    //                                           deadline == null) {
+                    //                                         ScaffoldMessenger.of(context)
+                    //                                             .showSnackBar(
+                    //                                           const SnackBar(
+                    //                                               content: Text(
+                    //                                                   "Please select role and deadline for all selected users")),
+                    //                                         );
+                    //                                         return;
+                    //                                       }
+                    //
+                    //                                       // Find role_id from user.roles
+                    //                                       final selectedRole =
+                    //                                           user.roles?.firstWhere(
+                    //                                         (r) => r.name == roleName,
+                    //                                         // orElse: () => null,
+                    //                                       );
+                    //
+                    //                                       if (selectedRole == null) {
+                    //                                         ScaffoldMessenger.of(context)
+                    //                                             .showSnackBar(
+                    //                                           SnackBar(
+                    //                                               content: Text(
+                    //                                                   "Role not found for ${user.name ?? 'User'}")),
+                    //                                         );
+                    //                                         return;
+                    //                                       }
+                    //
+                    //                                       shareWithList.add({
+                    //                                         "user_id": user.userid ?? '',
+                    //                                         "role": {
+                    //                                           "role_id":
+                    //                                               selectedRole.role ?? '',
+                    //                                           "role_name":
+                    //                                               selectedRole.name ?? '',
+                    //                                         },
+                    //                                         "share_expiry":
+                    //                                             deadline.toIso8601String(),
+                    //                                       });
+                    //                                     }
+                    //
+                    //                                     bool success =
+                    //                                         await sovListProvider.shareSov(
+                    //                                       sovId: selectedSovIds,
+                    //                                       shareWithList: shareWithList,
+                    //                                     );
+                    //
+                    //                                     if (success) {
+                    //                                       Navigator.pop(context);
+                    //                                     } else {
+                    //                                       ScaffoldMessenger.of(context)
+                    //                                           .showSnackBar(
+                    //                                         const SnackBar(
+                    //                                             content: Text(
+                    //                                                 "Failed to share SOV.")),
+                    //                                       );
+                    //                                     }
+                    //                                   },
+                    //                             child: sovListProvider.isLoading
+                    //                                 ? const CircularProgressIndicator(
+                    //                                     color: Colors.white, strokeWidth: 2)
+                    //                                 : const Text("Share",
+                    //                                     style: TextStyle(color: Colors.black)),
+                    //                           );
+                    //                         },
+                    //                       ),
+                    //                     ),
+                    //                   ],
+                    //                 ),
+                    //                 const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            type: ButtonType.outlined,
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -8249,158 +9506,42 @@ class _MyLocationListState extends State<MyLocationList>
       if (_debounce?.isActive ?? false) _debounce?.cancel();
     });
   }
+}
 
-  // Future<void> _showTransferDialog(BuildContext context, Result sov) async {
-  //   var typography = CustomTypography(context);
-  //   TextEditingController _userSearchController = TextEditingController();
-  //   TransferAutocompleteModel? _selectedUser;
-  //   List<dynamic> _autocompleteUsersList = [];
-  //
-  //   Timer? _debounce;
-  //
-  //   void _onSearchChanged(String query, StateSetter setState) {
-  //     if (_debounce?.isActive ?? false) _debounce?.cancel();
-  //     _debounce = Timer(const Duration(milliseconds: 500), () async {
-  //       if (query.isNotEmpty) {
-  //         setState(() {
-  //           _isSearching = true;
-  //         });
-  //
-  //         _autocompleteUsersList = await fetchcompanySearchList(query);
-  //
-  //         setState(() {
-  //           _isSearching = false;
-  //         });
-  //       } else {
-  //         setState(() {
-  //           _autocompleteUsersList.clear();
-  //           _isSearching = false;
-  //         });
-  //       }
-  //     });
-  //   }
-  //
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     // backgroundColor: Colors.transparent,
-  //     constraints: BoxConstraints(
-  //       maxWidth: MediaQuery.of(context).size.width,
-  //     ),
-  //     builder: (BuildContext dialogContext) {
-  //       return StatefulBuilder(
-  //         builder: (BuildContext context, StateSetter setState) {
-  //           return Container(
-  //             width: double.infinity,
-  //             padding: const EdgeInsets.all(16),
-  //             decoration: const BoxDecoration(
-  //               // color: Colors.black,
-  //               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-  //             ),
-  //             child: Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               children: [
-  //                 SizedBox(height: CustomSpacing.two),
-  //                 const Text(
-  //                   "Share SOV",
-  //                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-  //                 ),
-  //                 const SizedBox(height: 16),
-  //                 TextField(
-  //                   controller: _userSearchController,
-  //                   onChanged: (value) => _onSearchChanged(value, setState),
-  //                   decoration: InputDecoration(
-  //                     labelText: "Name or Email",
-  //                     prefixIcon: const Icon(Icons.search),
-  //                     border: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(8),
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 const SizedBox(height: 16),
-  //                 // _userTile("DS", "Darrell Steward", "View, Edit, Comment",
-  //                 //     "Cat Modeller"),
-  //                 const SizedBox(height: 12),
-  //                 const Text(
-  //                   "Note: Users with multiple roles must be assigned one role per SOV.",
-  //                   style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 Row(
-  //                   children: [
-  //                     Expanded(
-  //                       child: CustomButton(
-  //                         type: ButtonType.elevated,
-  //                         onPressed: () async {},
-  //                         child: _buildButtonChild(context),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 SizedBox(height: CustomSpacing.two),
-  //                 Row(
-  //                   children: [
-  //                     Expanded(
-  //                       child: CustomButton(
-  //                         type: ButtonType.outlined,
-  //                         onPressed: () {
-  //                           Navigator.pop(context);
-  //                         },
-  //                         child: Text(
-  //                           LanguageService.getTranslated(
-  //                               context, "addlocation_cancel_button_text"),
-  //                           style: typography.ButtonLarge.copyWith(
-  //                               color: Colors.lightBlue),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 SizedBox(height: CustomSpacing.five),
-  //               ],
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   ).whenComplete(() {
-  //     if (_debounce?.isActive ?? false) _debounce?.cancel();
-  //   });
-  // }
+Widget _buildButtonChild(BuildContext context) {
+  final locationListProvider = Provider.of<LocationListProvider>(context);
+  final locationProfileProvider = Provider.of<MyLocationListProvider>(context);
 
-  Widget _buildButtonChild(BuildContext context) {
-    final locationListProvider = Provider.of<LocationListProvider>(context);
-    final locationProfileProvider =
-        Provider.of<MyLocationListProvider>(context);
-
-    var typography = CustomTypography(context);
-    if (locationListProvider.isAddLocationLoading ||
-        locationProfileProvider.isLoading) {
-      return Center(
-        child: SizedBox(
-          height: 25,
-          width: 25,
-          child: CircularProgressIndicator(
-            color: AppColors.black,
-          ),
+  var typography = CustomTypography(context);
+  if (locationListProvider.isAddLocationLoading ||
+      locationProfileProvider.isLoading) {
+    return Center(
+      child: SizedBox(
+        height: 25,
+        width: 25,
+        child: CircularProgressIndicator(
+          color: AppColors.black,
         ),
-      );
-    } else {
-      return Text(
-        "Share SOV",
-        style: typography.ButtonLarge.copyWith(
-          color: Colors.black,
-        ),
-      );
-    }
+      ),
+    );
+  } else {
+    return Text(
+      "Share SOV",
+      style: typography.ButtonLarge.copyWith(
+        color: Colors.black,
+      ),
+    );
   }
 }
 
+//
 Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
-    String query) async {
+    String query, String type) async {
   try {
     ApiService apiService = ApiService(AppConstant.GET_SEARCH_LIST_BY_SOV);
-    String url = '/user_search?search=$query';
+    String url = type != "individual"
+        ? '/user_search?search=$query'
+        : '/individual_user_search?search=$query';
     var response = await apiService.get(url);
 
     // Parse the response to extract user data
@@ -8414,6 +9555,7 @@ Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
     return [];
   }
 }
+//
 
 class _AutoHideCompletedRow extends StatefulWidget {
   final int percentage;
@@ -8479,14 +9621,27 @@ class InfoCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: const Color(0xFF9FA6AD), size: 32),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white38,
+                  borderRadius:
+                      BorderRadius.circular(15), // adjust radius as needed
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white60,
+                  size: 20,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 title,
                 style: const TextStyle(
-                    color: Colors.white70,
+                    color: Colors.white60,
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0.17),
               ),
               const SizedBox(height: 8),

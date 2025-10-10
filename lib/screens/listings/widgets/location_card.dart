@@ -112,6 +112,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   @override
   Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
     selectionMode = Provider.of<MyLocationListProvider>(context)
         .selectedLocations
         .isNotEmpty;
@@ -259,6 +260,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Text( widget.imageUrl),
                 // Modify the call to _buildTopRow to handle campusId and tags
@@ -270,7 +273,97 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   isSelected,
                   widget.imageUrl,
                 ),
+                if (widget.sovId == null || widget.sovId!.isEmpty) ...[
+                  Container(
 
+                  )
+                ] else ...[
+                  SizedBox(height: 8),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Owner : ",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.ownerName ?? "",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.black,
+                            fontSize: 14, // Different font size for owner name
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Company : ",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.ownerName ?? "",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.black,
+                            fontSize: 14, // Different font size for owner name
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),  SizedBox(height: 8),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Role : ",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.ownerName ?? "",
+                          style: typography.Body2.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.white
+                                : AppColors.blue50,
+                            fontSize: 14, // Different font size for owner name
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
+
+                ],
                 SizedBox(height: 16),
                 _buildScrollableScores(context),
               ],
@@ -346,6 +439,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                 // fit: BoxFit.cover,
                               ),
                   ),
+
         SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -533,7 +627,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 context,
                 'Risk Score',
                 widget.address,
-                widget.riskScore == 0 ? 5 : widget.riskScore,
+                widget.riskScore,// == 0 ? 5 : widget.riskScore,
                 widget.accountId!,
                 widget.subAccountId!),
           ),
@@ -654,9 +748,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
               children: [
                 //check the processing status
                 if (widget.hazardProcess == true ||
-                    title == 'Geocoding' ||
-                    title == 'Completeness' ||
-                    title == 'Risk Score') ...[
+                    title == 'Geocoding' || title == 'Risk Score' ||
+                    title == 'Completeness') ...[
                   title == 'Risk Score'
                       ? SvgPicture.asset('assets/images/hazard_icon.svg',
                           width: 24, height: 24)

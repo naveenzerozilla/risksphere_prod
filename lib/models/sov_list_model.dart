@@ -4,7 +4,7 @@ class SovListModel {
   int? pageSize;
   List<Result>? result;
   Settings? settings;
-  Role? role;
+  List<Role>? role;
   TotalCountHeader? totalCountHeader;
 
   SovListModel(
@@ -29,7 +29,10 @@ class SovListModel {
     settings = json['settings'] != null
         ? new Settings.fromJson(json['settings'])
         : null;
-    role = json['role'] != null ? new Role.fromJson(json['role']) : null;
+    if (json['role'] != null) {
+      role = <Role>[];
+      json['role'].forEach((v) { role!.add(new Role.fromJson(v)); });
+    }
     totalCountHeader = json['total_count_header'] != null
         ? new TotalCountHeader.fromJson(json['total_count_header'])
         : null;
@@ -47,7 +50,7 @@ class SovListModel {
       data['settings'] = this.settings!.toJson();
     }
     if (this.role != null) {
-      data['role'] = this.role!.toJson();
+      data['role'] = this.role!.map((v) => v.toJson()).toList();
     }
     if (this.totalCountHeader != null) {
       data['total_count_header'] = this.totalCountHeader!.toJson();
@@ -72,7 +75,7 @@ class Result {
   List<String>? accessibleTo;
   SharingStatus? sharingStatus;
   int? locationCount;
-  Null? role;
+  dynamic role;
   String? companyName;
 
   Result(
@@ -89,7 +92,7 @@ class Result {
       this.accessibleTo,
       this.sharingStatus,
       this.locationCount,
-      this.role,
+        this.role,
       this.companyName});
 
   Result.fromJson(Map<String, dynamic> json) {
@@ -117,7 +120,12 @@ class Result {
         ? new SharingStatus.fromJson(json['sharing_status'])
         : null;
     locationCount = json['location_count'];
-    role = json['role'];
+    if (json['role'] != null) {
+      role = <Roles>[];
+      json['role'].forEach((v) {
+        role!.add(new Roles.fromJson(v));
+      });
+    }
     companyName = json['company_name'];
   }
 
@@ -149,8 +157,47 @@ class Result {
       data['sharing_status'] = this.sharingStatus!.toJson();
     }
     data['location_count'] = this.locationCount;
-    data['role'] = this.role;
+    if (this.role != null) {
+      data['role'] = this.role!.map((v) => v.toJson()).toList();
+    }
     data['company_name'] = this.companyName;
+    return data;
+  }
+}
+
+class Roles {
+  Null? isApplicableForTrial;
+  Null? id;
+  String? role;
+  String? name;
+  Null? isMultipleRoleEnabled;
+  Null? isForIndividual;
+
+  Roles(
+      {this.isApplicableForTrial,
+      this.id,
+      this.role,
+      this.name,
+      this.isMultipleRoleEnabled,
+      this.isForIndividual});
+
+  Roles.fromJson(Map<String, dynamic> json) {
+    isApplicableForTrial = json['is_applicable_for_trial'];
+    id = json['id'];
+    role = json['role'];
+    name = json['name'];
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'];
+    isForIndividual = json['is_for_individual'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['is_applicable_for_trial'] = this.isApplicableForTrial;
+    data['id'] = this.id;
+    data['role'] = this.role;
+    data['name'] = this.name;
+    data['is_multiple_role_enabled'] = this.isMultipleRoleEnabled;
+    data['is_for_individual'] = this.isForIndividual;
     return data;
   }
 }
@@ -281,18 +328,60 @@ class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
 class Role {
   String? roleId;
   String? roleName;
+  bool? isForIndividual;
+  bool? isSelectable;
+  bool? isApplicableForTrial;
+  String? role;
+  String? name;
+  String? description;
+  bool? isApplicableForInternal;
+  int? trialPeriodDays;
+  bool? isMultipleRoleEnabled;
+  bool? status;
 
-  Role({this.roleId, this.roleName});
+  Role(
+      {this.roleId,
+      this.isForIndividual,
+      this.isSelectable,
+      this.isApplicableForTrial,
+      this.role,
+      this.name,
+      this.description,
+      this.isApplicableForInternal,
+      this.trialPeriodDays,
+      this.isMultipleRoleEnabled,
+      this.status,
+      this.roleName});
 
   Role.fromJson(Map<String, dynamic> json) {
     roleId = json['role_id'];
     roleName = json['role_name'];
+    isForIndividual = json['is_for_individual'];
+    isSelectable = json['is_selectable'];
+    isApplicableForTrial = json['is_applicable_for_trial'];
+    role = json['role'];
+    name = json['name'];
+    description = json['description'];
+    isApplicableForInternal = json['is_applicable_for_internal'];
+    trialPeriodDays = json['trial_period_days'];
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'];
+    status = json['status'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['role_id'] = this.roleId;
     data['role_name'] = this.roleName;
+    data['is_for_individual'] = this.isForIndividual;
+    data['is_selectable'] = this.isSelectable;
+    data['is_applicable_for_trial'] = this.isApplicableForTrial;
+    data['role'] = this.role;
+    data['name'] = this.name;
+    data['description'] = this.description;
+    data['is_applicable_for_internal'] = this.isApplicableForInternal;
+    data['trial_period_days'] = this.trialPeriodDays;
+    data['is_multiple_role_enabled'] = this.isMultipleRoleEnabled;
+    data['status'] = this.status;
     return data;
   }
 }

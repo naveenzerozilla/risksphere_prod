@@ -233,7 +233,7 @@ class _LocationTableState extends State<LocationTable> {
                         ),
                       ),
                       DataCell(_renderRiskScore(location.geocodingScore)),
-                      DataCell(_renderRiskScore(location.overallScore)),
+                      DataCell(_renderRiskScore(int.parse(location.overallScore.toString()))),
                       ...sortedHazardColumns.map((hazard) => DataCell(
                             Container(
                               width: double.infinity,

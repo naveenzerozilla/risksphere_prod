@@ -161,7 +161,7 @@ class _SovLocationListState extends State<SovLocationList>
               context,
               "",
               1,
-              40,
+              10,
               widget.accountID,
               widget.subAccountID,
               widget.initialProcessId,
@@ -180,7 +180,7 @@ class _SovLocationListState extends State<SovLocationList>
               context,
               "",
               1,
-              40,
+              10,
               widget.accountID,
               widget.subAccountID,
               widget.initialProcessId,
@@ -1340,6 +1340,7 @@ class _SovLocationListState extends State<SovLocationList>
                                       "location list: ${locationListProvider.myLocationList}");
                                   return Column(
                                     children: [
+
                                       MyLocationCard(
                                         campusId: locationListProvider
                                                 .myLocationList[index]
@@ -1392,11 +1393,11 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .finalAddress
                                                 ?.score ??
                                             0,
-                                        riskScore: locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore ??
-                                            5,
-                                        dataCompletenessScore: 0,
+                                        riskScore: int.parse(locationListProvider
+                                            .myLocationList[index]
+                                            .overallScore.toString()),
+                                        dataCompletenessScore: locationListProvider
+                                            .myLocationList[index].dataCompleteness!.scorePd!,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -1521,7 +1522,9 @@ class _SovLocationListState extends State<SovLocationList>
                                 }
                               }
 
-                              return MyLocationCard(
+                              return
+                              
+                                MyLocationCard(
                                 campusId: locationListProvider
                                         .myLocationList[index]
                                         .finalAddress
@@ -1573,10 +1576,10 @@ class _SovLocationListState extends State<SovLocationList>
                                         .finalAddress
                                         ?.score ??
                                     0,
-                                riskScore: locationListProvider
-                                        .myLocationList[index].overallScore ??
-                                    0,
-                                dataCompletenessScore: 0,
+                              riskScore: int.tryParse(locationListProvider.myLocationList[index].overallScore?.toString() ?? '0') ?? 0,
+                                dataCompletenessScore:
+                                locationListProvider
+                                    .myLocationList[index].dataCompleteness!.scorePd!,
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -1995,8 +1998,12 @@ class _SovLocationListState extends State<SovLocationList>
       geocodingScore:
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore:
-          locationListProvider.certifiedLocationList[index].overallScore ?? 0,
-      dataCompletenessScore: 0,
+      int.parse(locationListProvider
+          .certifiedLocationList[index]
+          .overallScore.toString()),
+
+      dataCompletenessScore: locationListProvider
+          .myLocationList[index].dataCompleteness!.scorePd!,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {

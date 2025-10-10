@@ -76,13 +76,13 @@ class MyLocationModel {
 class MyLocation with ClusterItem {
   String? id;
   FinalAddress? finalAddress;
+  String? overallScore;
   int? geocodingScore;
   bool? isSelected;
   bool? isConflict;
   List<Conflicts>? conflicts;
   int? defaultConflictindex;
   List<String>? tags;
-  int? overallScore;
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
   String? geocodedAddress;
   List<LocationComments>? locationComments;
@@ -90,22 +90,23 @@ class MyLocation with ClusterItem {
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
-  int? dataCompleteness;
+  DataCompleteness? dataCompleteness;
 
   MyLocation(
       {this.id,
       this.finalAddress,
       this.geocodingScore,
+        this.overallScore,
       this.isSelected = false,
       this.isConflict,
       this.conflicts,
       this.defaultConflictindex,
       this.tags,
-      this.overallScore,
+
       this.hazard,
       this.geocodedAddress,
-        this.locationComments,
-        this.activityLogs,
+      this.locationComments,
+      this.activityLogs,
       this.subdestinations,
       this.screenshots,
       this.isHazardProcess,
@@ -119,6 +120,7 @@ class MyLocation with ClusterItem {
     geocodingScore = json['geocoding_score'] is int
         ? json['geocoding_score']
         : int.tryParse(json['geocoding_score']?.toString() ?? '');
+    overallScore = json['overall_score'];
     isConflict = json['is_conflict'];
     if (json['conflicts'] != null) {
       conflicts = <Conflicts>[];
@@ -128,11 +130,15 @@ class MyLocation with ClusterItem {
     }
     if (json['location_comments'] != null) {
       locationComments = <LocationComments>[];
-      json['location_comments'].forEach((v) { locationComments!.add(new LocationComments.fromJson(v)); });
+      json['location_comments'].forEach((v) {
+        locationComments!.add(new LocationComments.fromJson(v));
+      });
     }
     if (json['activity_logs'] != null) {
       activityLogs = <ActivityLogs>[];
-      json['activity_logs'].forEach((v) { activityLogs!.add(new ActivityLogs.fromJson(v)); });
+      json['activity_logs'].forEach((v) {
+        activityLogs!.add(new ActivityLogs.fromJson(v));
+      });
     }
 
     defaultConflictindex = json['default_conflict_index'] is int
@@ -149,11 +155,7 @@ class MyLocation with ClusterItem {
     } else {
       tags = null;
     }
-    if (json['overall_score'] is int) {
-      overallScore = json['overall_score'];
-    } else {
-      overallScore = int.tryParse(json['overallScore']?.toString() ?? '');
-    }
+
 
     geocodedAddress = json['geocoded_address'] ?? '';
 
@@ -180,9 +182,9 @@ class MyLocation with ClusterItem {
       });
     }
     isHazardProcess = json['is_hazard_processed'] ?? '';
-    dataCompleteness = json['data_completeness'] is int
-        ? json['data_completeness']
-        : int.tryParse(json['data_completeness']?.toString() ?? '');
+    dataCompleteness = json['data_completeness'] != null
+        ? new DataCompleteness.fromJson(json['data_completeness'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -192,19 +194,22 @@ class MyLocation with ClusterItem {
       data['final_address'] = finalAddress!.toJson();
     }
     data['geocoding_score'] = geocodingScore;
+    data['overall_score'] = overallScore;
     data['is_conflict'] = this.isConflict;
     if (this.conflicts != null) {
       data['conflicts'] = this.conflicts!.map((v) => v.toJson()).toList();
     }
     data['default_conflict_index'] = defaultConflictindex;
     data['tags'] = tags;
-    data['overall_score'] = overallScore;
+
     data['geocoded_address'] = geocodedAddress;
     if (this.locationComments != null) {
-      data['location_comments'] = this.locationComments!.map((v) => v.toJson()).toList();
+      data['location_comments'] =
+          this.locationComments!.map((v) => v.toJson()).toList();
     }
     if (this.activityLogs != null) {
-      data['activity_logs'] = this.activityLogs!.map((v) => v.toJson()).toList();
+      data['activity_logs'] =
+          this.activityLogs!.map((v) => v.toJson()).toList();
     }
 
     if (hazard != null) {
@@ -219,7 +224,9 @@ class MyLocation with ClusterItem {
       data['screen_shots'] = screenshots!.map((v) => v.toJson()).toList();
     }
     data['is_hazard_processed'] = isHazardProcess;
-    data['data_completeness'] = dataCompleteness;
+    if (this.dataCompleteness != null) {
+      data['data_completeness'] = this.dataCompleteness!.toJson();
+    }
     return data;
   }
 
@@ -474,6 +481,7 @@ class GeocodeInputAddress {
     return data;
   }
 }
+
 class LocationComments {
   String? commentId;
   String? comment;
@@ -485,7 +493,9 @@ class LocationComments {
   LocationComments.fromJson(Map<String, dynamic> json) {
     commentId = json['comment_id'];
     comment = json['comment'];
-    updatedAt = json['updated_at'] != null ? new Date.fromJson(json['updated_at']) : null;
+    updatedAt = json['updated_at'] != null
+        ? new Date.fromJson(json['updated_at'])
+        : null;
     user = json['user'] != null ? new User.fromJson(json['user']) : null;
   }
 
@@ -513,7 +523,15 @@ class ActivityLogs {
   String? locationId;
   Date? timestamp;
 
-  ActivityLogs({this.id, this.type, this.field, this.previousValue, this.newValue, this.actor, this.locationId, this.timestamp});
+  ActivityLogs(
+      {this.id,
+      this.type,
+      this.field,
+      this.previousValue,
+      this.newValue,
+      this.actor,
+      this.locationId,
+      this.timestamp});
 
   ActivityLogs.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -523,7 +541,8 @@ class ActivityLogs {
     newValue = json['new_value'];
     actor = json['actor'] != null ? new User.fromJson(json['actor']) : null;
     locationId = json['location_id'];
-    timestamp = json['timestamp'] != null ? new Date.fromJson(json['timestamp']) : null;
+    timestamp =
+        json['timestamp'] != null ? new Date.fromJson(json['timestamp']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -543,6 +562,7 @@ class ActivityLogs {
     return data;
   }
 }
+
 class User {
   Null? imageUrl;
   String? userId;
@@ -567,6 +587,7 @@ class User {
     return data;
   }
 }
+
 class Date {
   int? iSeconds;
   int? iNanoseconds;
@@ -1056,5 +1077,27 @@ class Owner {
   @override
   String toString() {
     return 'Owner(name: $name, id: $id, email: $email)';
+  }
+}
+
+class DataCompleteness {
+  int? scorePd;
+  int? scoreTe;
+  int? finalScore;
+
+  DataCompleteness({this.scorePd, this.scoreTe, this.finalScore});
+
+  DataCompleteness.fromJson(Map<String, dynamic> json) {
+    scorePd = json['score_pd'];
+    scoreTe = json['score_te'];
+    finalScore = json['final_score'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['score_pd'] = this.scorePd;
+    data['score_te'] = this.scoreTe;
+    data['final_score'] = this.finalScore;
+    return data;
   }
 }

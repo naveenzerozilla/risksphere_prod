@@ -261,36 +261,36 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   Column(
                     children: [
-                      TextField(
-                        controller: searchController,
-                        onChanged: (value) {
-                          if (value.isNotEmpty && value.length > 2) {
-                            debouncer.run(() {
-                              Provider.of<MyLocationListProvider>(context,
-                                      listen: false)
-                                  .performGlobalSearch(context, value);
-                            });
-                          } else {
-                            Provider.of<MyLocationListProvider>(context,
-                                    listen: false)
-                                .searchLocationList = [];
-                          }
-                        },
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Icons.search, color: iconColor),
-                          hintText: 'Search Locations',
-                          hintStyle: typography.Body1,
-                          filled: true,
-                          fillColor:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.grey[800]
-                                  : Colors.grey[200],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
+                      // TextField(
+                      //   controller: searchController,
+                      //   onChanged: (value) {
+                      //     if (value.isNotEmpty && value.length > 2) {
+                      //       debouncer.run(() {
+                      //         Provider.of<MyLocationListProvider>(context,
+                      //                 listen: false)
+                      //             .performGlobalSearch(context, value);
+                      //       });
+                      //     } else {
+                      //       Provider.of<MyLocationListProvider>(context,
+                      //               listen: false)
+                      //           .searchLocationList = [];
+                      //     }
+                      //   },
+                      //   decoration: InputDecoration(
+                      //     prefixIcon: Icon(Icons.search, color: iconColor),
+                      //     hintText: 'Search Locations',
+                      //     hintStyle: typography.Body1,
+                      //     filled: true,
+                      //     fillColor:
+                      //         Theme.of(context).brightness == Brightness.dark
+                      //             ? Colors.grey[800]
+                      //             : Colors.grey[200],
+                      //     border: OutlineInputBorder(
+                      //       borderRadius: BorderRadius.circular(8),
+                      //       borderSide: BorderSide.none,
+                      //     ),
+                      //   ),
+                      // ),
                       Consumer<MyLocationListProvider>(
                         builder: (context, provider, child) {
                           return AutocompleteOptionsLocation(

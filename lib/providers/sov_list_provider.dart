@@ -28,6 +28,18 @@ class SOVListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  // checkbox toggle
+  bool _showCheckbox = false;
+
+  bool get showCheckbox => _showCheckbox;
+
+  set showCheckbox(bool value) {
+    _showCheckbox = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
 
   bool _isNextPageLoading = false;
 
@@ -768,4 +780,86 @@ class SOVListProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> shareSov({
+    required dynamic sovId,
+    required List<Map<String, dynamic>> shareWithList,
+  }) async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      ApiService apiService = ApiService(AppConstant.SHARE_SOV_LIST);
+      var payload = {
+        "sov_id": sovId is Set ? sovId.toList() : sovId,
+        "share_with": shareWithList.map((item) {
+          return item.map((key, value) => MapEntry(key, value is Set ? value.toList() : value));
+        }).toList(),
+      };
+      // var payload = {
+      //   "sov_id": sovId,
+      //   "share_with": shareWithList,
+      // };
+
+      var response = await apiService.post(payload);
+      log("Share SOV Response: $response");
+
+      return true;
+    } catch (e) {
+      print("Share SOV Error: $e");
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+// Future<bool> shareSov({
+  //   required String sovId,
+  //   required String userId,
+  //   required String roleId,
+  //   required String roleName,
+  //   required DateTime shareExpiry,
+  // }) async {
+  //   isLoading = true;
+  //   notifyListeners();
+  //
+  //   try {
+  //     ApiService apiService = ApiService(AppConstant.SHARE_SOV_LIST);
+  //
+  //     var payload = {
+  //       "sov_id": [sovId],
+  //       "share_with": [
+  //         {
+  //           "user_id": userId,
+  //           "role": {
+  //             "role_id": roleId,
+  //             "role_name": roleName,
+  //           },
+  //           "share_expiry": shareExpiry.toIso8601String(),
+  //         }
+  //       ]
+  //     };
+  //
+  //     var response = await apiService.post(payload);
+  //     log(response.toString());
+  //
+  //     // Parse the response and update your list if needed
+  //     // Result duplicatedSovAccount = Result.fromJson(response['updated_record']);
+  //     // sovList = [duplicatedSovAccount, ...sovList];
+  //
+  //     return true; // success
+  //   } catch (e) {
+  //     print(e);
+  //     return false; // failed
+  //   } finally {
+  //     isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+
+
+
+
 }

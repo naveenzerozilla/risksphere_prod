@@ -4,7 +4,7 @@
     "type": "PROCESSED_RES",
     "kind": "Directory"
   },
-  "applicationId": "com.risksphere.green",
+  "applicationId": "com.risksphere.green.qa",
   "variantName": "debug",
   "elements": [
     {

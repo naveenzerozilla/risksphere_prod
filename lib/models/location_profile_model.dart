@@ -341,8 +341,12 @@ class LocationResult {
     geocodingScore = json['geocoding_score'];
     tags = json['tags'] != null ? List<String>.from(json['tags']) : null;
     geocodedAddress = json['geocoded_address'];
-    screenShots = (json['screen_shots'] as List?)?.map((item) => Screenshots.fromJson(item)).toList();
-    subdestinations = (json['subdestinations'] as List?)?.map((item) => Subdestination.fromJson(item)).toList();
+    screenShots = (json['screen_shots'] as List?)
+        ?.map((item) => Screenshots.fromJson(item))
+        .toList();
+    subdestinations = (json['subdestinations'] as List?)
+        ?.map((item) => Subdestination.fromJson(item))
+        .toList();
   }
 
   Map<String, dynamic> toJson() {
@@ -358,7 +362,8 @@ class LocationResult {
       data['screen_shots'] = screenShots!.map((v) => v.toJson()).toList();
     }
     if (subdestinations != null) {
-      data['subdestinations'] = subdestinations!.map((v) => v.toJson()).toList();
+      data['subdestinations'] =
+          subdestinations!.map((v) => v.toJson()).toList();
     }
     return data;
   }
@@ -441,7 +446,9 @@ class FinalAddress {
     score = json['score'];
     sovName = json['sov_name'];
     accountName = json['account_name'];
-    placeTypes = json['place_types'] != null ? List<String>.from(json['place_types']) : null;
+    placeTypes = json['place_types'] != null
+        ? List<String>.from(json['place_types'])
+        : null;
     placeId = json['place_id'];
     ownerEmail = json['owner_email'];
     zip = json['zip'];
@@ -561,7 +568,7 @@ class Subdestination {
     placeId = json['place_id'];
     status = json['status'];
     campusId = json['campus_id'];
-    rented = json['occupancy'] ??false;
+    rented = json['occupancy'] ?? false;
     locationId = json['location_id'];
   }
 
@@ -597,17 +604,15 @@ class Screenshots {
   String? imageUrl;
   CreatedAt? createdAt;
 
-
-  Screenshots({
-    this.id,
-    this.name,
-    this.role,
-    this.companyName,
-    this.date,
-    this.time,
-    this.imageUrl,
-    this.createdAt
-  });
+  Screenshots(
+      {this.id,
+      this.name,
+      this.role,
+      this.companyName,
+      this.date,
+      this.time,
+      this.imageUrl,
+      this.createdAt});
 
   Screenshots.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -617,7 +622,9 @@ class Screenshots {
     date = json['date'];
     time = json['time'];
     imageUrl = json['image_url'];
-    createdAt = json['created_at'] != null ? CreatedAt.fromJson(json['created_at']) : null;
+    createdAt = json['created_at'] != null
+        ? CreatedAt.fromJson(json['created_at'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -636,6 +643,7 @@ class Screenshots {
     return data;
   }
 }
+
 class CreatedAt {
   int? iSeconds;
   int? iNanoseconds;
@@ -654,6 +662,7 @@ class CreatedAt {
     return data;
   }
 }
+
 class data {
   String? id;
   String? name;
@@ -667,14 +676,14 @@ class data {
 
   data(
       {this.id,
-        this.name,
-        this.email,
-        this.companyId,
-        this.userId,
-        this.date,
-        this.time,
-        this.imageUrl,
-        this.createdAt});
+      this.name,
+      this.email,
+      this.companyId,
+      this.userId,
+      this.date,
+      this.time,
+      this.imageUrl,
+      this.createdAt});
 
   data.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -707,5 +716,24 @@ class data {
   }
 }
 
+class DataCompleteness {
+  int? scorePd;
+  int? scoreTe;
+  int? finalScore;
 
+  DataCompleteness({this.scorePd, this.scoreTe, this.finalScore});
 
+  DataCompleteness.fromJson(Map<String, dynamic> json) {
+    scorePd = json['score_pd'];
+    scoreTe = json['score_te'];
+    finalScore = json['final_score'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['score_pd'] = this.scorePd;
+    data['score_te'] = this.scoreTe;
+    data['final_score'] = this.finalScore;
+    return data;
+  }
+}

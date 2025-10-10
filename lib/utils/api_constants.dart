@@ -196,7 +196,9 @@ class AppConstant {
   static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/accessible_sov';
   static String get GET_SEARCH_LIST_BY_SOV => '$baseURL/user_management_new';
 
+
   static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations/sov';
+  static String get SHARE_SOV_LIST => '$baseURL/locations/share_sov';
 
   static String get RENAME_SOV => '$baseURL/accounts';
 
@@ -292,6 +294,8 @@ class AppConstant {
 
   static String get DELETE_SUB_ACCOUNT =>
       '$baseURL/locations/delete_subaccount?';
+  static String get DELETE_SOV_ACCOUNT =>
+      '$baseURL/locations/delete_sov?';
 
   static String get GET_DATA_PARAMETERS =>
       '$baseURL/data_categories/subaccountparameter/';

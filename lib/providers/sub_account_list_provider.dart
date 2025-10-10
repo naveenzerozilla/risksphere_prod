@@ -360,7 +360,35 @@ class SubAccountListProvider extends ChangeNotifier {
       ));
     }
   }
+  Future<bool> deleteSOVAccount(
+      BuildContext context, String accountId, String subaccountId,var sovID) async {
+    try {
+      isDeleteLocationLoading = true;
+      notifyListeners(); // Notify UI to update the button state
 
+      ApiService apiService = ApiService(
+          "${AppConstant.DELETE_SOV_ACCOUNT}account_id=$accountId&sub_account_id=$subaccountId&sov_id=$sovID");
+      var response = await apiService.delete({});
+
+      log(response.toString());
+      CustomToast.success(context, response['message']);
+
+      return true; // Return true only if successful
+    } on BackendException catch (e, stackTrace) {
+      log("Error deleting account: ${e.message}");
+      log(stackTrace.toString());
+      CustomToast.error(context, e.message);
+      return false;
+    } catch (e, stackTrace) {
+      log("Unexpected error: $e");
+      log(stackTrace.toString());
+      CustomToast.error(context, "An unexpected error occurred");
+      return false;
+    } finally {
+      isDeleteLocationLoading = false;
+      notifyListeners(); // Notify UI to remove the loader
+    }
+  }
   Future<bool> deleteAccount(
       BuildContext context, String accountId, String subaccountId) async {
     try {

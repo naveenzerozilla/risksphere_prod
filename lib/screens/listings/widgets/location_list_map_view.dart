@@ -1141,179 +1141,288 @@ class _LocationListMapViewState extends State<LocationListMapView>
                                         ),
                                       ),
                                       SizedBox(width: 8),
-                                      Container(
-                                        height: 24,
-                                        width: 48,
-                                        child: Switch(
-                                          value: _showPins,
-                                          // onChanged: (value) {
-                                          onChanged: _isHeatmapMenuOpen
-                                              ? null
-                                              : (value) {
-                                                  print(value);
-                                                  // if (_isHeatmapOn) {
-                                                  print("object");
-                                                  _togglePinVisibility();
-                                                  // }
-                                                },
-                                          activeColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          activeTrackColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.5),
-                                          inactiveThumbColor: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                          inactiveTrackColor: Theme.of(context)
-                                              .colorScheme
-                                              .surface
-                                              .withOpacity(0.5),
-                                        ),
-                                      ),
+                                      // Container(
+                                      //   height: 24,
+                                      //   width: 48,
+                                      //   child: Switch(
+                                      //     value: _showPins,
+                                      //     // onChanged: (value) {
+                                      //     onChanged: _isHeatmapMenuOpen
+                                      //         ? null
+                                      //         : (value) {
+                                      //             print(value);
+                                      //             // if (_isHeatmapOn) {
+                                      //             print("object");
+                                      //             _togglePinVisibility();
+                                      //             // }
+                                      //           },
+                                      //     activeColor: Theme.of(context)
+                                      //         .colorScheme
+                                      //         .primary,
+                                      //     activeTrackColor: Theme.of(context)
+                                      //         .colorScheme
+                                      //         .primary
+                                      //         .withOpacity(0.5),
+                                      //     inactiveThumbColor: Theme.of(context)
+                                      //         .colorScheme
+                                      //         .surface,
+                                      //     inactiveTrackColor: Theme.of(context)
+                                      //         .colorScheme
+                                      //         .surface
+                                      //         .withOpacity(0.5),
+                                      //   ),
+                                      // ),
                                       SizedBox(width: 8),
                                       _selectedTabIndex == 1
                                           ? MenuAnchor(
                                               builder:
                                                   (context, controller, child) {
-                                                return InkWell(
-                                                  onTap: () {
-                                                    var userProfileProvider =
-                                                        Provider.of<
-                                                                UserProfileProvider>(
-                                                            context,
-                                                            listen: false);
-                                                    final trialStatus =
-                                                        userProfileProvider
-                                                                    .trialInfo[
-                                                                'status'] ??
-                                                            '';
-                                                    final trialSubdestinations =
-                                                        userProfileProvider
-                                                                    .trialInfo[
-                                                                'subDestinations'] ??
-                                                            0;
-                                                    if (trialStatus != '') {
-                                                      showDialog(
-                                                        context: context,
-                                                        barrierColor: Theme.of(
-                                                                context)
-                                                            .colorScheme
-                                                            .surfaceContainerLowest,
-                                                        builder: (BuildContext
-                                                            context) {
-                                                          return Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            children: [
-                                                              Row(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .end,
-                                                                children: [
-                                                                  IconButton(
-                                                                    icon: Icon(Icons
-                                                                        .close),
-                                                                    onPressed:
-                                                                        () {
-                                                                      Navigator.of(
-                                                                              context)
-                                                                          .pop();
-                                                                    },
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              MessageCard(
-                                                                isUpgrade: true,
-                                                                messageTextSpans: [
-                                                                  TextSpan(
-                                                                    text:
-                                                                        'Upgrade your account to generate heat map!',
-                                                                    style: CustomTypography(
-                                                                            context)
-                                                                        .Body1,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ],
-                                                          );
-                                                        },
-                                                      );
-                                                      return;
-                                                    }
-                                                    if (_isLoading ||
-                                                        Provider.of<MyLocationListProvider>(
-                                                                context,
-                                                                listen: false)
-                                                            .isHeatMapGeneratingLive) {
-                                                      // Prevent opening the menu if loading or heatmap is being generated
-                                                      return;
-                                                    }
-                                                    if (_reducers.isEmpty) {
-                                                      // Old implementation: Toggle heatmap directly if no reducers
-                                                      _toggleHeatmap();
-                                                    } else {
-                                                      // Show the menu if reducers are available
-                                                      if (controller.isOpen) {
-                                                        controller.close();
-                                                      } else {
-                                                        controller.open();
-                                                      }
-                                                    }
-                                                  },
-                                                  child: Container(
-                                                    height: 34,
-                                                    width: 34,
-                                                    padding: EdgeInsets.all(4),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      shape: BoxShape.rectangle,
-                                                      color: _isHeatmapOn
-                                                          ? Colors.orange
-                                                              .withOpacity(0.8)
-                                                          : Theme.of(context)
-                                                              .colorScheme
-                                                              .surface,
-                                                    ),
-                                                    child: _isLoading ||
-                                                            Provider.of<MyLocationListProvider>(
-                                                                    context,
-                                                                    listen:
-                                                                        false)
-                                                                .isHeatMapGeneratingLive
-                                                        ? Center(
-                                                            child: SizedBox(
-                                                              height: 20,
-                                                              width: 20,
-                                                              child:
-                                                                  CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                valueColor:
-                                                                    AlwaysStoppedAnimation<
-                                                                        Color>(
-                                                                  Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .primary,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          )
-                                                        : SvgPicture.asset(
-                                                            'assets/images/heatmap_icon.svg',
-                                                            color: _isHeatmapOn
-                                                                ? Colors.white
-                                                                : Theme.of(
-                                                                        context)
-                                                                    .colorScheme
-                                                                    .onSurface,
+                                                return
+                                                  InkWell(
+                                                    onTap: () async {
+                                                      // var userProfileProvider =
+                                                      // Provider.of<UserProfileProvider>(context, listen: false);
+                                                      // final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+                                                      // final trialSubdestinations =
+                                                      //     userProfileProvider.trialInfo['subDestinations'] ?? 0;
+
+                                                      // if (trialStatus != '') {
+                                                      //   showDialog(
+                                                      //     context: context,
+                                                      //     barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+                                                      //     builder: (BuildContext context) {
+                                                      //       return Column(
+                                                      //         mainAxisAlignment: MainAxisAlignment.center,
+                                                      //         children: [
+                                                      //           Row(
+                                                      //             mainAxisAlignment: MainAxisAlignment.end,
+                                                      //             children: [
+                                                      //               IconButton(
+                                                      //                 icon: const Icon(Icons.close),
+                                                      //                 onPressed: () {
+                                                      //                   Navigator.of(context).pop();
+                                                      //                 },
+                                                      //               ),
+                                                      //             ],
+                                                      //           ),
+                                                      //           MessageCard(
+                                                      //             isUpgrade: true,
+                                                      //             messageTextSpans: [
+                                                      //               TextSpan(
+                                                      //                 text: 'Upgrade your account to generate heat map!',
+                                                      //                 style: CustomTypography(context).Body1,
+                                                      //               ),
+                                                      //             ],
+                                                      //           ),
+                                                      //         ],
+                                                      //       );
+                                                      //     },
+                                                      //   );
+                                                      //   return;
+                                                      // }
+                                                      //
+                                                      // if (_isLoading ||
+                                                      //     Provider.of<MyLocationListProvider>(context, listen: false)
+                                                      //         .isHeatMapGeneratingLive) {
+                                                      //   // Prevent double-tap or when generation is already in progress
+                                                      //   return;
+                                                      // }
+
+                                                      // 🟡 Start loader
+                                                      setState(() {
+                                                        _isLoading = true;
+                                                      });
+
+                                                      // 🕒 Stop loader automatically after 10 seconds
+                                                      Future.delayed(const Duration(seconds: 5), () {
+                                                        if (mounted) {
+                                                          setState(() {
+                                                            _isLoading = false;
+                                                          });
+                                                        }
+                                                      });
+
+                                                      // 🔥 Continue your existing logic
+                                                      // if (_reducers.isEmpty) {
+                                                      //   _toggleHeatmap();
+                                                      // } else {
+                                                      //   if (controller.isOpen) {
+                                                      //     controller.close();
+                                                      //   } else {
+                                                      //     controller.open();
+                                                      //   }
+                                                      // }
+                                                    },
+                                                    child: Container(
+                                                      height: 34,
+                                                      width: 34,
+                                                      padding: const EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        shape: BoxShape.rectangle,
+                                                        color: _isHeatmapOn
+                                                            ? Colors.grey.withOpacity(0.8)
+                                                            : Theme.of(context).colorScheme.surface,
+                                                      ),
+                                                      child: _isLoading
+                                                          ? const Center(
+                                                        child: SizedBox(
+                                                          height: 20,
+                                                          width: 20,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
                                                           ),
-                                                  ),
-                                                );
+                                                        ),
+                                                      )
+                                                          : SvgPicture.asset(
+                                                        'assets/images/heatmap_icon.svg',
+                                                        color: _isHeatmapOn
+                                                            ? Colors.white
+                                                            : Theme.of(context).colorScheme.onSurface,
+                                                      ),
+                                                    ),
+                                                  );
+
+                                                    //   InkWell(
+                                                //   onTap: () {
+                                                //     var userProfileProvider =
+                                                //         Provider.of<
+                                                //                 UserProfileProvider>(
+                                                //             context,
+                                                //             listen: false);
+                                                //     final trialStatus =
+                                                //         userProfileProvider
+                                                //                     .trialInfo[
+                                                //                 'status'] ??
+                                                //             '';
+                                                //     final trialSubdestinations =
+                                                //         userProfileProvider
+                                                //                     .trialInfo[
+                                                //                 'subDestinations'] ??
+                                                //             0;
+                                                //     if (trialStatus != '') {
+                                                //       showDialog(
+                                                //         context: context,
+                                                //         barrierColor: Theme.of(
+                                                //                 context)
+                                                //             .colorScheme
+                                                //             .surfaceContainerLowest,
+                                                //         builder: (BuildContext
+                                                //             context) {
+                                                //           return Column(
+                                                //             mainAxisAlignment:
+                                                //                 MainAxisAlignment
+                                                //                     .center,
+                                                //             children: [
+                                                //               Row(
+                                                //                 mainAxisAlignment:
+                                                //                     MainAxisAlignment
+                                                //                         .end,
+                                                //                 children: [
+                                                //                   IconButton(
+                                                //                     icon: Icon(Icons
+                                                //                         .close),
+                                                //                     onPressed:
+                                                //                         () {
+                                                //                       Navigator.of(
+                                                //                               context)
+                                                //                           .pop();
+                                                //                     },
+                                                //                   ),
+                                                //                 ],
+                                                //               ),
+                                                //               MessageCard(
+                                                //                 isUpgrade: true,
+                                                //                 messageTextSpans: [
+                                                //                   TextSpan(
+                                                //                     text:
+                                                //                         'Upgrade your account to generate heat map!',
+                                                //                     style: CustomTypography(
+                                                //                             context)
+                                                //                         .Body1,
+                                                //                   ),
+                                                //                 ],
+                                                //               ),
+                                                //             ],
+                                                //           );
+                                                //         },
+                                                //       );
+                                                //       return;
+                                                //     }
+                                                //     if (_isLoading ||
+                                                //         Provider.of<MyLocationListProvider>(
+                                                //                 context,
+                                                //                 listen: false)
+                                                //             .isHeatMapGeneratingLive) {
+                                                //       // Prevent opening the menu if loading or heatmap is being generated
+                                                //       return;
+                                                //     }
+                                                //     if (_reducers.isEmpty) {
+                                                //       // Old implementation: Toggle heatmap directly if no reducers
+                                                //       _toggleHeatmap();
+                                                //     } else {
+                                                //       // Show the menu if reducers are available
+                                                //       if (controller.isOpen) {
+                                                //         controller.close();
+                                                //       } else {
+                                                //         controller.open();
+                                                //       }
+                                                //     }
+                                                //   },
+                                                //   child: Container(
+                                                //     height: 34,
+                                                //     width: 34,
+                                                //     padding: EdgeInsets.all(4),
+                                                //     decoration: BoxDecoration(
+                                                //       borderRadius:
+                                                //           BorderRadius.circular(
+                                                //               8),
+                                                //       shape: BoxShape.rectangle,
+                                                //       color: _isHeatmapOn
+                                                //           ? Colors.orange
+                                                //               .withOpacity(0.8)
+                                                //           : Theme.of(context)
+                                                //               .colorScheme
+                                                //               .surface,
+                                                //     ),
+                                                //     child:
+                                                //     // _isLoading ||
+                                                //     //         Provider.of<MyLocationListProvider>(
+                                                //     //                 context,
+                                                //     //                 listen:
+                                                //     //                     false)
+                                                //     //             .isHeatMapGeneratingLive
+                                                //     //     ? Center(
+                                                //     //         child: SizedBox(
+                                                //     //           height: 20,
+                                                //     //           width: 20,
+                                                //     //           child:
+                                                //     //               CircularProgressIndicator(
+                                                //     //             strokeWidth: 2,
+                                                //     //             valueColor:
+                                                //     //                 AlwaysStoppedAnimation<
+                                                //     //                     Color>(
+                                                //     //               Theme.of(
+                                                //     //                       context)
+                                                //     //                   .colorScheme
+                                                //     //                   .primary,
+                                                //     //             ),
+                                                //     //           ),
+                                                //     //         ),
+                                                //     //       )
+                                                //     //     :
+                                                //     SvgPicture.asset(
+                                                //             'assets/images/heatmap_icon.svg',
+                                                //             color: _isHeatmapOn
+                                                //                 ? Colors.white
+                                                //                 : Theme.of(
+                                                //                         context)
+                                                //                     .colorScheme
+                                                //                     .onSurface,
+                                                //           ),
+                                                //   ),
+                                                // );
                                               },
                                               menuChildren: !_isLoading &&
                                                       !Provider.of<
@@ -1479,7 +1588,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           locationId: location.id ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.hazard?['Overall']?.rating ?? 0,
-          dataCompleteness: scoreToStar( location.dataCompleteness),
+          dataCompleteness: location.dataCompleteness!.scorePd.toString(),
           //location.riskScore ?? 0,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],
