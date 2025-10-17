@@ -964,19 +964,29 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           padding: EdgeInsets.all(0.0),
                                           child: Row(
                                             children: [
+
                                               Checkbox(
                                                 value: addToSOVCheck,
-                                                onChanged: trialStatus
-                                                        .isNotEmpty
+                                                onChanged: (trialStatus.isNotEmpty && !hasAnyPlan)
                                                     ? null
                                                     : areFieldsDisabled()
-                                                        ? null // Disable checkbox if `areFieldsDisabled` is true
-                                                        : (bool? value) {
-                                                            setState(() {
-                                                              addToSOVCheck =
-                                                                  !addToSOVCheck;
-                                                            });
-                                                          },
+                                                    ? null // Disable checkbox if `areFieldsDisabled` is true
+                                                    : (bool? value) {
+                                                  setState(() {
+                                                    addToSOVCheck = !addToSOVCheck;
+                                                  });
+                                                },
+                                                // onChanged: trialStatus
+                                                //         .isNotEmpty
+                                                //     ? null
+                                                //     : areFieldsDisabled()
+                                                //         ? null // Disable checkbox if `areFieldsDisabled` is true
+                                                //         : (bool? value) {
+                                                //             setState(() {
+                                                //               addToSOVCheck =
+                                                //                   !addToSOVCheck;
+                                                //             });
+                                                //           },
                                               ),
                                               SizedBox(width: 8),
                                               Text(

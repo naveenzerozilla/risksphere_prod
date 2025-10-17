@@ -34,7 +34,10 @@ import '../service/language_service.dart';
 class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
   int currentPage = 1;
+  bool _isFetching = false; // prevent concurrent API calls
+  bool get isFetchingMore => isNextPageLoading; // optional alias for clarity
 
+  bool get isLastPage => currentPage >= totalPages;
   void setLoading(bool value) {
     isLoading = value;
     notifyListeners();
@@ -413,6 +416,18 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  List<MyLocation> _overallLocationList = [];
+
+  List<MyLocation> get overallLocationList => _overallLocationList;
+
+  set overallLocationList(List<MyLocation> value) {
+    _overallLocationList = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+
 
   List<MyLocation> _myLocationConflictList = [];
 
@@ -453,6 +468,17 @@ class MyLocationListProvider extends ChangeNotifier {
 
   set locationProfile(MyLocation? value) {
     _locationProfile = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  GraphData? _grapData;
+
+  GraphData? get grapDataProfile => _grapData;
+
+  set grapDataProfile(GraphData? value) {
+    _grapData = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -985,8 +1011,7 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
 // Add this flag in your provider class
-  bool _isFetching = false;
-
+//   bool _isFetching = false;
   Future<void> fetchLocationList(
       BuildContext context,
       String searchQuery,
@@ -996,15 +1021,14 @@ class MyLocationListProvider extends ChangeNotifier {
       String? subAccountID,
       String? processId,
       String? subProcessId,
-      String? sovID
+      String? sovID,
       ) async {
-    print("sov id: $sovID");
     if (_isFetching) return; // Prevent multiple concurrent calls
     _isFetching = true;
 
-    var typography = CustomTypography(context);
     try {
-      if (page - 1 > totalPages) return;
+      // If requested page is beyond total pages, return early
+      if (page > totalPages && totalPages != 0) return;
 
       if (page == 1) {
         myLocationList = [];
@@ -1012,20 +1036,14 @@ class MyLocationListProvider extends ChangeNotifier {
       } else {
         isNextPageLoading = true;
       }
+      notifyListeners(); // Update UI for loader
 
       var headers = await CommonHeaders.createHeaders();
-      log(headers.toString());
 
-      // Build URL
-      var url;
-      if (sovID != null && sovID.isNotEmpty) {
-        print("sov id: $sovID");
-        url =
-            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
-      } else {
-        url =
-            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-      }
+      // Build URL dynamically
+      var url = sovID != null && sovID.isNotEmpty
+          ? "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID&zip=&search=&sort=&campus_name="
+          : "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
 
       if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
       if (zipcode.isNotEmpty) url += "&zip=$state";
@@ -1036,59 +1054,235 @@ class MyLocationListProvider extends ChangeNotifier {
           if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty)
-        url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
       if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-      if (_selectedCampusIds.isNotEmpty)
-        url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
       if (processId != null) url += "&process_id=$processId";
       if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
-      print(url);
       var uri = Uri.parse(url);
-
       var response = await http.get(uri, headers: headers);
-      log(response.body);
-      print(response.statusCode);
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
 
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
-        isConflict = locationListModel.isConflict!;
-        isHazardCanStart = locationListModel.isHazardCanStart!;
-        isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
-        totalPages = locationHits ~/ pageSize;
+        isConflict = locationListModel.isConflict ?? false;
+        isHazardCanStart = locationListModel.isHazardCanStart ?? false;
+        isAnyLocationSelected = locationListModel.isAnyHazardProcessing ?? false;
+
+        // Calculate total pages
+        totalPages = (locationHits / pageSize).ceil();
 
         if (page == 1) {
-          locationcount = locationListModel.totalRecords ?? 1;
           myLocationList = locationListModel.results ?? [];
+          grapDataProfile = locationListModel.graphData;
+          locationcount = locationListModel.totalRecords ?? 0;
         } else {
+          // Append next page results
           addToMyLocationList(locationListModel.results ?? []);
         }
-
-        log(myLocationList.toString());
-        print("totalPages: $totalPages");
-        log(page.toString());
       } else {
-        print(json.decode(response.body)["error"]);
-        throw Exception('Failed to load data');
+        var errorMsg = json.decode(response.body)["error"] ?? "Failed to load data";
+        throw Exception(errorMsg);
       }
-    } on BackendException catch (e, stackTrace) {
-      print(stackTrace);
-      print(e.message);
     } catch (e, stackTrace) {
+      print("Error fetching locations: $e");
       print(stackTrace);
     } finally {
+      // Reset loading flags
       isLoading = false;
       isNextPageLoading = false;
-      _isFetching = false; // Release the fetch lock
-      notifyListeners(); // Notify UI only once at the end
+      _isFetching = false;
+      notifyListeners();
     }
   }
+  Future<void> fetchLocationList1(
+      BuildContext context,
+
+      int page,
+      int pageSize,
+      String? accountID,
+      String? subAccountID,
+      String? processId,
+      String? subProcessId,
+      String? sovID,
+      ) async {
+    if (_isFetching) return; // Prevent multiple concurrent calls
+    _isFetching = true;
+
+    try {
+      // If requested page is beyond total pages, return early
+      if (page > totalPages && totalPages != 0) return;
+
+      if (page == 1) {
+        overallLocationList = [];
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
+      }
+      notifyListeners(); // Update UI for loader
+
+      var headers = await CommonHeaders.createHeaders();
+
+      // Build URL dynamically
+      var url = sovID != null && sovID.isNotEmpty
+          ? "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID&zip=&search=&sort=&campus_name="
+          : "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+
+      if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
+      if (zipcode.isNotEmpty) url += "&zip=$state";
+      if (sortBy.isNotEmpty) url += "&sort=$sortBy";
+      if (certifications.isNotEmpty) {
+        for (var cert in certifications) {
+          if (cert == "Manual Certified") url += "&manual_certified=true";
+          if (cert == "Auto Certified") url += "&auto_certified=true";
+        }
+      }
+      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
+      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (processId != null) url += "&process_id=$processId";
+      if (subProcessId != null) url += "&sub_process_id=$subProcessId";
+
+      var uri = Uri.parse(url);
+      var response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        isAnyLocationSelected = locationListModel.isAnyHazardProcessing ?? false;
+
+        // Calculate total pages
+        totalPages = (locationHits / pageSize).ceil();
+
+        if (page == 1) {
+          overallLocationList = locationListModel.results ?? [];
+
+        } else {
+          // Append next page results
+          addToMyLocationList(locationListModel.results ?? []);
+        }
+      } else {
+        var errorMsg = json.decode(response.body)["error"] ?? "Failed to load data";
+        throw Exception(errorMsg);
+      }
+    } catch (e, stackTrace) {
+      print("Error fetching locations: $e");
+      print(stackTrace);
+    } finally {
+      // Reset loading flags
+      isLoading = false;
+      isNextPageLoading = false;
+      _isFetching = false;
+      notifyListeners();
+    }
+  }
+  // Future<void> fetchLocationList(
+  //     BuildContext context,
+  //     String searchQuery,
+  //     int page,
+  //     int pageSize,
+  //     String? accountID,
+  //     String? subAccountID,
+  //     String? processId,
+  //     String? subProcessId,
+  //     String? sovID
+  //     ) async {
+  //   print("sov id: $sovID");
+  //   if (_isFetching) return; // Prevent multiple concurrent calls
+  //   _isFetching = true;
+  //
+  //   var typography = CustomTypography(context);
+  //   try {
+  //     if (page - 1 > totalPages) return;
+  //
+  //     if (page == 1) {
+  //       myLocationList = [];
+  //       isLoading = true;
+  //     } else {
+  //       isNextPageLoading = true;
+  //     }
+  //
+  //     var headers = await CommonHeaders.createHeaders();
+  //     log(headers.toString());
+  //
+  //     // Build URL
+  //     var url;
+  //     if (sovID != null && sovID.isNotEmpty) {
+  //       print("sov id: $sovID");
+  //       url =
+  //           "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID&zip=&search=&sort=&campus_name=";
+  //     } else {
+  //       url =
+  //           "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
+  //     }
+  //
+  //     if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
+  //     if (zipcode.isNotEmpty) url += "&zip=$state";
+  //     if (sortBy.isNotEmpty) url += "&sort=$sortBy";
+  //     if (certifications.isNotEmpty) {
+  //       for (var cert in certifications) {
+  //         if (cert == "Manual Certified") url += "&manual_certified=true";
+  //         if (cert == "Auto Certified") url += "&auto_certified=true";
+  //       }
+  //     }
+  //     if (hazardRatings.isNotEmpty)
+  //       url += "&hazard=${jsonEncode(hazardRatings)}";
+  //     if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
+  //     if (_selectedCampusIds.isNotEmpty)
+  //       url += "&campus_id=${_selectedCampusIds.join(',')}";
+  //     if (processId != null) url += "&process_id=$processId";
+  //     if (subProcessId != null) url += "&sub_process_id=$subProcessId";
+  //
+  //     print(url);
+  //     var uri = Uri.parse(url);
+  //
+  //     var response = await http.get(uri, headers: headers);
+  //     log(response.body);
+  //     print(response.statusCode);
+  //
+  //     if (response.statusCode == 200) {
+  //       var jsonResponse = json.decode(response.body);
+  //       MyLocationModel locationListModel =
+  //           MyLocationModel.fromJson(jsonResponse);
+  //
+  //       locationHits = locationListModel.totalRecords ?? 0;
+  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
+  //       isConflict = locationListModel.isConflict!;
+  //       isHazardCanStart = locationListModel.isHazardCanStart!;
+  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
+  //       totalPages = locationHits ~/ pageSize;
+  //
+  //       if (page == 1) {
+  //         locationcount = locationListModel.totalRecords ?? 1;
+  //         myLocationList = locationListModel.results ?? [];
+  //         grapDataProfile= locationListModel.graphData ;
+  //       } else {
+  //         addToMyLocationList(locationListModel.results ?? []);
+  //       }
+  //
+  //       log(myLocationList.toString());
+  //       print("totalPages: $totalPages");
+  //       log(page.toString());
+  //     } else {
+  //       print(json.decode(response.body)["error"]);
+  //       throw Exception('Failed to load data');
+  //     }
+  //   } on BackendException catch (e, stackTrace) {
+  //     print(stackTrace);
+  //     print(e.message);
+  //   } catch (e, stackTrace) {
+  //     print(stackTrace);
+  //   } finally {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     _isFetching = false; // Release the fetch lock
+  //     notifyListeners(); // Notify UI only once at the end
+  //   }
+  // }
 
   Future<void> fetchLocationConflictList(
       BuildContext context,
@@ -1866,7 +2060,7 @@ class MyLocationListProvider extends ChangeNotifier {
                                 });
                               },
                               decoration: InputDecoration(
-                                labelText: "Name of the SoV2",
+                                labelText: "Name of the SoV",
                                 border: const OutlineInputBorder(),
                                 suffixIcon: Icon(Icons.search),
                               ),
@@ -1903,57 +2097,120 @@ class MyLocationListProvider extends ChangeNotifier {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: isAddToSOVLoading
-                                  ? Center(
-                                      child: CircularProgressIndicator(),
-                                    )
-                                  : CustomButton(
-                                      onPressed: () async {
-                                        if (sovController.text.isEmpty) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                            content: Text(
-                                              "Please select or enter an SoV name.",
-                                              style: typography.Body1,
-                                            ),
-                                          ));
-                                          return;
-                                        }
-
-                                        // Prepare the body with location, account, sub-account, and sov details
-                                        Map<String, dynamic> body = {
-                                          "location_list": locationId == null
-                                              ? _selectedLocations
-                                                  .map(
-                                                      (location) => location.id)
-                                                  .toList()
-                                              : [locationId],
-                                          "account_id": accountID,
-                                          "sub_account_id": subAccountID,
-                                          "sov": {
-                                            "sov_id": selectedSovId,
-                                            // Empty if creating new SoV
-                                            "sov_name": sovController.text,
-                                            // Mandatory if creating new SoV
-                                          }
-                                        };
-
-                                        // Call your method to add the location to the SoV
-                                        await addLocationToSOV(context, body);
-
-                                        setState(() {
-                                          masterTabController?.animateTo(1);
-                                        });
-                                      },
-                                      child: Text(
-                                        "Add",
-                                        style: typography.ButtonLarge,
+                          children: [Expanded(
+                            child: isAddToSOVLoading
+                                ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                                : CustomButton(
+                              onPressed: () async {
+                                if (sovController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Please select or enter an SoV name.",
+                                        style: typography.Body1,
                                       ),
-                                      type: ButtonType.elevated,
                                     ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  isAddToSOVLoading = true; // 🔹 Show loader
+                                });
+
+                                try {
+                                  // Prepare the body
+                                  Map<String, dynamic> body = {
+                                    "location_list": locationId == null
+                                        ? _selectedLocations.map((location) => location.id).toList()
+                                        : [locationId],
+                                    "account_id": accountID,
+                                    "sub_account_id": subAccountID,
+                                    "sov": {
+                                      "sov_id": selectedSovId,
+                                      "sov_name": sovController.text,
+                                    }
+                                  };
+
+                                  // 🔹 Perform async operation
+                                  await addLocationToSOV(context, body);
+
+                                  // 🔹 After success, navigate or perform next action
+                                  setState(() {
+                                    masterTabController?.animateTo(1);
+                                  });
+                                } catch (e) {
+                                  // 🔹 Handle errors
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Error: $e")),
+                                  );
+                                } finally {
+                                  // 🔹 Always hide loader
+                                  setState(() {
+                                    isAddToSOVLoading = false;
+                                  });
+                                }
+                              },
+                              child: Text(
+                                "Add",
+                                style: typography.ButtonLargeBlack,
+                              ),
+                              type: ButtonType.elevated,
                             ),
+                          )
+
+                            // Expanded(
+                            //   child: isAddToSOVLoading
+                            //       ? Center(
+                            //           child: CircularProgressIndicator(),
+                            //         )
+                            //       : CustomButton(
+                            //           onPressed: () async {
+                            //             if (sovController.text.isEmpty) {
+                            //               ScaffoldMessenger.of(context)
+                            //                   .showSnackBar(SnackBar(
+                            //                 content: Text(
+                            //                   "Please select or enter an SoV name.",
+                            //                   style: typography.Body1,
+                            //                 ),
+                            //               ));
+                            //               return;
+                            //             }
+                            //
+                            //             // Prepare the body with location, account, sub-account, and sov details
+                            //             Map<String, dynamic> body = {
+                            //               "location_list": locationId == null
+                            //                   ? _selectedLocations
+                            //                       .map(
+                            //                           (location) => location.id)
+                            //                       .toList()
+                            //                   : [locationId],
+                            //               "account_id": accountID,
+                            //               "sub_account_id": subAccountID,
+                            //               "sov": {
+                            //                 "sov_id": selectedSovId,
+                            //                 // Empty if creating new SoV
+                            //                 "sov_name": sovController.text,
+                            //                 // Mandatory if creating new SoV
+                            //               }
+                            //             };
+                            //
+                            //             // Call your method to add the location to the SoV
+                            //             await addLocationToSOV(context, body);
+                            //
+                            //             setState(() {
+                            //               masterTabController?.animateTo(1);
+                            //             });
+                            //           },
+                            //           child: Text(
+                            //             "Add",
+                            //             style: typography.ButtonLargeBlack,
+                            //           ),
+                            //           type: ButtonType.elevated,
+                            //         ),
+                            // ),
                           ],
                         ),
                         SizedBox(width: 8.0),
@@ -2090,7 +2347,7 @@ class MyLocationListProvider extends ChangeNotifier {
                                         },
                                         child: Text(
                                           "Add",
-                                          style: typography.ButtonLarge,
+                                          style: typography.ButtonLargeBlack,
                                         ),
                                         type: ButtonType.elevated,
                                       ),
@@ -2190,7 +2447,7 @@ class MyLocationListProvider extends ChangeNotifier {
                                         },
                                         child: Text(
                                           "Delete",
-                                          style: typography.ButtonLarge,
+                                          style: typography.ButtonLargeBlack,
                                         ),
                                         type: ButtonType.elevated,
                                       ),
@@ -2517,9 +2774,11 @@ class MyLocationListProvider extends ChangeNotifier {
         }
         if (locationId != null && locationId.isNotEmpty) {
           locationProfile = locationListModel.filterByLocationResult?.first;
+          grapDataProfile=  locationListModel.graphData;
           resetTotalPage = locationListModel.totalRecords ?? 1;
         } else {
           locationProfile = locationListModel.results?.first;
+          grapDataProfile=  locationListModel.graphData;
         }
 
         log(resetTotalPage.toString() ?? "");
@@ -2655,6 +2914,7 @@ class MyLocationListProvider extends ChangeNotifier {
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
+        grapDataProfile = null;
         subdestinations = [];
       }
 
@@ -2896,7 +3156,62 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<bool> markAsCompleteSov(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+     ) async {
+    var typography = CustomTypography(context);
+    try {
+      isLoading = true;
+      notifyListeners();
+      String url =
+          "${AppConstant.SOV_COMPLETE_STATUS}";
+      ApiService apiService = ApiService(url);
+      // Create data payload
+      List<String> locationIds =
+      _selectedLocations.map((location) => location.id ?? "").toList();
+    final data = {
+      "status": "completed",
+      "location_id": locationIds,
+      "sov_id": sovId,
+    };
+      var body = data;
+      var response = await apiService.patch(body);
+      if (response.containsKey('result')) {
+        //result = LocationProfileModel.fromJson(response['result']);
+        subdestinations = locationProfile?.subdestinations ?? [];
+      } else {
+        locationProfile?.finalAddress = null;
+        subdestinations = [];
+      }
 
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } on BackendException catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.Body1),
+      ));
+      return false;
+    } catch (e, stackTrace) {
+      isLoading = false;
+      print(e);
+      print(stackTrace);
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //   content: Text(e.toString(), style: typography.Body1),
+      // ));
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
   Future<bool> updateLocationName(
       BuildContext context,
       String accountId,
@@ -3000,6 +3315,7 @@ class MyLocationListProvider extends ChangeNotifier {
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
+        grapDataProfile = null;
         subdestinations = [];
       }
 
@@ -3049,6 +3365,7 @@ class MyLocationListProvider extends ChangeNotifier {
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
+        grapDataProfile = null;
         subdestinations = [];
       }
 
@@ -3176,6 +3493,7 @@ class MyLocationListProvider extends ChangeNotifier {
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
+        grapDataProfile = null;
         subdestinations = [];
       }
 

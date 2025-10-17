@@ -23,7 +23,8 @@ class RolesBottomSheet extends StatefulWidget {
   final bool showCorporateSwitch;
   final bool isUserProfile;
 
-  const RolesBottomSheet({super.key,
+  const RolesBottomSheet({
+    super.key,
     required this.options,
     required this.selectedRoles,
     required this.addChip,
@@ -48,87 +49,157 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
   @override
   void initState() {
     super.initState();
-    // Extract individual and corporate options from JSON data
-    // Accessing AuthNotifier using Provider.of
-    // Accessing AuthNotifier using Provider.of
+
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
 
     if (widget.isUserProfile) {
-      // Filtering role list for individual and corporate options
-      filteredOptionsIndividual = (authNotifier.roleList ?? [])
-          .where((role) => role.accountType == 'individual')
-          .expand((role) =>
-          (role.categories ?? []).map((category) => category.toJson()))
-          .toList();
-
-      filteredOptionsCorporate = (authNotifier.roleList ?? [])
-          .where((role) => role.accountType == 'corporate')
-          .expand((role) =>
-          (role.categories ?? []).map((category) => category.toJson()))
-          .toList();
+      // For user profile case (if roles are already loaded)
+      filteredOptionsIndividual = [];
+      filteredOptionsCorporate = [];
     } else {
-      // Filtering companyTypeList for individual options
-      // Log the companyTypeList for debugging
-      log("CompanyTypeList: ${authNotifier.companyTypeList}");
-
-      // Filtering companyTypeList for individual options
-      filteredOptionsIndividual = (authNotifier.companyTypeList ?? [])
-          .where((companyType) {
-        log("Processing companyType: ${companyType.type}");
-        return companyType.type!.toLowerCase() == 'individual_account';
-      })
+      // 🔹 INDIVIDUAL ROLES
+      final allIndividual = (authNotifier.companyTypeList ?? [])
+          .where((companyType) => companyType.isApplicableForTrial == true)
           .expand((companyType) {
-        log("Roles for companyType: ${companyType.roles}");
-        return (companyType.roles ?? []).map((role) {
-          log("Mapping role: ${role.toJson()}");
-          return role.toJson();
-        });
-      })
-          .toList();
+        log("Processing companyType: ${companyType.type}, Roles Count: ${companyType.roles?.length ?? 0}");
+        return (companyType.roles ?? []).map((role) => role.toJson());
+      }).toList();
 
-      log("Filtered Options Individual: $filteredOptionsIndividual");
+      // ✅ Deduplicate based on 'id' or fallback 'name'
+      final Map<dynamic, Map<String, dynamic>> uniqueIndividual = {};
+      for (var item in allIndividual) {
+        final key = item['id'] ?? item['name'];
+        uniqueIndividual[key] = item;
+      }
+      filteredOptionsIndividual = uniqueIndividual.values.toList();
 
+      log("✅ Unique Individual Roles Count: ${filteredOptionsIndividual.length}");
+      log("✅ Individual Roles: ${filteredOptionsIndividual.map((e) => e['name']).toList()}");
 
-
-      // Filtering companyTypeList for corporate options
-      filteredOptionsCorporate = (authNotifier.roleList ?? [])
+      // 🔹 CORPORATE ROLES
+      final allCorporate = (authNotifier.roleList ?? [])
           .where((role) => role.accountType == 'corporate')
-          .expand((role) =>
-          (role.categories ?? []).map((category) => category.toJson()))
+          .expand((role) => (role.categories ?? []).map((cat) => cat.toJson()))
           .toList();
+
+      // ✅ Deduplicate corporate roles
+      final Map<dynamic, Map<String, dynamic>> uniqueCorporate = {};
+      for (var item in allCorporate) {
+        final key = item['id'] ?? item['name'];
+        uniqueCorporate[key] = item;
+      }
+      filteredOptionsCorporate = uniqueCorporate.values.toList();
+
+      log("✅ Unique Corporate Roles Count: ${filteredOptionsCorporate.length}");
+      log("✅ Corporate Roles: ${filteredOptionsCorporate.map((e) => e['name']).toList()}");
     }
 
     _updateSelectedOptions();
   }
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // Extract individual and corporate options from JSON data
+  //   // Accessing AuthNotifier using Provider.of
+  //   // Accessing AuthNotifier using Provider.of
+  //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+  //
+  //   if (widget.isUserProfile) {
+  //     // Filtering role list for individual and corporate options
+  //     // ✅ Remove duplicates based on 'id' or 'name'
+  //     filteredOptionsIndividual = {
+  //       for (var e in filteredOptionsIndividual)
+  //         e['id'] ?? e['name']: e
+  //     }.values.toList();
+  //
+  //     filteredOptionsCorporate = {
+  //       for (var e in filteredOptionsCorporate)
+  //         e['id'] ?? e['name']: e
+  //     }.values.toList();
+  //
+  //   } else {
+  //     // Filtering companyTypeList for individual options
+  //     // Log the companyTypeList for debugging
+  //     log("CompanyTypeList: ${authNotifier.companyTypeList}");
+  //
+  //     // Filtering companyTypeList for individual options
+  //     filteredOptionsIndividual =
+  //         (authNotifier.companyTypeList ?? [])
+  //             .where((companyType) => companyType.isApplicableForTrial == true)
+  //             .expand((companyType) {
+  //           log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
+  //           return (companyType.roles ?? []).map((role) {
+  //             log("Mapping role: ${role.toJson()}");
+  //             return role.toJson();
+  //           });
+  //         }).toList();
+  //
+  //
+  //     log("Filtered Options Individual: $filteredOptionsIndividual");
+  //
+  //     // Filtering companyTypeList for corporate options
+  //     filteredOptionsCorporate = (authNotifier.roleList ?? [])
+  //         .where((role) => role.accountType == 'corporate')
+  //         .expand((role) =>
+  //             (role.categories ?? []).map((category) => category.toJson()))
+  //         .toList();
+  //   }
+  //
+  //   _updateSelectedOptions();
+  // }
   void _updateSelectedOptions() {
     setState(() {
       _selectedOptions.clear();
       final selectedOptionsList =
-      widget.selectedOption == SignUpOptions.individual
-          ? filteredOptionsIndividual
-          : filteredOptionsCorporate;
-      print("Selected options: $selectedOptionsList");
-      _selectedOptions.addAll(
-        widget.selectedRoles.map((role) {
-          print(role);
-          final option = selectedOptionsList.firstWhere(
-                (option) => option['name'] == role.name,
-            orElse: () => {'name': role.name, 'id': null},
-          );
-          return option?['role'];
-        }).whereType<String>(),
-      );
+          widget.selectedOption == SignUpOptions.individual
+              ? filteredOptionsIndividual
+              : filteredOptionsCorporate;
+
+      log("Selected options before filter: ${widget.selectedRoles.map((e) => e.name).toList()}");
+
+      for (final selected in widget.selectedRoles) {
+        final match = selectedOptionsList.firstWhere(
+          (option) => option['name'] == selected.name,
+          orElse: () => {},
+        );
+        if (match.isNotEmpty) {
+          _selectedOptions.add(match['id'] ?? match['name']);
+        }
+      }
+
+      log("Final selected IDs: $_selectedOptions");
     });
   }
+
+  // void _updateSelectedOptions() {
+  //   setState(() {
+  //     _selectedOptions.clear();
+  //     final selectedOptionsList =
+  //         widget.selectedOption == SignUpOptions.individual
+  //             ? filteredOptionsIndividual
+  //             : filteredOptionsCorporate;
+  //     print("Selected options: $selectedOptionsList");
+  //     _selectedOptions.addAll(
+  //       widget.selectedRoles.map((role) {
+  //         print(role);
+  //         final option = selectedOptionsList.firstWhere(
+  //           (option) => option['name'] == role.name,
+  //           orElse: () => {'name': role.name, 'id': null},
+  //         );
+  //         return option?['role'];
+  //       }).whereType<String>(),
+  //     );
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
     List<Map<String, dynamic>> allOptions =
-    widget.selectedOption == SignUpOptions.individual
-        ? filteredOptionsIndividual
-        : filteredOptionsCorporate;
+        widget.selectedOption == SignUpOptions.individual
+            ? filteredOptionsIndividual
+            : filteredOptionsCorporate;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -158,6 +229,7 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
         Expanded(
           child: ListView(
             children: [
+
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -165,71 +237,74 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                 itemBuilder: (context, index) {
                   final option = allOptions[index];
                   final accountType = option['name'];
-                  final id = option['role'];
+                  // final id = option['role'];
+                  final id = option['id'] ?? option['role'] ?? option['name'];
+
                   final bool isSelected = _selectedOptions.contains(id);
 
                   return ListTile(
                     title: Text(accountType),
                     leading: widget.selectedOption == SignUpOptions.individual
                         ? Checkbox(
-                      value: isSelected,
-                      onChanged: (bool? selected) {
-                        setState(() {
-                          if (selected!) {
-                            _selectedOptions.add(id);
-                            widget.addChip(Categories.fromJson(option));
-                          } else {
-                            _selectedOptions.remove(id);
-                            widget
-                                .removeChip(Categories.fromJson(option));
-                          }
-                        });
-                      },
-                    )
+                            value: isSelected,
+                            onChanged: (bool? selected) {
+                              setState(() {
+                                if (selected!) {
+                                  _selectedOptions.add(id);
+                                  widget.addChip(Categories.fromJson(option));
+                                } else {
+                                  _selectedOptions.remove(id);
+                                  widget
+                                      .removeChip(Categories.fromJson(option));
+                                }
+                              });
+                            },
+                          )
                         : Radio<String>(
-                      value: id,
-                      groupValue: _selectedOptions.isNotEmpty
-                          ? _selectedOptions.first
-                          : null,
-                      onChanged: (value) {
-                        setState(() {
-                          if (_selectedOptions.isNotEmpty) {
-                            final previousSelection =
-                                _selectedOptions.first;
-                            final previousRole = allOptions.firstWhere(
-                                    (option) =>
-                                option['id'] ==
-                                    previousSelection)['role'];
-                            widget.removeChip(
-                                Categories.fromJson(previousRole));
-                          }
-                          _selectedOptions.clear();
-                          if (value != null) {
-                            _selectedOptions.add(value);
-                            widget.addChip(Categories.fromJson(option));
-                          }
-                        });
-                      },
-                    ),
+                            value: id,
+                            groupValue: _selectedOptions.isNotEmpty
+                                ? _selectedOptions.first
+                                : null,
+                            onChanged: (value) {
+                              setState(() {
+                                if (_selectedOptions.isNotEmpty) {
+                                  final previousSelection =
+                                      _selectedOptions.first;
+                                  final previousRole = allOptions.firstWhere(
+                                      (option) =>
+                                          option['id'] ==
+                                          previousSelection)['role'];
+                                  widget.removeChip(
+                                      Categories.fromJson(previousRole));
+                                }
+                                _selectedOptions.clear();
+                                if (value != null) {
+                                  _selectedOptions.add(value);
+                                  widget.addChip(Categories.fromJson(option));
+                                }
+                              });
+                            },
+                          ),
                   );
                 },
               ),
-              if(Platform.isAndroid)...[
-              widget.showCorporateSwitch?const Divider():SizedBox(),
-              widget.showCorporateSwitch?Container(
-                margin: EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        widget.onOptionChanged(
-                            widget.selectedOption == SignUpOptions.individual
-                                ? SignUpOptions.corporate
-                                : SignUpOptions.individual);
-                        widget.removeAllChips(); // Clear all chips
-                        Navigator.pop(context);
-                        /*showModalBottomSheet(
+              if (Platform.isAndroid) ...[
+                widget.showCorporateSwitch ? const Divider() : SizedBox(),
+                widget.showCorporateSwitch
+                    ? Container(
+                        margin: EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                widget.onOptionChanged(widget.selectedOption ==
+                                        SignUpOptions.individual
+                                    ? SignUpOptions.corporate
+                                    : SignUpOptions.individual);
+                                widget.removeAllChips(); // Clear all chips
+                                Navigator.pop(context);
+                                /*showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           useSafeArea: true,
@@ -247,78 +322,86 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                             );
                           },
                         );*/
-                      },
-                      child: Text(
-                        widget.selectedOption == SignUpOptions.individual
-                            ? 'SWITCH TO CORPORATE'
-                            : 'SWITCH TO INDIVIDUAL',
-                        style: typography
-                            .Subtitle1, // Adjust text color if needed
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${widget.selectedOption != SignUpOptions.individual ? 'Individual' : 'Corporate'} account roles",
-                          style: typography.Subtitle1,
+                              },
+                              child: Text(
+                                widget.selectedOption ==
+                                        SignUpOptions.individual
+                                    ? 'SWITCH TO CORPORATE'
+                                    : 'SWITCH TO INDIVIDUAL',
+                                style: typography
+                                    .Subtitle1, // Adjust text color if needed
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "${widget.selectedOption != SignUpOptions.individual ? 'Individual' : 'Corporate'} account roles",
+                                  style: typography.Subtitle1,
+                                ),
+                                SvgPicture.asset(
+                                  'assets/images/down_icon.svg',
+                                )
+                              ],
+                            ),
+                            SizedBox(height: CustomSpacing.two),
+                          ],
                         ),
-                        SvgPicture.asset(
-                          'assets/images/down_icon.svg',
-                        )
-                      ],
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                  ],
-                ),
-              ):SizedBox(),
-              widget.showCorporateSwitch?const Divider():SizedBox(),
-              widget.showCorporateSwitch? ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: widget.selectedOption == SignUpOptions.individual
-                    ? filteredOptionsCorporate.length
-                    : filteredOptionsIndividual.length,
-                itemBuilder: (context, index) {
-                  final option =
-                  widget.selectedOption == SignUpOptions.individual
-                      ? filteredOptionsCorporate[index]
-                      : filteredOptionsIndividual[index];
-                  final accountType = option['name'];
-                  final id = option['role'];
+                      )
+                    : SizedBox(),
+                widget.showCorporateSwitch ? const Divider() : SizedBox(),
+                widget.showCorporateSwitch
+                    ? ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount:
+                            widget.selectedOption == SignUpOptions.individual
+                                ? filteredOptionsCorporate.length
+                                : filteredOptionsIndividual.length,
+                        itemBuilder: (context, index) {
+                          final option =
+                              widget.selectedOption == SignUpOptions.individual
+                                  ? filteredOptionsCorporate[index]
+                                  : filteredOptionsIndividual[index];
+                          final accountType = option['name'];
+                          // final id = option['role'];
+                          final id =
+                              option['id'] ?? option['role'] ?? option['name'];
 
-                  return ListTile(
-                    title: Text(accountType),
-                    leading: widget.selectedOption == SignUpOptions.individual
-                        ? Radio<String>(
-                      value: id,
-                      groupValue: null,
-                      onChanged: null,
-                    )
-                        : Checkbox(
-                      value: false,
-                      onChanged: null,
-                    ),
-                  );
-                },
-              ):SizedBox(),
-    ],
+                          return ListTile(
+                            title: Text(accountType),
+                            leading: widget.selectedOption ==
+                                    SignUpOptions.individual
+                                ? Radio<String>(
+                                    value: id,
+                                    groupValue: null,
+                                    onChanged: null,
+                                  )
+                                : Checkbox(
+                                    value: false,
+                                    onChanged: null,
+                                  ),
+                          );
+                        },
+                      )
+                    : SizedBox(),
+              ],
             ],
           ),
         ),
         SizedBox(
-          width: MediaQuery.of(context).size.width/1.1,
+          width: MediaQuery.of(context).size.width / 1.1,
           height: 50,
           child: FloatingActionButton.extended(
             onPressed: () {
               Navigator.pop(context);
             },
-            label: Text('SUBMIT', style: typography.ButtonLarge.copyWith(
-                color: Colors.black),),
-
+            label: Text(
+              'SUBMIT',
+              style: typography.ButtonLarge.copyWith(color: Colors.black),
+            ),
             backgroundColor: AppColors.primaryMain,
-            foregroundColor:
-            Theme.of(context).colorScheme.onSurface,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         SizedBox(height: 20)

@@ -38,7 +38,7 @@
 
     <!-- Version info -->
     <key>CFBundleShortVersionString</key>
-    <string>5.2.11</string>
+    <string>5.2.14</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleSignature</key>

@@ -1120,23 +1120,22 @@ class _LocationProfileState extends State<LocationProfile>
                                 child: Row(
                                   children: [
                                     Consumer<MyLocationListProvider>(
-                                      builder: (context,
-                                          locationProfileProvider, child) {
-                                        int? rating = 0;
-                                        if (tabIndex == 0) {
-                                          rating = int.tryParse(
-                                                  locationProfileProvider
-                                                          .locationProfile
-                                                          ?.geocodingScore
-                                                          ?.toString() ??
-                                                      '0') ??
-                                              0;
-                                        } else if (tabIndex == 1) {
-                                     rating = (locationProfileProvider.locationProfile?.overallScore as int? ?? 0) == 0
-                                         ? 5
-                                         : (locationProfileProvider.locationProfile?.overallScore as int? ?? 0);
-                                        } else {
-                                          rating = int.parse(locationProfileProvider.locationProfile!.dataCompleteness!.scorePd.toString());
+                                      builder: (context, locationProfileProvider, child) {
+                                        int rating = 0;
+                                        try {
+                                          if (tabIndex == 0) {
+                                            final scoreStr = locationProfileProvider.locationProfile?.geocodingScore?.toString() ?? '0';
+                                            rating = int.tryParse(scoreStr) ?? 0;
+                                          } else if (tabIndex == 1) {
+                                            final overallScoreStr = locationProfileProvider.locationProfile?.overallScore?.toString() ?? '0';
+                                            final parsedScore = int.tryParse(overallScoreStr) ?? 0;
+                                            rating = parsedScore == 0 ? 5 : parsedScore;
+                                          } else {
+                                            final scorePdStr = locationProfileProvider.locationProfile?.dataCompleteness?.scorePd?.toString() ?? '0';
+                                            rating = int.tryParse(scorePdStr) ?? 0;
+                                          }
+                                        } catch (e) {
+                                          rating = 0;
                                         }
                                         return Row(
                                           children: [
@@ -1147,41 +1146,111 @@ class _LocationProfileState extends State<LocationProfile>
                                             rating == 0
                                                 ? SizedBox.shrink()
                                                 : rating == 5
-                                                    ? SvgPicture.asset(
-                                                        'assets/images/certified_five.svg',
-                                                        width: 24,
-                                                        height: 24,
-                                                      )
-                                                    : Container(
-                                                        width: 18,
-                                                        height: 18,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: scoreColors[
-                                                              rating.clamp(
-                                                                  0,
-                                                                  scoreColors
-                                                                          .length -
-                                                                      1)],
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Text(
-                                                          rating.toString(),
-                                                          style: TextStyle(
-                                                            color: Colors.black,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ),
+                                                ? SvgPicture.asset(
+                                              'assets/images/certified_five.svg',
+                                              width: 24,
+                                              height: 24,
+                                            )
+                                                : Container(
+                                              width: 18,
+                                              height: 18,
+                                              decoration: BoxDecoration(
+                                                color: scoreColors[
+                                                rating.clamp(0, scoreColors.length - 1)
+                                                ],
+                                                shape: BoxShape.circle,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                rating.toString(),
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         );
                                       },
                                     ),
+                                    //
+                                    // Consumer<MyLocationListProvider>(
+                                    //   builder: (context,
+                                    //       locationProfileProvider, child) {
+                                    //     var rating = 0;
+                                    //     if (tabIndex == 0) {
+                                    //       rating = int.tryParse(
+                                    //               locationProfileProvider
+                                    //                       .locationProfile
+                                    //                       ?.geocodingScore
+                                    //                       ?.toString() ??
+                                    //                   '0') ??
+                                    //           0;
+                                    //     } else if (tabIndex == 1) {
+                                    //       rating = (int.parse(locationProfileProvider
+                                    //                           .locationProfile
+                                    //                           ?.overallScore.toString() ??'0')
+                                    //                        ??
+                                    //                   0) ==
+                                    //               0
+                                    //           ? 5
+                                    //           : (locationProfileProvider
+                                    //                   .locationProfile
+                                    //                   ?.overallScore  ??
+                                    //               0);
+                                    //     } else {
+                                    //       rating = int.parse(
+                                    //           locationProfileProvider
+                                    //               .locationProfile!
+                                    //               .dataCompleteness!
+                                    //               .scorePd
+                                    //               .toString());
+                                    //     }
+                                    //     return Row(
+                                    //       children: [
+                                    //         VerticalBarIndicator(
+                                    //           score: rating!,
+                                    //         ),
+                                    //         SizedBox(width: 8),
+                                    //         rating == 0
+                                    //             ? SizedBox.shrink()
+                                    //             : rating == 5
+                                    //                 ? SvgPicture.asset(
+                                    //                     'assets/images/certified_five.svg',
+                                    //                     width: 24,
+                                    //                     height: 24,
+                                    //                   )
+                                    //                 : Container(
+                                    //                     width: 18,
+                                    //                     height: 18,
+                                    //                     decoration:
+                                    //                         BoxDecoration(
+                                    //                       color: scoreColors[
+                                    //                           rating!.clamp(
+                                    //                               0,
+                                    //                               scoreColors
+                                    //                                       .length -
+                                    //                                   1)],
+                                    //                       shape:
+                                    //                           BoxShape.circle,
+                                    //                     ),
+                                    //                     alignment:
+                                    //                         Alignment.center,
+                                    //                     child: Text(
+                                    //                       rating.toString(),
+                                    //                       style: TextStyle(
+                                    //                         color: Colors.black,
+                                    //                         fontWeight:
+                                    //                             FontWeight.bold,
+                                    //                         fontSize: 14,
+                                    //                       ),
+                                    //                     ),
+                                    //                   ),
+                                    //       ],
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 ),
                               ),
@@ -1216,7 +1285,7 @@ class _LocationProfileState extends State<LocationProfile>
                                             Tab(text: 'Geocoding'),
                                             Tab(text: 'Risk Score'),
                                             Tab(text: 'Data Completeness'),
-                                            Tab(text: 'Recommended'),
+                                            // Tab(text: 'Recommended'),
                                           ],
                                         ),
                                       ),
@@ -1307,7 +1376,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                             ?.locationId);
                                               },
                                             ),
-                                            StatusCardsPage(),
+                                            // StatusCardsPage(),
                                           ],
                                         ),
                                       ),
@@ -3158,9 +3227,9 @@ class _LocationProfileState extends State<LocationProfile>
                     thumbVisibility: true,
                     child: ListView(
                       children: [
-                        SizedBox(height: 10),
+                        // SizedBox(height: 10),
                         Padding(
-                          padding: const EdgeInsets.all(10.0),
+                          padding: const EdgeInsets.all(1.0),
                           child: DottedBorder(
                             options: RectDottedBorderOptions(
                               padding: const EdgeInsets.all(21),
@@ -3170,7 +3239,7 @@ class _LocationProfileState extends State<LocationProfile>
                             ),
                             child: Container(
                               margin: const EdgeInsets.symmetric(
-                                  vertical: 6, horizontal: 12),
+                                  vertical: 0, horizontal: 1),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
@@ -3179,53 +3248,91 @@ class _LocationProfileState extends State<LocationProfile>
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: locationProfileProvider
-                                    .locationProfile!.activityLogs!.length,
+                                    .locationProfile!.allActivityLogs!.length,
                                 itemBuilder: (context, index) {
                                   final log = locationProfileProvider
-                                      .locationProfile!.activityLogs![index];
+                                      .locationProfile!.allActivityLogs![index];
                                   return Padding(
                                     padding:
                                         const EdgeInsets.only(bottom: 16.0),
                                     // spacing between logs
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          _formatTimestamp(
-                                              log.timestamp!.iSeconds),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: Colors.grey[400],
-                                                fontSize: 12,
-                                              ),
+                                        CircleAvatar(
+                                          backgroundColor: Colors.grey[800],
+                                          child: Text(
+                                            "N",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          log.newValue.toString() ?? "",
-                                          // Replace with your actual field
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          log.actor!.name! ?? "",
-                                          // Replace with your actual field
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: Colors.grey[400],
-                                                fontSize: 13,
-                                              ),
+                                        SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              log.action.toString() ?? "",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.7,
+                                                  child: Text(
+                                                    "Locations ." +
+                                                            log.targetId
+                                                                .toString() ??
+                                                        "",
+                                                    maxLines: 3,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    // Replace with your actual field
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color:
+                                                              Colors.grey[400],
+                                                          fontSize: 13,
+                                                        ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  _formatTimestamp(
+                                                      log.at!.iSeconds),
+
+                                                  // Replace with your actual field
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        color: Colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                ),
+                                              ],
+                                            )
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -3380,67 +3487,68 @@ class _LocationProfileState extends State<LocationProfile>
                             borderSide: BorderSide(color: Colors.blue),
                             borderRadius: BorderRadius.circular(8),
                           ),
+                          suffixIcon: Container(
+                            margin: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.lightBlue,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              icon: _isSending
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.send, color: Colors.black),
+                              onPressed: _isSending
+                                  ? null
+                                  : () async {
+                                      final commentText =
+                                          _commentController.text.trim();
+                                      if (commentText.isNotEmpty) {
+                                        setState(() {
+                                          _isSending = true; // start loader
+                                        });
+
+                                        try {
+                                          await locationProfileProvider
+                                              .addCommentsLocation(
+                                            context,
+                                            locationProfileProvider
+                                                .locationProfile!
+                                                .finalAddress!
+                                                .locationId
+                                                .toString(),
+                                            commentText,
+                                          );
+
+                                          _commentController.clear();
+
+                                          // Reload your data after successful comment
+                                          await _getData();
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    "Failed to send comment")),
+                                          );
+                                        } finally {
+                                          setState(() {
+                                            _isSending = false; // stop loader
+                                          });
+                                        }
+                                      }
+                                    },
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Add this as a state variable
-
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.lightBlue,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: IconButton(
-                        icon: _isSending
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.send, color: Colors.black),
-                        onPressed: _isSending
-                            ? null
-                            : () async {
-                                final commentText =
-                                    _commentController.text.trim();
-                                if (commentText.isNotEmpty) {
-                                  setState(() {
-                                    _isSending = true; // start loader
-                                  });
-
-                                  try {
-                                    await locationProfileProvider
-                                        .addCommentsLocation(
-                                      context,
-                                      locationProfileProvider.locationProfile!
-                                          .finalAddress!.locationId
-                                          .toString(),
-                                      commentText,
-                                    );
-
-                                    _commentController.clear();
-
-                                    // Reload your data after successful comment
-                                    await _getData();
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content:
-                                              Text("Failed to send comment")),
-                                    );
-                                  } finally {
-                                    setState(() {
-                                      _isSending = false; // stop loader
-                                    });
-                                  }
-                                }
-                              },
-                      ),
-                    )
                   ],
                 ),
               ),
@@ -4623,6 +4731,7 @@ class _LocationProfileState extends State<LocationProfile>
                           tooltip: 'Capture and Upload Screenshot',
                         ),
                         SizedBox(width: 8),
+
                         if (locationProfileProvider
                                 .locationProfile?.finalAddress?.placeTypes
                                 ?.contains('premise') ==
@@ -5473,9 +5582,9 @@ class _LocationProfileState extends State<LocationProfile>
                 );
 
                 await _getData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Campus created Successfully')),
-                );
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(content: Text('Campus created Successfully')),
+                // );
                 Navigator.of(dialogContext).pop();
               } catch (error) {
                 print('Error creating subdestination: $error');

@@ -168,53 +168,11 @@ class AuthNotifier extends ChangeNotifier {
     });
   }
 
-  // Future<void> fetchCompanies(String name) async {
-  //   print("Fetching: $name");
-  //
-  //   if (name.trim().isEmpty) {
-  //     companyOptions = [];
-  //     notifyListeners();
-  //     return;
-  //   }
-  //
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse(
-  //           "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json'
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //
-  //       if (data is Map &&
-  //           data.containsKey("result") &&
-  //           data["result"] is List) {
-  //         final List<dynamic> companyList = data["result"];
-  //         companyOptions =
-  //             companyList.map((json) => Companies.fromJson(json)).toList();
-  //       } else {
-  //         companyOptions = [];
-  //       }
-  //     } else {
-  //       companyOptions = [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     companyOptions = [];
-  //   }
-  //
-  //   notifyListeners();
-  // }
   Future<void> fetchCompanies(String name) async {
     print("Fetching: $name");
 
     if (name.trim().isEmpty) {
       companyOptions = [];
-      filteredCompanyOptions = []; // clear filtered list as well
       notifyListeners();
       return;
     }
@@ -249,11 +207,53 @@ class AuthNotifier extends ChangeNotifier {
       companyOptions = [];
     }
 
-    // After fetching, filter based on the current input name
-    filterCompanies(name);
-
     notifyListeners();
   }
+  // Future<void> fetchCompanies(String name) async {
+  //   print("Fetching: $name");
+  //
+  //   if (name.trim().isEmpty) {
+  //     companyOptions = [];
+  //     filteredCompanyOptions = []; // clear filtered list as well
+  //     notifyListeners();
+  //     return;
+  //   }
+  //
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse(
+  //           "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Accept': 'application/json'
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //
+  //       if (data is Map &&
+  //           data.containsKey("result") &&
+  //           data["result"] is List) {
+  //         final List<dynamic> companyList = data["result"];
+  //         companyOptions =
+  //             companyList.map((json) => Companies.fromJson(json)).toList();
+  //       } else {
+  //         companyOptions = [];
+  //       }
+  //     } else {
+  //       companyOptions = [];
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching companies: $e");
+  //     companyOptions = [];
+  //   }
+  //
+  //   // After fetching, filter based on the current input name
+  //   filterCompanies(name);
+  //
+  //   notifyListeners();
+  // }
 
   void filterCompanies(String query) {
     final input = query.trim().toLowerCase();
@@ -510,7 +510,6 @@ class AuthNotifier extends ChangeNotifier {
       print("Error signing in: $e");
     }
   }
-
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
       _isSigningIn = true;

@@ -13,18 +13,19 @@ class MyLocationModel {
   bool? isAnyHazardProcessing;
   List<MyLocation>? results;
   List<MyLocation>? filterByLocationResult;
+  GraphData? graphData;
 
-  MyLocationModel({
-    this.totalRecords,
-    this.totalCertified,
-    this.page,
-    this.pageSize,
-    this.isConflict,
-    this.isHazardCanStart,
-    this.isAnyHazardProcessing,
-    this.results,
-    this.filterByLocationResult,
-  });
+  MyLocationModel(
+      {this.totalRecords,
+      this.totalCertified,
+      this.page,
+      this.pageSize,
+      this.isConflict,
+      this.isHazardCanStart,
+      this.isAnyHazardProcessing,
+      this.results,
+      this.filterByLocationResult,
+      this.graphData});
 
   MyLocationModel.fromJson(Map<String, dynamic> json) {
     totalRecords = json['totalRecords'];
@@ -46,6 +47,9 @@ class MyLocationModel {
         filterByLocationResult!.add(MyLocation.fromJson(v));
       });
     }
+    graphData = json['graph_data'] != null
+        ? new GraphData.fromJson(json['graph_data'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -64,6 +68,7 @@ class MyLocationModel {
       data['filter_by_location_result'] =
           filterByLocationResult!.map((v) => v.toJson()).toList();
     }
+    data['graph_data'] = this.graphData!.toJson();
     return data;
   }
 
@@ -76,7 +81,7 @@ class MyLocationModel {
 class MyLocation with ClusterItem {
   String? id;
   FinalAddress? finalAddress;
-  String? overallScore;
+  dynamic overallScore;
   int? geocodingScore;
   bool? isSelected;
   bool? isConflict;
@@ -86,7 +91,7 @@ class MyLocation with ClusterItem {
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
   String? geocodedAddress;
   List<LocationComments>? locationComments;
-  List<ActivityLogs>? activityLogs;
+  List<ActivityLogs>? activityLogs;List<AllActivityLogs>? allActivityLogs;
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
@@ -96,17 +101,17 @@ class MyLocation with ClusterItem {
       {this.id,
       this.finalAddress,
       this.geocodingScore,
-        this.overallScore,
+      this.overallScore,
       this.isSelected = false,
       this.isConflict,
       this.conflicts,
       this.defaultConflictindex,
       this.tags,
-
       this.hazard,
       this.geocodedAddress,
       this.locationComments,
       this.activityLogs,
+        this.allActivityLogs,
       this.subdestinations,
       this.screenshots,
       this.isHazardProcess,
@@ -140,6 +145,10 @@ class MyLocation with ClusterItem {
         activityLogs!.add(new ActivityLogs.fromJson(v));
       });
     }
+    if (json['all_activity_logs'] != null) {
+      allActivityLogs = <AllActivityLogs>[];
+      json['all_activity_logs'].forEach((v) { allActivityLogs!.add(new AllActivityLogs.fromJson(v)); });
+    }
 
     defaultConflictindex = json['default_conflict_index'] is int
         ? json['default_conflict_index']
@@ -155,7 +164,6 @@ class MyLocation with ClusterItem {
     } else {
       tags = null;
     }
-
 
     geocodedAddress = json['geocoded_address'] ?? '';
 
@@ -181,7 +189,7 @@ class MyLocation with ClusterItem {
         screenshots!.add(Screenshots.fromJson(v));
       });
     }
-    isHazardProcess = json['is_hazard_processed'] ?? '';
+    isHazardProcess = json['is_hazard_processed'] ?? false;
     dataCompleteness = json['data_completeness'] != null
         ? new DataCompleteness.fromJson(json['data_completeness'])
         : null;
@@ -211,7 +219,9 @@ class MyLocation with ClusterItem {
       data['activity_logs'] =
           this.activityLogs!.map((v) => v.toJson()).toList();
     }
-
+    if (this.allActivityLogs != null) {
+      data['all_activity_logs'] = this.allActivityLogs!.map((v) => v.toJson()).toList();
+    }
     if (hazard != null) {
       data['hazard'] =
           hazard!.map((key, value) => MapEntry(key, value.toJson()));
@@ -240,6 +250,86 @@ class MyLocation with ClusterItem {
         finalAddress?.latitude ?? 0.0,
         finalAddress?.longitude ?? 0.0,
       );
+}
+class AllActivityLogs {
+  Null? actorUserId;
+  String? eventId;
+  CreatedAt? at;
+  Null? companyId;
+  String? targetType;
+  String? action;
+  String? targetId;
+  Event? event;
+  // After? after;
+
+  AllActivityLogs({this.actorUserId, this.eventId, this.at, this.companyId, this.targetType, this.action, this.targetId, this.event});
+
+  AllActivityLogs.fromJson(Map<String, dynamic> json) {
+    actorUserId = json['actor_user_id'];
+    eventId = json['event_id'];
+    at = json['at'] != null ? new CreatedAt.fromJson(json['at']) : null;
+    companyId = json['company_id'];
+    targetType = json['target_type'];
+    action = json['action'];
+    targetId = json['target_id'];
+    event = json['event'] != null ? new Event.fromJson(json['event']) : null;
+    // after = json['after'] != null ? new After.fromJson(json['after']) : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['actor_user_id'] = this.actorUserId;
+    data['event_id'] = this.eventId;
+    if (this.at != null) {
+      data['at'] = this.at!.toJson();
+    }
+    data['company_id'] = this.companyId;
+    data['target_type'] = this.targetType;
+    data['action'] = this.action;
+    data['target_id'] = this.targetId;
+    if (this.event != null) {
+      data['event'] = this.event!.toJson();
+    }
+    // if (this.after != null) {
+    //   data['after'] = this.after!.toJson();
+    // }
+    return data;
+  }
+}
+class Params {
+  String? locationId;
+
+  Params({this.locationId});
+
+  Params.fromJson(Map<String, dynamic> json) {
+    locationId = json['locationId'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['locationId'] = this.locationId;
+    return data;
+  }
+}
+class Event {
+  Params? params;
+  Null? timestamp;
+
+  Event({this.params, this.timestamp});
+
+  Event.fromJson(Map<String, dynamic> json) {
+    params = json['params'] != null ? new Params.fromJson(json['params']) : null;
+    timestamp = json['timestamp'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.params != null) {
+      data['params'] = this.params!.toJson();
+    }
+    data['timestamp'] = this.timestamp;
+    return data;
+  }
 }
 
 class Conflicts {
@@ -924,6 +1014,7 @@ class FinalAddress {
   String? countryIsoCode;
   double? longitude;
   bool? rented;
+  String ? companyName;
 
   FinalAddress({
     this.country,
@@ -959,6 +1050,7 @@ class FinalAddress {
     this.campusId,
     this.campusKey,
     this.rented,
+    this.companyName
   });
 
   FinalAddress.fromJson(Map<String, dynamic> json) {
@@ -1001,6 +1093,7 @@ class FinalAddress {
     campusId = json['campus_name'];
     campusKey = json['campus_id'];
     rented = json['rented'];
+    companyName=json['company_name'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1040,6 +1133,7 @@ class FinalAddress {
     data['campus_name'] = campusId;
     data['campus_id'] = campusKey;
     data['rented'] = rented;
+    data['company_name']=companyName;
     return data;
   }
 
@@ -1098,6 +1192,394 @@ class DataCompleteness {
     data['score_pd'] = this.scorePd;
     data['score_te'] = this.scoreTe;
     data['final_score'] = this.finalScore;
+    return data;
+  }
+}
+
+class GraphData {
+  List<SovResults>? sovResults;
+  GeocodeCounts? geocodeCounts;
+  GlobalPerilCounts? globalPerilCounts;
+  GlobalValueCounts? globalValueCounts;
+
+  GraphData(
+      {this.sovResults,
+      this.geocodeCounts,
+      this.globalPerilCounts,
+      this.globalValueCounts});
+
+  GraphData.fromJson(Map<String, dynamic> json) {
+    if (json['sov_results'] != null) {
+      sovResults = <SovResults>[];
+      json['sov_results'].forEach((v) {
+        sovResults!.add(new SovResults.fromJson(v));
+      });
+    }
+    geocodeCounts = json['geocode_counts'] != null
+        ? new GeocodeCounts.fromJson(json['geocode_counts'])
+        : null;
+    globalPerilCounts = json['global_peril_counts'] != null
+        ? new GlobalPerilCounts.fromJson(json['global_peril_counts'])
+        : null;
+    globalValueCounts = json['global_value_counts'] != null
+        ? new GlobalValueCounts.fromJson(json['global_value_counts'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.sovResults != null) {
+      data['sov_results'] = this.sovResults!.map((v) => v.toJson()).toList();
+    }
+    if (this.geocodeCounts != null) {
+      data['geocode_counts'] = this.geocodeCounts!.toJson();
+    }
+    if (this.globalPerilCounts != null) {
+      data['global_peril_counts'] = this.globalPerilCounts!.toJson();
+    }
+    if (this.globalValueCounts != null) {
+      data['global_value_counts'] = this.globalValueCounts!.toJson();
+    }
+    return data;
+  }
+}
+
+class SovResults {
+  int? geocodeAvg;
+  int? overallAvg;
+  String? sovId;
+  GlobalPerilCounts? globalPerilCounts;
+  GlobalValueCounts? globalValueCounts;
+  Context? context;
+  List<Locations>? locations;
+
+  SovResults(
+      {this.geocodeAvg,
+      this.overallAvg,
+      this.sovId,
+      this.globalPerilCounts,
+      this.globalValueCounts,
+      this.context,
+      this.locations});
+
+  SovResults.fromJson(Map<String, dynamic> json) {
+    geocodeAvg = json['geocode_avg'];
+    overallAvg = json['overall_avg'];
+    sovId = json['sov_id'];
+    globalPerilCounts = json['global_peril_counts'] != null
+        ? new GlobalPerilCounts.fromJson(json['global_peril_counts'])
+        : null;
+    globalValueCounts = json['global_value_counts'] != null
+        ? new GlobalValueCounts.fromJson(json['global_value_counts'])
+        : null;
+    context =
+        json['context'] != null ? new Context.fromJson(json['context']) : null;
+    if (json['locations'] != null) {
+      locations = <Locations>[];
+      json['locations'].forEach((v) {
+        locations!.add(new Locations.fromJson(v));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['geocode_avg'] = this.geocodeAvg;
+    data['overall_avg'] = this.overallAvg;
+    data['sov_id'] = this.sovId;
+    if (this.globalPerilCounts != null) {
+      data['global_peril_counts'] = this.globalPerilCounts!.toJson();
+    }
+    if (this.globalValueCounts != null) {
+      data['global_value_counts'] = this.globalValueCounts!.toJson();
+    }
+    if (this.context != null) {
+      data['context'] = this.context!.toJson();
+    }
+    if (this.locations != null) {
+      data['locations'] = this.locations!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class GlobalPerilCounts {
+  Hurricane? hurricane;
+  Hurricane? earthquake;
+
+  GlobalPerilCounts({this.hurricane, this.earthquake});
+
+  GlobalPerilCounts.fromJson(Map<String, dynamic> json) {
+    hurricane = json['Hurricane'] != null
+        ? new Hurricane.fromJson(json['Hurricane'])
+        : null;
+    earthquake = json['Earthquake'] != null
+        ? new Hurricane.fromJson(json['Earthquake'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.hurricane != null) {
+      data['Hurricane'] = this.hurricane!.toJson();
+    }
+    if (this.earthquake != null) {
+      data['Earthquake'] = this.earthquake!.toJson();
+    }
+    return data;
+  }
+}
+
+class Hurricane {
+  int? total;
+  int? completedData;
+
+  Hurricane({this.total, this.completedData});
+
+  Hurricane.fromJson(Map<String, dynamic> json) {
+    total = json['total'];
+    completedData = json['completed_data'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['total'] = this.total;
+    data['completed_data'] = this.completedData;
+    return data;
+  }
+}
+
+class GlobalValueCounts {
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
+      loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af;
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
+      loc351a6934fd19de8ce05e5115f69ffde105ea78b3;
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
+      loc3626762930054003d3fd6c725c74c021c6a21915;
+  LocA155789496fde8a79f2f3c4baf4949d8765fe752?
+      locA155789496fde8a79f2f3c4baf4949d8765fe752;
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
+      locD7ac9d1bc367b0d2232401eefb95cb4948030b4d;
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
+      locFacc742ed5404e9084e4c755a95d895b9f801eda;
+
+  GlobalValueCounts(
+      {this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af,
+      this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3,
+      this.loc3626762930054003d3fd6c725c74c021c6a21915,
+      this.locA155789496fde8a79f2f3c4baf4949d8765fe752,
+      this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d,
+      this.locFacc742ed5404e9084e4c755a95d895b9f801eda});
+
+  GlobalValueCounts.fromJson(Map<String, dynamic> json) {
+    loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af =
+        json['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'] != null
+            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+                json['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'])
+            : null;
+    loc351a6934fd19de8ce05e5115f69ffde105ea78b3 =
+        json['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'] != null
+            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+                json['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'])
+            : null;
+    loc3626762930054003d3fd6c725c74c021c6a21915 =
+        json['loc-3626762930054003d3fd6c725c74c021c6a21915'] != null
+            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+                json['loc-3626762930054003d3fd6c725c74c021c6a21915'])
+            : null;
+    locA155789496fde8a79f2f3c4baf4949d8765fe752 =
+        json['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'] != null
+            ? new LocA155789496fde8a79f2f3c4baf4949d8765fe752.fromJson(
+                json['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'])
+            : null;
+    locD7ac9d1bc367b0d2232401eefb95cb4948030b4d =
+        json['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'] != null
+            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+                json['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'])
+            : null;
+    locFacc742ed5404e9084e4c755a95d895b9f801eda =
+        json['loc-facc742ed5404e9084e4c755a95d895b9f801eda'] != null
+            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+                json['loc-facc742ed5404e9084e4c755a95d895b9f801eda'])
+            : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af != null) {
+      data['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'] =
+          this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af!.toJson();
+    }
+    if (this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3 != null) {
+      data['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'] =
+          this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3!.toJson();
+    }
+    if (this.loc3626762930054003d3fd6c725c74c021c6a21915 != null) {
+      data['loc-3626762930054003d3fd6c725c74c021c6a21915'] =
+          this.loc3626762930054003d3fd6c725c74c021c6a21915!.toJson();
+    }
+    if (this.locA155789496fde8a79f2f3c4baf4949d8765fe752 != null) {
+      data['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'] =
+          this.locA155789496fde8a79f2f3c4baf4949d8765fe752!.toJson();
+    }
+    if (this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d != null) {
+      data['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'] =
+          this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d!.toJson();
+    }
+    if (this.locFacc742ed5404e9084e4c755a95d895b9f801eda != null) {
+      data['loc-facc742ed5404e9084e4c755a95d895b9f801eda'] =
+          this.locFacc742ed5404e9084e4c755a95d895b9f801eda!.toJson();
+    }
+    return data;
+  }
+}
+
+class Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af {
+  String? bIValue;
+  String? name;
+  String? pDValue;
+
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af(
+      {this.bIValue, this.name, this.pDValue});
+
+  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
+      Map<String, dynamic> json) {
+    bIValue = json['BI Value'];
+    name = json['name'];
+    pDValue = json['PD Value'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['BI Value'] = this.bIValue;
+    data['name'] = this.name;
+    data['PD Value'] = this.pDValue;
+    return data;
+  }
+}
+
+class LocA155789496fde8a79f2f3c4baf4949d8765fe752 {
+  String? bIValue;
+  Null? name;
+  String? pDValue;
+
+  LocA155789496fde8a79f2f3c4baf4949d8765fe752(
+      {this.bIValue, this.name, this.pDValue});
+
+  LocA155789496fde8a79f2f3c4baf4949d8765fe752.fromJson(
+      Map<String, dynamic> json) {
+    bIValue = json['BI Value'];
+    name = json['name'];
+    pDValue = json['PD Value'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['BI Value'] = this.bIValue;
+    data['name'] = this.name;
+    data['PD Value'] = this.pDValue;
+    return data;
+  }
+}
+
+class Context {
+  String? accountId;
+  String? subAccountId;
+  String? companyId;
+
+  Context({this.accountId, this.subAccountId, this.companyId});
+
+  Context.fromJson(Map<String, dynamic> json) {
+    accountId = json['account_id'];
+    subAccountId = json['sub_account_id'];
+    companyId = json['company_id'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['account_id'] = this.accountId;
+    data['sub_account_id'] = this.subAccountId;
+    data['company_id'] = this.companyId;
+    return data;
+  }
+}
+
+class Locations {
+  String? id;
+  GlobalPerilCounts? perilCounts;
+  ValueCounts? valueCounts;
+  List<String>? distinctPerils;
+
+  Locations({this.id, this.perilCounts, this.valueCounts, this.distinctPerils});
+
+  Locations.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    perilCounts = json['peril_counts'] != null
+        ? new GlobalPerilCounts.fromJson(json['peril_counts'])
+        : null;
+    valueCounts = json['value_counts'] != null
+        ? new ValueCounts.fromJson(json['value_counts'])
+        : null;
+    distinctPerils = json['distinct_perils'].cast<String>();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    if (this.perilCounts != null) {
+      data['peril_counts'] = this.perilCounts!.toJson();
+    }
+    if (this.valueCounts != null) {
+      data['value_counts'] = this.valueCounts!.toJson();
+    }
+    data['distinct_perils'] = this.distinctPerils;
+    return data;
+  }
+}
+
+class ValueCounts {
+  String? bIValue;
+  String? pDValue;
+
+  ValueCounts({this.bIValue, this.pDValue});
+
+  ValueCounts.fromJson(Map<String, dynamic> json) {
+    bIValue = json['BI Value'];
+    pDValue = json['PD Value'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['BI Value'] = this.bIValue;
+    data['PD Value'] = this.pDValue;
+    return data;
+  }
+}
+
+class GeocodeCounts {
+  int? i1;
+  int? i2;
+  int? i3;
+  int? i4;
+  int? i5;
+
+  GeocodeCounts({this.i1, this.i2, this.i3, this.i4, this.i5});
+
+  GeocodeCounts.fromJson(Map<String, dynamic> json) {
+    i1 = json['1'];
+    i2 = json['2'];
+    i3 = json['3'];
+    i4 = json['4'];
+    i5 = json['5'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['1'] = this.i1;
+    data['2'] = this.i2;
+    data['3'] = this.i3;
+    data['4'] = this.i4;
+    data['5'] = this.i5;
     return data;
   }
 }

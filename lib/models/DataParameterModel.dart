@@ -1,9 +1,9 @@
 class DataParametersModel {
   List<Result>? result;
-
+  HasUpgraded? hasUpgraded;
   Completeness? completeness;
 
-  DataParametersModel({this.result, this.completeness});
+  DataParametersModel({this.result, this.hasUpgraded, this.completeness});
 
   DataParametersModel.fromJson(Map<String, dynamic> json) {
     if (json['result'] != null) {
@@ -12,6 +12,10 @@ class DataParametersModel {
         result!.add(new Result.fromJson(v));
       });
     }
+    hasUpgraded = json['has_upgraded'] != null
+        ? new HasUpgraded.fromJson(json['has_upgraded'])
+        : null;
+
     completeness = json['completeness'] != null
         ? new Completeness.fromJson(json['completeness'])
         : null;
@@ -21,6 +25,9 @@ class DataParametersModel {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.result != null) {
       data['result'] = this.result!.map((v) => v.toJson()).toList();
+    }
+    if (this.hasUpgraded != null) {
+      data['has_upgraded'] = this.hasUpgraded!.toJson();
     }
     if (this.completeness != null) {
       data['completeness'] = this.completeness!.toJson();
@@ -39,7 +46,7 @@ class Result {
   String? dataCategoryId;
   ParamConfig? paramConfig;
   HelpDocumantion? helpDocumantion;
-  Criticality? criticality;
+  dynamic? criticality;
   String? parameterNameA;
   String? parameterNameB;
   ParameterType? parameterType;
@@ -125,9 +132,9 @@ class Result {
         ? new HelpDocumantion.fromJson(json['help_documantion'])
         : null;
 
-    criticality = json['criticality'] != null
-        ? Criticality.fromJson(json['criticality'])
-        : null;
+    // criticality = json['criticality'] != null
+    //     ? Criticality.fromJson(json['criticality'])
+    //     : null;
     parameterNameA = json['parameter_name_a'];
     parameterNameB = json['parameter_name_b'];
     parameterType = json['parameter_type'] != null
@@ -189,9 +196,9 @@ class Result {
     if (this.helpDocumantion != null) {
       data['help_documantion'] = this.helpDocumantion!.toJson();
     }
-    if (this.criticality != null) {
-      data['criticality'] = this.criticality!.toJson();
-    }
+    // if (this.criticality != null) {
+    //   data['criticality'] = this.criticality!.toJson();
+    // }
     data['parameter_name_a'] = this.parameterNameA;
     data['parameter_name_b'] = this.parameterNameB;
     if (this.parameterType != null) {
@@ -811,6 +818,22 @@ class Criticality {
     // if (this.advisory != null) {
     //   data['advisory'] = this.advisory!.toJson();
     // }
+    return data;
+  }
+}
+
+class HasUpgraded {
+  bool? dI1o77IZ5M62Ke5wOLui;
+
+  HasUpgraded({this.dI1o77IZ5M62Ke5wOLui});
+
+  HasUpgraded.fromJson(Map<String, dynamic> json) {
+    dI1o77IZ5M62Ke5wOLui = json['DI1o77IZ5M62Ke5wOLui'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['DI1o77IZ5M62Ke5wOLui'] = this.dI1o77IZ5M62Ke5wOLui;
     return data;
   }
 }

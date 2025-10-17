@@ -997,13 +997,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         return Consumer<UserProfileProvider>(
                           builder: (context, userProfileProvider, child) {
                             bool isNotIndividual =
-                                !(userProfileProvider.userData.isIndividual ??
-                                    true); // Defaulting to true if null
+                            !(userProfileProvider.userData.isIndividual ??
+                                true); // Defaulting to true if null
 
                             return userProfileProvider.isLoading
                                 ? Center(child: CircularProgressIndicator())
                                 : isNotIndividual
-                                    ? Container(
+                                ? Container(
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(66),

@@ -151,10 +151,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void initState() {
     super.initState();
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-    authNotifier.fetchCompanies(""); // Initial fetch
-    // authNotifier.companyOptionsNotifier.addListener(() {
-    //   // setState(() {}); // Force rebuild when data changes
-    // });
+    authNotifier.companyOptionsNotifier.addListener(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {}); // Force rebuild when data changes
+      });
+    });
     _selectedOption = SignUpOptions.individual;
     /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
@@ -401,7 +402,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                             return;
                                           }*/
                                       if (authNotifier.isNewUser) {
-
                                         String result = await authNotifier
                                             .signUpIndividualWithGoogle(
                                           widget.userCredential!,
@@ -819,7 +819,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content:
-                        Text("Google sign-in failed. Please try again.")),
+                            Text("Google sign-in failed. Please try again.")),
                   );
                 }
               } catch (e) {
@@ -832,7 +832,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               }
             },
             buttonText:
-            LanguageService.getTranslated(context, "login_googlebutton"),
+                LanguageService.getTranslated(context, "login_googlebutton"),
             iconPath: 'assets/images/googleLogo.svg',
           );
         }),
@@ -848,7 +848,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 print(authNotifier.userProfile.toString());
                 print(authNotifier.isNewUser.toString());
               },
-              buttonText: LanguageService.getTranslated(context, "login_microsoft_button"),
+              buttonText: LanguageService.getTranslated(
+                  context, "login_microsoft_button"),
               iconPath: 'assets/images/microsoftLogo.svg',
             );
           },
@@ -953,7 +954,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                // Display Name(Optional)
+                    // Display Name(Optional)
                     text: LanguageService.getTranslated(context,
                         "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
                   ),
@@ -1704,7 +1705,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ],
         ),
-
+        //
         // Stack(
         //   children: [
         //     TextField(
@@ -2071,20 +2072,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     displayStringForOption: (Companies option) => option.name,
                     onSelected: (Companies selection) {
                       setState(() {
-                        companyDisplayNameController.text = selection.displayName;
+                        companyDisplayNameController.text =
+                            selection.displayName;
 
                         // Map the correct company type by matching selection.companyTypeName
-                        selectedCompanyType = authNotifier.companyTypeList?.firstWhere(
-                              (t) => t.type.toLowerCase() == selection.companyTypeName.toLowerCase(),
+                        selectedCompanyType =
+                            authNotifier.companyTypeList?.firstWhere(
+                          (t) =>
+                              t.type.toLowerCase() ==
+                              selection.companyTypeName.toLowerCase(),
                         );
 
                         // Lock the dropdown after selection
                         _enableCompanyTypeDropdown = false;
 
-                        debugPrint('Matched type: ${selectedCompanyType?.type ?? "none"}');
+                        debugPrint(
+                            'Matched type: ${selectedCompanyType?.type ?? "none"}');
                       });
                     },
-
                     fieldViewBuilder: (context, textEditingController,
                         focusNode, onFieldSubmitted) {
                       _textEditingController = textEditingController;
@@ -2177,70 +2182,73 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               builder: (FormFieldState<String> state) {
                 return _showCompanyType
                     ? IgnorePointer(
-                  ignoring: !_enableCompanyTypeDropdown,
-                  child: DropdownButtonFormField<CompanyType>(
-                    value: selectedCompanyType,
-                    onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
-                      setState(() {
-                        _showRoles = false;
-                        selectedCompanyRole = null;
-                        selectedCompanyType = newValue;
-                      });
-                      Future.delayed(Duration(milliseconds: 1), () {
-                        setState(() {
-                          _showRoles = true;
-                        });
-                      });
-                    } : null,
-                    items: authNotifier.companyTypeList
-                        ?.where((companyType) =>
-                    companyType.type.toLowerCase() != 'individual_account')
-                        .map((CompanyType companyType) {
-                      return DropdownMenuItem<CompanyType>(
-                        value: companyType,
-                        // Changed from companyType.name to companyType.type.toString()
-                        child: Text(companyType.type.toString()),
-                      );
-                    }).toList(),
-                    decoration: InputDecoration(
-                      enabled: _enableCompanyTypeDropdown,
-                      label: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: LanguageService.getTranslated(context,
-                                  "register_corporate_company_type_field_label"),
-                            ),
-                            WidgetSpan(
-                              child: Text(
-                                " *",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        ignoring: !_enableCompanyTypeDropdown,
+                        child: DropdownButtonFormField<CompanyType>(
+                          value: selectedCompanyType,
+                          onChanged: _enableCompanyTypeDropdown
+                              ? (CompanyType? newValue) {
+                                  setState(() {
+                                    _showRoles = false;
+                                    selectedCompanyRole = null;
+                                    selectedCompanyType = newValue;
+                                  });
+                                  Future.delayed(Duration(milliseconds: 1), () {
+                                    setState(() {
+                                      _showRoles = true;
+                                    });
+                                  });
+                                }
+                              : null,
+                          items: authNotifier.companyTypeList
+                              ?.where((companyType) =>
+                                  companyType.type.toLowerCase() !=
+                                  'individual_account')
+                              .map((CompanyType companyType) {
+                            return DropdownMenuItem<CompanyType>(
+                              value: companyType,
+                              // Changed from companyType.name to companyType.type.toString()
+                              child: Text(companyType.type.toString()),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            enabled: _enableCompanyTypeDropdown,
+                            label: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: LanguageService.getTranslated(context,
+                                        "register_corporate_company_type_field_label"),
+                                  ),
+                                  WidgetSpan(
+                                    child: Text(
+                                      " *",
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    alignment: PlaceholderAlignment.bottom,
+                                  ),
+                                ],
                               ),
-                              alignment: PlaceholderAlignment.bottom,
                             ),
-                          ],
+                            hintText: LanguageService.getTranslated(context,
+                                "register_corporate_company_type_field_placeholder"),
+                            border: const OutlineInputBorder(),
+                            errorText: state.errorText,
+                          ),
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Company Type is required';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      hintText: LanguageService.getTranslated(context,
-                          "register_corporate_company_type_field_placeholder"),
-                      border: const OutlineInputBorder(),
-                      errorText: state.errorText,
-                    ),
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Company Type is required';
-                      }
-                      return null;
-                    },
-                  ),
-                )
+                      )
                     : Center(
-                  child: CircularProgressIndicator(),
-                );
+                        child: CircularProgressIndicator(),
+                      );
               },
             );
           },
@@ -2392,7 +2400,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: 'Company Display Name', // Label text, // Black color for "Name"
+                    text:
+                        'Company Display Name', // Label text, // Black color for "Name"
                   ),
                   WidgetSpan(
                     child: Text(
@@ -2410,8 +2419,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               ),
             ),
             hintText: "Enter display name of your company",
-        // .getTranslated(context,
-        //         "register_corporate_comapny_displayname_field_placeholder"),
+            // .getTranslated(context,
+            //         "register_corporate_comapny_displayname_field_placeholder"),
             border: const OutlineInputBorder(),
           ),
           validator: (value) {

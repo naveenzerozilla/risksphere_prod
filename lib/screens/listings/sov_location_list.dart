@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,9 +72,31 @@ class _SovLocationListState extends State<SovLocationList>
   TextEditingController mobileController = TextEditingController();
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
+  String selectedDropdown = 'TPV';
+  int? touchedIndex; // For showing overlay info
+  bool longPressed = false;
   int requestActionIndex = 0;
+  String selectedMetric = 'PD Value';
+  String selectedMetric_pie = 'PD Value';
 
+  // Sample data
+  final List<Map<String, dynamic>> chartData = [
+    {
+      "color": Colors.green,
+      "value": 60,
+      "title": "60%",
+      "tvp": "\$27M",
+      "loc": 2
+    },
+    {
+      "color": Colors.yellow,
+      "value": 22,
+      "title": "22%",
+      "tvp": "\$9M",
+      "loc": 1
+    },
+    {"color": Colors.red, "value": 18, "title": "18%", "tvp": "\$6M", "loc": 3},
+  ];
   List<roleModel.Roles> filterRoleList = [];
 
   List<roleModel.Roles> filterRoles = [];
@@ -336,7 +359,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           locationListProvider
                                               .myLocationList.length) {
                                         locationListProvider
-                                            .selectAllLocations(false);
+                                            .selectAllLocations(true);
                                       } else {
                                         locationListProvider.clearSelection();
                                       }
@@ -353,6 +376,31 @@ class _SovLocationListState extends State<SovLocationList>
                                       }
                                     }
                                   },
+                                  // onPressed: () {
+                                  //   if (_selectedScreen ==
+                                  //       Screens.locationList) {
+                                  //     if (locationListProvider
+                                  //             .selectedLocations.length <
+                                  //         locationListProvider
+                                  //             .myLocationList.length) {
+                                  //       locationListProvider
+                                  //           .selectAllLocations(false);
+                                  //     } else {
+                                  //       locationListProvider.clearSelection();
+                                  //     }
+                                  //   } else if (_selectedScreen ==
+                                  //       Screens.certifiedLocationList) {
+                                  //     if (locationListProvider
+                                  //             .selectedLocations.length <
+                                  //         locationListProvider
+                                  //             .certifiedLocationList.length) {
+                                  //       locationListProvider
+                                  //           .selectAllLocations(true);
+                                  //     } else {
+                                  //       locationListProvider.clearSelection();
+                                  //     }
+                                  //   }
+                                  // },
                                   child: Text(
                                     _selectedScreen == Screens.locationList
                                         ? locationListProvider
@@ -502,6 +550,43 @@ class _SovLocationListState extends State<SovLocationList>
                                     icon: Icon(Symbols.note_stack_add),
                                     tooltip: 'Add Tag'),
                                 IconButton(
+                                  onPressed: () async {
+                                    setState(() {
+                                      // Show loader
+                                      locationListProvider.isLoading = true;
+                                    });
+                                    await locationListProvider
+                                        .markAsCompleteSov(
+                                      context,
+                                      widget.accountID!,
+                                      widget.subAccountID!,
+                                      widget.sovID!,
+                                    );
+                                    setState(() {
+                                      // Hide loader
+                                      locationListProvider.isLoading = false;
+                                    });
+                                    // Refresh the page
+                                    locationListProvider.fetchLocationList(
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      40,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      widget.sovID,
+                                    );
+                                  },
+                                  icon: locationListProvider.isLoading
+                                      ? CircularProgressIndicator()
+                                      : Icon(Symbols.done_all_rounded,
+                                          color: Colors.green),
+                                  tooltip: 'Mark as Complete',
+                                ),
+
+                                IconButton(
                                   onPressed: () {
                                     // Show delete confirmation dialog
                                     showDialog(
@@ -576,49 +661,49 @@ class _SovLocationListState extends State<SovLocationList>
                                             )
                                           : SizedBox(),
                                       SizedBox(width: CustomSpacing.two),
-                                      TooltipTheme(
-                                        data: TooltipThemeData(
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surface,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          textStyle: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface,
-                                            fontSize: 14,
-                                          ),
-                                          padding: EdgeInsets.all(8),
-                                          verticalOffset: 20,
-                                          preferBelow: false,
-                                        ),
-                                        child: Tooltip(
-                                          showDuration: Duration(seconds: 5),
-                                          triggerMode: TooltipTriggerMode.tap,
-                                          preferBelow: true,
-                                          richMessage: TextSpan(
-                                            children: [
-                                              for (int i = 0;
-                                                  i <
-                                                      locationListProvider
-                                                          .summaryList.length;
-                                                  i++)
-                                                TextSpan(
-                                                  text:
-                                                      '• ${locationListProvider.summaryList[i]}\n',
-                                                  style: typography.Subtitle1,
-                                                ),
-                                            ],
-                                            style: typography.Subtitle1,
-                                          ),
-                                          child: Icon(
-                                            Icons.info,
-                                          ),
-                                        ),
-                                      ),
+                                      // TooltipTheme(
+                                      //   data: TooltipThemeData(
+                                      //     decoration: BoxDecoration(
+                                      //       color: Theme.of(context)
+                                      //           .colorScheme
+                                      //           .surface,
+                                      //       borderRadius:
+                                      //           BorderRadius.circular(8),
+                                      //     ),
+                                      //     textStyle: TextStyle(
+                                      //       color: Theme.of(context)
+                                      //           .colorScheme
+                                      //           .onSurface,
+                                      //       fontSize: 14,
+                                      //     ),
+                                      //     padding: EdgeInsets.all(8),
+                                      //     verticalOffset: 20,
+                                      //     preferBelow: false,
+                                      //   ),
+                                      //   child: Tooltip(
+                                      //     showDuration: Duration(seconds: 5),
+                                      //     triggerMode: TooltipTriggerMode.tap,
+                                      //     preferBelow: true,
+                                      //     richMessage: TextSpan(
+                                      //       children: [
+                                      //         for (int i = 0;
+                                      //             i <
+                                      //                 locationListProvider
+                                      //                     .summaryList.length;
+                                      //             i++)
+                                      //           TextSpan(
+                                      //             text:
+                                      //                 '• ${locationListProvider.summaryList[i]}\n',
+                                      //             style: typography.Subtitle1,
+                                      //           ),
+                                      //       ],
+                                      //       style: typography.Subtitle1,
+                                      //     ),
+                                      //     child: Icon(
+                                      //       Icons.info,
+                                      //     ),
+                                      //   ),
+                                      // ),
                                     ],
                                   ),
                                 ),
@@ -923,6 +1008,590 @@ class _SovLocationListState extends State<SovLocationList>
                                   },
                                 ),
                                 SizedBox(height: CustomSpacing.four),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      Consumer<MyLocationListProvider>(
+                                        builder: (context, locationListProvider,
+                                            child) {
+                                          final globalCounts =
+                                              locationListProvider
+                                                  .grapDataProfile
+                                                  ?.sovResults
+                                                  ?.first
+                                                  .globalValueCounts;
+
+                                          // if (globalCounts == null) {
+                                          //   return const Center(
+                                          //       child: Text('No data found'));
+                                          // }
+
+                                          // Convert model to map for iteration
+                                          final Map<String, dynamic> entries =
+                                              globalCounts != null
+                                                  ? globalCounts.toJson()
+                                                  : {};
+
+                                          // Prepare data for pie chart
+                                          final List<Map<String, dynamic>>
+                                              chartData =
+                                              entries.entries.map((e) {
+                                            final locData = e.value;
+                                            return {
+                                              'loc': locData?['name']
+                                                      ?.toString() ??
+                                                  'Unknown',
+                                              'PD Value': double.tryParse(
+                                                      locData?['PD Value']
+                                                              ?.toString() ??
+                                                          '0') ??
+                                                  0.0,
+                                              'BI Value': double.tryParse(
+                                                      locData?['BI Value']
+                                                              ?.toString() ??
+                                                          '0') ??
+                                                  0.0,
+                                              'color': Colors.primaries[
+                                                  e.key.hashCode %
+                                                      Colors.primaries.length],
+                                              'title': locData?['name']
+                                                      ?.toString() ??
+                                                  'Unknown',
+                                            };
+                                          }).toList();
+
+                                          // Calculate total based on selected metric
+                                          double total = chartData.fold<double>(
+                                              0.0,
+                                              (sum, e) =>
+                                                  sum +
+                                                  ((e[selectedMetric_pie]
+                                                          as double?) ??
+                                                      0.0));
+
+                                          return Container(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width /
+                                                1.2,
+                                            margin: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF111111),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                  color: Colors.white10),
+                                            ),
+                                            padding: const EdgeInsets.all(16),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // Header Row with Dropdown
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    const Text(
+                                                      "Weighted Distribution (TPV)",
+                                                      style: TextStyle(
+                                                          color:
+                                                              Color(0xFF90CAF9),
+                                                          fontSize: 16),
+                                                    ),
+                                                    chartData.isEmpty ?Container():
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
+                                                            color:
+                                                                Colors.white24),
+                                                      ),
+                                                      child:
+                                                          DropdownButtonHideUnderline(
+                                                        child: DropdownButton<
+                                                            String>(
+                                                          value:
+                                                              selectedMetric_pie,
+                                                          // Must match exactly 'PD Value' or 'BI Value'
+                                                          style:
+                                                              const TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                          dropdownColor:
+                                                              Colors.black87,
+                                                          icon: const Icon(
+                                                              Icons
+                                                                  .arrow_drop_down,
+                                                              color:
+                                                                  Colors.white),
+                                                          items: const [
+                                                            DropdownMenuItem(
+                                                              value: 'PD Value',
+                                                              child: Text(
+                                                                  'PD Value'),
+                                                            ),
+                                                            DropdownMenuItem(
+                                                              value: 'BI Value',
+                                                              child: Text(
+                                                                  'BI Value'),
+                                                            ),
+                                                          ],
+                                                          onChanged: (value) {
+                                                            if (value != null) {
+                                                              setState(() {
+                                                                selectedMetric_pie =
+                                                                    value;
+                                                              });
+                                                            }
+                                                          },
+                                                        ),
+                                                      ),
+                                                    )
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 30),
+                                                // Pie Chart
+                                                Center(
+                                                  child: chartData.isEmpty
+                                                      ? const Text(
+                                                          'No data found',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 14),
+                                                        )
+                                                      : GestureDetector(
+                                                          onLongPressStart:
+                                                              (details) {
+                                                            if (touchedIndex !=
+                                                                    null &&
+                                                                touchedIndex! <
+                                                                    chartData
+                                                                        .length) {
+                                                              setState(() {
+                                                                longPressed =
+                                                                    true; // mark as long pressed
+                                                              });
+                                                              final data =
+                                                                  chartData[
+                                                                      touchedIndex!];
+                                                              final val = (data[
+                                                                          selectedMetric_pie]
+                                                                      as double?) ??
+                                                                  0.0;
+                                                              final pct = total >
+                                                                      0
+                                                                  ? (val /
+                                                                          total) *
+                                                                      100
+                                                                  : 0.0;
+                                                              debugPrint(
+                                                                  'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                            }
+                                                          },
+                                                          onTap: () {
+                                                            // Only allow deselect if previously long pressed
+                                                            if (longPressed &&
+                                                                touchedIndex !=
+                                                                    null &&
+                                                                touchedIndex! <
+                                                                    chartData
+                                                                        .length) {
+                                                              debugPrint(
+                                                                  'DESELECT slice: $touchedIndex');
+                                                              setState(() {
+                                                                touchedIndex =
+                                                                    null;
+                                                                longPressed =
+                                                                    false; // reset
+                                                              });
+                                                            }
+                                                          },
+                                                          child: Container(
+                                                            width: 180,
+                                                            height: 180,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          90),
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                      .transparent),
+                                                            ),
+                                                            child: Stack(
+                                                              alignment:
+                                                                  Alignment
+                                                                      .center,
+                                                              children: [
+                                                                PieChart(
+                                                                  PieChartData(
+                                                                    sectionsSpace:
+                                                                        1,
+                                                                    centerSpaceRadius:
+                                                                        0,
+                                                                    pieTouchData:
+                                                                        PieTouchData(
+                                                                      touchCallback:
+                                                                          (event,
+                                                                              response) {
+                                                                        if (!event.isInterestedForInteractions ||
+                                                                            response ==
+                                                                                null ||
+                                                                            response.touchedSection ==
+                                                                                null) {
+                                                                          return;
+                                                                        }
+                                                                        final idx = response
+                                                                            .touchedSection!
+                                                                            .touchedSectionIndex;
+                                                                        setState(
+                                                                            () {
+                                                                          touchedIndex =
+                                                                              idx;
+                                                                        });
+                                                                        final data =
+                                                                            chartData[idx];
+                                                                        final val =
+                                                                            (data[selectedMetric_pie] as double?) ??
+                                                                                0.0;
+                                                                        final pct = total >
+                                                                                0
+                                                                            ? (val / total) *
+                                                                                100
+                                                                            : 0.0;
+                                                                        debugPrint(
+                                                                            'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                                      },
+                                                                    ),
+                                                                    sections: chartData
+                                                                        .asMap()
+                                                                        .map<int, PieChartSectionData>((index, data) {
+                                                                          final isSelected =
+                                                                              touchedIndex == index;
+                                                                          final value =
+                                                                              (data[selectedMetric_pie] as double?) ?? 0.0;
+                                                                          final percent = total > 0
+                                                                              ? (value / total) * 100
+                                                                              : 0.0;
+
+                                                                          return MapEntry(
+                                                                            index,
+                                                                            PieChartSectionData(
+                                                                              color: data['color'],
+                                                                              value: value,
+                                                                              title: "${percent.toStringAsFixed(1)}%",
+                                                                              radius: isSelected ? 120 : 100,
+                                                                              titleStyle: const TextStyle(color: Colors.black, fontSize: 12),
+                                                                            ),
+                                                                          );
+                                                                        })
+                                                                        .values
+                                                                        .toList(),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+
+                                                SizedBox(height: 30),
+                                                Center(
+                                                  child: (touchedIndex ==
+                                                              null ||
+                                                          chartData.isEmpty)
+                                                      ? Container()
+                                                      : Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      10,
+                                                                  vertical: 6),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                0xFF1C1C1C),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .white10),
+                                                          ),
+                                                          child: Builder(
+                                                              builder: (_) {
+                                                            final data = chartData[
+                                                                touchedIndex!];
+                                                            final val = (data[
+                                                                        selectedMetric_pie]
+                                                                    as double?) ??
+                                                                0.0;
+                                                            final pct = total >
+                                                                    0
+                                                                ? (val /
+                                                                        total) *
+                                                                    100
+                                                                : 0.0;
+
+                                                            return Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Text(
+                                                                  "Percentage: ${pct.toStringAsFixed(0)}%",
+                                                                  style: const TextStyle(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          12),
+                                                                ),
+                                                                Container(
+                                                                  height: 14,
+                                                                  width: 1,
+                                                                  margin: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          6),
+                                                                  color: Colors
+                                                                      .white24,
+                                                                ),
+                                                                Text(
+                                                                  "$selectedMetric_pie: \$${val.toStringAsFixed(0)}M",
+                                                                  style: const TextStyle(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          12),
+                                                                ),
+                                                                Container(
+                                                                  height: 14,
+                                                                  width: 1,
+                                                                  margin: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          6),
+                                                                  color: Colors
+                                                                      .white24,
+                                                                ),
+                                                                Text(
+                                                                  "Location: ${data['loc'] == 'Unknown' ? '0' : data['loc']}",
+                                                                  style: const TextStyle(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          11),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          }),
+                                                        ),
+                                                )
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      SizedBox(height: 10),
+                                      Consumer<MyLocationListProvider>(builder:
+                                          (context, locationListProvider,
+                                              child) {
+                                        final globalCounts =
+                                            locationListProvider
+                                                .grapDataProfile
+                                                ?.sovResults
+                                                ?.first
+                                                ?.globalValueCounts;
+
+                                        if (globalCounts == null) {
+                                          return const Center(
+                                              child: Text(''));
+                                        }
+
+                                        final Map<String, dynamic> entries =
+                                            globalCounts.toJson();
+                                        final List<Map<String, dynamic>>
+                                            dataList = entries.entries.map((e) {
+                                          final locData = e.value;
+                                          return {
+                                            'name':
+                                                locData?['name']?.toString() ??
+                                                    'Unknown',
+                                            'PD Value': double.tryParse(
+                                                    locData?['PD Value']
+                                                            ?.toString() ??
+                                                        '0') ??
+                                                0.0,
+                                            'BI Value': double.tryParse(
+                                                    locData?['BI Value']
+                                                            ?.toString() ??
+                                                        '0') ??
+                                                0.0,
+                                          };
+                                        }).toList();
+                                        final maxValue = dataList.fold<double>(
+                                          0.0,
+                                          (prev, e) => e[selectedMetric] > prev
+                                              ? e[selectedMetric]
+                                              : prev,
+                                        );
+                                        final total = dataList.fold<double>(
+                                          0.0,
+                                          (sum, e) =>
+                                              sum +
+                                              (e[selectedMetric] as double),
+                                        );
+
+                                        return Container(
+                                          height: dataList.isEmpty ? 160 : 350,
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              1.2,
+                                          margin: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF111111),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                                color: Colors.white10),
+                                          ),
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const Text(
+                                                    "Critical Missing Parameters",
+                                                    style: TextStyle(
+                                                      color: Color(0xFF90CAF9),
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 12),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black87,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      border: Border.all(
+                                                          color:
+                                                              Colors.white24),
+                                                    ),
+                                                    child:
+                                                        DropdownButtonHideUnderline(
+                                                      child: DropdownButton<
+                                                          String>(
+                                                        value: selectedMetric,
+                                                        style: const TextStyle(
+                                                            color:
+                                                                Colors.white),
+                                                        dropdownColor:
+                                                            Colors.black87,
+                                                        icon: const Icon(
+                                                            Icons
+                                                                .arrow_drop_down,
+                                                            color:
+                                                                Colors.white),
+                                                        items: const [
+                                                          DropdownMenuItem(
+                                                            value: 'PD Value',
+                                                            child: Text(
+                                                                'PD Value'),
+                                                          ),
+                                                          DropdownMenuItem(
+                                                            value: 'BI Value',
+                                                            child: Text(
+                                                                'BI Value'),
+                                                          ),
+                                                        ],
+                                                        onChanged: (value) {
+                                                          if (value != null) {
+                                                            setState(() {
+                                                              selectedMetric =
+                                                                  value;
+                                                            });
+                                                          }
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Expanded(
+                                                child: dataList.isEmpty
+                                                    ? Container(
+                                                        height: 50,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: const Text(
+                                                          'No data found',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 14),
+                                                        ),
+                                                      )
+                                                    : ListView.builder(
+                                                        itemCount:
+                                                            dataList.length,
+                                                        itemBuilder:
+                                                            (context, index) {
+                                                          final item =
+                                                              dataList[index];
+                                                          final name =
+                                                              item['name']
+                                                                  as String;
+                                                          final value = item[
+                                                                  selectedMetric]
+                                                              as double;
+                                                          final percent = total >
+                                                                  0
+                                                              ? (value /
+                                                                      total) *
+                                                                  100
+                                                              : 0.0;
+                                                          return _buildBarItem(
+                                                              name,
+                                                              value,
+                                                              percent,
+                                                              maxValue);
+                                                        },
+                                                      ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: CustomSpacing.four),
                                 Expanded(
                                   child: TabBarView(
                                     controller: _tabController,
@@ -937,9 +1606,18 @@ class _SovLocationListState extends State<SovLocationList>
                             // Overall Score
                             Consumer<MyLocationListProvider>(
                               builder: (context, locationListProvider, child) {
-                                return LocationTable(
+                                return
+                                  // LocationTable(
+                                  //   accountID: widget.accountID!,
+                                  //   subAccountID: widget.subAccountID!,
+                                  //   initialProcessId: widget.initialProcessId,
+                                  //   initialSubProcessId: widget.initialSubProcessId,
+                                  // );
+
+                                  LocationTable(
                                     locations:
-                                        locationListProvider.myLocationList);
+                                        locationListProvider.myLocationList
+                                );
                               },
                             ),
                             // Map View
@@ -1172,7 +1850,7 @@ class _SovLocationListState extends State<SovLocationList>
                                 child: Chip(
                                   label: Row(
                                     children: [
-                                      Text(hazard),
+                                      // Text(hazard),
                                       // Hazard name
                                       const SizedBox(width: 8),
                                       // Space before ratings
@@ -1340,7 +2018,6 @@ class _SovLocationListState extends State<SovLocationList>
                                       "location list: ${locationListProvider.myLocationList}");
                                   return Column(
                                     children: [
-
                                       MyLocationCard(
                                         campusId: locationListProvider
                                                 .myLocationList[index]
@@ -1377,6 +2054,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .finalAddress
                                                 ?.ownerName ??
                                             '',
+                                        companyName: locationListProvider
+                                                .myLocationList[index].finalAddress!.companyName ??
+                                            '',
                                         address: locationListProvider
                                                 .myLocationList[index]
                                                 .finalAddress
@@ -1393,11 +2073,16 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .finalAddress
                                                 ?.score ??
                                             0,
-                                        riskScore: int.parse(locationListProvider
-                                            .myLocationList[index]
-                                            .overallScore.toString()),
-                                        dataCompletenessScore: locationListProvider
-                                            .myLocationList[index].dataCompleteness!.scorePd!,
+                                        riskScore: int.parse(
+                                            locationListProvider
+                                                .myLocationList[index]
+                                                .overallScore
+                                                .toString()),
+                                        dataCompletenessScore:
+                                            locationListProvider
+                                                .myLocationList[index]
+                                                .dataCompleteness!
+                                                .scorePd!,
                                         isAutoCertified: true,
                                         tags: (locationListProvider
                                                 .myLocationList[index]?.tags ??
@@ -1484,6 +2169,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .overallScore
                                                 ?.toString() ??
                                             "0",
+                                          hazardProcess:true,
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
@@ -1522,9 +2208,7 @@ class _SovLocationListState extends State<SovLocationList>
                                 }
                               }
 
-                              return
-                              
-                                MyLocationCard(
+                              return MyLocationCard(
                                 campusId: locationListProvider
                                         .myLocationList[index]
                                         .finalAddress
@@ -1571,15 +2255,23 @@ class _SovLocationListState extends State<SovLocationList>
                                         .finalAddress
                                         ?.percent ??
                                     '0'),
+                                companyName: locationListProvider
+                                    .myLocationList[index].finalAddress!.companyName ??
+                                    '',
                                 geocodingScore: locationListProvider
                                         .myLocationList[index]
                                         .finalAddress
                                         ?.score ??
                                     0,
-                              riskScore: int.tryParse(locationListProvider.myLocationList[index].overallScore?.toString() ?? '0') ?? 0,
-                                dataCompletenessScore:
-                                locationListProvider
-                                    .myLocationList[index].dataCompleteness!.scorePd!,
+                                riskScore: int.tryParse(locationListProvider
+                                            .myLocationList[index].overallScore
+                                            ?.toString() ??
+                                        '0') ??
+                                    0,
+                                dataCompletenessScore: locationListProvider
+                                    .myLocationList[index]
+                                    .dataCompleteness!
+                                    .scorePd!,
                                 isAutoCertified: true,
                                 tags: (locationListProvider
                                         .myLocationList[index]?.tags ??
@@ -1645,6 +2337,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     widget.sovID,
                                   );
                                 },
+                                hazardProcess:true,
                               );
                             },
                           ),
@@ -1989,6 +2682,9 @@ class _SovLocationListState extends State<SovLocationList>
       ownerName: locationListProvider
               .certifiedLocationList[index].finalAddress?.ownerName ??
           '',
+      companyName: locationListProvider
+              .certifiedLocationList[index].finalAddress?.companyName ??
+          '',
       address: locationListProvider
               .certifiedLocationList[index].finalAddress?.address ??
           '',
@@ -1997,13 +2693,11 @@ class _SovLocationListState extends State<SovLocationList>
           '0'),
       geocodingScore:
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
-      riskScore:
-      int.parse(locationListProvider
-          .certifiedLocationList[index]
-          .overallScore.toString()),
-
-      dataCompletenessScore: locationListProvider
-          .myLocationList[index].dataCompleteness!.scorePd!,
+      riskScore: int.tryParse(locationListProvider
+          .certifiedLocationList[index].overallScore
+          ?.toString() ?? '0') ?? 0,
+      dataCompletenessScore:
+      locationListProvider.certifiedLocationList[index].dataCompleteness?.scorePd ?? 0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -2056,6 +2750,7 @@ class _SovLocationListState extends State<SovLocationList>
           widget.sovID,
         );
       },
+      hazardProcess:true,
     );
   }
 
@@ -2445,4 +3140,89 @@ class _SovLocationListState extends State<SovLocationList>
           });
         });
   }
+}
+
+Widget _buildBarItem(
+    String name, double value, double percent, double maxValue) {
+  // Normalize value width safely
+  final normalizedWidth =
+      maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
+  Color barColor;
+  if (percent <= 20) {
+    barColor = Colors.greenAccent;
+  } else if (percent <= 40) {
+    barColor = Colors.yellowAccent;
+  } else if (percent <= 60) {
+    barColor = Colors.orangeAccent;
+  } else if (percent <= 80) {
+    barColor = Colors.redAccent;
+  } else {
+    barColor = Colors.red[900]!;
+  }
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      children: [
+        // Name + percentage
+        Expanded(
+          flex: 1,
+          child: Text(
+            "$name",
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Bar representation
+        Expanded(
+          flex: 5,
+          child: Stack(
+            children: [
+              Container(
+                height: 35,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: normalizedWidth,
+                child: Container(
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              Positioned(
+                width: 100,
+                top: 10,
+                child: Center(
+                  child: Text(
+                    value.toStringAsFixed(0),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Value text (right-aligned)
+      ],
+    ),
+  );
 }

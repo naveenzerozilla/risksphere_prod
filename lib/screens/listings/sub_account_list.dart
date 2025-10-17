@@ -1427,23 +1427,23 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   isLoading: subAccountListProvider
                                       .isAutoCompleteLoading,
                                 ),
-                              if (_subAccountAlreadyExists)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16.0),
-                                  child: TextField(
-                                    controller: _messageController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          "sub_account_list_app_comment_text"),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          "sub_account_list_app_comment_placeholder"),
-                                      border: const OutlineInputBorder(),
-                                    ),
-                                    maxLines: 3,
-                                  ),
-                                ),
+                              // if (_subAccountAlreadyExists)
+                              //   Padding(
+                              //     padding: const EdgeInsets.only(top: 16.0),
+                              //     child: TextField(
+                              //       controller: _messageController,
+                              //       decoration: InputDecoration(
+                              //         labelText: LanguageService.getTranslated(
+                              //             context,
+                              //             "sub_account_list_app_comment_text"),
+                              //         hintText: LanguageService.getTranslated(
+                              //             context,
+                              //             "sub_account_list_app_comment_placeholder"),
+                              //         border: const OutlineInputBorder(),
+                              //       ),
+                              //       maxLines: 3,
+                              //     ),
+                              //   ),
                             ],
                           );
                         },
@@ -1477,7 +1477,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       content: Text(
                                                 LanguageService.getTranslated(
                                                     context,
-                                                    "sub_account_list_app_add_sub_account_empty_text_error"),
+                                                    "sub_account_list_app_add_sub_account_empty_text_error"), style: TextStyle(color: Colors.black),
                                               )));
                                               return;
                                             }
@@ -1495,7 +1495,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         content: Text(
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "sub_accouwnt_list_app_comment_empty_text_error"),
+                                                      "sub_account_list_app_add_sub_account_empty_text_error"),
+                                                          style: TextStyle(color: Colors.black),
                                                 )));
                                                 return;
                                               }
@@ -1511,11 +1512,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             Navigator.pop(context);
                                           },
                                           child: Text(
-                                            _subAccountAlreadyExists
-                                                ? LanguageService.getTranslated(
-                                                    context,
-                                                    "sub_account_list_app_request_access_text")
-                                                : LanguageService.getTranslated(
+                                            LanguageService.getTranslated(
                                                     context,
                                                     "sub_account_list_app_submit_text"),
                                             style: typography.ButtonLargeBlack,

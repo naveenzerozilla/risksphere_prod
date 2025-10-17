@@ -1567,23 +1567,23 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   isLoading:
                                       accountListProvider.isAutoCompleteLoading,
                                 ),
-                              if (_accountAlreadyExists)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16.0),
-                                  child: TextField(
-                                    controller: _messageController,
-                                    decoration: InputDecoration(
-                                      labelText: LanguageService.getTranslated(
-                                          context,
-                                          "account_list_app_comment_text"),
-                                      hintText: LanguageService.getTranslated(
-                                          context,
-                                          "account_list_app_comment_placeholder"),
-                                      border: const OutlineInputBorder(),
-                                    ),
-                                    maxLines: 3,
-                                  ),
-                                ),
+                              // if (_accountAlreadyExists)
+                              //   Padding(
+                              //     padding: const EdgeInsets.only(top: 16.0),
+                              //     child: TextField(
+                              //       controller: _messageController,
+                              //       decoration: InputDecoration(
+                              //         labelText: LanguageService.getTranslated(
+                              //             context,
+                              //             "account_list_app_comment_text"),
+                              //         hintText: LanguageService.getTranslated(
+                              //             context,
+                              //             "account_list_app_comment_placeholder"),
+                              //         border: const OutlineInputBorder(),
+                              //       ),
+                              //       maxLines: 3,
+                              //     ),
+                              //   ),
                             ],
                           );
                         },
@@ -1636,7 +1636,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         content: Text(
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "account_list_app_comment_empty_text_error"),
+                                                      "account_list_app_add_account_empty_text_error"), style: TextStyle(color: Colors.black),
                                                 )));
                                                 return;
                                               }
@@ -1651,11 +1651,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             Navigator.pop(context);
                                           },
                                           child: Text(
-                                            _accountAlreadyExists
-                                                ? LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_request_access_text")
-                                                : LanguageService.getTranslated(
+                                            // _accountAlreadyExists
+                                            //     ? LanguageService.getTranslated(
+                                            //         context,
+                                            //         "account_list_app_request_access_text")
+                                            //     :
+                                            LanguageService.getTranslated(
                                                     context,
                                                     "account_list_app_submit_text"),
                                             style: typography.ButtonLargeBlack,

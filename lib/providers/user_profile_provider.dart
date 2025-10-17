@@ -19,6 +19,7 @@ import '../models/company_model.dart';
 import '../models/employee_list_model.dart';
 import '../models/networking_model.dart';
 import '../models/view_employee_model.dart';
+import '../screens/home/dashboard_screen.dart';
 import '../service/api_service.dart';
 import '../service/shared_preference_service.dart';
 import '../utils/api_constants.dart';
@@ -570,6 +571,28 @@ class UserProfileProvider with ChangeNotifier {
       // if (context.mounted) CustomToast.error(context, e.toString());
       isUserTeamLoading = false;
       return false; // Return false in case of error
+    }
+  }
+
+  Future<void> signInRoleBasedSwitch(BuildContext context, Map<String, dynamic> payload) async {
+
+    try {
+      ApiService apiService = ApiService('${AppConstant.SWITCH_INDIVIDUAL_URL}');
+    var response = await apiService.post(payload);
+      if (response['message'] == "Last selected role updated successfully" ) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+              builder: (_) => DashboardScreen()),
+        );
+        CustomToast.success(context, 'Last selected role updated successfully');
+      } else {
+        print(response.toString());
+        log('Error updating hazard data: ${response['message'] ?? 'Unknown error'}');
+      }
+    } catch (e, stackTrace) {
+      log('Error fetching data: $e');
+      print(stackTrace.toString());
+      log(stackTrace.toString());
     }
   }
 }

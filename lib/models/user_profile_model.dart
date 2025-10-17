@@ -39,6 +39,7 @@ class UserData {
   String? phone;
   String? name;
   List<Roles>? role;
+  LastSelectedRole? lastSelectedRole;
   List<Roles>? acceptedRole;
   bool? isExternal;
 
@@ -58,6 +59,7 @@ class UserData {
         this.phone,
         this.name,
         this.role,
+        this.lastSelectedRole,
         this.acceptedRole, this.isExternal,});
 
   UserData.fromJson(Map<String, dynamic> json) {
@@ -76,7 +78,9 @@ class UserData {
     displayName = json['displayName'];
     countryCode = json['country_code'];
     phone = json['phone'];
-    name = json['name'];
+    name = json['name'];lastSelectedRole = json['last_selected_role'] != null
+        ? new LastSelectedRole.fromJson(json['last_selected_role'])
+        : null;
     if (json['role'] != null) {
       role = <Roles>[];
       json['role'].forEach((v) {
@@ -121,6 +125,9 @@ class UserData {
     if (this.role != null) {
       data['role'] = this.role!.map((v) => v.toJson()).toList();
     }
+    if (this.lastSelectedRole != null) {
+      data['last_selected_role'] = this.lastSelectedRole!.toJson();
+    }
     if (this.acceptedRole != null) {
       data['accepted_role'] =
           this.acceptedRole!.map((v) => v?.toJson()).toList();
@@ -129,7 +136,24 @@ class UserData {
   }
 }
 
+class LastSelectedRole {
+  String? role;
+  String? name;
 
+  LastSelectedRole({this.role, this.name});
+
+  LastSelectedRole.fromJson(Map<String, dynamic> json) {
+    role = json['role'];
+    name = json['name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['role'] = this.role;
+    data['name'] = this.name;
+    return data;
+  }
+}
 class CreatedAt {
   int? iSeconds;
   int? iNanoseconds;

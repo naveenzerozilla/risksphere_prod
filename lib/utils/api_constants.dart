@@ -14,6 +14,8 @@ class AppConstant {
 
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
       '$baseURL/user_management_new/companies_list';
+  static String get SWITCH_INDIVIDUAL_URL =>
+      '$baseURL/user_management_new/last_updated_role';
 
   static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create';
 
@@ -224,6 +226,7 @@ class AppConstant {
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
+  static String get SOV_COMPLETE_STATUS => '$baseURL/locations/location_status';
 
   static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW =>
       '$baseURL/locations/getlocation';

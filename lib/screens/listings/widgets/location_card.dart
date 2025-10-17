@@ -21,6 +21,7 @@ class MyLocationCard extends StatefulWidget {
   final String locationId;
   final String accountName;
   final String ownerName;
+  final String companyName;
   final String address;
   final double percentage;
   final int geocodingScore;
@@ -61,6 +62,7 @@ class MyLocationCard extends StatefulWidget {
     required this.locationId,
     required this.accountName,
     required this.ownerName,
+    required this.companyName,
     required this.address,
     required this.percentage,
     required this.geocodingScore,
@@ -273,10 +275,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   isSelected,
                   widget.imageUrl,
                 ),
-                if (widget.sovId == null || widget.sovId!.isEmpty) ...[
-                  Container(
 
-                  )
+                if (widget.sovId == null || widget.sovId!.isEmpty) ...[
+                  Container()
                 ] else ...[
                   SizedBox(height: 8),
                   RichText(
@@ -285,9 +286,10 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         TextSpan(
                           text: "Owner : ",
                           style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -295,10 +297,12 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         TextSpan(
                           text: widget.ownerName ?? "",
                           style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
-                            fontSize: 14, // Different font size for owner name
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
+                            fontSize: 14,
+                            // Different font size for owner name
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -313,47 +317,23 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         TextSpan(
                           text: "Company : ",
                           style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         TextSpan(
-                          text: widget.ownerName ?? "",
+                          text: widget.companyName ?? "",
                           style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
-                            fontSize: 14, // Different font size for owner name
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),  SizedBox(height: 8),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Role : ",
-                          style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.black,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        TextSpan(
-                          text: widget.ownerName ?? "",
-                          style: typography.Body2.copyWith(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.white
-                                : AppColors.blue50,
-                            fontSize: 14, // Different font size for owner name
+                            // Different font size for owner name
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -362,7 +342,37 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 8),
-
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Role : ",
+                          style: typography.Body2.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.ownerName ?? "",
+                          style: typography.Body2.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.blue50,
+                            fontSize: 14,
+                            // Different font size for owner name
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
                 ],
                 SizedBox(height: 16),
                 _buildScrollableScores(context),
@@ -383,45 +393,39 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   Widget _buildTopRow(BuildContext context, List<String> chipLabels,
       bool isSelected, String image) {
-    return Row(
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Building Image
+        Row(
+          children: [
+            // Building Image
 
-        isSelected
-            ? CircleAvatar(
-                radius: 25,
-                backgroundColor: AppColors.primaryMain.withOpacity(0.5),
-                child: Icon(Icons.check, color: Colors.white),
-              )
-            : widget.isConflict == true
-                ? Container(
-                    height: 50, // same as CircleAvatar's diameter (radius * 2)
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryMain.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(
-                          8), // Rounded square, adjust as needed
-                    ),
-                    child: Icon(Icons.block_rounded,
-                        color: Colors.orange, size: 30),
+            isSelected
+                ? CircleAvatar(
+                    radius: 25,
+                    backgroundColor: AppColors.primaryMain.withOpacity(0.5),
+                    child: Icon(Icons.check, color: Colors.white),
                   )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: (widget.geocodingScore == 5)
-                        ? CachedNetworkImage(
-                            imageUrl:
-                                "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                CircularProgressIndicator(strokeWidth: 2),
-                            errorWidget: (context, url, error) =>
-                                Icon(Icons.error),
-                          )
-                        : image.isNotEmpty
+                : widget.isConflict == true
+                    ? Container(
+                        height:
+                            50, // same as CircleAvatar's diameter (radius * 2)
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryMain.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(
+                              8), // Rounded square, adjust as needed
+                        ),
+                        child: Icon(Icons.block_rounded,
+                            color: Colors.orange, size: 30),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: (widget.geocodingScore == 5)
                             ? CachedNetworkImage(
-                                imageUrl: image,
+                                imageUrl:
+                                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
@@ -430,105 +434,119 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                 errorWidget: (context, url, error) =>
                                     Icon(Icons.error),
                               )
-                            : Container(
-                                color: Colors.lightBlueAccent,
-                                // Image.asset(
-                                // 'assets/images/building_image.png',
-                                width: 50,
-                                height: 50,
-                                // fit: BoxFit.cover,
-                              ),
-                  ),
-
-        SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (chipLabels.length == 1)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildChip(context, chipLabels[0], isCampus: true),
-                  ],
-                ),
-              if (chipLabels.length > 1)
-                // Scrollable chip list with scrollbar for multiple chips
-                Scrollbar(
-                  controller: _scrollController,
-                  thumbVisibility: true,
-                  thickness: 2,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: Row(
-                        children: chipLabels
-                            .map(
-                              (label) => Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: _buildChip(
-                                  context,
-                                  label,
-                                  isCampus: label ==
-                                      chipLabels[
-                                          0], // Assuming the first chip is campus
-                                ),
-                              ),
-                            )
-                            .toList(),
+                            : image.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: image,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) =>
+                                        CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                    errorWidget: (context, url, error) =>
+                                        Icon(Icons.error),
+                                  )
+                                : Container(
+                                    color: Colors.lightBlueAccent,
+                                    // Image.asset(
+                                    // 'assets/images/building_image.png',
+                                    width: 50,
+                                    height: 50,
+                                    // fit: BoxFit.cover,
+                                  ),
                       ),
+
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 4),
+                  // Overflowed address
+                  Text(
+                    widget.address,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primaryMain,
                     ),
+                    maxLines: 6,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              SizedBox(height: 4),
-              // Overflowed address
-              Text(
-                widget.address,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primaryMain,
-                ),
-                maxLines: 6,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        /*SizedBox(width: 12),
-        // Circular score with percentage and gaped border
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 46,
-              height: 46,
-              child: CircularProgressIndicator(
-                value: widget.percentage / 100,
-                strokeWidth: 4,
-                strokeCap: StrokeCap.square,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ],
               ),
             ),
-            Text(
-              '${widget.percentage}%',
-              style: CustomTypography(context).InputLabel.copyWith(fontSize: 10),
+            /*SizedBox(width: 12),
+            // Circular score with percentage and gaped border
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 46,
+                  height: 46,
+                  child: CircularProgressIndicator(
+                    value: widget.percentage / 100,
+                    strokeWidth: 4,
+                    strokeCap: StrokeCap.square,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                  ),
+                ),
+                Text(
+                  '${widget.percentage}%',
+                  style: CustomTypography(context).InputLabel.copyWith(fontSize: 10),
+                ),
+              ],
+            ),*/
+            SizedBox(width: 4),
+            // Popup menu for actions
+            CustomPopupMenuButton(
+              // geocodeingScore:  widget.geocodingScore,
+              //   imageUrl: widget.
+              locationId: widget.locationId,
+              onDelete: widget.onDelete,
+              onAddToSOV: widget.onAddToSOV,
+              onAddTag: widget.onAddTag,
             ),
           ],
-        ),*/
-        SizedBox(width: 4),
-        // Popup menu for actions
-        CustomPopupMenuButton(
-          // geocodeingScore:  widget.geocodingScore,
-          //   imageUrl: widget.
-          locationId: widget.locationId,
-          onDelete: widget.onDelete,
-          onAddToSOV: widget.onAddToSOV,
-          onAddTag: widget.onAddTag,
         ),
+        if (chipLabels.length == 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildChip(context, chipLabels[0], isCampus: true),
+            ],
+          ),
+        if (chipLabels.length > 1)
+          // Scrollable chip list with scrollbar for multiple chips
+          Scrollbar(
+            controller: _scrollController,
+            thumbVisibility: true,
+            thickness: 2,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Row(
+                  children: chipLabels
+                      .map(
+                        (label) => Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: _buildChip(
+                            context,
+                            label,
+                            isCampus: label ==
+                                chipLabels[
+                                    0], // Assuming the first chip is campus
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -627,7 +645,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 context,
                 'Risk Score',
                 widget.address,
-                widget.riskScore,// == 0 ? 5 : widget.riskScore,
+                widget.riskScore, // == 0 ? 5 : widget.riskScore,
                 widget.accountId!,
                 widget.subAccountId!),
           ),
@@ -748,7 +766,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               children: [
                 //check the processing status
                 if (widget.hazardProcess == true ||
-                    title == 'Geocoding' || title == 'Risk Score' ||
+                    title == 'Geocoding' ||
                     title == 'Completeness') ...[
                   title == 'Risk Score'
                       ? SvgPicture.asset('assets/images/hazard_icon.svg',

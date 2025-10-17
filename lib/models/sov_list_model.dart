@@ -1,3 +1,5 @@
+import 'my_location_list_model.dart';
+
 class SovListModel {
   int? totalRecords;
   int? page;
@@ -7,54 +9,75 @@ class SovListModel {
   List<Role>? role;
   TotalCountHeader? totalCountHeader;
 
-  SovListModel(
-      {this.totalRecords,
-      this.page,
-      this.pageSize,
-      this.result,
-      this.settings,
-      this.role,
-      this.totalCountHeader});
+  SovListModel({
+    this.totalRecords,
+    this.page,
+    this.pageSize,
+    this.result,
+    this.settings,
+    this.role,
+    this.totalCountHeader,
+  });
 
   SovListModel.fromJson(Map<String, dynamic> json) {
-    totalRecords = json['totalRecords'];
-    page = json['page'];
-    pageSize = json['pageSize'];
-    if (json['result'] != null) {
-      result = <Result>[];
-      json['result'].forEach((v) {
-        result!.add(new Result.fromJson(v));
-      });
+    totalRecords = json['totalRecords'] is int ? json['totalRecords'] : 0;
+    page = json['page'] is int ? json['page'] : 1;
+    pageSize = json['pageSize'] is int ? json['pageSize'] : 0;
+
+    // ✅ Safe 'result' parsing
+    if (json['result'] is List) {
+      result = (json['result'] as List)
+          .whereType<Map<String, dynamic>>() // ensures each item is a Map
+          .map((v) => Result.fromJson(v))
+          .toList();
+    } else {
+      result = [];
     }
-    settings = json['settings'] != null
-        ? new Settings.fromJson(json['settings'])
+
+    // ✅ Safe 'settings' parsing
+    settings = (json['settings'] is Map<String, dynamic>)
+        ? Settings.fromJson(json['settings'])
         : null;
-    if (json['role'] != null) {
-      role = <Role>[];
-      json['role'].forEach((v) { role!.add(new Role.fromJson(v)); });
+
+    // ✅ Safe 'role' parsing
+    role = [];
+    final roleData = json['role'];
+    if (roleData != null && roleData is! bool) {
+      if (roleData is List) {
+        for (var v in roleData) {
+          if (v is Map<String, dynamic>) {
+            role!.add(Role.fromJson(v));
+          }
+        }
+      } else if (roleData is Map<String, dynamic>) {
+        // Sometimes role is an object instead of a list
+        roleData.forEach((k, v) {
+          if (v is Map<String, dynamic>) {
+            role!.add(Role.fromJson(v));
+          }
+        });
+      }
     }
-    totalCountHeader = json['total_count_header'] != null
-        ? new TotalCountHeader.fromJson(json['total_count_header'])
+
+    // ✅ Safe 'total_count_header' parsing
+    totalCountHeader = (json['total_count_header'] is Map<String, dynamic>)
+        ? TotalCountHeader.fromJson(json['total_count_header'])
         : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['totalRecords'] = this.totalRecords;
-    data['page'] = this.page;
-    data['pageSize'] = this.pageSize;
-    if (this.result != null) {
-      data['result'] = this.result!.map((v) => v.toJson()).toList();
+    final Map<String, dynamic> data = {};
+    data['totalRecords'] = totalRecords ?? 0;
+    data['page'] = page ?? 1;
+    data['pageSize'] = pageSize ?? 0;
+
+    data['result'] = result?.map((v) => v.toJson()).toList() ?? [];
+    if (settings != null) data['settings'] = settings!.toJson();
+    data['role'] = role?.map((v) => v.toJson()).toList() ?? [];
+    if (totalCountHeader != null) {
+      data['total_count_header'] = totalCountHeader!.toJson();
     }
-    if (this.settings != null) {
-      data['settings'] = this.settings!.toJson();
-    }
-    if (this.role != null) {
-      data['role'] = this.role!.map((v) => v.toJson()).toList();
-    }
-    if (this.totalCountHeader != null) {
-      data['total_count_header'] = this.totalCountHeader!.toJson();
-    }
+
     return data;
   }
 }
@@ -77,6 +100,9 @@ class Result {
   int? locationCount;
   dynamic role;
   String? companyName;
+  String? status;
+  SovGraphData? sovGraphData;
+  TotalDataCompleteness? totalDataCompleteness;
 
   Result(
       {this.sovId,
@@ -92,41 +118,56 @@ class Result {
       this.accessibleTo,
       this.sharingStatus,
       this.locationCount,
-        this.role,
-      this.companyName});
+      this.role,
+      this.companyName,
+      this.status,
+      this.sovGraphData,
+      this.totalDataCompleteness});
 
   Result.fromJson(Map<String, dynamic> json) {
     sovId = json['sov_id'];
-    owner = json['owner'] != null ? new Owner.fromJson(json['owner']) : null;
+    owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     companyId = json['company_id'];
     subAccountId = json['sub_account_id'];
     accountId = json['account_id'];
     name = json['name'];
     createdAt = json['created_at'] != null
-        ? new CreatedAt.fromJson(json['created_at'])
+        ? CreatedAt.fromJson(json['created_at'])
         : null;
-    // dataParamIndex = json['data_param_index'] != null ? new DataParamIndex.fromJson(json['data_param_index']) : null;
-    // if (json['all_data_parameters'] != null) {
-    //   allDataParameters = <Null>[];
-    //   json['all_data_parameters'].forEach((v) { allDataParameters!.add(new Null.fromJson(v)); });
-    // }
-    // if (json['data_parameters'] != null) {
-    //   dataParameters = <Null>[];
-    //   json['data_parameters'].forEach((v) { dataParameters!.add(new Null.fromJson(v)); });
-    // }
+
     isShared = json['is_shared'];
-    accessibleTo = json['accessible_to'].cast<String>();
+    accessibleTo = (json['accessible_to'] is List)
+        ? List<String>.from(json['accessible_to'])
+        : [];
+
     sharingStatus = json['sharing_status'] != null
-        ? new SharingStatus.fromJson(json['sharing_status'])
+        ? SharingStatus.fromJson(json['sharing_status'])
         : null;
+
     locationCount = json['location_count'];
-    if (json['role'] != null) {
-      role = <Roles>[];
-      json['role'].forEach((v) {
-        role!.add(new Roles.fromJson(v));
-      });
+
+    // ✅ Handle all possible 'role' cases safely
+    if (json['role'] != null && json['role'] is! bool) {
+      if (json['role'] is List) {
+        role = (json['role'] as List).map((v) => Roles.fromJson(v)).toList();
+      } else if (json['role'] is Map) {
+        // Sometimes APIs return object instead of list
+        role = [Roles.fromJson(json['role'])];
+      } else {
+        role = [];
+      }
+    } else {
+      role = []; // default empty list if null or bool
     }
+
     companyName = json['company_name'];
+    status = json['status'];
+    sovGraphData = json['sov_graph_data'] != null
+        ? new SovGraphData.fromJson(json['sov_graph_data'])
+        : null;
+    totalDataCompleteness = json['total_data_completeness'] != null
+        ? new TotalDataCompleteness.fromJson(json['total_data_completeness'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -161,6 +202,206 @@ class Result {
       data['role'] = this.role!.map((v) => v.toJson()).toList();
     }
     data['company_name'] = this.companyName;
+    data['status'] = this.status;
+    if (this.sovGraphData != null) {
+      data['sov_graph_data'] = this.sovGraphData!.toJson();
+    }
+    if (this.totalDataCompleteness != null) {
+      data['total_data_completeness'] = this.totalDataCompleteness!.toJson();
+    }
+    return data;
+  }
+}
+
+class TotalDataCompleteness {
+  int? averageScore;
+  int? averageScorePd;
+  int? averageScoreTe;
+  List<Scores>? scores;
+  int? scorePd;
+  int? scoreTe;
+
+  TotalDataCompleteness(
+      {this.averageScore,
+      this.averageScorePd,
+      this.averageScoreTe,
+      this.scores,
+      this.scorePd,
+      this.scoreTe});
+
+  TotalDataCompleteness.fromJson(Map<String, dynamic> json) {
+    averageScore = json['average_score'];
+    averageScorePd = json['average_score_pd'];
+    averageScoreTe = json['average_score_te'];
+    if (json['scores'] != null) {
+      scores = <Scores>[];
+      json['scores'].forEach((v) {
+        scores!.add(new Scores.fromJson(v));
+      });
+    }
+    scorePd = json['score_pd'];
+    scoreTe = json['score_te'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['average_score'] = this.averageScore;
+    data['average_score_pd'] = this.averageScorePd;
+    data['average_score_te'] = this.averageScoreTe;
+    if (this.scores != null) {
+      data['scores'] = this.scores!.map((v) => v.toJson()).toList();
+    }
+    data['score_pd'] = this.scorePd;
+    data['score_te'] = this.scoreTe;
+    return data;
+  }
+}
+
+class Scores {
+  String? locationId;
+  int? scorePd;
+  int? scoreTe;
+  int? finalScore;
+
+  Scores({this.locationId, this.scorePd, this.scoreTe, this.finalScore});
+
+  Scores.fromJson(Map<String, dynamic> json) {
+    locationId = json['location_id'];
+    scorePd = json['score_pd'];
+    scoreTe = json['score_te'];
+    finalScore = json['final_score'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['location_id'] = this.locationId;
+    data['score_pd'] = this.scorePd;
+    data['score_te'] = this.scoreTe;
+    data['final_score'] = this.finalScore;
+    return data;
+  }
+}
+
+class SovGraphData {
+  List<SovResults>? sovResults;
+  GeocodeCounts? geocodeCounts;
+  GlobalPerilCounts? globalSovPerilCounts;
+
+  SovGraphData(
+      {this.sovResults, this.geocodeCounts, this.globalSovPerilCounts});
+
+  SovGraphData.fromJson(Map<String, dynamic> json) {
+    if (json['sov_results'] != null) {
+      sovResults = <SovResults>[];
+      json['sov_results'].forEach((v) {
+        sovResults!.add(new SovResults.fromJson(v));
+      });
+    }
+    geocodeCounts = json['geocode_counts'] != null
+        ? new GeocodeCounts.fromJson(json['geocode_counts'])
+        : null;
+    globalSovPerilCounts = json['global_sov_peril_counts'] != null
+        ? new GlobalPerilCounts.fromJson(json['global_sov_peril_counts'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.sovResults != null) {
+      data['sov_results'] = this.sovResults!.map((v) => v.toJson()).toList();
+    }
+    if (this.geocodeCounts != null) {
+      data['geocode_counts'] = this.geocodeCounts!.toJson();
+    }
+    if (this.globalSovPerilCounts != null) {
+      data['global_sov_peril_counts'] = this.globalSovPerilCounts!.toJson();
+    }
+    return data;
+  }
+}
+
+class SovResults {
+  int? geocodeAvg;
+  int? overallAvg;
+  String? sovId;
+  GlobalPerilCounts? globalPerilCounts;
+  GlobalValueCounts? globalValueCounts;
+  Context? context;
+  List<Locations>? locations;
+
+  SovResults(
+      {this.geocodeAvg,
+      this.overallAvg,
+      this.sovId,
+      this.globalPerilCounts,
+      this.globalValueCounts,
+      this.context,
+      this.locations});
+
+  SovResults.fromJson(Map<String, dynamic> json) {
+    geocodeAvg = json['geocode_avg'];
+    overallAvg = json['overall_avg'];
+    sovId = json['sov_id'];
+    globalPerilCounts = json['global_peril_counts'] != null
+        ? new GlobalPerilCounts.fromJson(json['global_peril_counts'])
+        : null;
+    globalValueCounts = json['global_value_counts'] != null
+        ? new GlobalValueCounts.fromJson(json['global_value_counts'])
+        : null;
+    context =
+        json['context'] != null ? new Context.fromJson(json['context']) : null;
+    if (json['locations'] != null) {
+      locations = <Locations>[];
+      json['locations'].forEach((v) {
+        locations!.add(new Locations.fromJson(v));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['geocode_avg'] = this.geocodeAvg;
+    data['overall_avg'] = this.overallAvg;
+    data['sov_id'] = this.sovId;
+    if (this.globalPerilCounts != null) {
+      data['global_peril_counts'] = this.globalPerilCounts!.toJson();
+    }
+    if (this.globalValueCounts != null) {
+      data['global_value_counts'] = this.globalValueCounts!.toJson();
+    }
+    if (this.context != null) {
+      data['context'] = this.context!.toJson();
+    }
+    if (this.locations != null) {
+      data['locations'] = this.locations!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class GlobalPerilCounts {
+  Hurricane? hurricane;
+  Hurricane? earthquake;
+
+  GlobalPerilCounts({this.hurricane, this.earthquake});
+
+  GlobalPerilCounts.fromJson(Map<String, dynamic> json) {
+    hurricane = json['Hurricane'] != null
+        ? new Hurricane.fromJson(json['Hurricane'])
+        : null;
+    earthquake = json['Earthquake'] != null
+        ? new Hurricane.fromJson(json['Earthquake'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.hurricane != null) {
+      data['Hurricane'] = this.hurricane!.toJson();
+    }
+    if (this.earthquake != null) {
+      data['Earthquake'] = this.earthquake!.toJson();
+    }
     return data;
   }
 }
@@ -168,7 +409,7 @@ class Result {
 class Roles {
   Null? isApplicableForTrial;
   Null? id;
-  String? role;
+  dynamic? role;
   String? name;
   Null? isMultipleRoleEnabled;
   Null? isForIndividual;
@@ -432,14 +673,17 @@ class TotalCountHeader {
   int? shared;
   int? received;
   int? all;
+  int? completed;
 
-  TotalCountHeader({this.my, this.shared, this.received, this.all});
+  TotalCountHeader(
+      {this.my, this.shared, this.received, this.all, this.completed});
 
   TotalCountHeader.fromJson(Map<String, dynamic> json) {
     my = json['my'];
     shared = json['shared'];
     received = json['received'];
     all = json['all'];
+    completed = json['completed'];
   }
 
   Map<String, dynamic> toJson() {
@@ -448,6 +692,7 @@ class TotalCountHeader {
     data['shared'] = this.shared;
     data['received'] = this.received;
     data['all'] = this.all;
+    data['completed'] = this.completed;
     return data;
   }
 }

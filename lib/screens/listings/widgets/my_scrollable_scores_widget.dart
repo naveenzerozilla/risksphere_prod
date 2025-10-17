@@ -33,7 +33,7 @@ class MyScrollableScoresWidget extends StatelessWidget {
               children: [
                 _buildScoreCard(context, 'Geocoding Score', geocodingScore,true),
                 _buildScoreCard(context, 'Risk Score', int.parse(riskScore.toString()),true),
-                _buildScoreCard(context, 'Completeness', dataCompleteness,true),
+                _buildScoreCard(context, 'Completeness',  int.parse(dataCompleteness),true),
                 // _buildScoreCard(context, 'Construction', riskScore),
               ],
             ),

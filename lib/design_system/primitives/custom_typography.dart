@@ -31,6 +31,15 @@ class CustomTypography {
     height: 1.66,
     letterSpacing: 0.4,
   );
+  TextStyle get Caption1 => TextStyle(
+    color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+    fontFamily: 'General Sans',
+    fontSize: 11.0,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+    height: 1.66,
+    letterSpacing: 0.4,
+  );
 
   TextStyle get H6 => TextStyle(
     color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,

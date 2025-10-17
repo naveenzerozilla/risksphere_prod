@@ -253,4 +253,20 @@ class NewsFeedProvider extends ChangeNotifier {
       log(stackTrace.toString());
     }
   }
+  Future<void> signInRoleBasedSwitch(BuildContext context, Map<String, dynamic> payload) async {
+
+    try {
+      ApiService apiService = ApiService('${AppConstant.SWITCH_INDIVIDUAL_URL}');
+      var response = await apiService.post(payload);
+      if (response.containsKey('result')) {
+        CustomToast.success(context, 'Hazard data updated successfully');
+      } else {
+        log('Error updating hazard data');
+      }
+
+    } catch (e, stackTrace) {
+      log('Error fetching news feed: $e');
+      log(stackTrace.toString());
+    }
+  }
 }
