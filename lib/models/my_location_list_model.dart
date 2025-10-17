@@ -1350,89 +1350,114 @@ class Hurricane {
 }
 
 class GlobalValueCounts {
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
-      loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af;
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
-      loc351a6934fd19de8ce05e5115f69ffde105ea78b3;
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
-      loc3626762930054003d3fd6c725c74c021c6a21915;
-  LocA155789496fde8a79f2f3c4baf4949d8765fe752?
-      locA155789496fde8a79f2f3c4baf4949d8765fe752;
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
-      locD7ac9d1bc367b0d2232401eefb95cb4948030b4d;
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af?
-      locFacc742ed5404e9084e4c755a95d895b9f801eda;
+  Map<String, LocationValue>? globalValueCounts;
 
-  GlobalValueCounts(
-      {this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af,
-      this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3,
-      this.loc3626762930054003d3fd6c725c74c021c6a21915,
-      this.locA155789496fde8a79f2f3c4baf4949d8765fe752,
-      this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d,
-      this.locFacc742ed5404e9084e4c755a95d895b9f801eda});
+  GlobalValueCounts({this.globalValueCounts});
 
   GlobalValueCounts.fromJson(Map<String, dynamic> json) {
-    loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af =
-        json['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'] != null
-            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-                json['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'])
-            : null;
-    loc351a6934fd19de8ce05e5115f69ffde105ea78b3 =
-        json['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'] != null
-            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-                json['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'])
-            : null;
-    loc3626762930054003d3fd6c725c74c021c6a21915 =
-        json['loc-3626762930054003d3fd6c725c74c021c6a21915'] != null
-            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-                json['loc-3626762930054003d3fd6c725c74c021c6a21915'])
-            : null;
-    locA155789496fde8a79f2f3c4baf4949d8765fe752 =
-        json['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'] != null
-            ? new LocA155789496fde8a79f2f3c4baf4949d8765fe752.fromJson(
-                json['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'])
-            : null;
-    locD7ac9d1bc367b0d2232401eefb95cb4948030b4d =
-        json['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'] != null
-            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-                json['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'])
-            : null;
-    locFacc742ed5404e9084e4c755a95d895b9f801eda =
-        json['loc-facc742ed5404e9084e4c755a95d895b9f801eda'] != null
-            ? new Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-                json['loc-facc742ed5404e9084e4c755a95d895b9f801eda'])
-            : null;
+    if (json != null) {
+      globalValueCounts = {};
+      json.forEach((key, value) {
+        globalValueCounts![key] = LocationValue.fromJson(value);
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    globalValueCounts?.forEach((key, value) {
+      data[key] = value.toJson();
+    });
+    return data;
+  }
+}
+
+class LocationValue {
+  String? pdValue;
+  String? name;
+  String? address;
+
+  LocationValue({this.pdValue, this.name, this.address});
+
+  factory LocationValue.fromJson(Map<String, dynamic> json) {
+    return LocationValue(
+      pdValue: json['PD Value']?.toString(),
+      name: json['name'],
+      address: json['address'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'PD Value': pdValue,
+      'name': name,
+      'address': address,
+    };
+  }
+}
+
+//
+// class GlobalValueCounts {
+//   Loc01998dc1059b5f213560d3c5174c9a80402c58f3?
+//   loc01998dc1059b5f213560d3c5174c9a80402c58f3;
+//   Loc01998dc1059b5f213560d3c5174c9a80402c58f3?
+//   loc04f1eb0d359d4bb45b2f272caed9b279fd100de3;
+//
+//   GlobalValueCounts(
+//       {this.loc01998dc1059b5f213560d3c5174c9a80402c58f3,
+//         this.loc04f1eb0d359d4bb45b2f272caed9b279fd100de3});
+//
+//   GlobalValueCounts.fromJson(Map<String, dynamic> json) {
+//     loc01998dc1059b5f213560d3c5174c9a80402c58f3 =
+//     json['loc-01998dc1059b5f213560d3c5174c9a80402c58f3'] != null
+//         ? new Loc01998dc1059b5f213560d3c5174c9a80402c58f3.fromJson(
+//         json['loc-01998dc1059b5f213560d3c5174c9a80402c58f3'])
+//         : null;
+//     loc04f1eb0d359d4bb45b2f272caed9b279fd100de3 =
+//     json['loc-04f1eb0d359d4bb45b2f272caed9b279fd100de3'] != null
+//         ? new Loc01998dc1059b5f213560d3c5174c9a80402c58f3.fromJson(
+//         json['loc-04f1eb0d359d4bb45b2f272caed9b279fd100de3'])
+//         : null;
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     if (this.loc01998dc1059b5f213560d3c5174c9a80402c58f3 != null) {
+//       data['loc-01998dc1059b5f213560d3c5174c9a80402c58f3'] =
+//           this.loc01998dc1059b5f213560d3c5174c9a80402c58f3!.toJson();
+//     }
+//     if (this.loc04f1eb0d359d4bb45b2f272caed9b279fd100de3 != null) {
+//       data['loc-04f1eb0d359d4bb45b2f272caed9b279fd100de3'] =
+//           this.loc04f1eb0d359d4bb45b2f272caed9b279fd100de3!.toJson();
+//     }
+//     return data;
+//   }
+// }
+
+class Loc01998dc1059b5f213560d3c5174c9a80402c58f3 {
+  String? pDValue;
+  String? name;
+  String? address;
+
+  Loc01998dc1059b5f213560d3c5174c9a80402c58f3(
+      {this.pDValue, this.name, this.address});
+
+  Loc01998dc1059b5f213560d3c5174c9a80402c58f3.fromJson(
+      Map<String, dynamic> json) {
+    pDValue = json['PD Value'];
+    name = json['name'];
+    address = json['address'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af != null) {
-      data['loc-25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af'] =
-          this.loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af!.toJson();
-    }
-    if (this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3 != null) {
-      data['loc-351a6934fd19de8ce05e5115f69ffde105ea78b3'] =
-          this.loc351a6934fd19de8ce05e5115f69ffde105ea78b3!.toJson();
-    }
-    if (this.loc3626762930054003d3fd6c725c74c021c6a21915 != null) {
-      data['loc-3626762930054003d3fd6c725c74c021c6a21915'] =
-          this.loc3626762930054003d3fd6c725c74c021c6a21915!.toJson();
-    }
-    if (this.locA155789496fde8a79f2f3c4baf4949d8765fe752 != null) {
-      data['loc-a155789496fde8a79f2f3c4baf4949d8765fe752'] =
-          this.locA155789496fde8a79f2f3c4baf4949d8765fe752!.toJson();
-    }
-    if (this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d != null) {
-      data['loc-d7ac9d1bc367b0d2232401eefb95cb4948030b4d'] =
-          this.locD7ac9d1bc367b0d2232401eefb95cb4948030b4d!.toJson();
-    }
-    if (this.locFacc742ed5404e9084e4c755a95d895b9f801eda != null) {
-      data['loc-facc742ed5404e9084e4c755a95d895b9f801eda'] =
-          this.locFacc742ed5404e9084e4c755a95d895b9f801eda!.toJson();
-    }
+    data['PD Value'] = this.pDValue;
+    data['name'] = this.name;
+    data['address'] = this.address;
     return data;
   }
 }
+
 
 class Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af {
   String? bIValue;

@@ -1022,15 +1022,26 @@ class _SovLocationListState extends State<SovLocationList>
                                                   ?.first
                                                   .globalValueCounts;
 
-                                          // if (globalCounts == null) {
-                                          //   return const Center(
-                                          //       child: Text('No data found'));
-                                          // }
+                                          if (globalCounts == null) {
+                                            return const Center(
+                                                child: Text('No data found'));
+                                          }
 
                                           // Convert model to map for iteration
                                           final Map<String, dynamic> entries =
-                                              globalCounts != null
-                                                  ? globalCounts.toJson()
+                                              locationListProvider
+                                                          .grapDataProfile
+                                                          ?.sovResults
+                                                          ?.first
+                                                          .globalValueCounts !=
+                                                      null
+                                                  ? (locationListProvider
+                                                          .grapDataProfile
+                                                          ?.sovResults
+                                                          ?.first
+                                                          .globalValueCounts
+                                                          ?.toJson() ??
+                                                      {})
                                                   : {};
 
                                           // Prepare data for pie chart
@@ -1039,7 +1050,7 @@ class _SovLocationListState extends State<SovLocationList>
                                               entries.entries.map((e) {
                                             final locData = e.value;
                                             return {
-                                              'loc': locData?['name']
+                                              'name': locData?['name']
                                                       ?.toString() ??
                                                   'Unknown',
                                               'PD Value': double.tryParse(
@@ -1048,7 +1059,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                           '0') ??
                                                   0.0,
                                               'BI Value': double.tryParse(
-                                                      locData?['BI Value']
+                                                      locData?['PD Value']
                                                               ?.toString() ??
                                                           '0') ??
                                                   0.0,
@@ -1088,6 +1099,15 @@ class _SovLocationListState extends State<SovLocationList>
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
+                                                // Text(locationListProvider
+                                                //         .grapDataProfile
+                                                //         ?.sovResults
+                                                //         ?.first
+                                                //         .globalValueCounts
+                                                //         ?.loc351a6934fd19de8ce05e5115f69ffde105ea78b3
+                                                //         ?.pDValue
+                                                //         ?.toString() ??
+                                                //     ''),
                                                 // Header Row with Dropdown
                                                 Row(
                                                   mainAxisAlignment:
@@ -1101,11 +1121,12 @@ class _SovLocationListState extends State<SovLocationList>
                                                               Color(0xFF90CAF9),
                                                           fontSize: 16),
                                                     ),
-                                                    chartData.isEmpty ?Container():
+                                                    // Text(chartData.toString()),
+                                                    // chartData.isEmpty ?Container():
                                                     Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 12),
+                                                      // padding: const EdgeInsets
+                                                      //     .symmetric(
+                                                      //     horizontal: 12),
                                                       decoration: BoxDecoration(
                                                         borderRadius:
                                                             BorderRadius
@@ -1160,149 +1181,160 @@ class _SovLocationListState extends State<SovLocationList>
                                                 const SizedBox(height: 30),
                                                 // Pie Chart
                                                 Center(
-                                                  child: chartData.isEmpty
-                                                      ? const Text(
-                                                          'No data found',
-                                                          style: TextStyle(
-                                                              color: Colors
-                                                                  .white70,
-                                                              fontSize: 14),
-                                                        )
-                                                      : GestureDetector(
-                                                          onLongPressStart:
-                                                              (details) {
-                                                            if (touchedIndex !=
-                                                                    null &&
-                                                                touchedIndex! <
-                                                                    chartData
-                                                                        .length) {
-                                                              setState(() {
-                                                                longPressed =
-                                                                    true; // mark as long pressed
-                                                              });
-                                                              final data =
-                                                                  chartData[
-                                                                      touchedIndex!];
-                                                              final val = (data[
-                                                                          selectedMetric_pie]
-                                                                      as double?) ??
-                                                                  0.0;
-                                                              final pct = total >
-                                                                      0
-                                                                  ? (val /
-                                                                          total) *
-                                                                      100
-                                                                  : 0.0;
-                                                              debugPrint(
-                                                                  'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
-                                                            }
-                                                          },
-                                                          onTap: () {
-                                                            // Only allow deselect if previously long pressed
-                                                            if (longPressed &&
-                                                                touchedIndex !=
-                                                                    null &&
-                                                                touchedIndex! <
-                                                                    chartData
-                                                                        .length) {
-                                                              debugPrint(
-                                                                  'DESELECT slice: $touchedIndex');
-                                                              setState(() {
-                                                                touchedIndex =
-                                                                    null;
-                                                                longPressed =
-                                                                    false; // reset
-                                                              });
-                                                            }
-                                                          },
-                                                          child: Container(
-                                                            width: 180,
-                                                            height: 180,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          90),
-                                                              border: Border.all(
+                                                  child:
+                                                      chartData.isEmpty
+                                                          ? const Text(
+                                                              'No data found',
+                                                              style: TextStyle(
                                                                   color: Colors
-                                                                      .transparent),
-                                                            ),
-                                                            child: Stack(
-                                                              alignment:
-                                                                  Alignment
-                                                                      .center,
-                                                              children: [
-                                                                PieChart(
-                                                                  PieChartData(
-                                                                    sectionsSpace:
-                                                                        1,
-                                                                    centerSpaceRadius:
-                                                                        0,
-                                                                    pieTouchData:
-                                                                        PieTouchData(
-                                                                      touchCallback:
-                                                                          (event,
-                                                                              response) {
-                                                                        if (!event.isInterestedForInteractions ||
-                                                                            response ==
-                                                                                null ||
-                                                                            response.touchedSection ==
-                                                                                null) {
-                                                                          return;
-                                                                        }
-                                                                        final idx = response
-                                                                            .touchedSection!
-                                                                            .touchedSectionIndex;
-                                                                        setState(
-                                                                            () {
-                                                                          touchedIndex =
-                                                                              idx;
-                                                                        });
-                                                                        final data =
-                                                                            chartData[idx];
-                                                                        final val =
+                                                                      .white70,
+                                                                  fontSize: 14),
+                                                            )
+                                                          :
+                                                      GestureDetector(
+                                                    onLongPressStart:
+                                                        (details) {
+                                                      if (touchedIndex !=
+                                                              null &&
+                                                          touchedIndex! <
+                                                              chartData
+                                                                  .length) {
+                                                        setState(() {
+                                                          longPressed =
+                                                              true; // mark as long pressed
+                                                        });
+                                                        final data = chartData[
+                                                            touchedIndex!];
+                                                        final val =
+                                                            (data[selectedMetric_pie]
+                                                                    as double?) ??
+                                                                0.0;
+                                                        final pct = total > 0
+                                                            ? (val / total) *
+                                                                100
+                                                            : 0.0;
+                                                        debugPrint(
+                                                            'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                      }
+                                                    },
+                                                    onTap: () {
+                                                      // Only allow deselect if previously long pressed
+                                                      if (longPressed &&
+                                                          touchedIndex !=
+                                                              null &&
+                                                          touchedIndex! <
+                                                              chartData
+                                                                  .length) {
+                                                        debugPrint(
+                                                            'DESELECT slice: $touchedIndex');
+                                                        setState(() {
+                                                          touchedIndex = null;
+                                                          longPressed =
+                                                              false; // reset
+                                                        });
+                                                      }
+                                                    },
+                                                    child: Container(
+                                                      width: 180,
+                                                      height: 180,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(90),
+                                                        border: Border.all(
+                                                            color: Colors
+                                                                .transparent),
+                                                      ),
+                                                      child: Stack(
+                                                        alignment:
+                                                            Alignment.center,
+                                                        children: [
+                                                          PieChart(
+                                                            PieChartData(
+                                                              sectionsSpace: 1,
+                                                              centerSpaceRadius:
+                                                                  1,
+                                                              pieTouchData:
+                                                                  PieTouchData(
+                                                                touchCallback:
+                                                                    (event,
+                                                                        response) {
+                                                                  if (!event
+                                                                          .isInterestedForInteractions ||
+                                                                      response ==
+                                                                          null ||
+                                                                      response.touchedSection ==
+                                                                          null) {
+                                                                    return;
+                                                                  }
+                                                                  final idx = response
+                                                                      .touchedSection!
+                                                                      .touchedSectionIndex;
+                                                                  setState(() {
+                                                                    touchedIndex =
+                                                                        idx;
+                                                                  });
+                                                                  final data =
+                                                                      chartData[
+                                                                          idx];
+                                                                  final val =
+                                                                      (data[selectedMetric_pie]
+                                                                              as double?) ??
+                                                                          0.0;
+                                                                  final pct = total >
+                                                                          0
+                                                                      ? (val /
+                                                                              total) *
+                                                                          100
+                                                                      : 0.0;
+                                                                  debugPrint(
+                                                                      'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                                },
+                                                              ),
+                                                              sections:
+                                                                  chartData
+                                                                      .asMap()
+                                                                      .map<int,
+                                                                              PieChartSectionData>(
+                                                                          (index,
+                                                                              data) {
+                                                                        final isSelected =
+                                                                            touchedIndex ==
+                                                                                index;
+                                                                        final value =
                                                                             (data[selectedMetric_pie] as double?) ??
                                                                                 0.0;
-                                                                        final pct = total >
+                                                                        final percent = total >
                                                                                 0
-                                                                            ? (val / total) *
+                                                                            ? (value / total) *
                                                                                 100
                                                                             : 0.0;
-                                                                        debugPrint(
-                                                                            'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
-                                                                      },
-                                                                    ),
-                                                                    sections: chartData
-                                                                        .asMap()
-                                                                        .map<int, PieChartSectionData>((index, data) {
-                                                                          final isSelected =
-                                                                              touchedIndex == index;
-                                                                          final value =
-                                                                              (data[selectedMetric_pie] as double?) ?? 0.0;
-                                                                          final percent = total > 0
-                                                                              ? (value / total) * 100
-                                                                              : 0.0;
 
-                                                                          return MapEntry(
-                                                                            index,
-                                                                            PieChartSectionData(
-                                                                              color: data['color'],
-                                                                              value: value,
-                                                                              title: "${percent.toStringAsFixed(1)}%",
-                                                                              radius: isSelected ? 120 : 100,
-                                                                              titleStyle: const TextStyle(color: Colors.black, fontSize: 12),
-                                                                            ),
-                                                                          );
-                                                                        })
-                                                                        .values
-                                                                        .toList(),
-                                                                  ),
-                                                                ),
-                                                              ],
+                                                                        return MapEntry(
+                                                                          index,
+                                                                          PieChartSectionData(
+                                                                            color:
+                                                                                data['color'],
+                                                                            value:
+                                                                                value,
+                                                                            title:
+                                                                                "${percent.toStringAsFixed(1)}%",
+                                                                            radius: isSelected
+                                                                                ? 120
+                                                                                : 100,
+                                                                            titleStyle:
+                                                                                const TextStyle(color: Colors.black, fontSize: 12),
+                                                                          ),
+                                                                        );
+                                                                      })
+                                                                      .values
+                                                                      .toList(),
                                                             ),
                                                           ),
-                                                        ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
 
                                                 SizedBox(height: 30),
@@ -1419,8 +1451,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                 ?.globalValueCounts;
 
                                         if (globalCounts == null) {
-                                          return const Center(
-                                              child: Text(''));
+                                          return const Center(child: Text(''));
                                         }
 
                                         final Map<String, dynamic> entries =
@@ -1488,7 +1519,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                       fontSize: 16,
                                                     ),
                                                   ),
-
                                                   Container(
                                                     padding: const EdgeInsets
                                                         .symmetric(
@@ -1607,17 +1637,16 @@ class _SovLocationListState extends State<SovLocationList>
                             Consumer<MyLocationListProvider>(
                               builder: (context, locationListProvider, child) {
                                 return
-                                  // LocationTable(
-                                  //   accountID: widget.accountID!,
-                                  //   subAccountID: widget.subAccountID!,
-                                  //   initialProcessId: widget.initialProcessId,
-                                  //   initialSubProcessId: widget.initialSubProcessId,
-                                  // );
+                                    // LocationTable(
+                                    //   accountID: widget.accountID!,
+                                    //   subAccountID: widget.subAccountID!,
+                                    //   initialProcessId: widget.initialProcessId,
+                                    //   initialSubProcessId: widget.initialSubProcessId,
+                                    // );
 
-                                  LocationTable(
-                                    locations:
-                                        locationListProvider.myLocationList
-                                );
+                                    LocationTable(
+                                        locations: locationListProvider
+                                            .myLocationList);
                               },
                             ),
                             // Map View
@@ -2055,7 +2084,9 @@ class _SovLocationListState extends State<SovLocationList>
                                                 ?.ownerName ??
                                             '',
                                         companyName: locationListProvider
-                                                .myLocationList[index].finalAddress!.companyName ??
+                                                .myLocationList[index]
+                                                .finalAddress!
+                                                .companyName ??
                                             '',
                                         address: locationListProvider
                                                 .myLocationList[index]
@@ -2169,7 +2200,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                 .overallScore
                                                 ?.toString() ??
                                             "0",
-                                          hazardProcess:true,
+                                        hazardProcess: true,
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
@@ -2256,7 +2287,9 @@ class _SovLocationListState extends State<SovLocationList>
                                         ?.percent ??
                                     '0'),
                                 companyName: locationListProvider
-                                    .myLocationList[index].finalAddress!.companyName ??
+                                        .myLocationList[index]
+                                        .finalAddress!
+                                        .companyName ??
                                     '',
                                 geocodingScore: locationListProvider
                                         .myLocationList[index]
@@ -2337,7 +2370,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     widget.sovID,
                                   );
                                 },
-                                hazardProcess:true,
+                                hazardProcess: true,
                               );
                             },
                           ),
@@ -2694,10 +2727,13 @@ class _SovLocationListState extends State<SovLocationList>
       geocodingScore:
           locationListProvider.certifiedLocationList[index].geocodingScore ?? 0,
       riskScore: int.tryParse(locationListProvider
-          .certifiedLocationList[index].overallScore
-          ?.toString() ?? '0') ?? 0,
-      dataCompletenessScore:
-      locationListProvider.certifiedLocationList[index].dataCompleteness?.scorePd ?? 0,
+                  .certifiedLocationList[index].overallScore
+                  ?.toString() ??
+              '0') ??
+          0,
+      dataCompletenessScore: locationListProvider
+              .certifiedLocationList[index].dataCompleteness?.scorePd ??
+          0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -2750,7 +2786,7 @@ class _SovLocationListState extends State<SovLocationList>
           widget.sovID,
         );
       },
-      hazardProcess:true,
+      hazardProcess: true,
     );
   }
 
