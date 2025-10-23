@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
@@ -79,24 +80,50 @@ class _SovLocationListState extends State<SovLocationList>
   String selectedMetric = 'PD Value';
   String selectedMetric_pie = 'PD Value';
 
-  // Sample data
-  final List<Map<String, dynamic>> chartData = [
-    {
-      "color": Colors.green,
-      "value": 60,
-      "title": "60%",
-      "tvp": "\$27M",
-      "loc": 2
-    },
-    {
-      "color": Colors.yellow,
-      "value": 22,
-      "title": "22%",
-      "tvp": "\$9M",
-      "loc": 1
-    },
-    {"color": Colors.red, "value": 18, "title": "18%", "tvp": "\$6M", "loc": 3},
-  ];
+// ✅ Function to map percentage → color bucket
+  PieColorData getPieColorsByPercent(dynamic pct) {
+    final int bucket;
+    if (pct >= 80) {
+      bucket = 5;
+    } else if (pct >= 60) {
+      bucket = 4;
+    } else if (pct >= 40) {
+      bucket = 3;
+    } else if (pct >= 20) {
+      bucket = 2;
+    } else {
+      bucket = 1;
+    }
+    return PIE_COLORS[bucket]!;
+  }
+
+  Map<int, PieColorData> PIE_COLORS = {
+    1: PieColorData(fill: '#FFEE58', text: '#FFFFFF'), // yellow
+    2: PieColorData(fill: '#FF2600', text: '#FFFFFF'), // bright orange-red
+    3: PieColorData(fill: '#FFEE58', text: '#111111'), // yellow
+    4: PieColorData(fill: '#9CCC65', text: '#0A2E0A'), // light green
+    5: PieColorData(fill: '#4CAF50', text: '#FFFFFF'), // green
+  };
+
+  Color hexToColor(String hex) {
+    var h = hex.replaceAll('#', '').toUpperCase();
+    if (h.length == 6) {
+      // assume opaque
+      h = 'FF' + h; // AARRGGBB
+    } else if (h.length == 8) {
+      // detect if alpha is at the start or end
+      if (h.startsWith('FF') || h.startsWith('00')) {
+        // AARRGGBB
+        // keep as is
+      } else {
+        // assume RRGGBBAA, move last two to front
+        h = h.substring(6, 8) + h.substring(0, 6);
+      }
+    }
+
+    return Color(int.parse('0x$h'));
+  }
+
   List<roleModel.Roles> filterRoleList = [];
 
   List<roleModel.Roles> filterRoles = [];
@@ -903,7 +930,7 @@ class _SovLocationListState extends State<SovLocationList>
                       SizedBox(height: CustomSpacing.two),
                       Expanded(
                         child: TabBarView(
-                          physics: NeverScrollableScrollPhysics(),
+                          // physics: NeverScrollableScrollPhysics(),
                           controller: _mainTabController,
                           children: [
                             // Location List
@@ -1008,619 +1035,11 @@ class _SovLocationListState extends State<SovLocationList>
                                   },
                                 ),
                                 SizedBox(height: CustomSpacing.four),
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Consumer<MyLocationListProvider>(
-                                        builder: (context, locationListProvider,
-                                            child) {
-                                          final globalCounts =
-                                              locationListProvider
-                                                  .grapDataProfile
-                                                  ?.sovResults
-                                                  ?.first
-                                                  .globalValueCounts;
+                                // SingleChildScrollView(
+                                //   scrollDirection: Axis.horizontal,
+                                //   child:
 
-                                          if (globalCounts == null) {
-                                            return const Center(
-                                                child: Text('No data found'));
-                                          }
-
-                                          // Convert model to map for iteration
-                                          final Map<String, dynamic> entries =
-                                              locationListProvider
-                                                          .grapDataProfile
-                                                          ?.sovResults
-                                                          ?.first
-                                                          .globalValueCounts !=
-                                                      null
-                                                  ? (locationListProvider
-                                                          .grapDataProfile
-                                                          ?.sovResults
-                                                          ?.first
-                                                          .globalValueCounts
-                                                          ?.toJson() ??
-                                                      {})
-                                                  : {};
-
-                                          // Prepare data for pie chart
-                                          final List<Map<String, dynamic>>
-                                              chartData =
-                                              entries.entries.map((e) {
-                                            final locData = e.value;
-                                            return {
-                                              'name': locData?['name']
-                                                      ?.toString() ??
-                                                  'Unknown',
-                                              'PD Value': double.tryParse(
-                                                      locData?['PD Value']
-                                                              ?.toString() ??
-                                                          '0') ??
-                                                  0.0,
-                                              'BI Value': double.tryParse(
-                                                      locData?['PD Value']
-                                                              ?.toString() ??
-                                                          '0') ??
-                                                  0.0,
-                                              'color': Colors.primaries[
-                                                  e.key.hashCode %
-                                                      Colors.primaries.length],
-                                              'title': locData?['name']
-                                                      ?.toString() ??
-                                                  'Unknown',
-                                            };
-                                          }).toList();
-
-                                          // Calculate total based on selected metric
-                                          double total = chartData.fold<double>(
-                                              0.0,
-                                              (sum, e) =>
-                                                  sum +
-                                                  ((e[selectedMetric_pie]
-                                                          as double?) ??
-                                                      0.0));
-
-                                          return Container(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width /
-                                                1.2,
-                                            margin: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF111111),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                  color: Colors.white10),
-                                            ),
-                                            padding: const EdgeInsets.all(16),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                // Text(locationListProvider
-                                                //         .grapDataProfile
-                                                //         ?.sovResults
-                                                //         ?.first
-                                                //         .globalValueCounts
-                                                //         ?.loc351a6934fd19de8ce05e5115f69ffde105ea78b3
-                                                //         ?.pDValue
-                                                //         ?.toString() ??
-                                                //     ''),
-                                                // Header Row with Dropdown
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    const Text(
-                                                      "Weighted Distribution (TPV)",
-                                                      style: TextStyle(
-                                                          color:
-                                                              Color(0xFF90CAF9),
-                                                          fontSize: 16),
-                                                    ),
-                                                    // Text(chartData.toString()),
-                                                    // chartData.isEmpty ?Container():
-                                                    Container(
-                                                      // padding: const EdgeInsets
-                                                      //     .symmetric(
-                                                      //     horizontal: 12),
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                            color:
-                                                                Colors.white24),
-                                                      ),
-                                                      child:
-                                                          DropdownButtonHideUnderline(
-                                                        child: DropdownButton<
-                                                            String>(
-                                                          value:
-                                                              selectedMetric_pie,
-                                                          // Must match exactly 'PD Value' or 'BI Value'
-                                                          style:
-                                                              const TextStyle(
-                                                                  color: Colors
-                                                                      .white),
-                                                          dropdownColor:
-                                                              Colors.black87,
-                                                          icon: const Icon(
-                                                              Icons
-                                                                  .arrow_drop_down,
-                                                              color:
-                                                                  Colors.white),
-                                                          items: const [
-                                                            DropdownMenuItem(
-                                                              value: 'PD Value',
-                                                              child: Text(
-                                                                  'PD Value'),
-                                                            ),
-                                                            DropdownMenuItem(
-                                                              value: 'BI Value',
-                                                              child: Text(
-                                                                  'BI Value'),
-                                                            ),
-                                                          ],
-                                                          onChanged: (value) {
-                                                            if (value != null) {
-                                                              setState(() {
-                                                                selectedMetric_pie =
-                                                                    value;
-                                                              });
-                                                            }
-                                                          },
-                                                        ),
-                                                      ),
-                                                    )
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 30),
-                                                // Pie Chart
-                                                Center(
-                                                  child:
-                                                      chartData.isEmpty
-                                                          ? const Text(
-                                                              'No data found',
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white70,
-                                                                  fontSize: 14),
-                                                            )
-                                                          :
-                                                      GestureDetector(
-                                                    onLongPressStart:
-                                                        (details) {
-                                                      if (touchedIndex !=
-                                                              null &&
-                                                          touchedIndex! <
-                                                              chartData
-                                                                  .length) {
-                                                        setState(() {
-                                                          longPressed =
-                                                              true; // mark as long pressed
-                                                        });
-                                                        final data = chartData[
-                                                            touchedIndex!];
-                                                        final val =
-                                                            (data[selectedMetric_pie]
-                                                                    as double?) ??
-                                                                0.0;
-                                                        final pct = total > 0
-                                                            ? (val / total) *
-                                                                100
-                                                            : 0.0;
-                                                        debugPrint(
-                                                            'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
-                                                      }
-                                                    },
-                                                    onTap: () {
-                                                      // Only allow deselect if previously long pressed
-                                                      if (longPressed &&
-                                                          touchedIndex !=
-                                                              null &&
-                                                          touchedIndex! <
-                                                              chartData
-                                                                  .length) {
-                                                        debugPrint(
-                                                            'DESELECT slice: $touchedIndex');
-                                                        setState(() {
-                                                          touchedIndex = null;
-                                                          longPressed =
-                                                              false; // reset
-                                                        });
-                                                      }
-                                                    },
-                                                    child: Container(
-                                                      width: 180,
-                                                      height: 180,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(90),
-                                                        border: Border.all(
-                                                            color: Colors
-                                                                .transparent),
-                                                      ),
-                                                      child: Stack(
-                                                        alignment:
-                                                            Alignment.center,
-                                                        children: [
-                                                          PieChart(
-                                                            PieChartData(
-                                                              sectionsSpace: 1,
-                                                              centerSpaceRadius:
-                                                                  1,
-                                                              pieTouchData:
-                                                                  PieTouchData(
-                                                                touchCallback:
-                                                                    (event,
-                                                                        response) {
-                                                                  if (!event
-                                                                          .isInterestedForInteractions ||
-                                                                      response ==
-                                                                          null ||
-                                                                      response.touchedSection ==
-                                                                          null) {
-                                                                    return;
-                                                                  }
-                                                                  final idx = response
-                                                                      .touchedSection!
-                                                                      .touchedSectionIndex;
-                                                                  setState(() {
-                                                                    touchedIndex =
-                                                                        idx;
-                                                                  });
-                                                                  final data =
-                                                                      chartData[
-                                                                          idx];
-                                                                  final val =
-                                                                      (data[selectedMetric_pie]
-                                                                              as double?) ??
-                                                                          0.0;
-                                                                  final pct = total >
-                                                                          0
-                                                                      ? (val /
-                                                                              total) *
-                                                                          100
-                                                                      : 0.0;
-                                                                  debugPrint(
-                                                                      'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
-                                                                },
-                                                              ),
-                                                              sections:
-                                                                  chartData
-                                                                      .asMap()
-                                                                      .map<int,
-                                                                              PieChartSectionData>(
-                                                                          (index,
-                                                                              data) {
-                                                                        final isSelected =
-                                                                            touchedIndex ==
-                                                                                index;
-                                                                        final value =
-                                                                            (data[selectedMetric_pie] as double?) ??
-                                                                                0.0;
-                                                                        final percent = total >
-                                                                                0
-                                                                            ? (value / total) *
-                                                                                100
-                                                                            : 0.0;
-
-                                                                        return MapEntry(
-                                                                          index,
-                                                                          PieChartSectionData(
-                                                                            color:
-                                                                                data['color'],
-                                                                            value:
-                                                                                value,
-                                                                            title:
-                                                                                "${percent.toStringAsFixed(1)}%",
-                                                                            radius: isSelected
-                                                                                ? 120
-                                                                                : 100,
-                                                                            titleStyle:
-                                                                                const TextStyle(color: Colors.black, fontSize: 12),
-                                                                          ),
-                                                                        );
-                                                                      })
-                                                                      .values
-                                                                      .toList(),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-
-                                                SizedBox(height: 30),
-                                                Center(
-                                                  child: (touchedIndex ==
-                                                              null ||
-                                                          chartData.isEmpty)
-                                                      ? Container()
-                                                      : Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      10,
-                                                                  vertical: 6),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: const Color(
-                                                                0xFF1C1C1C),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20),
-                                                            border: Border.all(
-                                                                color: Colors
-                                                                    .white10),
-                                                          ),
-                                                          child: Builder(
-                                                              builder: (_) {
-                                                            final data = chartData[
-                                                                touchedIndex!];
-                                                            final val = (data[
-                                                                        selectedMetric_pie]
-                                                                    as double?) ??
-                                                                0.0;
-                                                            final pct = total >
-                                                                    0
-                                                                ? (val /
-                                                                        total) *
-                                                                    100
-                                                                : 0.0;
-
-                                                            return Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  "Percentage: ${pct.toStringAsFixed(0)}%",
-                                                                  style: const TextStyle(
-                                                                      color: Colors
-                                                                          .white70,
-                                                                      fontSize:
-                                                                          12),
-                                                                ),
-                                                                Container(
-                                                                  height: 14,
-                                                                  width: 1,
-                                                                  margin: const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          6),
-                                                                  color: Colors
-                                                                      .white24,
-                                                                ),
-                                                                Text(
-                                                                  "$selectedMetric_pie: \$${val.toStringAsFixed(0)}M",
-                                                                  style: const TextStyle(
-                                                                      color: Colors
-                                                                          .white70,
-                                                                      fontSize:
-                                                                          12),
-                                                                ),
-                                                                Container(
-                                                                  height: 14,
-                                                                  width: 1,
-                                                                  margin: const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          6),
-                                                                  color: Colors
-                                                                      .white24,
-                                                                ),
-                                                                Text(
-                                                                  "Location: ${data['loc'] == 'Unknown' ? '0' : data['loc']}",
-                                                                  style: const TextStyle(
-                                                                      color: Colors
-                                                                          .white70,
-                                                                      fontSize:
-                                                                          11),
-                                                                ),
-                                                              ],
-                                                            );
-                                                          }),
-                                                        ),
-                                                )
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(height: 10),
-                                      Consumer<MyLocationListProvider>(builder:
-                                          (context, locationListProvider,
-                                              child) {
-                                        final globalCounts =
-                                            locationListProvider
-                                                .grapDataProfile
-                                                ?.sovResults
-                                                ?.first
-                                                ?.globalValueCounts;
-
-                                        if (globalCounts == null) {
-                                          return const Center(child: Text(''));
-                                        }
-
-                                        final Map<String, dynamic> entries =
-                                            globalCounts.toJson();
-                                        final List<Map<String, dynamic>>
-                                            dataList = entries.entries.map((e) {
-                                          final locData = e.value;
-                                          return {
-                                            'name':
-                                                locData?['name']?.toString() ??
-                                                    'Unknown',
-                                            'PD Value': double.tryParse(
-                                                    locData?['PD Value']
-                                                            ?.toString() ??
-                                                        '0') ??
-                                                0.0,
-                                            'BI Value': double.tryParse(
-                                                    locData?['BI Value']
-                                                            ?.toString() ??
-                                                        '0') ??
-                                                0.0,
-                                          };
-                                        }).toList();
-                                        final maxValue = dataList.fold<double>(
-                                          0.0,
-                                          (prev, e) => e[selectedMetric] > prev
-                                              ? e[selectedMetric]
-                                              : prev,
-                                        );
-                                        final total = dataList.fold<double>(
-                                          0.0,
-                                          (sum, e) =>
-                                              sum +
-                                              (e[selectedMetric] as double),
-                                        );
-
-                                        return Container(
-                                          height: dataList.isEmpty ? 160 : 350,
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width /
-                                              1.2,
-                                          margin: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF111111),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                                color: Colors.white10),
-                                          ),
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  const Text(
-                                                    "Critical Missing Parameters",
-                                                    style: TextStyle(
-                                                      color: Color(0xFF90CAF9),
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 12),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black87,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                      border: Border.all(
-                                                          color:
-                                                              Colors.white24),
-                                                    ),
-                                                    child:
-                                                        DropdownButtonHideUnderline(
-                                                      child: DropdownButton<
-                                                          String>(
-                                                        value: selectedMetric,
-                                                        style: const TextStyle(
-                                                            color:
-                                                                Colors.white),
-                                                        dropdownColor:
-                                                            Colors.black87,
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .arrow_drop_down,
-                                                            color:
-                                                                Colors.white),
-                                                        items: const [
-                                                          DropdownMenuItem(
-                                                            value: 'PD Value',
-                                                            child: Text(
-                                                                'PD Value'),
-                                                          ),
-                                                          DropdownMenuItem(
-                                                            value: 'BI Value',
-                                                            child: Text(
-                                                                'BI Value'),
-                                                          ),
-                                                        ],
-                                                        onChanged: (value) {
-                                                          if (value != null) {
-                                                            setState(() {
-                                                              selectedMetric =
-                                                                  value;
-                                                            });
-                                                          }
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 10),
-                                              Expanded(
-                                                child: dataList.isEmpty
-                                                    ? Container(
-                                                        height: 50,
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: const Text(
-                                                          'No data found',
-                                                          style: TextStyle(
-                                                              color: Colors
-                                                                  .white70,
-                                                              fontSize: 14),
-                                                        ),
-                                                      )
-                                                    : ListView.builder(
-                                                        itemCount:
-                                                            dataList.length,
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final item =
-                                                              dataList[index];
-                                                          final name =
-                                                              item['name']
-                                                                  as String;
-                                                          final value = item[
-                                                                  selectedMetric]
-                                                              as double;
-                                                          final percent = total >
-                                                                  0
-                                                              ? (value /
-                                                                      total) *
-                                                                  100
-                                                              : 0.0;
-                                                          return _buildBarItem(
-                                                              name,
-                                                              value,
-                                                              percent,
-                                                              maxValue);
-                                                        },
-                                                      ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
+                                // ),
                                 SizedBox(height: CustomSpacing.four),
                                 Expanded(
                                   child: TabBarView(
@@ -1806,19 +1225,18 @@ class _SovLocationListState extends State<SovLocationList>
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Row(
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Column(
+            children: [
+              // Filter chips row
+              Row(
                 children: [
-                  // Horizontally scrollable row for all chips
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Show country options as chips
                           if (locationListProvider.countries.isNotEmpty)
                             Padding(
                               padding:
@@ -1842,8 +1260,6 @@ class _SovLocationListState extends State<SovLocationList>
                                 },
                               ),
                             ),
-
-                          // Show certifications as chips
                           if (locationListProvider.certifications.isNotEmpty)
                             Padding(
                               padding:
@@ -1868,308 +1284,48 @@ class _SovLocationListState extends State<SovLocationList>
                                 },
                               ),
                             ),
-
-                          // Show hazard ratings as chips with circles for selected ratings
                           if (locationListProvider.hazardRatings.isNotEmpty)
-                            for (var hazard
-                                in locationListProvider.hazardRatings.keys)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: Chip(
-                                  label: Row(
-                                    children: [
-                                      // Text(hazard),
-                                      // Hazard name
-                                      const SizedBox(width: 8),
-                                      // Space before ratings
-                                      if (locationListProvider
-                                          .hazardRatings[hazard]!.isEmpty)
-                                        Text(
-                                            'All') // If no ratings are selected
-                                      else
-                                        Row(
-                                          children: locationListProvider
-                                              .hazardRatings[hazard]!
-                                              .map((rating) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 4.0),
-                                              child: CircleAvatar(
-                                                radius: 10,
-                                                backgroundColor:
-                                                    _getRatingColor(rating),
-                                                child: Text(
-                                                  '$rating',
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12),
-                                                ),
+                            ...locationListProvider.hazardRatings.keys
+                                .map((hazard) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4.0),
+                                      child: Chip(
+                                        label: Row(
+                                          children: [
+                                            const SizedBox(width: 8),
+                                            if (locationListProvider
+                                                .hazardRatings[hazard]!.isEmpty)
+                                              Text('All')
+                                            else
+                                              Row(
+                                                children: locationListProvider
+                                                    .hazardRatings[hazard]!
+                                                    .map((rating) => Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .only(
+                                                                  right: 4.0),
+                                                          child: CircleAvatar(
+                                                            radius: 10,
+                                                            backgroundColor:
+                                                                _getRatingColor(
+                                                                    rating),
+                                                            child: Text(
+                                                              '$rating',
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 12),
+                                                            ),
+                                                          ),
+                                                        ))
+                                                    .toList(),
                                               ),
-                                            );
-                                          }).toList(),
+                                          ],
                                         ),
-                                    ],
-                                  ),
-                                  onDeleted: () {
-                                    locationListProvider
-                                        .clearHazardFilter(hazard);
-                                    locationListProvider.fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        1,
-                                        40,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                        '');
-                                  },
-                                ),
-                              ),
-
-                          // Show ratings as chips
-                          if (locationListProvider.rating.isNotEmpty)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: Chip(
-                                label: Text(
-                                    "Ratings: ${locationListProvider.rating.join(', ')}"),
-                                onDeleted: () {
-                                  locationListProvider.clearRatingsFilter();
-                                  locationListProvider.fetchLocationList(
-                                    context,
-                                    locationQuery,
-                                    1,
-                                    40,
-                                    widget.accountID,
-                                    widget.subAccountID,
-                                    widget.initialProcessId,
-                                    widget.initialSubProcessId,
-                                    widget.sovID,
-                                  );
-                                },
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Clear all filters button (text button at the end)
-                  if (locationListProvider
-                      .hasAnyFilterApplied()) // Check if any filter is applied
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: TextButton(
-                        onPressed: () {
-                          locationListProvider.clearAllFilters();
-                          locationListProvider.fetchLocationList(
-                              context,
-                              locationQuery,
-                              1,
-                              40,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
-                              '');
-                        },
-                        child: const Text(
-                          'Clear All',
-                          style: TextStyle(
-                              color: Colors.red), // Color for emphasis
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: locationListProvider.isLoading
-                  ? Column(
-                      children: [
-                        SizedBox(
-                          height: 100,
-                        ),
-                        Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ],
-                    )
-                  : locationListProvider.myLocationList.isEmpty
-                      ? Center(
-                          child: Text(
-                            LanguageService.getTranslated(
-                                context, "location_list_app_no_accounts_text"),
-                            style: typography.Body1,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async {
-                            locationListProvider.fetchLocationList(
-                              context,
-                              locationQuery,
-                              1,
-                              40,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
-                              widget.sovID,
-                            );
-                          },
-                          child: ListView.builder(
-                            physics: ClampingScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount:
-                                locationListProvider.myLocationList.length,
-                            itemBuilder: (context, index) {
-                              if (index ==
-                                  locationListProvider.myLocationList.length -
-                                      1) {
-                                // Check if it's the last item
-                                if (locationListProvider.isNextPageLoading) {
-                                  // Display loading indicator
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-                                } else if (locationListProvider.page >=
-                                        locationListProvider.totalPages &&
-                                    locationListProvider
-                                        .myLocationList.isNotEmpty) {
-                                  // Display end of list message
-                                  print(
-                                      "location list: ${locationListProvider.myLocationList}");
-                                  return Column(
-                                    children: [
-                                      MyLocationCard(
-                                        campusId: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.campusId ??
-                                            '',
-                                        imageUrl: locationListProvider
-                                                    .myLocationList[index]
-                                                    .screenshots
-                                                    ?.isNotEmpty ==
-                                                true
-                                            ? locationListProvider
-                                                    .myLocationList[index]
-                                                    .screenshots![0]
-                                                    .imageUrl ??
-                                                ''
-                                            : '',
-                                        index: index,
-                                        accountId: widget.accountID,
-                                        subAccountId: widget.subAccountID,
-                                        sovId: widget.sovID,
-                                        sovName: widget.sovName,
-                                        subAccountName: widget.subAccountName,
-                                        locationId: locationListProvider
-                                                .myLocationList[index].id ??
-                                            '',
-                                        accountName: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.accountName ??
-                                            '',
-                                        ownerName: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.ownerName ??
-                                            '',
-                                        companyName: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress!
-                                                .companyName ??
-                                            '',
-                                        address: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.address ??
-                                            '',
-                                        percentage: double.parse(
-                                            locationListProvider
-                                                    .myLocationList[index]
-                                                    .finalAddress
-                                                    ?.percent ??
-                                                '0'),
-                                        geocodingScore: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.score ??
-                                            0,
-                                        riskScore: int.parse(
-                                            locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore
-                                                .toString()),
-                                        dataCompletenessScore:
-                                            locationListProvider
-                                                .myLocationList[index]
-                                                .dataCompleteness!
-                                                .scorePd!,
-                                        isAutoCertified: true,
-                                        tags: (locationListProvider
-                                                .myLocationList[index]?.tags ??
-                                            []),
-                                        onDelete: (locationId) {
-                                          // Show delete confirmation dialog
-                                          showDeleteConfirmationDialog(
-                                            context,
-                                            () async {
-                                              print(
-                                                  "Deleting location $locationId");
-                                              // Delete the location
-                                              await Provider.of<
-                                                          MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .deleteLocations(
-                                                      context,
-                                                      widget.accountID!,
-                                                      widget.subAccountID!,
-                                                      widget.sovID!,
-                                                      [locationId]);
-
-                                              // Refresh the list after deletion
-                                              Provider.of<MyLocationListProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .fetchLocationList(
-                                                context,
-                                                locationQuery,
-                                                1,
-                                                40,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                                widget.sovID,
-                                              );
-
-                                              Navigator.of(context).pop();
-                                            },
-                                            [locationId],
-                                          );
-                                        },
-                                        onAddToSOV: null,
-                                        onAddTag: (locationId) {
-                                          // Show add tag dialog
-                                          // Implement bulk add tag
+                                        onDeleted: () {
                                           locationListProvider
-                                              .addTagsToSelectedLocations(
-                                                  context,
-                                                  widget.accountID!,
-                                                  widget.subAccountID!,
-                                                  locationId);
-                                        },
-                                        getData: () {
+                                              .clearHazardFilter(hazard);
                                           locationListProvider
                                               .fetchLocationList(
                                             context,
@@ -2180,184 +1336,20 @@ class _SovLocationListState extends State<SovLocationList>
                                             widget.subAccountID,
                                             widget.initialProcessId,
                                             widget.initialSubProcessId,
-                                            widget.sovID,
+                                            '',
                                           );
                                         },
-                                        lat: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.latitude
-                                                .toString() ??
-                                            "",
-                                        long: locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.longitude
-                                                .toString() ??
-                                            "",
-                                        overallScore: locationListProvider
-                                                .myLocationList[index]
-                                                .overallScore
-                                                ?.toString() ??
-                                            "0",
-                                        hazardProcess: true,
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Center(
-                                          child: Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "location_list_end_of_list"),
-                                            style: typography.Body1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  // Trigger fetching the next page
-                                  locationListProvider.page =
-                                      locationListProvider.page + 1;
-                                  print(
-                                      "Fetching page ${locationListProvider.page}");
-                                  print(
-                                      "Query: $locationQuery, Page: ${locationListProvider.page}");
-                                  locationListProvider.fetchLocationList(
-                                      context,
-                                      locationQuery,
-                                      // Pass the search query if any
-                                      locationListProvider.page,
-                                      40,
-                                      // Page size
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                      '');
-                                  return SizedBox();
-                                }
-                              }
-
-                              return MyLocationCard(
-                                campusId: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.campusId ??
-                                    '',
-                                imageUrl: locationListProvider
-                                                .myLocationList[index]
-                                                .screenshots !=
-                                            null &&
-                                        locationListProvider
-                                            .myLocationList[index]
-                                            .screenshots!
-                                            .isNotEmpty
-                                    ? locationListProvider.myLocationList[index]
-                                            .screenshots![0].imageUrl ??
-                                        ''
-                                    : '',
-                                index: index,
-                                accountId: widget.accountID,
-                                subAccountId: widget.subAccountID,
-                                sovId: widget.sovID,
-                                sovName: widget.sovName,
-                                subAccountName: widget.subAccountName,
-                                locationId: locationListProvider
-                                        .myLocationList[index].id ??
-                                    '',
-                                accountName: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.accountName ??
-                                    '',
-                                ownerName: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.ownerName ??
-                                    '',
-                                address: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.address ??
-                                    '',
-                                percentage: double.parse(locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.percent ??
-                                    '0'),
-                                companyName: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress!
-                                        .companyName ??
-                                    '',
-                                geocodingScore: locationListProvider
-                                        .myLocationList[index]
-                                        .finalAddress
-                                        ?.score ??
-                                    0,
-                                riskScore: int.tryParse(locationListProvider
-                                            .myLocationList[index].overallScore
-                                            ?.toString() ??
-                                        '0') ??
-                                    0,
-                                dataCompletenessScore: locationListProvider
-                                    .myLocationList[index]
-                                    .dataCompleteness!
-                                    .scorePd!,
-                                isAutoCertified: true,
-                                tags: (locationListProvider
-                                        .myLocationList[index]?.tags ??
-                                    []),
-                                onDelete: (locationId) {
-                                  // Show delete confirmation dialog
-                                  showDeleteConfirmationDialog(
-                                    context,
-                                    () async {
-                                      print("Deleting location $locationId");
-                                      // Delete the location
-                                      await Provider.of<MyLocationListProvider>(
-                                              context,
-                                              listen: false)
-                                          .deleteLocations(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!,
-                                              widget.sovID!,
-                                              [locationId]);
-
-                                      // Refresh the list after deletion
-                                      Provider.of<MyLocationListProvider>(
-                                              context,
-                                              listen: false)
-                                          .fetchLocationList(
-                                              context,
-                                              locationQuery,
-                                              1,
-                                              40,
-                                              widget.accountID,
-                                              widget.subAccountID,
-                                              widget.initialProcessId,
-                                              widget.initialSubProcessId,
-                                              '');
-
-                                      Navigator.of(context).pop();
-                                    },
-                                    [locationId],
-                                  );
-                                },
-                                onAddToSOV: null,
-                                onAddTag: (locationId) {
-                                  // Show add tag dialog
-                                  // Implement bulk add tag
-                                  locationListProvider
-                                      .addTagsToSelectedLocations(
-                                          context,
-                                          widget.accountID!,
-                                          widget.subAccountID!,
-                                          locationId);
-                                },
-                                getData: () {
+                                    )),
+                          if (locationListProvider.rating.isNotEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: Chip(
+                                label: Text(
+                                    "Ratings: ${locationListProvider.rating.join(', ')}"),
+                                onDeleted: () {
+                                  locationListProvider.clearRatingsFilter();
                                   locationListProvider.fetchLocationList(
                                     context,
                                     locationQuery,
@@ -2370,13 +1362,920 @@ class _SovLocationListState extends State<SovLocationList>
                                     widget.sovID,
                                   );
                                 },
-                                hazardProcess: true,
-                              );
-                            },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (locationListProvider.hasAnyFilterApplied())
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: TextButton(
+                        onPressed: () {
+                          locationListProvider.clearAllFilters();
+                          locationListProvider.fetchLocationList(
+                            context,
+                            locationQuery,
+                            1,
+                            40,
+                            widget.accountID,
+                            widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
+                            '',
+                          );
+                        },
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              // Main scrollable content
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    // Reset to first page and refresh data
+                    locationListProvider.page = 1;
+                    await locationListProvider.fetchLocationList(
+                      context,
+                      locationQuery,
+                      1,
+                      40,
+                      widget.accountID,
+                      widget.subAccountID,
+                      widget.initialProcessId,
+                      widget.initialSubProcessId,
+                      widget.sovID,
+                    );
+                  },
+                  child: CustomScrollView(
+                    slivers: [
+                      // Charts section
+                      SliverToBoxAdapter(
+                        child: Container(
+                          height: 400,
+                          // Set a fixed height for the scrollable row
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Pie chart - 80% width
+                                Container(
+                                  width: MediaQuery.of(context).size.width /
+                                      1.1, // 80% of screen width
+                                  child: Consumer<MyLocationListProvider>(
+                                    builder:
+                                        (context, locationListProvider, child) {
+                                      final globalCounts = locationListProvider
+                                          .grapDataProfile
+                                          ?.sovResults
+                                          ?.first
+                                          .globalValueCounts;
+                                      if (globalCounts == null) {
+                                        return const Center(
+                                            child: Text('No data found'));
+                                      }
+                                      final Map<String, dynamic> entries =
+                                          globalCounts.toJson();
+                                      final List<Map<String, dynamic>>
+                                          chartData = entries.entries.map((e) {
+                                        final locData = e.value;
+                                        return {
+                                          'name':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'PD Value': double.tryParse(
+                                                  locData?['PD Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'BI Value': double.tryParse(
+                                                  locData?['BI Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'color': Colors.primaries[
+                                              e.key.hashCode %
+                                                  Colors.primaries.length],
+                                          'title':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'loc': e.key,
+                                        };
+                                      }).toList();
+                                      double total = chartData.fold<double>(
+                                        0.0,
+                                        (sum, e) =>
+                                            sum +
+                                            ((e[selectedMetric_pie]
+                                                    as double?) ??
+                                                0.0),
+                                      );
+                                      return Container(
+                                        margin: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF111111),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border:
+                                              Border.all(color: Colors.white10),
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                const Text(
+                                                  "Weighted Distribution (TPV)",
+                                                  style: TextStyle(
+                                                    color: Color(0xFF90CAF9),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 10),
+                                                Container(
+                                                  height: 45,
+                                                  constraints: BoxConstraints(
+                                                      minWidth: 130),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                        color: Colors.white24),
+                                                    color: Colors.black87,
+                                                  ),
+                                                  child:
+                                                      DropdownButtonHideUnderline(
+                                                    child:
+                                                        DropdownButton2<String>(
+                                                      isExpanded: true,
+                                                      value: selectedMetric,
+                                                      items: const [
+                                                        DropdownMenuItem(
+                                                          value: 'PD Value',
+                                                          child:
+                                                              Text('PD Value'),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                          value: 'BI Value',
+                                                          child:
+                                                              Text('BI Value'),
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        if (value != null) {
+                                                          setState(() {
+                                                            selectedMetric =
+                                                                value;
+                                                          });
+                                                        }
+                                                      },
+                                                      buttonStyleData:
+                                                          ButtonStyleData(
+                                                        height: 45,
+                                                        width: 105,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .transparent,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      iconStyleData:
+                                                          const IconStyleData(
+                                                        icon: Icon(
+                                                            Icons
+                                                                .arrow_drop_down,
+                                                            color:
+                                                                Colors.white),
+                                                      ),
+                                                      dropdownStyleData:
+                                                          DropdownStyleData(
+                                                        maxHeight: 200,
+                                                        width: 120,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        offset:
+                                                            const Offset(0, 0),
+                                                      ),
+                                                      menuItemStyleData:
+                                                          const MenuItemStyleData(
+                                                        height: 40,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 30),
+                                            Center(
+                                              child: chartData.isEmpty
+                                                  ? const Text(
+                                                      'No data found',
+                                                      style: TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: 14),
+                                                    )
+                                                  : GestureDetector(
+                                                      onLongPressStart:
+                                                          (details) {
+                                                        if (touchedIndex !=
+                                                                null &&
+                                                            touchedIndex! <
+                                                                chartData
+                                                                    .length) {
+                                                          setState(() {
+                                                            longPressed = true;
+                                                          });
+                                                          final data = chartData[
+                                                              touchedIndex!];
+                                                          final val = (data[
+                                                                      selectedMetric_pie]
+                                                                  as double?) ??
+                                                              0.0;
+                                                          final pct = total > 0
+                                                              ? (val / total) *
+                                                                  100
+                                                              : 0.0;
+                                                          debugPrint(
+                                                              'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                        }
+                                                      },
+                                                      onTap: () {
+                                                        if (longPressed &&
+                                                            touchedIndex !=
+                                                                null &&
+                                                            touchedIndex! <
+                                                                chartData
+                                                                    .length) {
+                                                          debugPrint(
+                                                              'DESELECT slice: $touchedIndex');
+                                                          setState(() {
+                                                            touchedIndex = null;
+                                                            longPressed = false;
+                                                          });
+                                                        }
+                                                      },
+                                                      child: Container(
+                                                        width: 180,
+                                                        height: 180,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(90),
+                                                          border: Border.all(
+                                                              color: Colors
+                                                                  .transparent),
+                                                        ),
+                                                        child: Stack(
+                                                          alignment:
+                                                              Alignment.center,
+                                                          children: [
+                                                            PieChart(
+                                                              PieChartData(
+                                                                sectionsSpace:
+                                                                    0.5,
+                                                                centerSpaceRadius:
+                                                                    1,
+                                                                pieTouchData:
+                                                                    PieTouchData(
+                                                                  touchCallback:
+                                                                      (event,
+                                                                          response) {
+                                                                    if (!event
+                                                                            .isInterestedForInteractions ||
+                                                                        response ==
+                                                                            null ||
+                                                                        response.touchedSection ==
+                                                                            null) {
+                                                                      return;
+                                                                    }
+                                                                    final idx = response
+                                                                        .touchedSection!
+                                                                        .touchedSectionIndex;
+                                                                    setState(
+                                                                        () {
+                                                                      touchedIndex =
+                                                                          idx;
+                                                                    });
+                                                                    final data =
+                                                                        chartData[
+                                                                            idx];
+                                                                    final val =
+                                                                        (data[selectedMetric_pie]
+                                                                                as double?) ??
+                                                                            0.0;
+                                                                    final pct = total >
+                                                                            0
+                                                                        ? (val /
+                                                                                total) *
+                                                                            100
+                                                                        : 0.0;
+                                                                    debugPrint(
+                                                                        'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                                  },
+                                                                ),
+                                                                sections:
+                                                                    chartData
+                                                                        .asMap()
+                                                                        .map<
+                                                                            int,
+                                                                            PieChartSectionData>((index, data) {
+                                                                          final isSelected =
+                                                                              touchedIndex == index;
+                                                                          final value =
+                                                                              (data[selectedMetric_pie] as double?) ?? 0.0;
+                                                                          final percent = total > 0
+                                                                              ? (value / total) * 100
+                                                                              : 0.0;
+                                                                          return MapEntry(
+                                                                            index,
+                                                                            PieChartSectionData(
+                                                                              color: data['color'],
+                                                                              value: value,
+                                                                              title: "${percent.round()}%",
+                                                                              radius: isSelected ? 120 : 100,
+                                                                              titleStyle: const TextStyle(color: Colors.black, fontSize: 12),
+                                                                            ),
+                                                                          );
+                                                                        })
+                                                                        .values
+                                                                        .toList(),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                            ),
+                                            const SizedBox(height: 50),
+                                            Center(
+                                              child: (touchedIndex == null ||
+                                                      chartData.isEmpty)
+                                                  ? Container()
+                                                  : SingleChildScrollView(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      child:
+                                                          Builder(builder: (_) {
+                                                        if (touchedIndex ==
+                                                                null ||
+                                                            touchedIndex! < 0 ||
+                                                            touchedIndex! >=
+                                                                chartData
+                                                                    .length) {
+                                                          return const SizedBox();
+                                                        }
+                                                        final data = chartData[
+                                                            touchedIndex!];
+                                                        final val =
+                                                            (data[selectedMetric_pie]
+                                                                    as double?) ??
+                                                                0.0;
+                                                        final pct = total > 0
+                                                            ? (val / total) *
+                                                                100
+                                                            : 0.0;
+                                                        if (pct == 0) {
+                                                          return const SizedBox();
+                                                        }
+                                                        return Container(
+                                                          margin:
+                                                              EdgeInsets.only(
+                                                                  right: 10,
+                                                                  left: 10),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 4,
+                                                                  vertical: 6),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                0xFF1C1C1C),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .white10),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Text(
+                                                                "Percentage: ${pct.toStringAsFixed(0)}%",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                              Container(
+                                                                height: 14,
+                                                                width: 1,
+                                                                margin: const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        6),
+                                                                color: Colors
+                                                                    .white24,
+                                                              ),
+                                                              Text(
+                                                                "$selectedMetric_pie: \$${val.toStringAsFixed(0)}M",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                              Container(
+                                                                height: 14,
+                                                                width: 1,
+                                                                margin: const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        6),
+                                                                color: Colors
+                                                                    .white24,
+                                                              ),
+                                                              Text(
+                                                                "Location: ${data['name'] == 'Unknown' ? '0' : data['name']}",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      }),
+                                                    ),
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // const SizedBox(width: 10),
+                                // Bar chart - scrollable
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.9,
+                                  // Same 80% width for consistency
+                                  child: Consumer<MyLocationListProvider>(
+                                    builder:
+                                        (context, locationListProvider, child) {
+                                      final globalCounts = locationListProvider
+                                          .grapDataProfile
+                                          ?.sovResults
+                                          ?.first
+                                          ?.globalValueCounts;
+                                      if (globalCounts == null) {
+                                        return const Center(child: Text(''));
+                                      }
+                                      final Map<String, dynamic> entries =
+                                          globalCounts.toJson();
+                                      final List<Map<String, dynamic>>
+                                          dataList = entries.entries.map((e) {
+                                        final locData = e.value;
+                                        return {
+                                          'name':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'PD Value': double.tryParse(
+                                                  locData?['PD Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'BI Value': double.tryParse(
+                                                  locData?['BI Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                        };
+                                      }).toList();
+                                      final maxValue = dataList.fold<double>(
+                                        0.0,
+                                        (prev, e) => e[selectedMetric] > prev
+                                            ? e[selectedMetric]
+                                            : prev,
+                                      );
+                                      final total = dataList.fold<double>(
+                                        0.0,
+                                        (sum, e) =>
+                                            sum + (e[selectedMetric] as double),
+                                      );
+                                      return Container(
+                                        height: dataList.isEmpty ? 160 : 400,
+                                        margin: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF111111),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border:
+                                              Border.all(color: Colors.white10),
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                const Text(
+                                                  "Critical Missing Parameters",
+                                                  style: TextStyle(
+                                                      color: Color(0xFF90CAF9),
+                                                      fontSize: 16),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(horizontal: 0),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black87,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                        color: Colors.white24),
+                                                  ),
+                                                  child:
+                                                      DropdownButtonHideUnderline(
+                                                    child:
+                                                        DropdownButton2<String>(
+                                                      value: selectedMetric,
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                      items: const [
+                                                        DropdownMenuItem(
+                                                          value: 'PD Value',
+                                                          child:
+                                                              Text('PD Value'),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                          value: 'BI Value',
+                                                          child:
+                                                              Text('BI Value'),
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        if (value != null) {
+                                                          setState(() {
+                                                            selectedMetric =
+                                                                value;
+                                                          });
+                                                        }
+                                                      },
+                                                      buttonStyleData:
+                                                          const ButtonStyleData(
+                                                        height: 45,
+                                                        width: 111,
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius
+                                                                      .circular(
+                                                                          8)),
+                                                          border: Border
+                                                              .fromBorderSide(
+                                                                  BorderSide(
+                                                                      color: Colors
+                                                                          .white24)),
+                                                        ),
+                                                      ),
+                                                      iconStyleData:
+                                                          const IconStyleData(
+                                                        icon: Icon(
+                                                            Icons
+                                                                .arrow_drop_down,
+                                                            color:
+                                                                Colors.white),
+                                                      ),
+                                                      dropdownStyleData:
+                                                          const DropdownStyleData(
+                                                        maxHeight: 200,
+                                                        width: 140,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius
+                                                                      .circular(
+                                                                          8)),
+                                                        ),
+                                                        offset: Offset(0, 0),
+                                                      ),
+                                                      menuItemStyleData:
+                                                          const MenuItemStyleData(
+                                                        height: 40,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              child: dataList.isEmpty
+                                                  ? Container(
+                                                      height: 50,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Text(
+                                                        'No data found',
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 14),
+                                                      ),
+                                                    )
+                                                  : ListView.builder(
+                                                      physics:
+                                                          const NeverScrollableScrollPhysics(),
+                                                      shrinkWrap: true,
+                                                      itemCount:
+                                                          dataList.length,
+                                                      itemBuilder:
+                                                          (context, index) {
+                                                        final item =
+                                                            dataList[index];
+                                                        final name =
+                                                            item['name']
+                                                                as String;
+                                                        final value =
+                                                            item[selectedMetric]
+                                                                as double;
+                                                        final percent = total >
+                                                                0
+                                                            ? (value / total) *
+                                                                100
+                                                            : 0.0;
+                                                        return _buildBarItem(
+                                                            name,
+                                                            value,
+                                                            percent,
+                                                            maxValue);
+                                                      },
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-            ),
-          ],
+                      ),
+
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (locationListProvider.isLoading) {
+                              return const Column(
+                                children: [
+                                  SizedBox(height: 100),
+                                  Center(child: CircularProgressIndicator()),
+                                ],
+                              );
+                            }
+                            if (locationListProvider.myLocationList.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  LanguageService.getTranslated(context,
+                                      "location_list_app_no_accounts_text"),
+                                  style: typography.Body1,
+                                ),
+                              );
+                            }
+
+                            if (index ==
+                                locationListProvider.myLocationList.length) {
+                              if (locationListProvider.isNextPageLoading) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
+                                );
+                              } else if (locationListProvider.page >=
+                                      locationListProvider.totalPages &&
+                                  locationListProvider
+                                      .myLocationList.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Center(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "location_list_end_of_list"),
+                                      style: typography.Body1,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                locationListProvider.page =
+                                    locationListProvider.page + 1;
+                                locationListProvider.fetchLocationList(
+                                  context,
+                                  locationQuery,
+                                  locationListProvider.page,
+                                  40,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                  widget.initialProcessId,
+                                  widget.initialSubProcessId,
+                                  '',
+                                );
+                                return const SizedBox();
+                              }
+                            }
+
+                            return MyLocationCard(
+                              campusId: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.campusId ??
+                                  '',
+                              imageUrl: locationListProvider
+                                          .myLocationList[index]
+                                          .screenshots
+                                          ?.isNotEmpty ==
+                                      true
+                                  ? locationListProvider.myLocationList[index]
+                                          .screenshots![0].imageUrl ??
+                                      ''
+                                  : '',
+                              index: index,
+                              accountId: widget.accountID,
+                              subAccountId: widget.subAccountID,
+                              sovId: widget.sovID,
+                              sovName: widget.sovName,
+                              subAccountName: widget.subAccountName,
+                              locationId: locationListProvider
+                                      .myLocationList[index].id ??
+                                  '',
+                              accountName: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.accountName ??
+                                  '',
+                              ownerName: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.ownerName ??
+                                  '',
+                              companyName: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.companyName ??
+                                  '',
+                              address: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.address ??
+                                  '',
+                              percentage: double.parse(locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.percent ??
+                                  '0'),
+                              geocodingScore: locationListProvider
+                                      .myLocationList[index]
+                                      .finalAddress
+                                      ?.score ??
+                                  0,
+                              riskScore: int.parse(locationListProvider
+                                  .myLocationList[index].overallScore
+                                  .toString()),
+                              dataCompletenessScore: locationListProvider
+                                  .myLocationList[index]
+                                  .dataCompleteness!
+                                  .scorePd!,
+                              isAutoCertified: true,
+                              tags: (locationListProvider
+                                      .myLocationList[index]?.tags ??
+                                  []),
+                              onDelete: (locationId) {
+                                showDeleteConfirmationDialog(
+                                  context,
+                                  () async {
+                                    await Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false)
+                                        .deleteLocations(
+                                            context,
+                                            widget.accountID!,
+                                            widget.subAccountID!,
+                                            widget.sovID!,
+                                            [locationId]);
+                                    Provider.of<MyLocationListProvider>(context,
+                                            listen: false)
+                                        .fetchLocationList(
+                                      context,
+                                      locationQuery,
+                                      1,
+                                      40,
+                                      widget.accountID,
+                                      widget.subAccountID,
+                                      widget.initialProcessId,
+                                      widget.initialSubProcessId,
+                                      widget.sovID,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
+                                  [locationId],
+                                );
+                              },
+                              onAddToSOV: null,
+                              onAddTag: (locationId) {
+                                locationListProvider.addTagsToSelectedLocations(
+                                    context,
+                                    widget.accountID!,
+                                    widget.subAccountID!,
+                                    locationId);
+                              },
+                              getData: () {
+                                locationListProvider.fetchLocationList(
+                                  context,
+                                  locationQuery,
+                                  1,
+                                  40,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                  widget.initialProcessId,
+                                  widget.initialSubProcessId,
+                                  widget.sovID,
+                                );
+                              },
+                              lat: locationListProvider.myLocationList[index]
+                                      .finalAddress?.latitude
+                                      ?.toString() ??
+                                  "",
+                              long: locationListProvider.myLocationList[index]
+                                      .finalAddress?.longitude
+                                      ?.toString() ??
+                                  "",
+                              overallScore: locationListProvider
+                                      .myLocationList[index].overallScore
+                                      ?.toString() ??
+                                  "0",
+                              hazardProcess: true,
+                            );
+                          },
+                          childCount: locationListProvider
+                                  .myLocationList.isEmpty
+                              ? 1
+                              : locationListProvider.myLocationList.length + 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -2386,19 +2285,18 @@ class _SovLocationListState extends State<SovLocationList>
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Row(
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Column(
+            children: [
+              // Filter chips row
+              Row(
                 children: [
-                  // Horizontally scrollable row for all chips
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Show country options as chips
                           if (locationListProvider.countries.isNotEmpty)
                             Padding(
                               padding:
@@ -2422,8 +2320,6 @@ class _SovLocationListState extends State<SovLocationList>
                                 },
                               ),
                             ),
-
-                          // Show certifications as chips
                           if (locationListProvider.certifications.isNotEmpty)
                             Padding(
                               padding:
@@ -2448,68 +2344,62 @@ class _SovLocationListState extends State<SovLocationList>
                                 },
                               ),
                             ),
-
-                          // Show hazard ratings as chips with circles for selected ratings
                           if (locationListProvider.hazardRatings.isNotEmpty)
-                            for (var hazard
-                                in locationListProvider.hazardRatings.keys)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: Chip(
-                                  label: Row(
-                                    children: [
-                                      Text(hazard),
-                                      // Hazard name
-                                      const SizedBox(width: 8),
-                                      // Space before ratings
-                                      if (locationListProvider
-                                          .hazardRatings[hazard]!.isEmpty)
-                                        Text(
-                                            'All') // If no ratings are selected
-                                      else
-                                        Row(
-                                          children: locationListProvider
-                                              .hazardRatings[hazard]!
-                                              .map((rating) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 4.0),
-                                              child: CircleAvatar(
-                                                radius: 10,
-                                                backgroundColor:
-                                                    _getRatingColor(rating),
-                                                child: Text(
-                                                  '$rating',
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12),
-                                                ),
+                            ...locationListProvider.hazardRatings.keys
+                                .map((hazard) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4.0),
+                                      child: Chip(
+                                        label: Row(
+                                          children: [
+                                            const SizedBox(width: 8),
+                                            if (locationListProvider
+                                                .hazardRatings[hazard]!.isEmpty)
+                                              Text('All')
+                                            else
+                                              Row(
+                                                children: locationListProvider
+                                                    .hazardRatings[hazard]!
+                                                    .map((rating) => Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .only(
+                                                                  right: 4.0),
+                                                          child: CircleAvatar(
+                                                            radius: 10,
+                                                            backgroundColor:
+                                                                _getRatingColor(
+                                                                    rating),
+                                                            child: Text(
+                                                              '$rating',
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 12),
+                                                            ),
+                                                          ),
+                                                        ))
+                                                    .toList(),
                                               ),
-                                            );
-                                          }).toList(),
+                                          ],
                                         ),
-                                    ],
-                                  ),
-                                  onDeleted: () {
-                                    locationListProvider
-                                        .clearHazardFilter(hazard);
-                                    locationListProvider
-                                        .fetchCertifiedLocationList(
-                                      context,
-                                      locationQuery,
-                                      1,
-                                      40,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                    );
-                                  },
-                                ),
-                              ),
-
-                          // Show ratings as chips
+                                        onDeleted: () {
+                                          locationListProvider
+                                              .clearHazardFilter(hazard);
+                                          locationListProvider
+                                              .fetchCertifiedLocationList(
+                                            context,
+                                            locationQuery,
+                                            1,
+                                            40,
+                                            widget.accountID,
+                                            widget.subAccountID,
+                                            widget.initialProcessId,
+                                            widget.initialSubProcessId,
+                                          );
+                                        },
+                                      ),
+                                    )),
                           if (locationListProvider.rating.isNotEmpty)
                             Padding(
                               padding:
@@ -2537,40 +2427,36 @@ class _SovLocationListState extends State<SovLocationList>
                       ),
                     ),
                   ),
-
-                  // Clear all filters button (text button at the end)
-                  if (locationListProvider
-                      .hasAnyFilterApplied()) // Check if any filter is applied
+                  if (locationListProvider.hasAnyFilterApplied())
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: TextButton(
                         onPressed: () {
                           locationListProvider.clearAllFilters();
-                          locationListProvider.fetchLocationList(
-                              context,
-                              locationQuery,
-                              1,
-                              40,
-                              widget.accountID,
-                              widget.subAccountID,
-                              widget.initialProcessId,
-                              widget.initialSubProcessId,
-                              '');
+                          locationListProvider.fetchCertifiedLocationList(
+                            context,
+                            locationQuery,
+                            1,
+                            40,
+                            widget.accountID,
+                            widget.subAccountID,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
+                          );
                         },
                         child: const Text(
                           'Clear All',
-                          style: TextStyle(
-                              color: Colors.red), // Color for emphasis
+                          style: TextStyle(color: Colors.red),
                         ),
                       ),
                     ),
                 ],
               ),
-            ),
-            Expanded(
-              child: Expanded(
+              // Main scrollable content
+              Expanded(
                 child: RefreshIndicator(
                   onRefresh: () async {
+                    locationListProvider.certifiedPage = 1;
                     await locationListProvider.fetchCertifiedLocationList(
                       context,
                       locationQuery,
@@ -2582,92 +2468,1123 @@ class _SovLocationListState extends State<SovLocationList>
                       widget.initialSubProcessId,
                     );
                   },
-                  child: locationListProvider.isCertifiedLoading
-                      ? Column(
-                          children: [
-                            SizedBox(height: 100),
-                            Center(child: CircularProgressIndicator()),
-                          ],
-                        )
-                      : locationListProvider.certifiedLocationList.isEmpty
-                          ? Center(
-                              child: Text(
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // Charts section
+
+                      SliverToBoxAdapter(
+                        child: Container(
+                          height: 400,
+                          // Set a fixed height for the scrollable row
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Pie chart - 80% width
+                                Container(
+                                  width: MediaQuery.of(context).size.width /
+                                      1.1, // 80% of screen width
+                                  child: Consumer<MyLocationListProvider>(
+                                    builder:
+                                        (context, locationListProvider, child) {
+                                      final globalCounts = locationListProvider
+                                          .grapDataProfile
+                                          ?.sovResults
+                                          ?.first
+                                          .globalValueCounts;
+                                      if (globalCounts == null) {
+                                        return const Center(
+                                            child: Text('No data found'));
+                                      }
+                                      final Map<String, dynamic> entries =
+                                          globalCounts.toJson();
+                                      final List<Map<String, dynamic>>
+                                          chartData = entries.entries.map((e) {
+                                        final locData = e.value;
+                                        return {
+                                          'name':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'PD Value': double.tryParse(
+                                                  locData?['PD Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'BI Value': double.tryParse(
+                                                  locData?['BI Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'color': Colors.primaries[
+                                              e.key.hashCode %
+                                                  Colors.primaries.length],
+                                          'title':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'loc': e.key,
+                                        };
+                                      }).toList();
+                                      double total = chartData.fold<double>(
+                                        0.0,
+                                        (sum, e) =>
+                                            sum +
+                                            ((e[selectedMetric_pie]
+                                                    as double?) ??
+                                                0.0),
+                                      );
+                                      return Container(
+                                        margin: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF111111),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border:
+                                              Border.all(color: Colors.white10),
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                const Text(
+                                                  "Weighted Distribution (TPV)",
+                                                  style: TextStyle(
+                                                    color: Color(0xFF90CAF9),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  height: 45,
+                                                  constraints: BoxConstraints(
+                                                      minWidth: 120),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                        color: Colors.white24),
+                                                    color: Colors.black87,
+                                                  ),
+                                                  child:
+                                                      DropdownButtonHideUnderline(
+                                                    child:
+                                                        DropdownButton2<String>(
+                                                      isExpanded: true,
+                                                      value: selectedMetric,
+                                                      items: const [
+                                                        DropdownMenuItem(
+                                                          value: 'PD Value',
+                                                          child:
+                                                              Text('PD Value'),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                          value: 'BI Value',
+                                                          child:
+                                                              Text('BI Value'),
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        if (value != null) {
+                                                          setState(() {
+                                                            selectedMetric =
+                                                                value;
+                                                          });
+                                                        }
+                                                      },
+                                                      buttonStyleData:
+                                                          ButtonStyleData(
+                                                        height: 45,
+                                                        width: 105,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .transparent,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      iconStyleData:
+                                                          const IconStyleData(
+                                                        icon: Icon(
+                                                            Icons
+                                                                .arrow_drop_down,
+                                                            color:
+                                                                Colors.white),
+                                                      ),
+                                                      dropdownStyleData:
+                                                          DropdownStyleData(
+                                                        maxHeight: 200,
+                                                        width: 120,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        offset:
+                                                            const Offset(0, 0),
+                                                      ),
+                                                      menuItemStyleData:
+                                                          const MenuItemStyleData(
+                                                        height: 40,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 30),
+                                            Center(
+                                              child: chartData.isEmpty
+                                                  ? const Text(
+                                                      'No data found',
+                                                      style: TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: 14),
+                                                    )
+                                                  : GestureDetector(
+                                                      onLongPressStart:
+                                                          (details) {
+                                                        if (touchedIndex !=
+                                                                null &&
+                                                            touchedIndex! <
+                                                                chartData
+                                                                    .length) {
+                                                          setState(() {
+                                                            longPressed = true;
+                                                          });
+                                                          final data = chartData[
+                                                              touchedIndex!];
+                                                          final val = (data[
+                                                                      selectedMetric_pie]
+                                                                  as double?) ??
+                                                              0.0;
+                                                          final pct = total > 0
+                                                              ? (val / total) *
+                                                                  100
+                                                              : 0.0;
+                                                          debugPrint(
+                                                              'LONG PRESS -> index: $touchedIndex, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                        }
+                                                      },
+                                                      onTap: () {
+                                                        if (longPressed &&
+                                                            touchedIndex !=
+                                                                null &&
+                                                            touchedIndex! <
+                                                                chartData
+                                                                    .length) {
+                                                          debugPrint(
+                                                              'DESELECT slice: $touchedIndex');
+                                                          setState(() {
+                                                            touchedIndex = null;
+                                                            longPressed = false;
+                                                          });
+                                                        }
+                                                      },
+                                                      child: Container(
+                                                        width: 180,
+                                                        height: 180,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(90),
+                                                          border: Border.all(
+                                                              color: Colors
+                                                                  .transparent),
+                                                        ),
+                                                        child: Stack(
+                                                          alignment:
+                                                              Alignment.center,
+                                                          children: [
+                                                            PieChart(
+                                                              PieChartData(
+                                                                sectionsSpace:
+                                                                    1,
+                                                                centerSpaceRadius:
+                                                                    1,
+                                                                pieTouchData:
+                                                                    PieTouchData(
+                                                                  touchCallback:
+                                                                      (event,
+                                                                          response) {
+                                                                    if (!event
+                                                                            .isInterestedForInteractions ||
+                                                                        response ==
+                                                                            null ||
+                                                                        response.touchedSection ==
+                                                                            null) {
+                                                                      return;
+                                                                    }
+
+                                                                    final idx = response
+                                                                        .touchedSection!
+                                                                        .touchedSectionIndex;
+                                                                    setState(
+                                                                        () {
+                                                                      touchedIndex =
+                                                                          idx;
+                                                                    });
+
+                                                                    final data =
+                                                                        chartData[
+                                                                            idx];
+                                                                    final val =
+                                                                        (data[selectedMetric_pie]
+                                                                                as double?) ??
+                                                                            0.0;
+                                                                    final pct = total >
+                                                                            0
+                                                                        ? (val /
+                                                                                total) *
+                                                                            100
+                                                                        : 0.0;
+                                                                    debugPrint(
+                                                                        'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                                  },
+                                                                ),
+                                                                sections:
+                                                                    chartData
+                                                                        .asMap()
+                                                                        .map<
+                                                                            int,
+                                                                            PieChartSectionData>((index, data) {
+                                                                          final isSelected =
+                                                                              touchedIndex == index;
+                                                                          final value =
+                                                                              (data[selectedMetric_pie] as double?) ?? 0.0;
+                                                                          final percent = total > 0
+                                                                              ? (value / total) * 100
+                                                                              : 0.0;
+
+                                                                          // ✅ Determine color bucket based on percent
+                                                                          final colorData =
+                                                                              getPieColorsByPercent( percent);
+
+                                                                          return MapEntry(
+                                                                            index,
+                                                                            PieChartSectionData(
+                                                                              color: hexToColor(colorData.fill),
+                                                                              value: value,
+                                                                              title: "${percent.round()}%",
+                                                                              radius: isSelected ? 120 : 100,
+                                                                              titleStyle: TextStyle(
+                                                                                color: hexToColor(colorData.text),
+                                                                                fontSize: 12,
+                                                                                fontWeight: FontWeight.w600,
+                                                                              ),
+                                                                            ),
+                                                                          );
+                                                                        })
+                                                                        .values
+                                                                        .toList(),
+                                                              ),
+                                                            ),
+
+                                                            // PieChart(
+                                                            //   PieChartData(
+                                                            //     sectionsSpace:
+                                                            //         1,
+                                                            //     centerSpaceRadius:
+                                                            //         1,
+                                                            //     pieTouchData:
+                                                            //         PieTouchData(
+                                                            //       touchCallback:
+                                                            //           (event,
+                                                            //               response) {
+                                                            //         if (!event
+                                                            //                 .isInterestedForInteractions ||
+                                                            //             response ==
+                                                            //                 null ||
+                                                            //             response.touchedSection ==
+                                                            //                 null) {
+                                                            //           return;
+                                                            //         }
+                                                            //         final idx = response
+                                                            //             .touchedSection!
+                                                            //             .touchedSectionIndex;
+                                                            //         setState(
+                                                            //             () {
+                                                            //           touchedIndex =
+                                                            //               idx;
+                                                            //         });
+                                                            //         final data =
+                                                            //             chartData[
+                                                            //                 idx];
+                                                            //         final val =
+                                                            //             (data[selectedMetric_pie]
+                                                            //                     as double?) ??
+                                                            //                 0.0;
+                                                            //         final pct = total >
+                                                            //                 0
+                                                            //             ? (val /
+                                                            //                     total) *
+                                                            //                 100
+                                                            //             : 0.0;
+                                                            //         debugPrint(
+                                                            //             'TOUCH -> index: $idx, loc: ${data['loc']}, value: $val, percent: ${pct.toStringAsFixed(2)}%');
+                                                            //       },
+                                                            //     ),
+                                                            //     sections:
+                                                            //         chartData
+                                                            //             .asMap()
+                                                            //             .map<
+                                                            //                 int,
+                                                            //                 PieChartSectionData>((index, data) {
+                                                            //               final isSelected =
+                                                            //                   touchedIndex == index;
+                                                            //               final value =
+                                                            //                   (data[selectedMetric_pie] as double?) ?? 0.0;
+                                                            //               final percent = total > 0
+                                                            //                   ? (value / total) * 100
+                                                            //                   : 0.0;
+                                                            //               return MapEntry(
+                                                            //                 index,
+                                                            //                 PieChartSectionData(
+                                                            //                   color: data['color'],
+                                                            //                   value: value,
+                                                            //                 title: "${percent.round()}%",
+                                                            //                   radius: isSelected ? 120 : 100,
+                                                            //                   titleStyle: const TextStyle(color: Colors.black, fontSize: 12),
+                                                            //                 ),
+                                                            //               );
+                                                            //             })
+                                                            //             .values
+                                                            //             .toList(),
+                                                            //   ),
+                                                            // ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                            ),
+                                            const SizedBox(height: 50),
+                                            Center(
+                                              child: (touchedIndex == null ||
+                                                      chartData.isEmpty)
+                                                  ? Container()
+                                                  : SingleChildScrollView(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      child:
+                                                          Builder(builder: (_) {
+                                                        if (touchedIndex ==
+                                                                null ||
+                                                            touchedIndex! < 0 ||
+                                                            touchedIndex! >=
+                                                                chartData
+                                                                    .length) {
+                                                          return const SizedBox();
+                                                        }
+                                                        final data = chartData[
+                                                            touchedIndex!];
+                                                        final val =
+                                                            (data[selectedMetric_pie]
+                                                                    as double?) ??
+                                                                0.0;
+                                                        final pct = total > 0
+                                                            ? (val / total) *
+                                                                100
+                                                            : 0.0;
+                                                        if (pct == 0) {
+                                                          return const SizedBox();
+                                                        }
+                                                        return Container(
+                                                          margin:
+                                                              EdgeInsets.only(
+                                                                  right: 10,
+                                                                  left: 10),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 4,
+                                                                  vertical: 6),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                0xFF1C1C1C),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .white10),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Text(
+                                                                "Percentage: ${pct.toStringAsFixed(0)}%",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                              Container(
+                                                                height: 14,
+                                                                width: 1,
+                                                                margin: const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        6),
+                                                                color: Colors
+                                                                    .white24,
+                                                              ),
+                                                              Text(
+                                                                "$selectedMetric_pie: \$${val.toStringAsFixed(0)}M",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                              Container(
+                                                                height: 14,
+                                                                width: 1,
+                                                                margin: const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        6),
+                                                                color: Colors
+                                                                    .white24,
+                                                              ),
+                                                              Text(
+                                                                "Location: ${data['name'] == 'Unknown' ? '0' : data['name']}",
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      }),
+                                                    ),
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // const SizedBox(width: 2),
+                                // Bar chart - scrollable
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.9,
+                                  // Same 80% width for consistency
+                                  child: Consumer<MyLocationListProvider>(
+                                    builder:
+                                        (context, locationListProvider, child) {
+                                      final globalCounts = locationListProvider
+                                          .grapDataProfile
+                                          ?.sovResults
+                                          ?.first
+                                          ?.globalValueCounts;
+                                      if (globalCounts == null) {
+                                        return const Center(child: Text(''));
+                                      }
+                                      final Map<String, dynamic> entries =
+                                          globalCounts.toJson();
+                                      final List<Map<String, dynamic>>
+                                          dataList = entries.entries.map((e) {
+                                        final locData = e.value;
+                                        return {
+                                          'name':
+                                              locData?['name']?.toString() ??
+                                                  'Unknown',
+                                          'PD Value': double.tryParse(
+                                                  locData?['PD Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                          'BI Value': double.tryParse(
+                                                  locData?['BI Value']
+                                                          ?.toString() ??
+                                                      '0') ??
+                                              0.0,
+                                        };
+                                      }).toList();
+                                      final maxValue = dataList.fold<double>(
+                                        0.0,
+                                        (prev, e) => e[selectedMetric] > prev
+                                            ? e[selectedMetric]
+                                            : prev,
+                                      );
+                                      final total = dataList.fold<double>(
+                                        0.0,
+                                        (sum, e) =>
+                                            sum + (e[selectedMetric] as double),
+                                      );
+                                      return Container(
+                                        height: dataList.isEmpty ? 160 : 400,
+                                        margin: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF111111),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border:
+                                              Border.all(color: Colors.white10),
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                const Text(
+                                                  "Critical Missing Parameters",
+                                                  style: TextStyle(
+                                                      color: Color(0xFF90CAF9),
+                                                      fontSize: 16),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(horizontal: 0),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black87,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                        color: Colors.white24),
+                                                  ),
+                                                  child:
+                                                      DropdownButtonHideUnderline(
+                                                    child:
+                                                        DropdownButton2<String>(
+                                                      value: selectedMetric,
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                      items: const [
+                                                        DropdownMenuItem(
+                                                          value: 'PD Value',
+                                                          child:
+                                                              Text('PD Value'),
+                                                        ),
+                                                        DropdownMenuItem(
+                                                          value: 'BI Value',
+                                                          child:
+                                                              Text('BI Value'),
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        if (value != null) {
+                                                          setState(() {
+                                                            selectedMetric =
+                                                                value;
+                                                          });
+                                                        }
+                                                      },
+                                                      buttonStyleData:
+                                                          const ButtonStyleData(
+                                                        height: 45,
+                                                        width: 111,
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius
+                                                                      .circular(
+                                                                          8)),
+                                                          border: Border
+                                                              .fromBorderSide(
+                                                                  BorderSide(
+                                                                      color: Colors
+                                                                          .white24)),
+                                                        ),
+                                                      ),
+                                                      iconStyleData:
+                                                          const IconStyleData(
+                                                        icon: Icon(
+                                                            Icons
+                                                                .arrow_drop_down,
+                                                            color:
+                                                                Colors.white),
+                                                      ),
+                                                      dropdownStyleData:
+                                                          const DropdownStyleData(
+                                                        maxHeight: 200,
+                                                        width: 140,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.black87,
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius
+                                                                      .circular(
+                                                                          8)),
+                                                        ),
+                                                        offset: Offset(0, 0),
+                                                      ),
+                                                      menuItemStyleData:
+                                                          const MenuItemStyleData(
+                                                        height: 40,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Expanded(
+                                              child: dataList.isEmpty
+                                                  ? Container(
+                                                      height: 50,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Text(
+                                                        'No data found',
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 14),
+                                                      ),
+                                                    )
+                                                  : ListView.builder(
+                                                      physics:
+                                                          const NeverScrollableScrollPhysics(),
+                                                      shrinkWrap: true,
+                                                      itemCount:
+                                                          dataList.length,
+                                                      itemBuilder:
+                                                          (context, index) {
+                                                        final item =
+                                                            dataList[index];
+                                                        final name =
+                                                            item['name']
+                                                                as String;
+                                                        final value =
+                                                            item[selectedMetric]
+                                                                as double;
+                                                        final percent = total >
+                                                                0
+                                                            ? (value / total) *
+                                                                100
+                                                            : 0.0;
+                                                        return _buildBarItem(
+                                                            name,
+                                                            value,
+                                                            percent,
+                                                            maxValue);
+                                                      },
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Location list
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (locationListProvider.isCertifiedLoading) {
+                              return const Column(
+                                children: [
+                                  SizedBox(height: 100),
+                                  Center(child: CircularProgressIndicator()),
+                                ],
+                              );
+                            }
+                            if (locationListProvider
+                                .certifiedLocationList.isEmpty) {
+                              return Center(
+                                child: Text(
                                   LanguageService.getTranslated(context,
                                       "location_list_app_no_accounts_text"),
-                                  style: typography.Body1),
-                            )
-                          : ListView.builder(
-                              physics: ClampingScrollPhysics(),
-                              shrinkWrap: true,
-                              itemCount: locationListProvider
-                                  .certifiedLocationList.length,
-                              itemBuilder: (context, index) {
-                                if (index ==
-                                    locationListProvider
-                                            .certifiedLocationList.length -
-                                        1) {
-                                  if (locationListProvider
-                                      .isNextPageCertifiedLoading) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Center(
-                                          child: CircularProgressIndicator()),
-                                    );
-                                  } else if (locationListProvider
-                                              .certifiedPage >=
-                                          locationListProvider
-                                              .certifiedTotalPages &&
-                                      locationListProvider
-                                          .certifiedLocationList.isNotEmpty) {
-                                    return Column(
-                                      children: [
-                                        myLocationCertifiedCard(
-                                            locationListProvider,
-                                            index,
-                                            context),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Center(
-                                              child: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "location_list_end_of_list"),
-                                                  style: typography.Body1)),
-                                        ),
-                                      ],
-                                    );
-                                  } else {
-                                    locationListProvider.certifiedPage =
-                                        locationListProvider.certifiedPage + 1;
-                                    locationListProvider
-                                        .fetchCertifiedLocationList(
-                                      context,
-                                      "",
-                                      locationListProvider.certifiedPage,
-                                      40,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                    );
-                                    return SizedBox();
-                                  }
-                                }
+                                  style: typography.Body1,
+                                ),
+                              );
+                            }
 
-                                /*return locationListCard(index,
-                        locationListProvider.certifiedLocationList);*/
-                                return myLocationCertifiedCard(
-                                    locationListProvider, index, context);
-                              },
-                            ),
+                            if (index ==
+                                locationListProvider
+                                    .certifiedLocationList.length) {
+                              if (locationListProvider
+                                  .isNextPageCertifiedLoading) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
+                                );
+                              } else if (locationListProvider.certifiedPage >=
+                                      locationListProvider
+                                          .certifiedTotalPages &&
+                                  locationListProvider
+                                      .certifiedLocationList.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Center(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, "location_list_end_of_list"),
+                                      style: typography.Body1,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                locationListProvider.certifiedPage =
+                                    locationListProvider.certifiedPage + 1;
+                                locationListProvider.fetchCertifiedLocationList(
+                                  context,
+                                  "",
+                                  locationListProvider.certifiedPage,
+                                  40,
+                                  widget.accountID,
+                                  widget.subAccountID,
+                                  widget.initialProcessId,
+                                  widget.initialSubProcessId,
+                                );
+                                return const SizedBox();
+                              }
+                            }
+
+                            return myLocationCertifiedCard(
+                                locationListProvider, index, context);
+                          },
+                          childCount:
+                              locationListProvider.certifiedLocationList.isEmpty
+                                  ? 1
+                                  : locationListProvider
+                                          .certifiedLocationList.length +
+                                      1,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
+
+  // _getLocationListCertifiedUI() {
+  //   var typography = CustomTypography(context);
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, locationListProvider, child) {
+  //       return Column(
+  //         children: [
+  //           Padding(
+  //             padding: const EdgeInsets.symmetric(horizontal: 12.0),
+  //             child: Row(
+  //               children: [
+  //                 // Horizontally scrollable row for all chips
+  //                 Expanded(
+  //                   child: SingleChildScrollView(
+  //                     scrollDirection: Axis.horizontal,
+  //                     child: Row(
+  //                       children: [
+  //                         // Show country options as chips
+  //                         if (locationListProvider.countries.isNotEmpty)
+  //                           Padding(
+  //                             padding:
+  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
+  //                             child: Chip(
+  //                               label: Text(
+  //                                   "Country: ${locationListProvider.countries.join(', ')}"),
+  //                               onDeleted: () {
+  //                                 locationListProvider.clearCountryFilter();
+  //                                 locationListProvider
+  //                                     .fetchCertifiedLocationList(
+  //                                   context,
+  //                                   locationQuery,
+  //                                   1,
+  //                                   40,
+  //                                   widget.accountID,
+  //                                   widget.subAccountID,
+  //                                   widget.initialProcessId,
+  //                                   widget.initialSubProcessId,
+  //                                 );
+  //                               },
+  //                             ),
+  //                           ),
+  //
+  //                         // Show certifications as chips
+  //                         if (locationListProvider.certifications.isNotEmpty)
+  //                           Padding(
+  //                             padding:
+  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
+  //                             child: Chip(
+  //                               label: Text(
+  //                                   "Certifications: ${locationListProvider.certifications.join(', ')}"),
+  //                               onDeleted: () {
+  //                                 locationListProvider
+  //                                     .clearCertificationsFilter();
+  //                                 locationListProvider
+  //                                     .fetchCertifiedLocationList(
+  //                                   context,
+  //                                   locationQuery,
+  //                                   1,
+  //                                   40,
+  //                                   widget.accountID,
+  //                                   widget.subAccountID,
+  //                                   widget.initialProcessId,
+  //                                   widget.initialSubProcessId,
+  //                                 );
+  //                               },
+  //                             ),
+  //                           ),
+  //
+  //                         // Show hazard ratings as chips with circles for selected ratings
+  //                         if (locationListProvider.hazardRatings.isNotEmpty)
+  //                           for (var hazard
+  //                               in locationListProvider.hazardRatings.keys)
+  //                             Padding(
+  //                               padding:
+  //                                   const EdgeInsets.symmetric(horizontal: 4.0),
+  //                               child: Chip(
+  //                                 label: Row(
+  //                                   children: [
+  //                                     Text(hazard),
+  //                                     // Hazard name
+  //                                     const SizedBox(width: 8),
+  //                                     // Space before ratings
+  //                                     if (locationListProvider
+  //                                         .hazardRatings[hazard]!.isEmpty)
+  //                                       Text(
+  //                                           'All') // If no ratings are selected
+  //                                     else
+  //                                       Row(
+  //                                         children: locationListProvider
+  //                                             .hazardRatings[hazard]!
+  //                                             .map((rating) {
+  //                                           return Padding(
+  //                                             padding: const EdgeInsets.only(
+  //                                                 right: 4.0),
+  //                                             child: CircleAvatar(
+  //                                               radius: 10,
+  //                                               backgroundColor:
+  //                                                   _getRatingColor(rating),
+  //                                               child: Text(
+  //                                                 '$rating',
+  //                                                 style: const TextStyle(
+  //                                                     color: Colors.white,
+  //                                                     fontSize: 12),
+  //                                               ),
+  //                                             ),
+  //                                           );
+  //                                         }).toList(),
+  //                                       ),
+  //                                   ],
+  //                                 ),
+  //                                 onDeleted: () {
+  //                                   locationListProvider
+  //                                       .clearHazardFilter(hazard);
+  //                                   locationListProvider
+  //                                       .fetchCertifiedLocationList(
+  //                                     context,
+  //                                     locationQuery,
+  //                                     1,
+  //                                     40,
+  //                                     widget.accountID,
+  //                                     widget.subAccountID,
+  //                                     widget.initialProcessId,
+  //                                     widget.initialSubProcessId,
+  //                                   );
+  //                                 },
+  //                               ),
+  //                             ),
+  //
+  //                         // Show ratings as chips
+  //                         if (locationListProvider.rating.isNotEmpty)
+  //                           Padding(
+  //                             padding:
+  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
+  //                             child: Chip(
+  //                               label: Text(
+  //                                   "Ratings: ${locationListProvider.rating.join(', ')}"),
+  //                               onDeleted: () {
+  //                                 locationListProvider.clearRatingsFilter();
+  //                                 locationListProvider
+  //                                     .fetchCertifiedLocationList(
+  //                                   context,
+  //                                   locationQuery,
+  //                                   1,
+  //                                   40,
+  //                                   widget.accountID,
+  //                                   widget.subAccountID,
+  //                                   widget.initialProcessId,
+  //                                   widget.initialSubProcessId,
+  //                                 );
+  //                               },
+  //                             ),
+  //                           ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ),
+  //
+  //                 // Clear all filters button (text button at the end)
+  //                 if (locationListProvider
+  //                     .hasAnyFilterApplied()) // Check if any filter is applied
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
+  //                     child: TextButton(
+  //                       onPressed: () {
+  //                         locationListProvider.clearAllFilters();
+  //                         locationListProvider.fetchLocationList(
+  //                             context,
+  //                             locationQuery,
+  //                             1,
+  //                             40,
+  //                             widget.accountID,
+  //                             widget.subAccountID,
+  //                             widget.initialProcessId,
+  //                             widget.initialSubProcessId,
+  //                             '');
+  //                       },
+  //                       child: const Text(
+  //                         'Clear All',
+  //                         style: TextStyle(
+  //                             color: Colors.red), // Color for emphasis
+  //                       ),
+  //                     ),
+  //                   ),
+  //               ],
+  //             ),
+  //           ),
+  //           Expanded(
+  //             child: Expanded(
+  //               child: RefreshIndicator(
+  //                 onRefresh: () async {
+  //                   await locationListProvider.fetchCertifiedLocationList(
+  //                     context,
+  //                     locationQuery,
+  //                     1,
+  //                     40,
+  //                     widget.accountID,
+  //                     widget.subAccountID,
+  //                     widget.initialProcessId,
+  //                     widget.initialSubProcessId,
+  //                   );
+  //                 },
+  //                 child: locationListProvider.isCertifiedLoading
+  //                     ? Column(
+  //                         children: [
+  //                           SizedBox(height: 100),
+  //                           Center(child: CircularProgressIndicator()),
+  //                         ],
+  //                       )
+  //                     : locationListProvider.certifiedLocationList.isEmpty
+  //                         ? Center(
+  //                             child: Text(
+  //                                 LanguageService.getTranslated(context,
+  //                                     "location_list_app_no_accounts_text"),
+  //                                 style: typography.Body1),
+  //                           )
+  //                         : ListView.builder(
+  //                             physics: ClampingScrollPhysics(),
+  //                             shrinkWrap: true,
+  //                             itemCount: locationListProvider
+  //                                 .certifiedLocationList.length,
+  //                             itemBuilder: (context, index) {
+  //                               if (index ==
+  //                                   locationListProvider
+  //                                           .certifiedLocationList.length -
+  //                                       1) {
+  //                                 if (locationListProvider
+  //                                     .isNextPageCertifiedLoading) {
+  //                                   return Padding(
+  //                                     padding: const EdgeInsets.all(8.0),
+  //                                     child: Center(
+  //                                         child: CircularProgressIndicator()),
+  //                                   );
+  //                                 } else if (locationListProvider
+  //                                             .certifiedPage >=
+  //                                         locationListProvider
+  //                                             .certifiedTotalPages &&
+  //                                     locationListProvider
+  //                                         .certifiedLocationList.isNotEmpty) {
+  //                                   return Column(
+  //                                     children: [
+  //                                       myLocationCertifiedCard(
+  //                                           locationListProvider,
+  //                                           index,
+  //                                           context),
+  //                                       Padding(
+  //                                         padding: const EdgeInsets.all(8.0),
+  //                                         child: Center(
+  //                                             child: Text(
+  //                                                 LanguageService.getTranslated(
+  //                                                     context,
+  //                                                     "location_list_end_of_list"),
+  //                                                 style: typography.Body1)),
+  //                                       ),
+  //                                     ],
+  //                                   );
+  //                                 } else {
+  //                                   locationListProvider.certifiedPage =
+  //                                       locationListProvider.certifiedPage + 1;
+  //                                   locationListProvider
+  //                                       .fetchCertifiedLocationList(
+  //                                     context,
+  //                                     "",
+  //                                     locationListProvider.certifiedPage,
+  //                                     40,
+  //                                     widget.accountID,
+  //                                     widget.subAccountID,
+  //                                     widget.initialProcessId,
+  //                                     widget.initialSubProcessId,
+  //                                   );
+  //                                   return SizedBox();
+  //                                 }
+  //                               }
+  //
+  //                               /*return locationListCard(index,
+  //                       locationListProvider.certifiedLocationList);*/
+  //                               return myLocationCertifiedCard(
+  //                                   locationListProvider, index, context);
+  //                             },
+  //                           ),
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Color _getRatingColor(int rating) {
     switch (rating) {
@@ -3261,4 +4178,14 @@ Widget _buildBarItem(
       ],
     ),
   );
+}
+
+class PieColorData {
+  final String fill;
+  final String text;
+
+  const PieColorData({
+    required this.fill,
+    required this.text,
+  });
 }

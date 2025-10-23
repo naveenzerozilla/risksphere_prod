@@ -1424,6 +1424,8 @@ PODS:
     - Flutter
   - fluttertoast (0.0.2):
     - Flutter
+  - geocoding_ios (1.0.5):
+    - Flutter
   - Google-Maps-iOS-Utils (5.0.0):
     - GoogleMaps (~> 8.0)
   - google_maps_flutter_ios (0.0.1):
@@ -1701,6 +1703,7 @@ DEPENDENCIES:
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
+  - geocoding_ios (from `.symlinks/plugins/geocoding_ios/ios`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
@@ -1808,6 +1811,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   fluttertoast:
     :path: ".symlinks/plugins/fluttertoast/ios"
+  geocoding_ios:
+    :path: ".symlinks/plugins/geocoding_ios/ios"
   google_maps_flutter_ios:
     :path: ".symlinks/plugins/google_maps_flutter_ios/ios"
   google_sign_in_ios:
@@ -1884,6 +1889,7 @@ SPEC CHECKSUMS:
   flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
   fluttertoast: 21eecd6935e7064cc1fcb733a4c5a428f3f24f0f
+  geocoding_ios: eafacae6ad11a1eb56681f7d11df602a5fd49416
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
   google_maps_flutter_ios: e31555a04d1986ab130f2b9f24b6cdc861acc6d3
   google_sign_in_ios: 7411fab6948df90490dc4620ecbcabdc3ca04017

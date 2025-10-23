@@ -1,12 +1,13 @@
 import 'dart:async';
-
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:RiskSphere/providers/location_list_provider.dart';
 import 'package:RiskSphere/providers/location_profile_provider.dart';
@@ -82,6 +83,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   TextEditingController _locationNameController = TextEditingController();
   String? _selectedLocationType;
   TextEditingController _locationAddressController = TextEditingController();
+  TextEditingController _latitudeController = TextEditingController();
+  TextEditingController _longitudeController = TextEditingController();
+  TextEditingController _locationAddress1Controller = TextEditingController();
   TextEditingController _locationCityController = TextEditingController();
   TextEditingController _locationStateController = TextEditingController();
   TextEditingController _locationZipCodeController = TextEditingController();
@@ -112,6 +116,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   bool rented = false;
   bool leased = false;
   Timer? _debounce;
+  LatLng? _selectedLatLng;
+  bool isSearchSelected = false;
 
   @override
   initState() {
@@ -182,6 +188,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                   .toString()),
             ),
           ));
+          _latitudeController = TextEditingController(
+              text:
+                  provider.locationProfile!.finalAddress!.latitude!.toString());
+          _longitudeController = TextEditingController(
+              text: provider.locationProfile!.finalAddress!.longitude!
+                  .toString());
         }
       });
     }
@@ -326,48 +338,348 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                       children: [
                                         if (!isKeyboardVisible) ...[
                                           Container(
-                                            margin: EdgeInsets.only(
-                                                left: 8, right: 8),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.only(
-                                                topLeft: Radius.circular(8),
-                                                topRight: Radius.circular(8),
-                                                bottomLeft: Radius.circular(8),
-                                                bottomRight: Radius.circular(8),
-                                              ),
-                                              clipBehavior: Clip.antiAlias,
-                                              child: Container(
-                                                  height: 180,
-                                                  width: double.infinity,
-                                                  child:
-                                                      _isSelectedFromAutocomplete ==
-                                                              true
-                                                          ? GoogleMap(
-                                                              zoomControlsEnabled:
-                                                                  false,
-                                                              mapType: MapType
-                                                                  .satellite,
-                                                              initialCameraPosition:
-                                                                  _defaultLocation,
-                                                              onMapCreated:
-                                                                  (GoogleMapController
-                                                                      controller) {
-                                                                _mapController
-                                                                    .complete(
-                                                                        controller);
-                                                              },
-                                                              markers: Set<
-                                                                      Marker>.of(
-                                                                  markers
-                                                                      .values),
-                                                            )
-                                                          : Image.asset(
-                                                              'assets/images/google_map.png',
-                                                              fit: BoxFit.cover,
-                                                            )),
-                                            ),
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 8),
+                                            child: SizedBox(
+                                                height: 250,
+                                                width: double.infinity,
+                                                child:
+                                                    // _isSelectedFromAutocomplete
+                                                    //     ?
+                                                    AbsorbPointer(
+                                                  absorbing: !isSearchSelected,
+                                                  // 👈 disable gestures when false
+                                                  child: GoogleMap(
+                                                    zoomControlsEnabled: false,
+                                                    zoomGesturesEnabled: true,
+                                                    scrollGesturesEnabled: true,
+                                                    rotateGesturesEnabled:
+                                                        isSearchSelected,
+                                                    tiltGesturesEnabled:
+                                                        isSearchSelected,
+                                                    mapType: MapType.normal,
+
+                                                    // initialCameraPosition: _selectedLatLng != null
+                                                    //     ? CameraPosition(
+                                                    //   target: _selectedLatLng!,
+                                                    //   zoom: 16,
+                                                    // )
+                                                    //     : _defaultLocation,
+                                                    initialCameraPosition:
+                                                        _selectedLatLng != null
+                                                            ? CameraPosition(
+                                                                target:
+                                                                    _selectedLatLng!,
+                                                                zoom: 16)
+                                                            : CameraPosition(
+                                                                target:
+                                                                    const LatLng(
+                                                                        40.7128,
+                                                                        -74.0060),
+                                                                // New York
+                                                                zoom: 12,
+                                                              ),
+                                                    onMapCreated: (controller) {
+                                                      _mapController
+                                                          .complete(controller);
+                                                    },
+
+                                                    markers: {
+                                                      if (_selectedLatLng !=
+                                                          null)
+                                                        Marker(
+                                                          markerId: const MarkerId(
+                                                              'selected_location'),
+                                                          // position: _selectedLatLng!,
+                                                          position:
+                                                              _selectedLatLng ??
+                                                                  const LatLng(
+                                                                      40.7128,
+                                                                      -74.0060),
+                                                          draggable:
+                                                              isSearchSelected,
+                                                          // 👈 draggable only when true
+                                                          icon: BitmapDescriptor
+                                                              .defaultMarkerWithHue(
+                                                                  BitmapDescriptor
+                                                                      .hueRed),
+                                                          onDragEnd:
+                                                              (newPosition) async {
+                                                            if (isSearchSelected) {
+                                                              setState(() {
+                                                                _selectedLatLng =
+                                                                    newPosition;
+                                                                _latitudeController
+                                                                        .text =
+                                                                    newPosition
+                                                                        .latitude
+                                                                        .toStringAsFixed(
+                                                                            6);
+                                                                _longitudeController
+                                                                        .text =
+                                                                    newPosition
+                                                                        .longitude
+                                                                        .toStringAsFixed(
+                                                                            6);
+                                                              });
+                                                              final controller =
+                                                                  await _mapController
+                                                                      .future;
+                                                              controller.animateCamera(
+                                                                  CameraUpdate
+                                                                      .newLatLng(
+                                                                          newPosition));
+                                                              await _updateAddressFromCoordinates(
+                                                                  newPosition);
+                                                            }
+                                                          },
+                                                        ),
+                                                    },
+
+                                                    onTap: (position) async {
+                                                      if (isSearchSelected) {
+                                                        setState(() {
+                                                          _selectedLatLng =
+                                                              position;
+                                                          _latitudeController
+                                                                  .text =
+                                                              position.latitude
+                                                                  .toStringAsFixed(
+                                                                      6);
+                                                          _longitudeController
+                                                                  .text =
+                                                              position.longitude
+                                                                  .toStringAsFixed(
+                                                                      6);
+                                                        });
+                                                        await _updateAddressFromCoordinates(
+                                                            position);
+                                                      }
+                                                    },
+
+                                                    onCameraMove: (_) {},
+                                                    gestureRecognizers: {
+                                                      Factory<OneSequenceGestureRecognizer>(
+                                                          () =>
+                                                              EagerGestureRecognizer()),
+                                                    },
+                                                  ),
+                                                )
+                                                //     : Image.asset(
+                                                //   'assets/images/google_map.png',
+                                                //   fit: BoxFit.cover,
+                                                // ),
+                                                ),
                                           ),
+
+                                          // Container(
+                                          //   margin: const EdgeInsets.symmetric(horizontal: 8),
+                                          //   child: SizedBox(
+                                          //     height: 250,
+                                          //     width: double.infinity,
+                                          //     child: _isSelectedFromAutocomplete
+                                          //         ? AbsorbPointer(
+                                          //       absorbing: !isSearchSelected, // 👈 disables gestures when false
+                                          //       child: GoogleMap(
+                                          //         zoomControlsEnabled: false,
+                                          //         zoomGesturesEnabled: isSearchSelected,
+                                          //         scrollGesturesEnabled: isSearchSelected,
+                                          //         rotateGesturesEnabled: isSearchSelected,
+                                          //         tiltGesturesEnabled: isSearchSelected,
+                                          //         mapType: MapType.normal,
+                                          //         initialCameraPosition: _selectedLatLng != null
+                                          //             ? CameraPosition(
+                                          //           target: _selectedLatLng!,
+                                          //           zoom: 16,
+                                          //         )
+                                          //             : _defaultLocation,
+                                          //         onMapCreated: (controller) {
+                                          //           _mapController.complete(controller);
+                                          //         },
+                                          //
+                                          //         // 👇 Marker only when isSearchSelected == true
+                                          //         markers: isSearchSelected && _selectedLatLng != null
+                                          //             ? {
+                                          //           Marker(
+                                          //             markerId: const MarkerId('selected_location'),
+                                          //             position: _selectedLatLng!,
+                                          //             draggable: true,
+                                          //             icon: BitmapDescriptor.defaultMarkerWithHue(
+                                          //                 BitmapDescriptor.hueRed),
+                                          //             onDragEnd: (newPosition) async {
+                                          //               if (isSearchSelected) {
+                                          //                 setState(() {
+                                          //                   _selectedLatLng = newPosition;
+                                          //                   _latitudeController.text =
+                                          //                       newPosition.latitude.toStringAsFixed(6);
+                                          //                   _longitudeController.text =
+                                          //                       newPosition.longitude.toStringAsFixed(6);
+                                          //                 });
+                                          //                 final controller = await _mapController.future;
+                                          //                 controller.animateCamera(
+                                          //                     CameraUpdate.newLatLng(newPosition));
+                                          //                 await _updateAddressFromCoordinates(newPosition);
+                                          //               }
+                                          //             },
+                                          //           ),
+                                          //         }
+                                          //             : {},
+                                          //
+                                          //         onTap: (position) async {
+                                          //           if (isSearchSelected) {
+                                          //             setState(() {
+                                          //               _selectedLatLng = position;
+                                          //               _latitudeController.text =
+                                          //                   position.latitude.toStringAsFixed(6);
+                                          //               _longitudeController.text =
+                                          //                   position.longitude.toStringAsFixed(6);
+                                          //             });
+                                          //             await _updateAddressFromCoordinates(position);
+                                          //           }
+                                          //         },
+                                          //         onCameraMove: (_) {},
+                                          //         gestureRecognizers: {
+                                          //           Factory<OneSequenceGestureRecognizer>(
+                                          //                   () => EagerGestureRecognizer()),
+                                          //         },
+                                          //       ),
+                                          //     )
+                                          //         : Image.asset(
+                                          //       'assets/images/google_map.png',
+                                          //       fit: BoxFit.cover,
+                                          //     ),
+                                          //   ),
+                                          // ),
+
+                                          // Container(
+                                          //   margin: const EdgeInsets.symmetric(
+                                          //       horizontal: 8),
+                                          //   child: SizedBox(
+                                          //     height: 250,
+                                          //     width: double.infinity,
+                                          //     child: _isSelectedFromAutocomplete
+                                          //         ? Listener(
+                                          //             onPointerDown: (_) {},
+                                          //             child: GoogleMap(
+                                          //               zoomControlsEnabled:
+                                          //                   false,
+                                          //               zoomGesturesEnabled:
+                                          //                   true,
+                                          //               scrollGesturesEnabled: isSearchSelected,
+                                          //
+                                          //               rotateGesturesEnabled:
+                                          //                   true,
+                                          //               tiltGesturesEnabled:
+                                          //                   true,
+                                          //               mapType: MapType.normal,
+                                          //               initialCameraPosition:
+                                          //                   _selectedLatLng !=
+                                          //                           null
+                                          //                       ? CameraPosition(
+                                          //                           target:
+                                          //                               _selectedLatLng!,
+                                          //                           zoom: 16,
+                                          //                         )
+                                          //                       : _defaultLocation,
+                                          //               onMapCreated:
+                                          //                   (controller) {
+                                          //                 _mapController
+                                          //                     .complete(
+                                          //                         controller);
+                                          //               },
+                                          //               markers: {
+                                          //                 if (_selectedLatLng !=
+                                          //                     null)
+                                          //                   Marker(
+                                          //                     markerId:
+                                          //                         const MarkerId(
+                                          //                             'selected_location'),
+                                          //                     position:
+                                          //                         _selectedLatLng!,
+                                          //                     draggable: true,
+                                          //                     icon: BitmapDescriptor
+                                          //                         .defaultMarkerWithHue(
+                                          //                             BitmapDescriptor
+                                          //                                 .hueRed),
+                                          //                     onDrag:
+                                          //                         (newPosition) {
+                                          //                       setState(() {
+                                          //                         _selectedLatLng =
+                                          //                             newPosition;
+                                          //                       });
+                                          //                     },
+                                          //                     onDragEnd:
+                                          //                         (newPosition) async {
+                                          //                       if (isSearchSelected) {
+                                          //                         setState(() {
+                                          //                           _selectedLatLng =
+                                          //                               newPosition;
+                                          //                           _latitudeController
+                                          //                                   .text =
+                                          //                               newPosition
+                                          //                                   .latitude
+                                          //                                   .toStringAsFixed(6);
+                                          //                           _longitudeController
+                                          //                                   .text =
+                                          //                               newPosition
+                                          //                                   .longitude
+                                          //                                   .toStringAsFixed(6);
+                                          //                         });
+                                          //                         final controller =
+                                          //                             await _mapController
+                                          //                                 .future;
+                                          //                         controller.animateCamera(
+                                          //                             CameraUpdate
+                                          //                                 .newLatLng(
+                                          //                                     newPosition));
+                                          //                         await _updateAddressFromCoordinates(
+                                          //                             newPosition);
+                                          //                       }
+                                          //                     },
+                                          //                   ),
+                                          //               },
+                                          //               onTap: (position) {
+                                          //                 if (!isSearchSelected) {
+                                          //                   setState(() {
+                                          //                     _selectedLatLng =
+                                          //                         position;
+                                          //                     _latitudeController
+                                          //                             .text =
+                                          //                         position
+                                          //                             .latitude
+                                          //                             .toStringAsFixed(
+                                          //                                 6);
+                                          //                     _longitudeController
+                                          //                             .text =
+                                          //                         position
+                                          //                             .longitude
+                                          //                             .toStringAsFixed(
+                                          //                                 6);
+                                          //                   });
+                                          //                   _updateAddressFromCoordinates(
+                                          //                       position);
+                                          //                 }
+                                          //               },
+                                          //               onCameraMove:
+                                          //                   (position) {},
+                                          //               gestureRecognizers: <Factory<
+                                          //                   OneSequenceGestureRecognizer>>{
+                                          //                 Factory<
+                                          //                     OneSequenceGestureRecognizer>(
+                                          //                   () =>
+                                          //                       EagerGestureRecognizer(),
+                                          //                 ),
+                                          //               },
+                                          //             ),
+                                          //           )
+                                          //         : Image.asset(
+                                          //             'assets/images/google_map.png',
+                                          //             fit: BoxFit.cover,
+                                          //           ),
+                                          //   ),
+                                          // ),
                                         ],
+
                                         SizedBox(height: CustomSpacing.four),
                                         Padding(
                                           padding:
@@ -441,8 +753,146 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           ),
                                         ),
                                         SizedBox(
-                                          height: CustomSpacing.four,
+                                          height: CustomSpacing.two,
                                         ),
+                                        Container(
+                                          // color: Colors.black,
+                                          padding: const EdgeInsets.all(8),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              _buildToggleButton(
+                                                title: "Search Address",
+                                                isSelected: !isSearchSelected,
+                                                onTap: () {
+                                                  print(isSearchSelected);
+                                                  setState(() {
+                                                    isSearchSelected = false;
+                                                    _locationNameController
+                                                        .clear();
+                                                    _locationAddress1Controller
+                                                        .clear();
+                                                    _locationAddressController
+                                                        .clear();
+                                                    _locationCityController
+                                                        .clear();
+                                                    _locationStateController
+                                                        .clear();
+                                                    _locationZipCodeController
+                                                        .clear();
+                                                    _locationDescriptionController
+                                                        .clear();
+                                                    markers.clear();
+                                                    _selectedLatLng =
+                                                        null; // Clear selected coordinates
+                                                    _isSelectedFromAutocomplete =
+                                                        false;
+                                                  });
+                                                },
+                                              ),
+                                              // const SizedBox(width: 4),
+                                              _buildToggleButton(
+                                                title: "Manual Entry",
+                                                isSelected: isSearchSelected,
+                                                onTap: () {
+                                                  setState(() {
+                                                    isSearchSelected = true;
+                                                    _locationNameController
+                                                        .clear();
+                                                    _locationAddress1Controller
+                                                        .clear();
+                                                    _locationAddressController
+                                                        .clear();
+                                                    _locationCityController
+                                                        .clear();
+                                                    _locationStateController
+                                                        .clear();
+                                                    _locationZipCodeController
+                                                        .clear();
+                                                    _locationDescriptionController
+                                                        .clear();
+                                                    markers.clear();
+                                                    _selectedLatLng =
+                                                        null; // Clear selected coordinates
+                                                    _isSelectedFromAutocomplete =
+                                                        false;
+                                                  });
+                                                },
+                                              ),
+                                              const SizedBox(width: 15),
+                                              // const Spacer(),
+                                              Tooltip(
+                                                message:
+                                                    'Address Entry Options\nSearch Address:\nUse Google Places to automatically find and validate addresses with precise geocoding.\n\nManual Entry:\nDirectly type in address details when you need more control over the input. Manually set the pin on the map to ensure accurate location.',
+                                                padding:
+                                                    const EdgeInsets.all(10),
+                                                textStyle: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 13),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black87,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                preferBelow: false,
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    // Optional: show a dialog instead of tooltip on tap (for mobile)
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (context) =>
+                                                          AlertDialog(
+                                                        backgroundColor:
+                                                            Colors.black87,
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                        title: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceAround,
+                                                          children: [
+                                                            const Text(
+                                                              'Address Entry Options',
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                            IconButton(
+                                                                color:
+                                                                    Colors.red,
+                                                                onPressed: () {
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .pop();
+                                                                },
+                                                                icon: Icon(Icons
+                                                                    .close))
+                                                          ],
+                                                        ),
+                                                        content: const Text(
+                                                          'Search Address:\nUse Google Places to automatically find and validate addresses with precise geocoding.\n\nManual Entry:\nDirectly type in address details when you need more control over the input. Manually set the pin on the map to ensure accurate location.',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .white70),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: const Icon(
+                                                    Icons.info_outline,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        SizedBox(height: CustomSpacing.four),
+                                        // Location Address
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Autocomplete<Suggestion>(
@@ -502,9 +952,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   }
                                                 },
                                                 decoration: InputDecoration(
-                                                  labelText: LanguageService
-                                                      .getTranslated(context,
-                                                          "addlocation_location_name"),
+                                                  labelText: isSearchSelected
+                                                      ? "Search for Your property"
+                                                      : "Enter address manually",
                                                   border:
                                                       const OutlineInputBorder(),
                                                   prefixIcon:
@@ -521,70 +971,39 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                         selection);
                                                   },
                                           ),
-                                        )
+                                        ),
 
-                                        // Padding(
-                                        //   padding: const EdgeInsets.all(8.0),
-                                        //   child: Autocomplete<Suggestion>(
-                                        //     optionsBuilder: (TextEditingValue
-                                        //         textEditingValue) async {
-                                        //       if (textEditingValue
-                                        //               .text.isEmpty ||
-                                        //           _isSelectedFromAutocomplete) {
-                                        //         return const Iterable<
-                                        //             Suggestion>.empty();
-                                        //       }
-                                        //       final apiProvider =
-                                        //           PlaceApiProvider(
-                                        //               sessionToken);
-                                        //       return await apiProvider
-                                        //           .fetchSuggestions(
-                                        //               textEditingValue.text,
-                                        //               'en');
-                                        //     },
-                                        //     displayStringForOption: (option) =>
-                                        //         option.description,
-                                        //     fieldViewBuilder: (context,
-                                        //         controller,
-                                        //         focusNode,
-                                        //         onFieldSubmitted) {
-                                        //       _locationNameController =
-                                        //           controller;
-                                        //       return TextField(
-                                        //         enabled: !areFieldsDisabled(),
-                                        //         controller: controller,
-                                        //         focusNode: focusNode,
-                                        //         onChanged: (value) {
-                                        //           if (_isSelectedFromAutocomplete) {
-                                        //             _isSelectedFromAutocomplete =
-                                        //                 false;
-                                        //             return;
-                                        //           }
-                                        //           if (value.isEmpty) {
-                                        //             markers.clear();
-                                        //           }
-                                        //         },
-                                        //         decoration: InputDecoration(
-                                        //           labelText: LanguageService
-                                        //               .getTranslated(context,
-                                        //                   "addlocation_location_name"),
-                                        //           border: OutlineInputBorder(),
-                                        //           prefixIcon:
-                                        //               Icon(Icons.search),
-                                        //         ),
-                                        //       );
-                                        //     },
-                                        //     onSelected: areFieldsDisabled()
-                                        //         ? null
-                                        //         : (Suggestion selection) {
-                                        //             _isSelectedFromAutocomplete =
-                                        //                 true;
-                                        //             _handlePlaceSelection(
-                                        //                 selection);
-                                        //           },
-                                        //   ),
-                                        // ),
-                                        ,
+                                        SizedBox(
+                                          height: CustomSpacing.two,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: TextFormField(
+                                            enabled: !areFieldsDisabled(),
+                                            controller:
+                                                _locationAddress1Controller,
+                                            decoration: InputDecoration(
+                                              labelText:
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "addlocation_location_name"),
+                                              border: OutlineInputBorder(),
+                                              // hintText:
+                                              // LanguageService.getTranslated(
+                                              //     context,
+                                              //     "addlocation_address1_hint"),
+                                            ),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return LanguageService
+                                                    .getTranslated(context,
+                                                        "addlocation_address_error");
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
                                         SizedBox(height: CustomSpacing.four),
                                         // Location Address
                                         Padding(
@@ -602,7 +1021,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               hintText:
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "addlocation_address1_hint"),
+                                                      "addlocation_address1"),
                                             ),
                                             validator: (value) {
                                               if (value == null ||
@@ -713,6 +1132,151 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             },
                                           ),
                                         ),
+                                        SizedBox(height: CustomSpacing.three),
+                                        Row(
+                                          children: [
+                                            SizedBox(width: 10),
+                                            // Latitude field
+                                            Expanded(
+                                              child: TextFormField(
+                                                // controller: _latitudeController,
+                                                controller:
+                                                    TextEditingController(
+                                                  text: _selectedLatLng !=
+                                                              null &&
+                                                          _selectedLatLng!
+                                                                  .longitude !=
+                                                              null
+                                                      ? _selectedLatLng!
+                                                          .longitude
+                                                          .toString()
+                                                      : '',
+                                                ),
+                                                decoration: InputDecoration(
+                                                  labelText: 'Latitude',
+                                                  labelStyle: const TextStyle(
+                                                      color: Colors.white70),
+                                                  filled: true,
+                                                  fillColor: Colors.white
+                                                      .withOpacity(0.05),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    borderSide:
+                                                        const BorderSide(
+                                                            color:
+                                                                Colors.white30),
+                                                  ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    borderSide:
+                                                        const BorderSide(
+                                                            color:
+                                                                Colors.white60,
+                                                            width: 1.5),
+                                                  ),
+                                                  contentPadding:
+                                                      const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 10),
+                                                ),
+                                                style: const TextStyle(
+                                                    color: Colors.white),
+                                                readOnly: false,
+                                                onChanged: (value) {
+                                                  final lat =
+                                                      double.tryParse(value);
+                                                  final lng = double.tryParse(
+                                                      _longitudeController
+                                                          .text);
+                                                  if (lat != null &&
+                                                      lng != null) {
+                                                    setState(() {
+                                                      _selectedLatLng =
+                                                          LatLng(lat, lng);
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+// Longitude field
+                                            Expanded(
+                                              child: TextFormField(
+                                                controller:
+                                                    TextEditingController(
+                                                  text: _selectedLatLng !=
+                                                              null &&
+                                                          _selectedLatLng!
+                                                                  .latitude !=
+                                                              null
+                                                      ? _selectedLatLng!
+                                                          .latitude
+                                                          .toString()
+                                                      : '',
+                                                ),
+                                                decoration: InputDecoration(
+                                                  labelText: 'Longitude',
+                                                  labelStyle: const TextStyle(
+                                                      color: Colors.white70),
+                                                  filled: true,
+                                                  fillColor: Colors.white
+                                                      .withOpacity(0.05),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    borderSide:
+                                                        const BorderSide(
+                                                            color:
+                                                                Colors.white70),
+                                                  ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    borderSide:
+                                                        const BorderSide(
+                                                            color: Colors.white,
+                                                            width: 1.5),
+                                                  ),
+                                                  contentPadding:
+                                                      const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 10),
+                                                ),
+                                                style: const TextStyle(
+                                                    color: Colors.white),
+                                                readOnly: false,
+                                                onChanged: (value) {
+                                                  final lat = double.tryParse(
+                                                      _latitudeController.text);
+                                                  final lng =
+                                                      double.tryParse(value);
+                                                  if (lat != null &&
+                                                      lng != null) {
+                                                    setState(() {
+                                                      _selectedLatLng =
+                                                          LatLng(lat, lng);
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(width: 10),
+                                            SizedBox(width: 10),
+                                          ],
+                                        ),
+
                                         SizedBox(height: CustomSpacing.three),
                                         // Optional Details text with divider in row
                                         Padding(
@@ -964,18 +1528,20 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           padding: EdgeInsets.all(0.0),
                                           child: Row(
                                             children: [
-
                                               Checkbox(
                                                 value: addToSOVCheck,
-                                                onChanged: (trialStatus.isNotEmpty && !hasAnyPlan)
+                                                onChanged: (trialStatus
+                                                            .isNotEmpty &&
+                                                        !hasAnyPlan)
                                                     ? null
                                                     : areFieldsDisabled()
-                                                    ? null // Disable checkbox if `areFieldsDisabled` is true
-                                                    : (bool? value) {
-                                                  setState(() {
-                                                    addToSOVCheck = !addToSOVCheck;
-                                                  });
-                                                },
+                                                        ? null // Disable checkbox if `areFieldsDisabled` is true
+                                                        : (bool? value) {
+                                                            setState(() {
+                                                              addToSOVCheck =
+                                                                  !addToSOVCheck;
+                                                            });
+                                                          },
                                                 // onChanged: trialStatus
                                                 //         .isNotEmpty
                                                 //     ? null
@@ -1163,6 +1729,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                         if (_formKey
                                                             .currentState!
                                                             .validate()) {
+                                                          print("object");
                                                           var body =
                                                               _buildRequestBody();
 
@@ -1243,7 +1810,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "sub_account_id": widget.subAccountId,
         "sov_id": null,
         "by_search": false,
-        "location_name": _locationNameController.text,
+        "location_name": _locationAddress1Controller.text,
+        //_locationNameController.text,
         "location_type": [_selectedLocationType],
         "description": _locationDescriptionController.text,
         "address": _locationAddressController.text,
@@ -1251,11 +1819,18 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "state": _locationStateController.text,
         "zip": _locationZipCodeController.text,
         "country": _selectedCountry,
+        "is_autocomplete": _isSelectedFromAutocomplete,
         "new": addToSOVCheck,
         "rented": rented,
         "leased": leased,
-        "latitude": markers.values.first.position.latitude,
-        "longitude": markers.values.first.position.longitude,
+        "latitude": _selectedLatLng!.latitude.toString(),
+        // markers.isNotEmpty ? markers.values.first.position.latitude : "0.0",
+        "longitude": _selectedLatLng!.latitude.toString(),
+        // markers.isNotEmpty
+        //     ? markers.values.first.position.longitude
+        //     : "0.0",
+        // "latitude": markers.values.first.position.latitude ?? "0.0",
+        // "longitude": markers.values.first.position.longitude,
         "user_id": FirebaseAuth.instance.currentUser!.uid,
         "add_to_sov": addToSOVCheck.toString(),
         "tags": "",
@@ -1270,6 +1845,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   Future<void> _handleAddLocation(
       BuildContext context, Map<String, dynamic> body) async {
+    print("object11");
     final locationListProvider =
         Provider.of<LocationListProvider>(context, listen: false);
     await locationListProvider.addLocation(
@@ -1408,6 +1984,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   // Add method to handle place selection
   void _handlePlaceSelection(Suggestion suggestion) async {
     final placeApiProvider = PlaceApiProvider(sessionToken);
+    // Declare geometry variable at the method level
+    Map<String, dynamic>? geometry;
+
     try {
       final placeDetails =
           await placeApiProvider.getPlaceDetails(suggestion.placeId);
@@ -1429,39 +2008,33 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         }
       }
 
+      // Get geometry data
+      geometry = placeDetails['geometry']['location'] as Map<String, dynamic>;
+
       // Update form fields
       setState(() {
-        _locationNameController.text = placeDetails['name'] ?? '';
+        _locationNameController.text = placeDetails['formatted_address'] ??
+            ''; //placeDetails['name'] ?? '';
+        _locationAddress1Controller.text = placeDetails['name'] ?? '';
         _locationAddressController.text =
             placeDetails['formatted_address'] ?? '';
         if (city != null) _locationCityController.text = city;
         if (state != null) _locationStateController.text = state;
-
         if (postalCode != null) _locationZipCodeController.text = postalCode;
+
+        // Store coordinates but DON'T show marker for autocomplete selections
+        _selectedLatLng = LatLng(geometry!['lat'], geometry!['lng']);
       });
+
       if (country != null) _updateSelectedCountry(country);
 
-      // Add marker
-      final geometry = placeDetails['geometry']['location'];
-      final MarkerId markerId = MarkerId("selected_location");
-      final marker = Marker(
-        markerId: markerId,
-        position: LatLng(geometry['lat'], geometry['lng']),
-        infoWindow: InfoWindow(
-          title: placeDetails['name'],
-          snippet: placeDetails['formatted_address'],
-        ),
-      );
-
-      setState(() {
-        markers[markerId] = marker;
-      });
-
-      // Move camera to selected location
-      final GoogleMapController controller = await _mapController.future;
-      controller.animateCamera(CameraUpdate.newLatLng(
-        LatLng(geometry['lat'], geometry['lng']),
-      ));
+      // Move camera to selected location but don't add marker
+      if (geometry != null) {
+        final GoogleMapController controller = await _mapController.future;
+        controller.animateCamera(CameraUpdate.newLatLng(
+          LatLng(geometry!['lat'], geometry!['lng']),
+        ));
+      }
 
       // Set flag to true
       _isSelectedFromAutocomplete = true;
@@ -1473,11 +2046,281 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
   }
 
+  // void _handlePlaceSelection(Suggestion suggestion) async {
+  //   final placeApiProvider = PlaceApiProvider(sessionToken);
+  //   try {
+  //     final placeDetails =
+  //         await placeApiProvider.getPlaceDetails(suggestion.placeId);
+  //
+  //     // Extract address components
+  //     final addressComponents = placeDetails['address_components'] as List;
+  //     String? city, state, country, postalCode;
+  //
+  //     for (var component in addressComponents) {
+  //       final types = component['types'] as List;
+  //       if (types.contains('locality')) {
+  //         city = component['long_name'];
+  //       } else if (types.contains('administrative_area_level_1')) {
+  //         state = component['long_name'];
+  //       } else if (types.contains('country')) {
+  //         country = component['long_name'];
+  //       } else if (types.contains('postal_code')) {
+  //         postalCode = component['long_name'];
+  //       }
+  //     }
+  //
+  //     // Update form fields
+  //     setState(() {
+  //       _locationNameController.text = placeDetails['name'] ?? '';
+  //       _locationAddressController.text =
+  //           placeDetails['formatted_address'] ?? '';
+  //       if (city != null) _locationCityController.text = city;
+  //       if (state != null) _locationStateController.text = state;
+  //
+  //       if (postalCode != null) _locationZipCodeController.text = postalCode;
+  //     });
+  //     if (country != null) _updateSelectedCountry(country);
+  //
+  //     // Add marker
+  //     final geometry = placeDetails['geometry']['location'];
+  //     final MarkerId markerId = MarkerId("selected_location");
+  //     final marker = Marker(
+  //       markerId: markerId,
+  //       draggable: true,
+  //       position: LatLng(geometry['lat'], geometry['lng']),
+  //       infoWindow: InfoWindow(
+  //         title: placeDetails['name'],
+  //         snippet: placeDetails['formatted_address'],
+  //       ),
+  //     );
+  //
+  //     setState(() {
+  //       markers[markerId] = marker;
+  //     });
+  //
+  //     // Move camera to selected location
+  //     final GoogleMapController controller = await _mapController.future;
+  //     controller.animateCamera(CameraUpdate.newLatLng(
+  //       LatLng(geometry['lat'], geometry['lng']),
+  //     ));
+  //
+  //     // Set flag to true
+  //     _isSelectedFromAutocomplete = true;
+  //   } catch (e) {
+  //     // Handle error
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Failed to get place details: $e')),
+  //     );
+  //   }
+  // }
+
   // Method to handle country update
   void _updateSelectedCountry(String country) {
     setState(() {
       _selectedCountry = country;
       countryPickerKey = UniqueKey(); // Update key to force rebuild
     });
+  }
+
+  Future<void> _updateAddressFromCoordinates(LatLng position) async {
+    print(
+        "📍 Coordinates received: ${position.latitude}, ${position.longitude}");
+
+    try {
+      print("🔄 Attempting reverse geocoding...");
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      print(
+          "✅ Reverse geocoding successful, found ${placemarks.length} placemarks");
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks[0];
+        print("🏠 Address components:");
+        print("   Street: ${place}");
+        print("   Locality: ${place.subAdministrativeArea}");
+        print("   Administrative Area: ${place.administrativeArea}");
+        print("   Postal Code: ${place.name}");
+        print("   Country: ${place.country}");
+        print("   Country: ${place}");
+
+        _updateFormFieldsWithPlacemark(place);
+      } else {
+        print("❌ No placemarks found");
+        _setFallbackAddress(position);
+      }
+    } catch (e) {
+      print("❌ Reverse geocoding failed: $e");
+      print("📱 Platform: ${Theme.of(context).platform}");
+
+      // Use fallback address with coordinates
+      _setFallbackAddress(position);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Address lookup unavailable. Using coordinates as location reference.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _setFallbackAddress(LatLng position) {
+    setState(() {
+      _locationAddressController.text =
+          "Coordinates: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+      _locationCityController.text = "Drag pin to set address";
+      _locationStateController.text = "Drag pin to set state";
+      _locationZipCodeController.text = "Drag pin to set zip code";
+    });
+  }
+
+  void _updateFormFieldsWithPlacemark(Placemark place) {
+    setState(() {
+      // Build address from available components
+      String address = "";
+      if (place.street != null && place.street!.isNotEmpty) {
+        address = place.street!;
+        if (place.subThoroughfare != null &&
+            place.subThoroughfare!.isNotEmpty) {
+          address = "$address";
+        }
+      }
+
+      // _locationAddress1Controller.text = "${place.name}";
+      _locationAddressController.text =
+          "${place.name ?? ""}${place.subLocality != null && place.subLocality!.isNotEmpty ? ", ${place.subLocality}" : ""}"
+          "${place.locality != null && place.locality!.isNotEmpty ? ", ${place.locality}" : ""}"
+          "${place.administrativeArea != null && place.administrativeArea!.isNotEmpty ? ", ${place.administrativeArea}" : ""}"
+          "${place.postalCode != null && place.postalCode!.isNotEmpty ? ", ${place.postalCode}" : ""}"
+          "${place.country != null && place.country!.isNotEmpty ? ", ${place.country}" : ""}";
+      _locationNameController.text =
+          "${place.name ?? ""}${place.subLocality != null && place.subLocality!.isNotEmpty ? ", ${place.subLocality}" : ""}"
+          "${place.locality != null && place.locality!.isNotEmpty ? ", ${place.locality}" : ""}"
+          "${place.administrativeArea != null && place.administrativeArea!.isNotEmpty ? ", ${place.administrativeArea}" : ""}"
+          "${place.postalCode != null && place.postalCode!.isNotEmpty ? ", ${place.postalCode}" : ""}"
+          "${place.country != null && place.country!.isNotEmpty ? ", ${place.country}" : ""}";
+
+      _locationCityController.text = place.locality ?? "City not available";
+      _locationStateController.text =
+          place.administrativeArea ?? "State not available";
+      _locationZipCodeController.text = place.postalCode ?? "Zip not available";
+
+      if (place.country != null && place.country!.isNotEmpty) {
+        _selectedCountry = place.country!;
+      }
+    });
+//, Jayanagar, Bengaluru, Karnataka 560041, India
+    // Update country picker if country changed
+    if (place.country != null && place.country!.isNotEmpty) {
+      _updateSelectedCountry(place.country!);
+    }
+  }
+
+  // Future<void> _updateAddressFromCoordinates(LatLng position) async {
+  //   try {
+  //     List<Placemark> placemarks = await placemarkFromCoordinates(
+  //       position.latitude,
+  //       position.longitude,
+  //     );
+  //
+  //     if (placemarks.isNotEmpty) {
+  //       final place = placemarks.first;
+  //
+  //       setState(() {
+  //         _locationAddressController.text =
+  //             "${place.street ?? ''} ${place.subThoroughfare ?? ''}".trim();
+  //         if (_locationAddressController.text.endsWith(',')) {
+  //           _locationAddressController.text = _locationAddressController.text
+  //               .substring(0, _locationAddressController.text.length - 1);
+  //         }
+  //         _locationCityController.text = place.locality ?? '';
+  //         _locationStateController.text = place.administrativeArea ?? '';
+  //         _locationZipCodeController.text = place.postalCode ?? '';
+  //         _selectedCountry = place.country ?? _selectedCountry;
+  //       });
+  //
+  //       // Update country if needed
+  //       if (place.country != null && place.country!.isNotEmpty) {
+  //         _updateSelectedCountry(place.country!);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print("Reverse geocoding failed: $e");
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Failed to get address: $e')),
+  //     );
+  //   }
+  // }
+
+  // Future<void> _updateAddressFromCoordinates(LatLng position) async {
+  //   try {
+  //     List<Placemark> placemarks = await placemarkFromCoordinates(
+  //       position.latitude,
+  //       position.longitude,
+  //     );
+  //
+  //     if (placemarks.isNotEmpty) {
+  //       final place = placemarks.first;
+  //
+  //       setState(() {
+  //         _locationAddressController.text =
+  //             "${place.street ?? ''}, ${place.subLocality ?? ''}, ${place.locality ?? ''}";
+  //         _locationCityController.text = place.locality ?? '';
+  //         _locationStateController.text = place.administrativeArea ?? '';
+  //         _locationZipCodeController.text = place.postalCode ?? '';
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print("Reverse geocoding failed: $e");
+  //   }
+  // }
+
+  Widget _buildToggleButton({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFF90CAF9) : Colors.black26,
+          borderRadius: BorderRadius.only(
+            topLeft: !isSearchSelected ?Radius.circular(1):Radius.circular(8),
+            bottomLeft: !isSearchSelected ?Radius.circular(1):Radius.circular(8),
+            topRight: isSearchSelected ?Radius.circular(8):Radius.circular(1),
+            bottomRight: isSearchSelected ?Radius.circular(8):Radius.circular(1),
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoButton() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.black87,
+        shape: BoxShape.circle,
+      ),
+      padding: const EdgeInsets.all(6),
+      child: const Icon(
+        Icons.info_outline,
+        color: Colors.white,
+        size: 16,
+      ),
+    );
   }
 }

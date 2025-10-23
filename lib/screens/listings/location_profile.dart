@@ -1717,10 +1717,15 @@ class _LocationProfileState extends State<LocationProfile>
                 ),
                 SizedBox(height: 10),
                 DefaultTabController(
+
                   length: 4, // Number of tabs
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TabBar(
+
+                    isScrollable: true,
                         onTap: (index) {
                           if (!mounted) return;
                           if (index == 0) {
@@ -1739,12 +1744,18 @@ class _LocationProfileState extends State<LocationProfile>
                             text: 'Gallery',
                           ),
                           Tab(
-                            text: 'Active Log',
+                            text: 'Activity Log',
                           ),
                           Tab(
                             text: 'Comments',
                           ),
+                          // Align tabs to the left
                         ],
+
+                        labelPadding: EdgeInsets.only(left: 0, right: 30),
+
+                        automaticIndicatorColorAdjustment: true,
+                        // alignment: TabAlignment.start,
                       ),
                       Container(
                         constraints: BoxConstraints(
@@ -3273,15 +3284,23 @@ class _LocationProfileState extends State<LocationProfile>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              log.action.toString() ?? "",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    color: Colors.white,
-                                                    fontSize: 14,
-                                                  ),
+                                            Container(
+                                              width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                                  0.7,
+                                              child: Text(
+                                                log.action.toString() ?? "",
+                                                maxLines: 3,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: Colors.white,
+                                                      fontSize: 14,
+                                                    ),
+                                              ),
                                             ),
                                             const SizedBox(height: 6),
                                             Column(

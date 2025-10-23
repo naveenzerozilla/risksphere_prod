@@ -5,7 +5,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../models/my_location_list_model.dart';
 
 class LocationTable extends StatefulWidget {
-  final List<MyLocation> locations;
+  final List<MyLocation>? locations;
 
   LocationTable({required this.locations});
 
@@ -21,8 +21,8 @@ class _LocationTableState extends State<LocationTable> {
   @override
   void initState() {
     super.initState();
-    if (widget.locations.isNotEmpty) {
-      hazardColumns = widget.locations.first.hazard?.keys.toList() ?? [];
+    if (widget.locations!.isNotEmpty) {
+      hazardColumns = widget.locations!.first.hazard?.keys.toList() ?? [];
 
       print(
           "Hazard Columns Found: $hazardColumns"); // Debugging print statement
@@ -37,11 +37,12 @@ class _LocationTableState extends State<LocationTable> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.locations.isEmpty) {
+    if (widget.locations == null || widget.locations!.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
+
     final int visibleHazardsCount = hazardColumns
         .where((hazard) => columnVisibility[hazard] ?? true)
         .length;
@@ -226,7 +227,7 @@ class _LocationTableState extends State<LocationTable> {
                     );
                   }).toList(),
                 ],
-                rows: widget.locations.map((location) {
+                rows: widget.locations!.map((location) {
                   return DataRow(
                     cells: [
                       DataCell(

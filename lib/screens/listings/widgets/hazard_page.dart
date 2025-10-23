@@ -82,7 +82,7 @@ class HazardsSectionPage extends StatelessWidget {
 
               final color = (intRating >= 0 && intRating < scoreColors.length)
                   ? scoreColors[intRating]
-                  : Colors.grey;
+                  : Colors.green;
 
               return ExpansionTile(
                 shape: RoundedRectangleBorder(
@@ -105,8 +105,8 @@ class HazardsSectionPage extends StatelessWidget {
                         color: color,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        rating != 0 ? rating.toString() : 'N/A',
+                      child:  Text(
+                        rating.toString().isEmpty ? '5' : (rating.toString() != '0' ? rating.toString() : 'N/A'),
                         style: typography.Body2.copyWith(
                           color: rating == 3
                               ? Colors.black
