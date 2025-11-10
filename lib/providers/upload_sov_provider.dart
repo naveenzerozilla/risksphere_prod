@@ -276,39 +276,54 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
   Future<void> submitSovHeadersAccounts(
-      BuildContext context,
-      String tempId,
-      String docUrl,
-      List<Map<String, dynamic>> fields,
-      String subAccountName) async {
+    BuildContext context,
+    String tempId,
+    String docUrl,
+    List<Map<String, dynamic>> fields,
+    String subAccountName,
+  ) async {
     try {
       bool hasUnmappedFields =
           fields.any((field) => field['status'] == 'Unmapped');
 
       if (hasUnmappedFields) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("There are unmapped fields"),
-          ),
+          const SnackBar(content: Text("There are unmapped fields")),
         );
         return;
       }
 
-      List<Map<String, String>> targetHeaders = [];
+      List<Map<String, dynamic>> targetHeaders = [];
       List<String> headersList = [];
 
       for (var field in fields) {
-        String matchedField = field['spreadsheet'] ?? '';
-        targetHeaders.add({field['target']: matchedField});
-        headersList.add(field['target']);
+        final String targetName = field['target'] ?? '';
+        final String spreadsheetName = field['spreadsheet'] ?? '';
+        final String id = field['id'] ?? '${targetName}_ignore';
+        final int percentage = field['percentage'] ?? 100;
+        var isDataParam = field['is_data_parameter'] == true ? true : false;
+
+        // Build structure like:
+        // { "Location Name": { "id": "...", "name": "...", "percentage": 100 } }
+        final Map<String, dynamic> headerEntry = {
+          targetName: {
+            "id": id,
+            "name": spreadsheetName.isNotEmpty ? spreadsheetName : "Ignore",
+            "percentage": percentage,
+            if (isDataParam) "is_data_parameter": true,
+          },
+        };
+
+        targetHeaders.add(headerEntry);
+        headersList.add(targetName);
       }
 
       final body = {
-        'data': {
-          'temp_id': tempId,
-          'headers': headersList,
-          'targetheaders': targetHeaders,
-          'url': docUrl,
+        "data": {
+          "temp_id": tempId,
+          "headers": headersList,
+          "targetheaders": targetHeaders,
+          "url": docUrl,
         }
       };
 
@@ -318,27 +333,90 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
 
       if (response['message'] != null) {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => LocationDataScreen(
-            processId: response['process_id'] ?? "",
-            tempId: tempId,
-            subAccountName: subAccountName,
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => LocationDataScreen(
+              processId: response['process_id'] ?? "",
+              tempId: tempId,
+              subAccountName: subAccountName,
+            ),
           ),
-        ));
+        );
       } else {
         throw Exception('Failed to submit data');
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Submission failed"),
-        ),
+        const SnackBar(content: Text("Submission failed")),
       );
     } finally {
       isLoading = false;
     }
   }
 
+  // Future<void> submitSovHeadersAccounts(
+  //     BuildContext context,
+  //     String tempId,
+  //     String docUrl,
+  //     List<Map<String, dynamic>> fields,
+  //     String subAccountName) async {
+  //   try {
+  //     bool hasUnmappedFields =
+  //         fields.any((field) => field['status'] == 'Unmapped');
+  //
+  //     if (hasUnmappedFields) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text("There are unmapped fields"),
+  //         ),
+  //       );
+  //       return;
+  //     }
+  //
+  //     List<Map<String, String>> targetHeaders = [];
+  //     List<String> headersList = [];
+  //
+  //     for (var field in fields) {
+  //       String matchedField = field['spreadsheet'] ?? '';
+  //       targetHeaders.add({field['target']: matchedField});
+  //       headersList.add(field['target']);
+  //     }
+  //
+  //     final body = {
+  //       'data': {
+  //         'temp_id': tempId,
+  //         'headers': headersList,
+  //         'targetheaders': targetHeaders,
+  //         'url': docUrl,
+  //       }
+  //     };
+  //
+  //     isLoading = true;
+  //     ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT);
+  //     var response = await apiService.post(body);
+  //     log(response.toString());
+  //
+  //     if (response['message'] != null) {
+  //       Navigator.of(context).push(MaterialPageRoute(
+  //         builder: (context) => LocationDataScreen(
+  //           processId: response['process_id'] ?? "",
+  //           tempId: tempId,
+  //           subAccountName: subAccountName,
+  //         ),
+  //       ));
+  //     } else {
+  //       throw Exception('Failed to submit data');
+  //     }
+  //   } catch (error) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text("Submission failed"),
+  //       ),
+  //     );
+  //   } finally {
+  //     isLoading = false;
+  //   }
+  // }
   Future<void> submitSovHeadersSubAccounts(
       BuildContext context,
       String tempId,
@@ -347,38 +425,39 @@ class UploadSovProvider extends ChangeNotifier {
       String accountId,
       String accountName,
       String subAccountName,
-      String subAccountId) async {
+      String subAccountId,
+      ) async {
     try {
-      bool hasUnmappedFields =
-          fields.any((field) => field['status'] == 'Unmapped');
-
-      // if (hasUnmappedFields) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //       content: Text(
-      //         "There are unmapped fields",
-      //         style: CustomTypography(context).Body1,
-      //       ),
-      //     ),
-      //   );
-      //   return;
-      // }
-
-      List<Map<String, String>> targetHeaders = [];
+      List<Map<String, dynamic>> targetHeaders = [];
       List<String> headersList = [];
 
       for (var field in fields) {
-        String matchedField = field['spreadsheet'] ?? '';
-        targetHeaders.add({field['target']: matchedField});
-        headersList.add(field['target']);
+        final String targetName = field['target'] ?? '';
+        final String spreadsheetName = field['spreadsheet'] ?? '';
+        final String id = field['id'] ?? targetName;
+        final int percentage = field['percentage'] ?? 100;
+        final bool isDataParam = field['is_data_parameter'] == true;
+
+        // Build header entry, including 'is_data_parameter' only if true
+        final Map<String, dynamic> headerEntry = {
+          targetName: {
+            "id": id,
+            "name": spreadsheetName.isNotEmpty ? spreadsheetName : "Ignore",
+            "percentage": percentage,
+            if (isDataParam) "is_data_parameter": true,
+          },
+        };
+
+        targetHeaders.add(headerEntry);
+        headersList.add(targetName);
       }
 
       final body = {
-        'data': {
-          'temp_id': tempId,
-          'headers': headersList,
-          'targetheaders': targetHeaders,
-          'url': docUrl,
+        "data": {
+          "temp_id": tempId,
+          "headers": headersList,
+          "targetheaders": targetHeaders,
+          "url": docUrl,
         }
       };
 
@@ -389,30 +468,105 @@ class UploadSovProvider extends ChangeNotifier {
 
       if (response['message'] != null) {
         Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LocationDataScreen(
-                processId: response['process_id'] ?? "",
-                tempId: tempId,
-                accountId: accountId,
-                accountName: accountName,
-                subAccountName: subAccountName,
-                subAccountId: subAccountId,
-              ),
-            ));
+          context,
+          MaterialPageRoute(
+            builder: (context) => LocationDataScreen(
+              processId: response['process_id'] ?? "",
+              tempId: tempId,
+              accountId: accountId,
+              accountName: accountName,
+              subAccountName: subAccountName,
+              subAccountId: subAccountId,
+            ),
+          ),
+        );
       } else {
         throw Exception('Failed to submit data');
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Submission failed"),
-        ),
+        const SnackBar(content: Text("Submission failed")),
       );
     } finally {
       isLoading = false;
     }
   }
+
+
+  // Future<void> submitSovHeadersSubAccounts(
+  //     BuildContext context,
+  //     String tempId,
+  //     String docUrl,
+  //     List<Map<String, dynamic>> fields,
+  //     String accountId,
+  //     String accountName,
+  //     String subAccountName,
+  //     String subAccountId) async {
+  //   try {
+  //     bool hasUnmappedFields =
+  //         fields.any((field) => field['status'] == 'Unmapped');
+  //
+  //     // if (hasUnmappedFields) {
+  //     //   ScaffoldMessenger.of(context).showSnackBar(
+  //     //     SnackBar(
+  //     //       content: Text(
+  //     //         "There are unmapped fields",
+  //     //         style: CustomTypography(context).Body1,
+  //     //       ),
+  //     //     ),
+  //     //   );
+  //     //   return;
+  //     // }
+  //
+  //     List<Map<String, String>> targetHeaders = [];
+  //     List<String> headersList = [];
+  //
+  //     for (var field in fields) {
+  //       String matchedField = field['spreadsheet'] ?? '';
+  //       targetHeaders.add({field['target']: matchedField});
+  //       headersList.add(field['target']);
+  //     }
+  //
+  //     final body = {
+  //       'data': {
+  //         'temp_id': tempId,
+  //         'headers': headersList,
+  //         'targetheaders': targetHeaders,
+  //         'url': docUrl,
+  //       }
+  //     };
+  //
+  //     isLoading = true;
+  //     ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT);
+  //     var response = await apiService.post(body);
+  //     log(response.toString());
+  //
+  //     if (response['message'] != null) {
+  //       Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => LocationDataScreen(
+  //               processId: response['process_id'] ?? "",
+  //               tempId: tempId,
+  //               accountId: accountId,
+  //               accountName: accountName,
+  //               subAccountName: subAccountName,
+  //               subAccountId: subAccountId,
+  //             ),
+  //           ));
+  //     } else {
+  //       throw Exception('Failed to submit data');
+  //     }
+  //   } catch (error) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text("Submission failed"),
+  //       ),
+  //     );
+  //   } finally {
+  //     isLoading = false;
+  //   }
+  // }
 
   Future<Map<String, dynamic>> fetchLocations(
       BuildContext context, String processId) async {

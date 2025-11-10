@@ -209,6 +209,7 @@ class AuthNotifier extends ChangeNotifier {
 
     notifyListeners();
   }
+
   // Future<void> fetchCompanies(String name) async {
   //   print("Fetching: $name");
   //
@@ -355,7 +356,7 @@ class AuthNotifier extends ChangeNotifier {
         });
         return;
       } else if (isAdminVerified.toLowerCase() == "false" ||
-          isAdminVerified.length.toString() == "0") {
+          isAdminVerified.isEmpty) {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
@@ -510,6 +511,7 @@ class AuthNotifier extends ChangeNotifier {
       print("Error signing in: $e");
     }
   }
+
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
       _isSigningIn = true;

@@ -10,10 +10,12 @@ class AppConstant {
   static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies';
 
   static String get PAYMNET_GATEWAY_URL => '$baseURL/pricing/payment_session';
+
   static String get PAYMNET_DETAILS_URL => '$baseURL/pricing/session_status';
 
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
       '$baseURL/user_management_new/companies_list';
+
   static String get SWITCH_INDIVIDUAL_URL =>
       '$baseURL/user_management_new/last_updated_role';
 
@@ -126,7 +128,10 @@ class AppConstant {
   static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
 
   static String get GET_PRICING_LIST => '$baseURL/pricing';
-  static String get GET_Transaction_LIST => '$baseURL/pricing/transactions/details';
+
+  static String get GET_Transaction_LIST =>
+      '$baseURL/pricing/transactions/details';
+
   static String get GET_INVOICE_LIST => '$baseURL/pricing/payment/details';
 
   static String get RENAME_ACCOUNT => '$baseURL/accounts';
@@ -196,10 +201,11 @@ class AppConstant {
   static String get GET_SOV_LIST => '$baseURL/accounts';
 
   static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/accessible_sov';
+
   static String get GET_SEARCH_LIST_BY_SOV => '$baseURL/user_management_new';
 
-
   static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations/sov';
+
   static String get SHARE_SOV_LIST => '$baseURL/locations/share_sov';
 
   static String get RENAME_SOV => '$baseURL/accounts';
@@ -220,12 +226,14 @@ class AppConstant {
   static String get ADD_LOCATION => '$baseURL/accounts';
 
   static String get MY_LOCATION => '$baseURL/locations';
+
   static String get ADD_COMMENT => '$MY_LOCATION/update_location_comment';
 
   static String get ADD_TO_SOV => '$baseURL/locations/add_to_sov';
 
   // Location Profile
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
+
   static String get SOV_COMPLETE_STATUS => '$baseURL/locations/location_status';
 
   static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW =>
@@ -297,13 +305,20 @@ class AppConstant {
 
   static String get DELETE_SUB_ACCOUNT =>
       '$baseURL/locations/delete_subaccount?';
-  static String get DELETE_SOV_ACCOUNT =>
-      '$baseURL/locations/delete_sov?';
+
+  static String get DELETE_SOV_ACCOUNT => '$baseURL/locations/delete_sov?';
 
   static String get GET_DATA_PARAMETERS =>
       '$baseURL/data_categories/subaccountparameter/';
+
   static String get GET_LOCATION_PARAMETERS =>
       '$baseURL/data_categories/locationparameter/';
-  static String get GET_HAZARD_LIST =>
-      '$baseURL/vendor_management/hazard_list';
+
+  static String get GET_SOV_PARAMETERS =>
+      '$baseURL/data_categories/sovparameter/';
+
+  static String get GET_CAMPUS_PARAMETERS =>
+      '$baseURL/data_categories/campusparameter/';
+
+  static String get GET_HAZARD_LIST => '$baseURL/vendor_management/hazard_list';
 }

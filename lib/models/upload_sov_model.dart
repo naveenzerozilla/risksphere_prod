@@ -142,13 +142,15 @@ class Match {
   int? percentage;
   String? name;
   String? id;
+  bool? is_data_parameter;
 
-  Match({this.percentage, this.name, this.id});
+  Match({this.percentage, this.name, this.id,this.is_data_parameter});
 
   Match.fromJson(Map<String, dynamic> json) {
     percentage = json['percentage'];
     name = json['name'];
     id = json['id'];
+    is_data_parameter = json['is_data_parameter'];
   }
 
   Map<String, dynamic> toJson() {
@@ -156,12 +158,13 @@ class Match {
     data['percentage'] = percentage;
     data['name'] = name;
     data['id'] = id;
+    data['is_data_parameter'] = is_data_parameter;
     return data;
   }
 
   @override
   String toString() {
-    return 'Match(percentage: $percentage, name: $name, id: $id)';
+    return 'Match(percentage: $percentage, name: $name, id: $id, is_data_parameter: $is_data_parameter)';
   }
 }
 

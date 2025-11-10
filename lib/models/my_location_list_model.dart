@@ -14,18 +14,27 @@ class MyLocationModel {
   List<MyLocation>? results;
   List<MyLocation>? filterByLocationResult;
   GraphData? graphData;
+  String? message;
+  String? locationId;
+  List<LocationComments>? locationComments;
+  List<ActivityLogs>? activityLogs;
 
-  MyLocationModel(
-      {this.totalRecords,
-      this.totalCertified,
-      this.page,
-      this.pageSize,
-      this.isConflict,
-      this.isHazardCanStart,
-      this.isAnyHazardProcessing,
-      this.results,
-      this.filterByLocationResult,
-      this.graphData});
+  MyLocationModel({
+    this.totalRecords,
+    this.totalCertified,
+    this.page,
+    this.pageSize,
+    this.isConflict,
+    this.isHazardCanStart,
+    this.isAnyHazardProcessing,
+    this.results,
+    this.filterByLocationResult,
+    this.graphData,
+    this.message,
+    this.locationId,
+    this.locationComments,
+    this.activityLogs,
+  });
 
   MyLocationModel.fromJson(Map<String, dynamic> json) {
     totalRecords = json['totalRecords'];
@@ -50,6 +59,20 @@ class MyLocationModel {
     graphData = json['graph_data'] != null
         ? new GraphData.fromJson(json['graph_data'])
         : null;
+    message = json['message'];
+    locationId = json['location_id'];
+    if (json['location_comments'] != null) {
+      locationComments = <LocationComments>[];
+      json['location_comments'].forEach((v) {
+        locationComments!.add(new LocationComments.fromJson(v));
+      });
+    }
+    if (json['activity_logs'] != null) {
+      activityLogs = <ActivityLogs>[];
+      json['activity_logs'].forEach((v) {
+        activityLogs!.add(new ActivityLogs.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -69,6 +92,17 @@ class MyLocationModel {
           filterByLocationResult!.map((v) => v.toJson()).toList();
     }
     data['graph_data'] = this.graphData!.toJson();
+    data['message'] = this.message;
+    data['location_id'] = this.locationId;
+    if (this.locationComments != null) {
+      data['location_comments'] =
+          this.locationComments!.map((v) => v.toJson()).toList();
+    }
+    if (this.activityLogs != null) {
+      data['activity_logs'] =
+          this.activityLogs!.map((v) => v.toJson()).toList();
+    }
+
     return data;
   }
 
@@ -91,7 +125,8 @@ class MyLocation with ClusterItem {
   Map<String, HazardDetails>? hazard; // Updated to hold vendor-specific data
   String? geocodedAddress;
   List<LocationComments>? locationComments;
-  List<ActivityLogs>? activityLogs;List<AllActivityLogs>? allActivityLogs;
+  List<ActivityLogs>? activityLogs;
+  List<AllActivityLogs>? allActivityLogs;
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
@@ -111,7 +146,7 @@ class MyLocation with ClusterItem {
       this.geocodedAddress,
       this.locationComments,
       this.activityLogs,
-        this.allActivityLogs,
+      this.allActivityLogs,
       this.subdestinations,
       this.screenshots,
       this.isHazardProcess,
@@ -147,7 +182,9 @@ class MyLocation with ClusterItem {
     }
     if (json['all_activity_logs'] != null) {
       allActivityLogs = <AllActivityLogs>[];
-      json['all_activity_logs'].forEach((v) { allActivityLogs!.add(new AllActivityLogs.fromJson(v)); });
+      json['all_activity_logs'].forEach((v) {
+        allActivityLogs!.add(new AllActivityLogs.fromJson(v));
+      });
     }
 
     defaultConflictindex = json['default_conflict_index'] is int
@@ -220,7 +257,8 @@ class MyLocation with ClusterItem {
           this.activityLogs!.map((v) => v.toJson()).toList();
     }
     if (this.allActivityLogs != null) {
-      data['all_activity_logs'] = this.allActivityLogs!.map((v) => v.toJson()).toList();
+      data['all_activity_logs'] =
+          this.allActivityLogs!.map((v) => v.toJson()).toList();
     }
     if (hazard != null) {
       data['hazard'] =
@@ -251,6 +289,7 @@ class MyLocation with ClusterItem {
         finalAddress?.longitude ?? 0.0,
       );
 }
+
 class AllActivityLogs {
   Null? actorUserId;
   String? eventId;
@@ -260,9 +299,18 @@ class AllActivityLogs {
   String? action;
   String? targetId;
   Event? event;
+
   // After? after;
 
-  AllActivityLogs({this.actorUserId, this.eventId, this.at, this.companyId, this.targetType, this.action, this.targetId, this.event});
+  AllActivityLogs(
+      {this.actorUserId,
+      this.eventId,
+      this.at,
+      this.companyId,
+      this.targetType,
+      this.action,
+      this.targetId,
+      this.event});
 
   AllActivityLogs.fromJson(Map<String, dynamic> json) {
     actorUserId = json['actor_user_id'];
@@ -296,6 +344,7 @@ class AllActivityLogs {
     return data;
   }
 }
+
 class Params {
   String? locationId;
 
@@ -311,6 +360,7 @@ class Params {
     return data;
   }
 }
+
 class Event {
   Params? params;
   Null? timestamp;
@@ -318,7 +368,8 @@ class Event {
   Event({this.params, this.timestamp});
 
   Event.fromJson(Map<String, dynamic> json) {
-    params = json['params'] != null ? new Params.fromJson(json['params']) : null;
+    params =
+        json['params'] != null ? new Params.fromJson(json['params']) : null;
     timestamp = json['timestamp'];
   }
 
@@ -1014,46 +1065,47 @@ class FinalAddress {
   String? countryIsoCode;
   double? longitude;
   bool? rented;
-  String ? companyName;
+  String? companyName;
 
-  FinalAddress({
-    this.country,
-    this.locationIdForRef,
-    this.autoCertified,
-    this.city,
-    this.ownerId,
-    this.latitude,
-    this.description,
-    this.percent,
-    this.subAccountId,
-    this.locationId,
-    this.score,
-    this.sovName,
-    this.accountName,
-    this.placeTypes,
-    this.placeId,
-    this.ownerEmail,
-    this.zip,
-    this.owner,
-    this.address,
-    this.ownerName,
-    this.subAccountName,
-    this.companyId,
-    this.lineNo,
-    this.locationType,
-    this.sovId,
-    this.locationName,
-    this.accountId,
-    this.countryIsoCode,
-    this.longitude,
-    this.state,
-    this.campusId,
-    this.campusKey,
-    this.rented,
-    this.companyName
-  });
+  FinalAddress(
+      {this.campusId,
+      this.campusKey,
+      this.country,
+      this.locationIdForRef,
+      this.autoCertified,
+      this.city,
+      this.ownerId,
+      this.latitude,
+      this.description,
+      this.percent,
+      this.subAccountId,
+      this.locationId,
+      this.score,
+      this.sovName,
+      this.accountName,
+      this.placeTypes,
+      this.placeId,
+      this.ownerEmail,
+      this.zip,
+      this.owner,
+      this.address,
+      this.ownerName,
+      this.subAccountName,
+      this.companyId,
+      this.lineNo,
+      this.locationType,
+      this.sovId,
+      this.locationName,
+      this.accountId,
+      this.countryIsoCode,
+      this.longitude,
+      this.state,
+      this.rented,
+      this.companyName});
 
   FinalAddress.fromJson(Map<String, dynamic> json) {
+    campusId = json['campus_id'];
+    campusKey = json['campus_key'];
     country = json['country'];
     locationIdForRef = json['location_id_for_ref'];
     autoCertified = json['auto_certified'];
@@ -1090,14 +1142,15 @@ class FinalAddress {
     countryIsoCode = json['country_iso_code'];
     longitude = json['longitude']?.toDouble();
     state = json['state'];
-    campusId = json['campus_name'];
-    campusKey = json['campus_id'];
+
     rented = json['rented'];
-    companyName=json['company_name'];
+    companyName = json['company_name'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+    data['campus_id'] = campusId;
+    data['campus_name'] = campusKey;
     data['country'] = country;
     data['location_id_for_ref'] = locationIdForRef;
     data['auto_certified'] = autoCertified;
@@ -1130,10 +1183,9 @@ class FinalAddress {
     data['country_iso_code'] = countryIsoCode;
     data['longitude'] = longitude;
     data['state'] = state;
-    data['campus_name'] = campusId;
-    data['campus_id'] = campusKey;
+
     data['rented'] = rented;
-    data['company_name']=companyName;
+    data['company_name'] = companyName;
     return data;
   }
 
@@ -1199,48 +1251,128 @@ class DataCompleteness {
 class GraphData {
   List<SovResults>? sovResults;
   GeocodeCounts? geocodeCounts;
-  GlobalPerilCounts? globalPerilCounts;
-  GlobalValueCounts? globalValueCounts;
+  GlobalPerilCounts? globalSovPerilCounts;
+  PdValues? pdValues;
 
   GraphData(
       {this.sovResults,
       this.geocodeCounts,
-      this.globalPerilCounts,
-      this.globalValueCounts});
+      this.globalSovPerilCounts,
+      this.pdValues});
 
   GraphData.fromJson(Map<String, dynamic> json) {
     if (json['sov_results'] != null) {
       sovResults = <SovResults>[];
       json['sov_results'].forEach((v) {
-        sovResults!.add(new SovResults.fromJson(v));
+        sovResults!.add(SovResults.fromJson(v));
       });
     }
+
     geocodeCounts = json['geocode_counts'] != null
-        ? new GeocodeCounts.fromJson(json['geocode_counts'])
+        ? GeocodeCounts.fromJson(json['geocode_counts'])
         : null;
-    globalPerilCounts = json['global_peril_counts'] != null
-        ? new GlobalPerilCounts.fromJson(json['global_peril_counts'])
+
+    globalSovPerilCounts = json['global_sov_peril_counts'] != null
+        ? GlobalPerilCounts.fromJson(json['global_sov_peril_counts'])
         : null;
-    globalValueCounts = json['global_value_counts'] != null
-        ? new GlobalValueCounts.fromJson(json['global_value_counts'])
-        : null;
+    pdValues =
+        json['pd_values'] != null ? PdValues.fromJson(json['pd_values']) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.sovResults != null) {
-      data['sov_results'] = this.sovResults!.map((v) => v.toJson()).toList();
+    final Map<String, dynamic> data = {};
+    if (sovResults != null) {
+      data['sov_results'] = sovResults!.map((v) => v.toJson()).toList();
     }
-    if (this.geocodeCounts != null) {
-      data['geocode_counts'] = this.geocodeCounts!.toJson();
+    if (geocodeCounts != null) {
+      data['geocode_counts'] = geocodeCounts!.toJson();
     }
-    if (this.globalPerilCounts != null) {
-      data['global_peril_counts'] = this.globalPerilCounts!.toJson();
+    if (globalSovPerilCounts != null) {
+      data['global_sov_peril_counts'] = globalSovPerilCounts!.toJson();
     }
-    if (this.globalValueCounts != null) {
-      data['global_value_counts'] = this.globalValueCounts!.toJson();
+    if (pdValues != null) {
+      data['pd_values'] = pdValues!.toJson();
     }
     return data;
+  }
+}
+
+class PdValues {
+  Map<String, PdScore>? byGeocodeScore;
+  Map<String, PdScore>? byOverallScore;
+
+  PdValues({this.byGeocodeScore, this.byOverallScore});
+
+  factory PdValues.fromJson(Map<String, dynamic> json) {
+    return PdValues(
+      byGeocodeScore: json['by_geocode_score'] != null
+          ? Map<String, PdScore>.from(
+              json['by_geocode_score'].map(
+                (k, v) => MapEntry(k, PdScore.fromJson(v)),
+              ),
+            )
+          : {},
+      byOverallScore: json['by_overall_score'] != null
+          ? Map<String, PdScore>.from(
+              json['by_overall_score'].map(
+                (k, v) => MapEntry(k, PdScore.fromJson(v)),
+              ),
+            )
+          : {},
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    if (byGeocodeScore != null) {
+      data['by_geocode_score'] =
+          byGeocodeScore!.map((k, v) => MapEntry(k, v.toJson()));
+    }
+    if (byOverallScore != null) {
+      data['by_overall_score'] =
+          byOverallScore!.map((k, v) => MapEntry(k, v.toJson()));
+    }
+    return data;
+  }
+}
+
+class PdScore {
+  double? avgPdValue;
+  int? locationsCount;
+  int? overallScore;
+  double? pctOfTotal;
+  String? sovId;
+  double? totalPdValue;
+
+  PdScore({
+    this.avgPdValue,
+    this.locationsCount,
+    this.overallScore,
+    this.pctOfTotal,
+    this.sovId,
+    this.totalPdValue,
+  });
+
+  factory PdScore.fromJson(Map<String, dynamic> json) {
+    return PdScore(
+      avgPdValue: (json['avg_pd_value'] ?? 0).toDouble(),
+      locationsCount: json['locations_count'] ?? 0,
+      overallScore: json['overall_score'] ?? 0,
+      pctOfTotal: (json['pct_of_total'] ?? 0).toDouble(),
+      sovId: json['sov_id'] ?? '',
+      totalPdValue: (json['total_pd_value'] ?? 0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'avg_pd_value': avgPdValue,
+      'locations_count': locationsCount,
+      'overall_score': overallScore,
+      'pct_of_total': pctOfTotal,
+      'sov_id': sovId,
+      'total_pd_value': totalPdValue,
+    };
   }
 }
 
@@ -1304,28 +1436,24 @@ class SovResults {
 }
 
 class GlobalPerilCounts {
-  Hurricane? hurricane;
-  Hurricane? earthquake;
+  Map<String, Hurricane>? globalPerilCounts;
 
-  GlobalPerilCounts({this.hurricane, this.earthquake});
+  GlobalPerilCounts({this.globalPerilCounts});
 
   GlobalPerilCounts.fromJson(Map<String, dynamic> json) {
-    hurricane = json['Hurricane'] != null
-        ? new Hurricane.fromJson(json['Hurricane'])
-        : null;
-    earthquake = json['Earthquake'] != null
-        ? new Hurricane.fromJson(json['Earthquake'])
-        : null;
+    if (json != null) {
+      globalPerilCounts = {};
+      json.forEach((key, value) {
+        globalPerilCounts![key] = Hurricane.fromJson(value);
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.hurricane != null) {
-      data['Hurricane'] = this.hurricane!.toJson();
-    }
-    if (this.earthquake != null) {
-      data['Earthquake'] = this.earthquake!.toJson();
-    }
+    final Map<String, dynamic> data = {};
+    globalPerilCounts?.forEach((key, value) {
+      data[key] = value.toJson();
+    });
     return data;
   }
 }
@@ -1434,79 +1562,6 @@ class LocationValue {
 //   }
 // }
 
-class Loc01998dc1059b5f213560d3c5174c9a80402c58f3 {
-  String? pDValue;
-  String? name;
-  String? address;
-
-  Loc01998dc1059b5f213560d3c5174c9a80402c58f3(
-      {this.pDValue, this.name, this.address});
-
-  Loc01998dc1059b5f213560d3c5174c9a80402c58f3.fromJson(
-      Map<String, dynamic> json) {
-    pDValue = json['PD Value'];
-    name = json['name'];
-    address = json['address'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['PD Value'] = this.pDValue;
-    data['name'] = this.name;
-    data['address'] = this.address;
-    return data;
-  }
-}
-
-
-class Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af {
-  String? bIValue;
-  String? name;
-  String? pDValue;
-
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af(
-      {this.bIValue, this.name, this.pDValue});
-
-  Loc25bfcd796acb71e8f9129a7c0ae26c4b6d2b18af.fromJson(
-      Map<String, dynamic> json) {
-    bIValue = json['BI Value'];
-    name = json['name'];
-    pDValue = json['PD Value'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['BI Value'] = this.bIValue;
-    data['name'] = this.name;
-    data['PD Value'] = this.pDValue;
-    return data;
-  }
-}
-
-class LocA155789496fde8a79f2f3c4baf4949d8765fe752 {
-  String? bIValue;
-  Null? name;
-  String? pDValue;
-
-  LocA155789496fde8a79f2f3c4baf4949d8765fe752(
-      {this.bIValue, this.name, this.pDValue});
-
-  LocA155789496fde8a79f2f3c4baf4949d8765fe752.fromJson(
-      Map<String, dynamic> json) {
-    bIValue = json['BI Value'];
-    name = json['name'];
-    pDValue = json['PD Value'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['BI Value'] = this.bIValue;
-    data['name'] = this.name;
-    data['PD Value'] = this.pDValue;
-    return data;
-  }
-}
-
 class Context {
   String? accountId;
   String? subAccountId;
@@ -1563,8 +1618,8 @@ class Locations {
 }
 
 class ValueCounts {
-  String? bIValue;
-  String? pDValue;
+  dynamic bIValue;
+  dynamic pDValue;
 
   ValueCounts({this.bIValue, this.pDValue});
 

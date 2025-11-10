@@ -18,6 +18,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../appleauth.dart';
 import '../../design_system/components/social_media_button.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
 
@@ -101,9 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
       print("result");
 
       if (result != null) {
-
         print('Success! Token: ${result.accessToken}');
-        Navigator.push(context, MaterialPageRoute(builder: (context)=> DashboardScreen())); // or your target route
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    DashboardScreen())); // or your target route
       } else {
         // User cancelled - webview also closed
         print('Authentication cancelled');
@@ -111,14 +115,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // If authentication is successful, navigate to the desired screen
       if (result != null && result.accessToken != null) {
-        Navigator.of(context).pushReplacementNamed('/home'); // or your target route
+        Navigator.of(context)
+            .pushReplacementNamed('/home'); // or your target route
       }
     } catch (e) {
       print('Error during Microsoft sign-in: $e');
       // Handle error, maybe show a snackbar or dialog
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -232,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: CustomSpacing.eight),
+            // AppleSignInButton(),
             // Social Media Buttons
             // if (Platform.isAndroid)...[
             // SignInWithAppleButton(
@@ -260,7 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   await authNotifier.signInWithGoogle(context: context);
                   print(authNotifier.user.toString());
                   print(authNotifier.isNewUser.toString());
-
                 },
                 buttonText: LanguageService.getTranslated(
                     context, "login_googlebutton"),
@@ -279,12 +283,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     print(authNotifier.userProfile.toString());
                     print(authNotifier.isNewUser.toString());
                   },
-                  buttonText: LanguageService.getTranslated(context, "login_microsoft_button"),
+                  buttonText: LanguageService.getTranslated(
+                      context, "login_microsoft_button"),
                   iconPath: 'assets/images/microsoftLogo.svg',
                 );
               },
             ),
-
 
             SizedBox(height: CustomSpacing.four),
             Row(

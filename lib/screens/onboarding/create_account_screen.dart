@@ -150,12 +150,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   @override
   void initState() {
     super.initState();
-    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-    authNotifier.companyOptionsNotifier.addListener(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() {}); // Force rebuild when data changes
-      });
-    });
     _selectedOption = SignUpOptions.individual;
     /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
       setState(() {
@@ -164,6 +158,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     }*/
     _updateHintText();
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _selectedOption = SignUpOptions.individual;
+  //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+  //   authNotifier.companyOptionsNotifier.addListener(() {
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       if (mounted) setState(() {}); // Force rebuild when data changes
+  //     });
+  //   });
+  //   /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
+  //     setState(() {
+  //       isNewUser = true;
+  //     });
+  //   }*/
+  //   _updateHintText();
+  // }
 
   @override
   void dispose() {
@@ -1508,35 +1520,39 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           },
                         ),
                         prefixIcon: _selectedRoles.isNotEmpty
-                            ? SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: _selectedRoles.map((role) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 12.0, left: 12),
-                                      child: Chip(
-                                        label: Text(role.name!),
-                                        deleteIcon: const Icon(Icons.cancel),
-                                        onDeleted: () {
-                                          setState(() {
-                                            _selectedRoles.remove(role);
-                                            _textEditingController.text =
-                                                _selectedRoles.isEmpty
-                                                    ? ''
-                                                    : _selectedRoles
-                                                        .map((e) => e.name!)
-                                                        .join(', ');
-                                            fieldState.didChange(
-                                                _selectedRoles.isEmpty
-                                                    ? null
-                                                    : role.name);
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
+                            ? Container(
+                                padding: EdgeInsets.only(right: 28, left: 5),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: _selectedRoles.map((role) {
+                                      return Container(
+                                        margin: EdgeInsets.only(right: 5.0),
+                                        padding: const EdgeInsets.only(
+                                            right: 2.0, left: 2),
+                                        child: Chip(
+                                          label: Text(role.name!),
+                                          deleteIcon: const Icon(Icons.cancel),
+                                          onDeleted: () {
+                                            setState(() {
+                                              _selectedRoles.remove(role);
+                                              _textEditingController.text =
+                                                  _selectedRoles.isEmpty
+                                                      ? ''
+                                                      : _selectedRoles
+                                                          .map((e) => e.name!)
+                                                          .join(', ');
+                                              fieldState.didChange(
+                                                  _selectedRoles.isEmpty
+                                                      ? null
+                                                      : role.name);
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
                                 ),
                               )
                             : null,
@@ -1705,7 +1721,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ],
         ),
-        //
+
         // Stack(
         //   children: [
         //     TextField(
@@ -1724,7 +1740,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //               removeChip: _removeChip,
         //               removeAllChips: _removeAllChips,
         //               selectedOption:
-        //                   _selectedOption ?? SignUpOptions.individual,
+        //                SignUpOptions.individual,
         //               onOptionChanged: (SignUpOptions option) {
         //                 setState(() {
         //                   _selectedOption = option;

@@ -53,19 +53,15 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
 
     if (widget.isUserProfile) {
-      // For user profile case (if roles are already loaded)
       filteredOptionsIndividual = [];
       filteredOptionsCorporate = [];
     } else {
-      // 🔹 INDIVIDUAL ROLES
       final allIndividual = (authNotifier.companyTypeList ?? [])
           .where((companyType) => companyType.isApplicableForTrial == true)
-          .expand((companyType) {
-        log("Processing companyType: ${companyType.type}, Roles Count: ${companyType.roles?.length ?? 0}");
-        return (companyType.roles ?? []).map((role) => role.toJson());
-      }).toList();
+          .expand((companyType) =>
+              (companyType.roles ?? []).map((role) => role.toJson()))
+          .toList();
 
-      // ✅ Deduplicate based on 'id' or fallback 'name'
       final Map<dynamic, Map<String, dynamic>> uniqueIndividual = {};
       for (var item in allIndividual) {
         final key = item['id'] ?? item['name'];
@@ -73,125 +69,119 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
       }
       filteredOptionsIndividual = uniqueIndividual.values.toList();
 
-      log("✅ Unique Individual Roles Count: ${filteredOptionsIndividual.length}");
-      log("✅ Individual Roles: ${filteredOptionsIndividual.map((e) => e['name']).toList()}");
-
-      // 🔹 CORPORATE ROLES
       final allCorporate = (authNotifier.roleList ?? [])
           .where((role) => role.accountType == 'corporate')
           .expand((role) => (role.categories ?? []).map((cat) => cat.toJson()))
           .toList();
 
-      // ✅ Deduplicate corporate roles
       final Map<dynamic, Map<String, dynamic>> uniqueCorporate = {};
       for (var item in allCorporate) {
         final key = item['id'] ?? item['name'];
         uniqueCorporate[key] = item;
       }
       filteredOptionsCorporate = uniqueCorporate.values.toList();
-
-      log("✅ Unique Corporate Roles Count: ${filteredOptionsCorporate.length}");
-      log("✅ Corporate Roles: ${filteredOptionsCorporate.map((e) => e['name']).toList()}");
     }
 
-    _updateSelectedOptions();
+    // 🕒 Run after build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSelectedOptions();
+    });
   }
 
   // @override
   // void initState() {
   //   super.initState();
-  //   // Extract individual and corporate options from JSON data
-  //   // Accessing AuthNotifier using Provider.of
-  //   // Accessing AuthNotifier using Provider.of
+  //
   //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
   //
   //   if (widget.isUserProfile) {
-  //     // Filtering role list for individual and corporate options
-  //     // ✅ Remove duplicates based on 'id' or 'name'
-  //     filteredOptionsIndividual = {
-  //       for (var e in filteredOptionsIndividual)
-  //         e['id'] ?? e['name']: e
-  //     }.values.toList();
-  //
-  //     filteredOptionsCorporate = {
-  //       for (var e in filteredOptionsCorporate)
-  //         e['id'] ?? e['name']: e
-  //     }.values.toList();
-  //
+  //     // For user profile case (if roles are already loaded)
+  //     filteredOptionsIndividual = [];
+  //     filteredOptionsCorporate = [];
   //   } else {
-  //     // Filtering companyTypeList for individual options
-  //     // Log the companyTypeList for debugging
-  //     log("CompanyTypeList: ${authNotifier.companyTypeList}");
+  //     // 🔹 INDIVIDUAL ROLES
+  //     final allIndividual = (authNotifier.companyTypeList ?? [])
+  //         .where((companyType) => companyType.isApplicableForTrial == true)
+  //         .expand((companyType) {
+  //       log("Processing companyType: ${companyType.type}, Roles Count: ${companyType.roles?.length ?? 0}");
+  //       return (companyType.roles ?? []).map((role) => role.toJson());
+  //     }).toList();
   //
-  //     // Filtering companyTypeList for individual options
-  //     filteredOptionsIndividual =
-  //         (authNotifier.companyTypeList ?? [])
-  //             .where((companyType) => companyType.isApplicableForTrial == true)
-  //             .expand((companyType) {
-  //           log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
-  //           return (companyType.roles ?? []).map((role) {
-  //             log("Mapping role: ${role.toJson()}");
-  //             return role.toJson();
-  //           });
-  //         }).toList();
+  //     // ✅ Deduplicate based on 'id' or fallback 'name'
+  //     final Map<dynamic, Map<String, dynamic>> uniqueIndividual = {};
+  //     for (var item in allIndividual) {
+  //       final key = item['id'] ?? item['name'];
+  //       uniqueIndividual[key] = item;
+  //     }
+  //     filteredOptionsIndividual = uniqueIndividual.values.toList();
   //
+  //     log("✅ Unique Individual Roles Count: ${filteredOptionsIndividual.length}");
+  //     log("✅ Individual Roles: ${filteredOptionsIndividual.map((e) => e['name']).toList()}");
   //
-  //     log("Filtered Options Individual: $filteredOptionsIndividual");
-  //
-  //     // Filtering companyTypeList for corporate options
-  //     filteredOptionsCorporate = (authNotifier.roleList ?? [])
+  //     // 🔹 CORPORATE ROLES
+  //     final allCorporate = (authNotifier.roleList ?? [])
   //         .where((role) => role.accountType == 'corporate')
-  //         .expand((role) =>
-  //             (role.categories ?? []).map((category) => category.toJson()))
+  //         .expand((role) => (role.categories ?? []).map((cat) => cat.toJson()))
   //         .toList();
+  //
+  //     // ✅ Deduplicate corporate roles
+  //     final Map<dynamic, Map<String, dynamic>> uniqueCorporate = {};
+  //     for (var item in allCorporate) {
+  //       final key = item['id'] ?? item['name'];
+  //       uniqueCorporate[key] = item;
+  //     }
+  //     filteredOptionsCorporate = uniqueCorporate.values.toList();
+  //
+  //     log("✅ Unique Corporate Roles Count: ${filteredOptionsCorporate.length}");
+  //     log("✅ Corporate Roles: ${filteredOptionsCorporate.map((e) => e['name']).toList()}");
   //   }
   //
   //   _updateSelectedOptions();
   // }
   void _updateSelectedOptions() {
-    setState(() {
-      _selectedOptions.clear();
-      final selectedOptionsList =
-          widget.selectedOption == SignUpOptions.individual
-              ? filteredOptionsIndividual
-              : filteredOptionsCorporate;
+    final selectedOptionsList =
+        widget.selectedOption == SignUpOptions.individual
+            ? filteredOptionsIndividual
+            : filteredOptionsCorporate;
 
-      log("Selected options before filter: ${widget.selectedRoles.map((e) => e.name).toList()}");
+    final newSelections = <String>{};
 
-      for (final selected in widget.selectedRoles) {
-        final match = selectedOptionsList.firstWhere(
-          (option) => option['name'] == selected.name,
-          orElse: () => {},
-        );
-        if (match.isNotEmpty) {
-          _selectedOptions.add(match['id'] ?? match['name']);
-        }
+    for (final selected in widget.selectedRoles) {
+      final match = selectedOptionsList.firstWhere(
+        (option) {
+          final optionId = option['id']?.toString();
+          final optionRole = option['role']?.toString();
+          final optionName = option['name']?.toString();
+          return optionId == selected.id ||
+              optionRole == selected.role ||
+              optionName == selected.name;
+        },
+        orElse: () => {},
+      );
+
+      if (match.isNotEmpty) {
+        final id = match['id']?.toString() ??
+            match['role']?.toString() ??
+            match['name']?.toString();
+        newSelections.add(id ?? '');
       }
+    }
 
-      log("Final selected IDs: $_selectedOptions");
+    setState(() {
+      _selectedOptions = newSelections;
     });
+
+    log("✅ Restored selected IDs: $_selectedOptions");
   }
 
-  // void _updateSelectedOptions() {
-  //   setState(() {
-  //     _selectedOptions.clear();
-  //     final selectedOptionsList =
-  //         widget.selectedOption == SignUpOptions.individual
-  //             ? filteredOptionsIndividual
-  //             : filteredOptionsCorporate;
-  //     print("Selected options: $selectedOptionsList");
-  //     _selectedOptions.addAll(
-  //       widget.selectedRoles.map((role) {
-  //         print(role);
-  //         final option = selectedOptionsList.firstWhere(
-  //           (option) => option['name'] == role.name,
-  //           orElse: () => {'name': role.name, 'id': null},
-  //         );
-  //         return option?['role'];
-  //       }).whereType<String>(),
-  //     );
-  //   });
-  // }
+  @override
+  void didUpdateWidget(covariant RolesBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedRoles != widget.selectedRoles ||
+        oldWidget.selectedOption != widget.selectedOption) {
+      _updateSelectedOptions();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +219,6 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
         Expanded(
           child: ListView(
             children: [
-
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -237,57 +226,53 @@ class RolesBottomSheetState extends State<RolesBottomSheet> {
                 itemBuilder: (context, index) {
                   final option = allOptions[index];
                   final accountType = option['name'];
-                  // final id = option['role'];
                   final id = option['id'] ?? option['role'] ?? option['name'];
 
-                  final bool isSelected = _selectedOptions.contains(id);
+                  // Enable checkbox if any selectedRole.name matches option['name']
+                  final bool isSelected = widget.selectedRoles
+                      .any((role) => role.name == option['name']);
 
                   return ListTile(
                     title: Text(accountType),
                     leading: widget.selectedOption == SignUpOptions.individual
                         ? Checkbox(
-                            value: isSelected,
-                            onChanged: (bool? selected) {
-                              setState(() {
-                                if (selected!) {
-                                  _selectedOptions.add(id);
-                                  widget.addChip(Categories.fromJson(option));
-                                } else {
-                                  _selectedOptions.remove(id);
-                                  widget
-                                      .removeChip(Categories.fromJson(option));
-                                }
-                              });
-                            },
-                          )
+                      value: isSelected,
+                      onChanged: (bool? selected) {
+                        setState(() {
+                          if (selected!) {
+                            widget.addChip(Categories.fromJson(option));
+                          } else {
+                            // Remove all chips that match this option
+                            widget.selectedRoles
+                                .where((role) => role.name == option['name'])
+                                .toList()
+                                .forEach((role) => widget.removeChip(role));
+                          }
+                        });
+                      },
+                    )
                         : Radio<String>(
-                            value: id,
-                            groupValue: _selectedOptions.isNotEmpty
-                                ? _selectedOptions.first
-                                : null,
-                            onChanged: (value) {
-                              setState(() {
-                                if (_selectedOptions.isNotEmpty) {
-                                  final previousSelection =
-                                      _selectedOptions.first;
-                                  final previousRole = allOptions.firstWhere(
-                                      (option) =>
-                                          option['id'] ==
-                                          previousSelection)['role'];
-                                  widget.removeChip(
-                                      Categories.fromJson(previousRole));
-                                }
-                                _selectedOptions.clear();
-                                if (value != null) {
-                                  _selectedOptions.add(value);
-                                  widget.addChip(Categories.fromJson(option));
-                                }
-                              });
-                            },
-                          ),
+                      value: id,
+                      groupValue: widget.selectedRoles.isNotEmpty
+                          ? widget.selectedRoles.first.name
+                          : null,
+                      onChanged: (value) {
+                        setState(() {
+                          if (widget.selectedRoles.isNotEmpty) {
+                            final previousRole =
+                                widget.selectedRoles.first;
+                            widget.removeChip(previousRole);
+                          }
+                          if (value != null) {
+                            widget.addChip(Categories.fromJson(option));
+                          }
+                        });
+                      },
+                    ),
                   );
                 },
               ),
+
               if (Platform.isAndroid) ...[
                 widget.showCorporateSwitch ? const Divider() : SizedBox(),
                 widget.showCorporateSwitch

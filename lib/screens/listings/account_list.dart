@@ -1,5 +1,6 @@
 import 'package:RiskSphere/screens/listings/widgets/auto_complete_options.dart';
-import '../../providers/drawer_selection_provider.dart';
+import 'package:tuple/tuple.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../utils/global_imports.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -90,8 +91,7 @@ class _AccountListScreenState extends State<AccountListScreen>
       print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       provider.page = 1;
-      await provider.fetchAccountList(
-          context, _accountQuery, provider.page, 8);
+      await provider.fetchAccountList(context, _accountQuery, provider.page, 5);
     });
   }
 
@@ -128,47 +128,37 @@ class _AccountListScreenState extends State<AccountListScreen>
   GlobalKey keyFeature2 = GlobalKey();
   GlobalKey keyFeature3 = GlobalKey();
   List<TargetFocus> targets = [];
+  TutorialCoachMark? tutorialCoachMark;
+  bool _showOverlay = false;
 
   @override
   void initState() {
     super.initState();
-
+    _checkFirstTime();
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
     int tabCount = (trialStatus.isEmpty) ? 4 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getData();
-    });
-
-    _tryShowTutorialOnce();
+    Future.microtask(() => _getData());
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _getData();
+    // });
   }
 
-  void _tryShowTutorialOnce() async {
+  Future<void> _checkFirstTime() async {
     final prefs = await SharedPreferences.getInstance();
-    bool hasShownTutorial = prefs.getBool('accountList') ?? false;
+    final isFirstTime = prefs.getBool('isFirstTime') ?? true;
+    if (isFirstTime) {
+      setState(() => _showOverlay = true);
+    }
+  }
 
-    // If already shown, skip
-    if (hasShownTutorial) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(Duration(milliseconds: 500));
-      await WidgetsBinding.instance.endOfFrame;
-
-      initTargets();
-
-      if (targets.isNotEmpty) {
-        await Future.delayed(Duration(milliseconds: 300));
-        if (mounted) {
-          showTutorial(); // Show tutorial
-          await prefs.setBool('accountList', true); // ✅ Mark as shown
-        }
-      } else {
-        print('No targets were set. Skipping tutorial.');
-      }
-    });
+  Future<void> _closeOverlay() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+        'isFirstTime', false); // 👈 save only when user closes it
+    setState(() => _showOverlay = false);
   }
 
   @override
@@ -178,79 +168,57 @@ class _AccountListScreenState extends State<AccountListScreen>
     super.dispose();
   }
 
-  void showTutorial() {
-    TutorialCoachMark(
-      targets: targets,
-      colorShadow: Colors.transparent,
-      opacityShadow: 0.9,
-      paddingFocus: 5,
-      textSkip: "Skip",
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-      onFinish: () {
-        print("Tutorial Finished");
-      },
-      onClickTarget: (target) {
-        print("Clicked on target: ${target.identify}");
-      },
-    ).show(context: context);
-  }
-
-  void initTargets() {
-    targets.addAll([
-      TargetFocus(
-        identify: "Add User",
-        keyTarget: keyFeature1,
-        alignSkip: Alignment.topRight,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              margin: EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
-              child: Text(
-                "Set up a primary account for your client or commercial entity. Add key company info to start building their digital risk data. ",
-                maxLines: 3,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          )
-        ],
-      ),
-    ]);
-  }
-
   _getData() async {
-    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_ADMIN) ??
-        false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_SUPER_ADMIN) ??
-        false;
-    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.Is_Indivudual) ??
-        false;
+    final futures = await Future.wait([
+      SharedPreferenceService.getHasAnyPlan(),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_SUPER_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.Is_Indivudual),
+    ]);
+
+    hasAnyPlan = futures[0] ?? false;
+    isPgAdmin = futures[1] ?? false;
+    isAdmin = futures[2] ?? false;
+    isSuperAdmin = futures[3] ?? false;
+    isIndivudual = futures[4] ?? false;
+
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
-    accountListProvider.page = 1;
-    await accountListProvider.fetchAccountList(context, "", 1, 8);
-    setState(() {
-      hasAnyPlan = hasAnyPlans ?? false;
-      isPgAdmin = isPgAdmin;
-      isSuperAdmin = isSuperAdmin;
-      _selectedScreen = Screens.accountList;
-    });
+
+    await accountListProvider.fetchAccountList(context, "", 1, 4);
+    setState(() => _selectedScreen = Screens.accountList);
   }
+
+  // _getData() async {
+  //   bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+  //   isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_PG_ADMIN) ??
+  //       false;
+  //   isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_ADMIN) ??
+  //       false;
+  //   isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_SUPER_ADMIN) ??
+  //       false;
+  //   isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.Is_Indivudual) ??
+  //       false;
+  //   final accountListProvider =
+  //       Provider.of<AccountListProvider>(context, listen: false);
+  //   accountListProvider.page = 1;
+  //   await accountListProvider.fetchAccountList(context, "", 1, 5);
+  //   setState(() {
+  //     hasAnyPlan = hasAnyPlans ?? false;
+  //     isPgAdmin = isPgAdmin;
+  //     isSuperAdmin = isSuperAdmin;
+  //     _selectedScreen = Screens.accountList;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context1) {
@@ -315,7 +283,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                             child: FloatingActionButton(
                               backgroundColor: AppColors.primaryMain,
                               onPressed: () {
-                                // Add account dialog with autocomplete from api and create account
+                                _closeOverlay();
                                 _showAddAccountDialog(context);
                               },
                               child: Icon(
@@ -543,6 +511,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                         ),
                       ],
                     ),
+                    if (_showOverlay) _buildOverlay(),
                   ],
                 ),
               );
@@ -550,6 +519,126 @@ class _AccountListScreenState extends State<AccountListScreen>
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.7), // dim background/ dim background
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF232323),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(11),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  onTap: () async {
+                    const url = 'https://www.youtube.com/watch?v=7kvdDtowGM0';
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(Uri.parse(url),
+                          mode: LaunchMode.externalApplication);
+                    }
+                    ;
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SvgPicture.asset(
+                        'assets/images/userguide.svg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                const Text(
+                  "New Account",
+                  style: TextStyle(
+                    color: AppColors.primaryMain,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  "Set up a primary account for your client or commercial entity. Add key company info to start building their digital risk data. ",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Container(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryMain,
+                          side: const BorderSide(color: AppColors.primaryMain),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _closeOverlay,
+                        child:
+                            const Text("Skip", style: TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryMain,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        _closeOverlay();
+                        _showAddAccountDialog(context);
+                      }, //_closeOverlay,
+                      child: const Text("Add Account",
+                          style: TextStyle(color: Colors.black)),
+                    ),
+                  ],
+                ),
+                // const SizedBox(height: 16),
+                // const Text(
+                //   "New Account",
+                //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                // ),
+                // const SizedBox(height: 8),
+                // const Text(
+                //   "Create a primary account to organize your sub accounts and locations.",
+                //   // textAlign: TextAlign.center,
+                // ),
+                // const SizedBox(height: 20),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     TextButton(
+                //       onPressed: _closeOverlay,
+                //       child: const Text("Skip"),
+                //     ),
+                //     ElevatedButton(
+                //       onPressed: _closeOverlay,
+                //       child: const Text("Add Account"),
+                //     ),
+                //   ],
+                // ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1207,7 +1296,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                         context,
                                                                         _accountQuery,
                                                                         1,
-                                                                        8);
+                                                                        5);
                                                                   }
 
                                                                   setState(() {
@@ -1487,25 +1576,26 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   });
                                 },
                                 decoration: InputDecoration(
-                                  suffixIcon:
-                                      _textEditingController.text.isNotEmpty
-                                          ? IconButton(
-                                              icon: Icon(Icons.clear),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _textEditingController.clear();
-                                                  _accountAlreadyExists = false;
-                                                  _selectedAccount = null;
-                                                  accountListProvider
-                                                      .clearAutoCompleteList();
-                                                });
-                                              },
-                                            )
-                                          : null,
+                                  suffixIcon: _textEditingController
+                                          .text.isNotEmpty
+                                      ? IconButton(
+                                          icon: Icon(Icons.clear),
+                                          onPressed: () {
+                                            setState(() {
+                                              _textEditingController.clear();
+                                              _accountAlreadyExists = false;
+                                              _selectedAccount = null;
+                                              accountListProvider
+                                                  .clearAutoCompleteList();
+                                            });
+                                          },
+                                        )
+                                      : null,
                                   labelText: LanguageService.getTranslated(
                                       context,
                                       "account_list_app_add_account_title"),
-                                  hintText: LanguageService.getTranslated(context,
+                                  hintText: LanguageService.getTranslated(
+                                      context,
                                       "account_list_app_add_account_title"),
                                   border: const OutlineInputBorder(),
                                 ),
@@ -1552,8 +1642,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                               if (_textEditingController.text.isNotEmpty &&
                                   !_accountAlreadyExists)
                                 AutocompleteOptions(
-                                  options:
-                                      accountListProvider.autoCompleteAccountList,
+                                  options: accountListProvider
+                                      .autoCompleteAccountList,
                                   onSelected: (Accounts selection) {
                                     setState(() {
                                       _accountAlreadyExists = true;
@@ -1561,7 +1651,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                       _textEditingController.text =
                                           selection.accountName!;
                                       // Clear the autocomplete list when an option is selected
-                                      accountListProvider.clearAutoCompleteList();
+                                      accountListProvider
+                                          .clearAutoCompleteList();
                                     });
                                   },
                                   isLoading:
@@ -1625,8 +1716,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             if (!_accountAlreadyExists) {
                                               // Add account
                                               await accountListProvider
-                                                  .addAccount(
-                                                      context, _autocompleteText);
+                                                  .addAccount(context,
+                                                      _autocompleteText);
                                             } else {
                                               // Request access
                                               if (_messageController
@@ -1636,7 +1727,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         content: Text(
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "account_list_app_add_account_empty_text_error"), style: TextStyle(color: Colors.black),
+                                                      "account_list_app_add_account_empty_text_error"),
+                                                  style: TextStyle(
+                                                      color: Colors.black),
                                                 )));
                                                 return;
                                               }
@@ -1657,8 +1750,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             //         "account_list_app_request_access_text")
                                             //     :
                                             LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_submit_text"),
+                                                context,
+                                                "account_list_app_submit_text"),
                                             style: typography.ButtonLargeBlack,
                                           ),
                                           type: ButtonType.elevated,
@@ -1823,96 +1916,171 @@ class _AccountListScreenState extends State<AccountListScreen>
         SizedBox(height: CustomSpacing.four),
         // List of accounts
         Expanded(
-          child: Consumer<AccountListProvider>(
-              builder: (context, accountListProvider, _) {
-            return accountListProvider.isLoading
-                ? Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        height: 100,
-                      ),
-                      Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ],
-                  )
-                : accountListProvider.accountList.isEmpty
-                    ? Center(
-                        child: Text(
-                          "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
-                          style: typography.Body1,
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async {
-                          accountListProvider.fetchAccountList(
-                              context, _accountQuery, 1, 8);
-                        },
-                        child: ListView.builder(
-                            itemCount: accountListProvider.accountList.length,
-                            itemBuilder: (context, index) {
-                              print("Query1: $_accountQuery");
-                              if (index ==
-                                  accountListProvider.accountList.length - 1) {
-                                // Check if it's the last item
-                                if (accountListProvider.isNextPageLoading) {
-                                  // Display loading indicator
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-                                } else if (accountListProvider.page >=
-                                        accountListProvider.totalPages &&
-                                    accountListProvider
-                                        .accountList.isNotEmpty) {
-                                  // Display end of list message
-                                  print(
-                                      "account list: ${accountListProvider.accountList}");
-                                  return Column(
-                                    children: [
-                                      _buildAccountCard(
-                                          index, accountListProvider),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Center(
-                                          child: Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "account_list_app_end_of_list_text"),
-                                            style: typography.Body1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  // Trigger fetching the next page
-                                  accountListProvider.page =
-                                      accountListProvider.page + 1;
-                                  print(
-                                      "Fetching page ${accountListProvider.page}");
-                                  print(
-                                      "Query: $_accountQuery, Page: ${accountListProvider.page}");
-                                  accountListProvider.fetchAccountList(
-                                    context,
-                                    _accountQuery,
-                                    // Pass the search query if any
-                                    accountListProvider.page,
-                                    8, // Page size
-                                  );
-                                  return SizedBox();
-                                }
-                              } else {
-                                return _buildAccountCard(
-                                    index, accountListProvider);
-                              }
-                            }),
-                      );
-          }),
-        ),
+          child: Selector<AccountListProvider,
+              Tuple4<bool, bool, int, List<Accounts>>>(
+            selector: (_, provider) => Tuple4(
+              provider.isLoading,
+              provider.isNextPageLoading,
+              provider.page,
+              provider.accountList,
+            ),
+            builder: (context, data, _) {
+              final isLoading = data.item1;
+              final isNextPageLoading = data.item2;
+              final currentPage = data.item3;
+              final accountList = data.item4;
+
+              if (isLoading && accountList.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (accountList.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
+                      textAlign: TextAlign.center,
+                      style: CustomTypography(context).Body1,
+                    ),
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await Provider.of<AccountListProvider>(context, listen: false)
+                      .fetchAccountList(context, _accountQuery, 1, 5);
+                },
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (scrollInfo) {
+                    if (!isNextPageLoading &&
+                        scrollInfo.metrics.pixels >=
+                            scrollInfo.metrics.maxScrollExtent - 200) {
+                      Provider.of<AccountListProvider>(context, listen: false)
+                          .fetchAccountList(
+                              context, _accountQuery, currentPage + 1, 5);
+                    }
+                    return false;
+                  },
+                  child: ListView.builder(
+                    key: const PageStorageKey('accountListView'),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: accountList.length + (isNextPageLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= accountList.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      final account = accountList[index];
+                      return _buildAccountCard(
+                          index,
+                          Provider.of<AccountListProvider>(context,
+                              listen: false));
+
+                      // return _buildAccountCard(context, account, index);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        )
+
+        // Expanded(
+        //   child: Consumer<AccountListProvider>(
+        //       builder: (context, accountListProvider, _) {
+        //     return accountListProvider.isLoading
+        //         ? Stack(
+        //             alignment: Alignment.center,
+        //             children: [
+        //               SizedBox(
+        //                 height: 100,
+        //               ),
+        //               Center(
+        //                 child: CircularProgressIndicator(),
+        //               ),
+        //             ],
+        //           )
+        //         : accountListProvider.accountList.isEmpty
+        //             ? Center(
+        //                 child: Text(
+        //                   "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
+        //                   style: typography.Body1,
+        //                 ),
+        //               )
+        //             : RefreshIndicator(
+        //                 onRefresh: () async {
+        //                   accountListProvider.fetchAccountList(
+        //                       context, _accountQuery, 1, 5);
+        //                 },
+        //                 child: ListView.builder(
+        //                     itemCount: accountListProvider.accountList.length,
+        //                     itemBuilder: (context, index) {
+        //                       print("Query1: $_accountQuery");
+        //                       if (index ==
+        //                           accountListProvider.accountList.length - 1) {
+        //                         // Check if it's the last item
+        //                         if (accountListProvider.isNextPageLoading) {
+        //                           // Display loading indicator
+        //                           return Padding(
+        //                             padding: const EdgeInsets.all(8.0),
+        //                             child: Center(
+        //                               child: CircularProgressIndicator(),
+        //                             ),
+        //                           );
+        //                         } else if (accountListProvider.page >=
+        //                                 accountListProvider.totalPages &&
+        //                             accountListProvider
+        //                                 .accountList.isNotEmpty) {
+        //                           // Display end of list message
+        //                           print(
+        //                               "account list: ${accountListProvider.accountList}");
+        //                           return Column(
+        //                             children: [
+        //                               _buildAccountCard(
+        //                                   index, accountListProvider),
+        //                               Padding(
+        //                                 padding: const EdgeInsets.all(8.0),
+        //                                 child: Center(
+        //                                   child: Text(
+        //                                     LanguageService.getTranslated(
+        //                                         context,
+        //                                         "account_list_app_end_of_list_text"),
+        //                                     style: typography.Body1,
+        //                                   ),
+        //                                 ),
+        //                               ),
+        //                             ],
+        //                           );
+        //                         } else {
+        //                           // Trigger fetching the next page
+        //                           accountListProvider.page =
+        //                               accountListProvider.page + 1;
+        //                           print(
+        //                               "Fetching page ${accountListProvider.page}");
+        //                           print(
+        //                               "Query: $_accountQuery, Page: ${accountListProvider.page}");
+        //                           accountListProvider.fetchAccountList(
+        //                             context,
+        //                             _accountQuery,
+        //                             // Pass the search query if any
+        //                             accountListProvider.page,
+        //                             5, // Page size
+        //                           );
+        //                           return SizedBox();
+        //                         }
+        //                       } else {
+        //                         return _buildAccountCard(
+        //                             index, accountListProvider);
+        //                       }
+        //                     }),
+        //               );
+        //   }),
+        // ),
       ],
     );
   }

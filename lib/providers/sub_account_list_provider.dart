@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:RiskSphere/design_system/components/custom_toast.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -276,9 +277,9 @@ class SubAccountListProvider extends ChangeNotifier {
 
       var response = await apiService.get(url);
 
-      SubAccountListModel subAccountListModel =
-          SubAccountListModel.fromJson(response);
-
+      // SubAccountListModel subAccountListModel =
+      //     SubAccountListModel.fromJson(response);
+      final subAccountListModel = await compute(SubAccountListModel.fromJson, response);
       showOwner = subAccountListModel.settings?.owner ?? true;
       showSovCount = subAccountListModel.settings?.sovCount ?? true;
       totalRecords = subAccountListModel.totalHits ?? 0;
@@ -534,14 +535,11 @@ class SubAccountListProvider extends ChangeNotifier {
       String url =
           '/sub_accounts?account_id=$accountId&search=$searchQuery'; // Updated field
       var response = await apiService.get(url);
-      log(response.toString());
 
-      SubAccountListModel accountListModel =
-          SubAccountListModel.fromJson(response);
-
+      final accountListModel = await compute(SubAccountListModel.fromJson, response);
       autoCompleteSubAccountList = accountListModel.results ?? [];
-      log(autoCompleteSubAccountList.toString());
-      print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
+      // log(autoCompleteSubAccountList.toString());
+      // print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
     } on BackendException catch (e, stack) {
       /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message, style: typography.Body1,),

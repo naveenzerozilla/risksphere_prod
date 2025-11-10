@@ -1,4 +1,6 @@
 import 'package:RiskSphere/screens/listings/widgets/auto_complete_options_sub_accounts.dart';
+import 'package:tuple/tuple.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/sub_account_list_model.dart';
 import '../../utils/global_imports.dart';
 import 'package:flutter/cupertino.dart';
@@ -55,7 +57,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   bool isIndivudual = false;
   List<TargetFocus> targets = [];
   GlobalKey keyFeature1 = GlobalKey();
-
+  bool _showOverlay_subaccount = false;
   Timer? autoCompleteDeBouncer;
 
   ScrollController _scrollController = ScrollController();
@@ -131,6 +133,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   @override
   void initState() {
     super.initState();
+    _checkFirstTime();
     _getData();
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
@@ -139,80 +142,21 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
     // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
     _tabController = TabController(length: tabCount, vsync: this);
-    _tryShowTutorialOnce();
   }
 
-  void _tryShowTutorialOnce() async {
+  Future<void> _checkFirstTime() async {
     final prefs = await SharedPreferences.getInstance();
-    bool hasShownTutorial = prefs.getBool('subAccount') ?? false;
-
-    // ✅ Skip if tutorial was already shown
-    if (hasShownTutorial) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(Duration(milliseconds: 500));
-      await WidgetsBinding.instance.endOfFrame;
-
-      initTargets();
-
-      if (targets.isNotEmpty) {
-        await Future.delayed(Duration(milliseconds: 300));
-        if (mounted) {
-          showTutorial(); // Show the guide
-          await prefs.setBool('subAccount', true); // ✅ Mark as shown
-        }
-      } else {
-        print('No targets were set. Skipping tutorial.');
-      }
-    });
+    final isFirstTime = prefs.getBool('isFirstTimeSubAccount') ?? true;
+    if (isFirstTime) {
+      setState(() => _showOverlay_subaccount = true);
+    }
   }
 
-  void showTutorial() {
-    TutorialCoachMark(
-      targets: targets,
-      colorShadow: Colors.transparent,
-      opacityShadow: 0.9,
-      paddingFocus: 5,
-      textSkip: "Skip",
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-      onFinish: () {
-        print("Tutorial Finished");
-      },
-      onClickTarget: (target) {
-        print("Clicked on target: ${target.identify}");
-      },
-    ).show(context: context);
-  }
-
-  void initTargets() {
-    targets.addAll([
-      TargetFocus(
-        identify: "Add User",
-        keyTarget: keyFeature1,
-        alignSkip: Alignment.topRight,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              margin: EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.fromLTRB(10.0, 60, 10, 10),
-              child: Text(
-                "Create multiple portfolios under a single primary client entity. Perfect for managing different regions, teams, or buildings separately. ",
-                maxLines: 3,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          )
-        ],
-      ),
-    ]);
+  Future<void> _closeOverlay() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+        'isFirstTimeSubAccount', false); // 👈 save only when user closes it
+    setState(() => _showOverlay_subaccount = false);
   }
 
   _getData() async {
@@ -230,9 +174,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
-      Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
-          .fetchSubAccountList(context, widget.accountId, "", 1, 8);
+          .fetchSubAccountList(context, widget.accountId, "", 1, 5);
     });
     setState(() {
       isPgAdmin = isPgAdmin;
@@ -295,248 +238,580 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                   child: FloatingActionButton(
                     onPressed: () {
                       // Add sub account dialog with autocomplete from api and create account
+                      _closeOverlay();
                       _showAddSubAccountDialog(context);
                     },
                     child: Icon(Icons.add),
                   ),
                 ),
           // : SizedBox(),
-          body: Consumer<UserProfileProvider>(
-              builder: (context, userProfileProvider, child) {
-            return PopScope(
-              canPop: /*_selectedScreen == Screens.connectionList ||
-                        _selectedScreen == Screens.corporateConnectionList,*/
-                  true,
-              onPopInvoked: (canPop) {
-                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-                        setState(() {
-                          _selectedScreen = Screens.corporateConnectionList;
-                        });
-                      } else if (_selectedScreen == Screens.requestList) {
-                        setState(() {
-                          _tabController?.animateTo(0);
-                          _selectedScreen = Screens.corporateConnectionList;
-                        });
-                      }*/
-              },
-              child: Stack(
-                children: [
-                  // Background image
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/mesh.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: CustomSpacing.one),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10.0),
-                                child: Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 6.0, bottom: 6),
-                                      child: Row(
-                                        children: [
-                                          InkWell(
-                                            onTap: () {
-                                              Navigator.pushAndRemoveUntil(
-                                                context,
-                                                MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        AccountListScreen()),
-                                                (route) =>
-                                                    false, // This removes all previous routes
-                                              ).then((_) {
-                                                // Optional: Add any actions to perform after navigation
-                                              });
-                                            },
-                                            child: Text(
-                                                widget.accountName.toString(),
-                                                style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.white70)),
-                                          ),
-                                          Text(' > ',
-                                              style: typography.InputLabel),
-                                          Text("Sub Accounts",
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: CustomSpacing.two),
-                              Container(
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(
-                                      16), // Rounded edges
-                                ),
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: 0, vertical: 0),
-                                child: DefaultTabController(
-                                  length: _tabController!.length,
-                                  child: Column(
-                                    children: <Widget>[
-                                      // Container for the TabBar with arrows
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHigh,
-                                        ),
-                                        height: 50,
-                                        child: Row(
-                                          children: <Widget>[
-                                            // Left arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_left,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollLeft,
-                                            ),
-                                            // Scrollable TabBar
-                                            Expanded(
-                                              child: Consumer<
-                                                      SubAccountListProvider>(
-                                                  builder: (context,
-                                                      subAccountListProvider,
-                                                      _) {
-                                                return SingleChildScrollView(
-                                                  controller: _scrollController,
-                                                  scrollDirection:
-                                                      Axis.horizontal,
-                                                  child: TabBar(
-                                                    controller: _tabController,
-                                                    tabAlignment:
-                                                        TabAlignment.start,
-                                                    labelStyle:
-                                                        typography.Subtitle2,
-                                                    isScrollable: true,
-                                                    indicatorColor:
-                                                        Colors.lightBlueAccent,
-                                                    labelColor:
-                                                        Colors.lightBlueAccent,
-                                                    unselectedLabelColor:
-                                                        Colors.white,
-                                                    tabs: [
-                                                      Tab(
-                                                        child: Row(
-                                                          children: [
-                                                            Text(
-                                                              'My Sub Accounts',
-                                                            ),
-                                                            subAccountListProvider
-                                                                        .isLoading ||
-                                                                    subAccountListProvider
-                                                                            .totalRecords ==
-                                                                        0
-                                                                ? SizedBox()
-                                                                : SizedBox(
-                                                                    width:
-                                                                        CustomSpacing
-                                                                            .two,
-                                                                  ),
-                                                            subAccountListProvider
-                                                                        .isLoading ||
-                                                                    subAccountListProvider
-                                                                            .totalRecords ==
-                                                                        0
-                                                                ? SizedBox()
-                                                                : SizedBox(
-                                                                    height: 25,
-                                                                    child: Chip(
-                                                                      labelPadding:
-                                                                          EdgeInsets.all(
-                                                                              0),
-                                                                      materialTapTargetSize:
-                                                                          MaterialTapTargetSize
-                                                                              .shrinkWrap,
-                                                                      label:
-                                                                          Text(
-                                                                        subAccountListProvider
-                                                                            .totalRecords
-                                                                            .toString(),
-                                                                        style: typography.BottomNavigationActiveLabel.copyWith(
-                                                                            height:
-                                                                                -0.6),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Tab(text: 'Shared'),
-                                                      if (isSuperAdmin ||
-                                                          isPgAdmin)
-                                                        Tab(
-                                                            text:
-                                                                'Configuration'),
-                                                      Tab(
-                                                          text:
-                                                              'Access Requested'),
-                                                    ],
-                                                  ),
-                                                );
-                                              }),
-                                            ),
-                                            // Right arrow button
-                                            IconButton(
-                                              icon: Icon(Icons.arrow_right,
-                                                  color: Colors.grey),
-                                              onPressed: _scrollRight,
-                                            ),
-                                          ],
+          body: Selector<UserProfileProvider, Tuple3<bool, bool, bool>>(
+            selector: (_, provider) => Tuple3(
+              provider.isLoading,
+              provider.hasError,
+              provider.isDataFetched,
+            ),
+            builder: (context, tuple, child) {
+              final isLoading = tuple.item1;
+              final hasError = tuple.item2;
+              final isDataFetched = tuple.item3;
+
+              return PopScope(
+                canPop: true,
+                onPopInvoked: (canPop) {
+                  debugPrint(
+                      'Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                },
+                child: Stack(
+                  children: [
+                    // ✅ Keep background image OUTSIDE rebuild scope (using child)
+                    if (child != null) child,
+                    Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: CustomSpacing.one),
+
+                                // Header Row
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10.0),
+                                  child: Row(
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    AccountListScreen()),
+                                            (route) => false,
+                                          );
+                                        },
+                                        child: Text(
+                                          widget.accountName.toString(),
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white70),
                                         ),
                                       ),
+                                      Text(' > ', style: typography.InputLabel),
+                                      const Text("Sub Accounts",
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white)),
                                     ],
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: TabBarView(
-                                  controller: _tabController,
-                                  children: [
-                                    _getSubAccountUI(),
-                                    _getComingSoonUI("shared"),
-                                    if (isSuperAdmin || isPgAdmin)
-                                      ConfigurationTab(
-                                          accountId: widget.accountId),
-                                    _getComingSoonUI("request"),
-                                  ],
+
+                                SizedBox(height: CustomSpacing.two),
+
+                                // TabBar Container
+                                Container(
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHigh,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: DefaultTabController(
+                                    length: _tabController!.length,
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                            icon: const Icon(Icons.arrow_left,
+                                                color: Colors.grey),
+                                            onPressed: _scrollLeft),
+                                        Expanded(
+                                          child: Selector<
+                                              SubAccountListProvider,
+                                              Tuple2<bool, int>>(
+                                            selector: (_, subAccountList) =>
+                                                Tuple2(
+                                              subAccountList.isLoading,
+                                              subAccountList.totalRecords,
+                                            ),
+                                            builder: (context, subTuple, _) {
+                                              final isSubLoading =
+                                                  subTuple.item1;
+                                              final total = subTuple.item2;
+
+                                              return SingleChildScrollView(
+                                                controller: _scrollController,
+                                                scrollDirection:
+                                                    Axis.horizontal,
+                                                child: TabBar(
+                                                  controller: _tabController,
+                                                  isScrollable: true,
+                                                  labelStyle:
+                                                      typography.Subtitle2,
+                                                  indicatorColor:
+                                                      Colors.lightBlueAccent,
+                                                  labelColor:
+                                                      Colors.lightBlueAccent,
+                                                  unselectedLabelColor:
+                                                      Colors.white,
+                                                  tabs: [
+                                                    Tab(
+                                                      child: Row(
+                                                        children: [
+                                                          const Text(
+                                                              'My Sub Accounts'),
+                                                          if (!isSubLoading &&
+                                                              total > 0)
+                                                            SizedBox(
+                                                                width:
+                                                                    CustomSpacing
+                                                                        .two),
+                                                          if (!isSubLoading &&
+                                                              total > 0)
+                                                            SizedBox(
+                                                              height: 25,
+                                                              child: Chip(
+                                                                labelPadding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                                materialTapTargetSize:
+                                                                    MaterialTapTargetSize
+                                                                        .shrinkWrap,
+                                                                label: Text(
+                                                                  total
+                                                                      .toString(),
+                                                                  style: typography
+                                                                          .BottomNavigationActiveLabel
+                                                                      .copyWith(
+                                                                          height:
+                                                                              -0.6),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const Tab(text: 'Shared'),
+                                                    if (isSuperAdmin ||
+                                                        isPgAdmin)
+                                                      const Tab(
+                                                          text:
+                                                              'Configuration'),
+                                                    const Tab(
+                                                        text:
+                                                            'Access Requested'),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        IconButton(
+                                            icon: const Icon(Icons.arrow_right,
+                                                color: Colors.grey),
+                                            onPressed: _scrollRight),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+
+                                // ✅ Tab content (only rebuilt when relevant provider data changes)
+                                Expanded(
+                                  child: TabBarView(
+                                    controller: _tabController,
+                                    children: [
+                                      _getSubAccountUI(),
+                                      _getComingSoonUI("shared"),
+                                      if (isSuperAdmin || isPgAdmin)
+                                        ConfigurationTab(
+                                            accountId: widget.accountId),
+                                      _getComingSoonUI("request"),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+
+                    if (_showOverlay_subaccount) _buildOverlay(),
+                  ],
+                ),
+              );
+            },
+
+            // ✅ Background image outside rebuild
+            child: Positioned.fill(
+              child: Image.asset(
+                'assets/images/mesh.png',
+                fit: BoxFit.cover,
               ),
-            );
-          }),
+            ),
+          ),
+
+          // body: Consumer<UserProfileProvider>(
+          //     builder: (context, userProfileProvider, child) {
+          //   return PopScope(
+          //     canPop: /*_selectedScreen == Screens.connectionList ||
+          //               _selectedScreen == Screens.corporateConnectionList,*/
+          //         true,
+          //     onPopInvoked: (canPop) {
+          //       print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
+          //       /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+          //               setState(() {
+          //                 _selectedScreen = Screens.corporateConnectionList;
+          //               });
+          //             } else if (_selectedScreen == Screens.requestList) {
+          //               setState(() {
+          //                 _tabController?.animateTo(0);
+          //                 _selectedScreen = Screens.corporateConnectionList;
+          //               });
+          //             }*/
+          //     },
+          //     child: Stack(
+          //       children: [
+          //         // Background image
+          //         Positioned.fill(
+          //           child: Image.asset(
+          //             'assets/images/mesh.png',
+          //             fit: BoxFit.cover,
+          //           ),
+          //         ),
+          //         Column(
+          //           children: [
+          //             Expanded(
+          //               child: Container(
+          //                 margin:
+          //                     EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          //                 child: Column(
+          //                   crossAxisAlignment: CrossAxisAlignment.start,
+          //                   children: [
+          //                     SizedBox(height: CustomSpacing.one),
+          //                     Padding(
+          //                       padding: const EdgeInsets.symmetric(
+          //                           horizontal: 10.0),
+          //                       child: Row(
+          //                         children: [
+          //                           Padding(
+          //                             padding: const EdgeInsets.only(
+          //                                 top: 6.0, bottom: 6),
+          //                             child: Row(
+          //                               children: [
+          //                                 InkWell(
+          //                                   onTap: () {
+          //                                     Navigator.pushAndRemoveUntil(
+          //                                       context,
+          //                                       MaterialPageRoute(
+          //                                           builder: (context) =>
+          //                                               AccountListScreen()),
+          //                                       (route) =>
+          //                                           false, // This removes all previous routes
+          //                                     ).then((_) {
+          //                                       // Optional: Add any actions to perform after navigation
+          //                                     });
+          //                                   },
+          //                                   child: Text(
+          //                                       widget.accountName.toString(),
+          //                                       style: TextStyle(
+          //                                           fontSize: 14,
+          //                                           color: Colors.white70)),
+          //                                 ),
+          //                                 Text(' > ',
+          //                                     style: typography.InputLabel),
+          //                                 Text("Sub Accounts",
+          //                                     style: TextStyle(
+          //                                         fontSize: 14,
+          //                                         color: Colors.white)),
+          //                               ],
+          //                             ),
+          //                           ),
+          //                         ],
+          //                       ),
+          //                     ),
+          //                     SizedBox(height: CustomSpacing.two),
+          //                     Container(
+          //                       height: 50,
+          //                       decoration: BoxDecoration(
+          //                         color: Theme.of(context)
+          //                             .colorScheme
+          //                             .surfaceContainerHigh,
+          //                         borderRadius: BorderRadius.circular(
+          //                             16), // Rounded edges
+          //                       ),
+          //                       margin: EdgeInsets.symmetric(
+          //                           horizontal: 0, vertical: 0),
+          //                       child: DefaultTabController(
+          //                         length: _tabController!.length,
+          //                         child: Column(
+          //                           children: <Widget>[
+          //                             // Container for the TabBar with arrows
+          //                             Container(
+          //                               decoration: BoxDecoration(
+          //                                 borderRadius:
+          //                                     BorderRadius.circular(16),
+          //                                 color: Theme.of(context)
+          //                                     .colorScheme
+          //                                     .surfaceContainerHigh,
+          //                               ),
+          //                               height: 50,
+          //                               child: Row(
+          //                                 children: <Widget>[
+          //                                   // Left arrow button
+          //                                   IconButton(
+          //                                     icon: Icon(Icons.arrow_left,
+          //                                         color: Colors.grey),
+          //                                     onPressed: _scrollLeft,
+          //                                   ),
+          //                                   // Scrollable TabBar
+          //                                   Expanded(
+          //                                     child: Consumer<
+          //                                             SubAccountListProvider>(
+          //                                         builder: (context,
+          //                                             subAccountListProvider,
+          //                                             _) {
+          //                                       return SingleChildScrollView(
+          //                                         controller: _scrollController,
+          //                                         scrollDirection:
+          //                                             Axis.horizontal,
+          //                                         child: TabBar(
+          //                                           controller: _tabController,
+          //                                           tabAlignment:
+          //                                               TabAlignment.start,
+          //                                           labelStyle:
+          //                                               typography.Subtitle2,
+          //                                           isScrollable: true,
+          //                                           indicatorColor:
+          //                                               Colors.lightBlueAccent,
+          //                                           labelColor:
+          //                                               Colors.lightBlueAccent,
+          //                                           unselectedLabelColor:
+          //                                               Colors.white,
+          //                                           tabs: [
+          //                                             Tab(
+          //                                               child: Row(
+          //                                                 children: [
+          //                                                   Text(
+          //                                                     'My Sub Accounts',
+          //                                                   ),
+          //                                                   subAccountListProvider
+          //                                                               .isLoading ||
+          //                                                           subAccountListProvider
+          //                                                                   .totalRecords ==
+          //                                                               0
+          //                                                       ? SizedBox()
+          //                                                       : SizedBox(
+          //                                                           width:
+          //                                                               CustomSpacing
+          //                                                                   .two,
+          //                                                         ),
+          //                                                   subAccountListProvider
+          //                                                               .isLoading ||
+          //                                                           subAccountListProvider
+          //                                                                   .totalRecords ==
+          //                                                               0
+          //                                                       ? SizedBox()
+          //                                                       : SizedBox(
+          //                                                           height: 25,
+          //                                                           child: Chip(
+          //                                                             labelPadding:
+          //                                                                 EdgeInsets.all(
+          //                                                                     0),
+          //                                                             materialTapTargetSize:
+          //                                                                 MaterialTapTargetSize
+          //                                                                     .shrinkWrap,
+          //                                                             label:
+          //                                                                 Text(
+          //                                                               subAccountListProvider
+          //                                                                   .totalRecords
+          //                                                                   .toString(),
+          //                                                               style: typography.BottomNavigationActiveLabel.copyWith(
+          //                                                                   height:
+          //                                                                       -0.6),
+          //                                                             ),
+          //                                                           ),
+          //                                                         ),
+          //                                                 ],
+          //                                               ),
+          //                                             ),
+          //                                             Tab(text: 'Shared'),
+          //                                             if (isSuperAdmin ||
+          //                                                 isPgAdmin)
+          //                                               Tab(
+          //                                                   text:
+          //                                                       'Configuration'),
+          //                                             Tab(
+          //                                                 text:
+          //                                                     'Access Requested'),
+          //                                           ],
+          //                                         ),
+          //                                       );
+          //                                     }),
+          //                                   ),
+          //                                   // Right arrow button
+          //                                   IconButton(
+          //                                     icon: Icon(Icons.arrow_right,
+          //                                         color: Colors.grey),
+          //                                     onPressed: _scrollRight,
+          //                                   ),
+          //                                 ],
+          //                               ),
+          //                             ),
+          //                           ],
+          //                         ),
+          //                       ),
+          //                     ),
+          //                     Expanded(
+          //                       child: TabBarView(
+          //                         controller: _tabController,
+          //                         children: [
+          //                           _getSubAccountUI(),
+          //                           _getComingSoonUI("shared"),
+          //                           if (isSuperAdmin || isPgAdmin)
+          //                             ConfigurationTab(
+          //                                 accountId: widget.accountId),
+          //                           _getComingSoonUI("request"),
+          //                         ],
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //         if (_showOverlay_subaccount) _buildOverlay(),
+          //       ],
+          //     ),
+          //   );
+          // }),
         );
       }),
+    );
+  }
+
+  Widget _buildOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.7), // dim background/ dim background
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF232323),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(11),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Play icon + logo area
+                InkWell(
+                  onTap: () async {
+                    const url = 'https://www.youtube.com/watch?v=7kvdDtowGM0';
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(Uri.parse(url),
+                          mode: LaunchMode.externalApplication);
+                    }
+                    ;
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SvgPicture.asset(
+                        'assets/images/userguide.svg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                const Text(
+                  "Add a Sub Account",
+                  style: TextStyle(
+                    color: AppColors.primaryMain,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  "Create multiple portfolios under a single primary client entity. Perfect for managing different regions, teams, or buildings separately. ",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Container(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryMain,
+                          side: const BorderSide(color: AppColors.primaryMain),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _closeOverlay,
+                        child:
+                            const Text("Skip", style: TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryMain,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        _closeOverlay();
+                        _showAddSubAccountDialog(context);
+                      }, //_closeOverlay,
+                      child: const Text("Add Sub Account",
+                          style: TextStyle(color: Colors.black)),
+                    ),
+                  ],
+                ),
+                // const SizedBox(height: 16),
+                // const Text(
+                //   "New Account",
+                //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                // ),
+                // const SizedBox(height: 8),
+                // const Text(
+                //   "Create a primary account to organize your sub accounts and locations.",
+                //   // textAlign: TextAlign.center,
+                // ),
+                // const SizedBox(height: 20),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     TextButton(
+                //       onPressed: _closeOverlay,
+                //       child: const Text("Skip"),
+                //     ),
+                //     ElevatedButton(
+                //       onPressed: _closeOverlay,
+                //       child: const Text("Add Account"),
+                //     ),
+                //   ],
+                // ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -613,7 +888,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-
                   Card(
                     color: isDisabled
                         ? Theme.of(context).colorScheme.scrim
@@ -1477,7 +1751,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       content: Text(
                                                 LanguageService.getTranslated(
                                                     context,
-                                                    "sub_account_list_app_add_sub_account_empty_text_error"), style: TextStyle(color: Colors.black),
+                                                    "sub_account_list_app_add_sub_account_empty_text_error"),
+                                                style: TextStyle(
+                                                    color: Colors.black),
                                               )));
                                               return;
                                             }
@@ -1496,7 +1772,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       "sub_account_list_app_add_sub_account_empty_text_error"),
-                                                          style: TextStyle(color: Colors.black),
+                                                  style: TextStyle(
+                                                      color: Colors.black),
                                                 )));
                                                 return;
                                               }
@@ -1513,8 +1790,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           },
                                           child: Text(
                                             LanguageService.getTranslated(
-                                                    context,
-                                                    "sub_account_list_app_submit_text"),
+                                                context,
+                                                "sub_account_list_app_submit_text"),
                                             style: typography.ButtonLargeBlack,
                                           ),
                                           type: ButtonType.elevated,

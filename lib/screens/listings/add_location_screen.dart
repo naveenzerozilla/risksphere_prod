@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:RiskSphere/providers/location_list_provider.dart';
 import 'package:RiskSphere/providers/location_profile_provider.dart';
@@ -118,10 +119,16 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   Timer? _debounce;
   LatLng? _selectedLatLng;
   bool isSearchSelected = false;
+  Position? _currentPosition;
+  bool _isLocationLoading = false;
+  String _locationError = '';
 
   @override
   initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getCurrentLocation();
+    });
     _initPgAdmin();
     if (widget.locationId.isNotEmpty) {
       _getData();
@@ -205,6 +212,70 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   void dispose() {
     _debounce?.cancel();
     super.dispose();
+  }
+
+// Add this method to get current location
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLocationLoading = true;
+      _locationError = '';
+    });
+
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // ✅ Check service
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      setState(() {
+        _locationError = 'Please enable location services.';
+        _isLocationLoading = false;
+      });
+      return;
+    }
+
+    // ✅ Check permission
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _locationError = 'Location permission denied.';
+          _isLocationLoading = false;
+        });
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _locationError =
+            'Location permission permanently denied. Enable in settings.';
+        _isLocationLoading = false;
+      });
+      return;
+    }
+
+    // ✅ Finally get current position
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    setState(() {
+      _currentPosition = position;
+      _selectedLatLng = LatLng(position.latitude, position.longitude);
+      _isLocationLoading = false;
+    });
+
+    print('📍 Current location: ${position.latitude}, ${position.longitude}');
+
+    // Move map
+    final controller = await _mapController.future;
+    controller.animateCamera(CameraUpdate.newLatLngZoom(_selectedLatLng!, 16));
+
+    // Optional: update address
+    await _updateAddressFromCoordinates(_selectedLatLng!);
   }
 
   Future<void> _initPgAdmin() async {
@@ -341,343 +412,304 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             margin: const EdgeInsets.symmetric(
                                                 horizontal: 8),
                                             child: SizedBox(
-                                                height: 250,
-                                                width: double.infinity,
-                                                child:
-                                                    // _isSelectedFromAutocomplete
-                                                    //     ?
-                                                    AbsorbPointer(
-                                                  absorbing: !isSearchSelected,
-                                                  // 👈 disable gestures when false
-                                                  child: GoogleMap(
-                                                    zoomControlsEnabled: false,
-                                                    zoomGesturesEnabled: true,
-                                                    scrollGesturesEnabled: true,
-                                                    rotateGesturesEnabled:
-                                                        isSearchSelected,
-                                                    tiltGesturesEnabled:
-                                                        isSearchSelected,
-                                                    mapType: MapType.normal,
-
-                                                    // initialCameraPosition: _selectedLatLng != null
-                                                    //     ? CameraPosition(
-                                                    //   target: _selectedLatLng!,
-                                                    //   zoom: 16,
-                                                    // )
-                                                    //     : _defaultLocation,
-                                                    initialCameraPosition:
-                                                        _selectedLatLng != null
-                                                            ? CameraPosition(
-                                                                target:
-                                                                    _selectedLatLng!,
-                                                                zoom: 16)
-                                                            : CameraPosition(
-                                                                target:
-                                                                    const LatLng(
-                                                                        40.7128,
-                                                                        -74.0060),
-                                                                // New York
-                                                                zoom: 12,
-                                                              ),
-                                                    onMapCreated: (controller) {
-                                                      _mapController
-                                                          .complete(controller);
-                                                    },
-
-                                                    markers: {
-                                                      if (_selectedLatLng !=
-                                                          null)
-                                                        Marker(
-                                                          markerId: const MarkerId(
-                                                              'selected_location'),
-                                                          // position: _selectedLatLng!,
-                                                          position:
-                                                              _selectedLatLng ??
-                                                                  const LatLng(
+                                              height: 250,
+                                              width: double.infinity,
+                                              child:
+                                                  // _isSelectedFromAutocomplete
+                                                  //     ?
+                                                  AbsorbPointer(
+                                                absorbing: !isSearchSelected,
+                                                child: GoogleMap(
+                                                  zoomControlsEnabled: false,
+                                                  zoomGesturesEnabled: true,
+                                                  scrollGesturesEnabled: true,
+                                                  rotateGesturesEnabled:
+                                                      isSearchSelected,
+                                                  tiltGesturesEnabled:
+                                                      isSearchSelected,
+                                                  mapType: MapType.normal,
+                                                  initialCameraPosition:
+                                                      _selectedLatLng != null
+                                                          ? CameraPosition(
+                                                              target:
+                                                                  _selectedLatLng!,
+                                                              zoom: 16,
+                                                            )
+                                                          : _currentPosition !=
+                                                                  null
+                                                              ? CameraPosition(
+                                                                  target: LatLng(
+                                                                      _currentPosition!
+                                                                          .latitude,
+                                                                      _currentPosition!
+                                                                          .longitude),
+                                                                  zoom: 16,
+                                                                )
+                                                              : CameraPosition(
+                                                                  target: const LatLng(
                                                                       40.7128,
                                                                       -74.0060),
-                                                          draggable:
-                                                              isSearchSelected,
-                                                          // 👈 draggable only when true
-                                                          icon: BitmapDescriptor
-                                                              .defaultMarkerWithHue(
-                                                                  BitmapDescriptor
-                                                                      .hueRed),
-                                                          onDragEnd:
-                                                              (newPosition) async {
-                                                            if (isSearchSelected) {
-                                                              setState(() {
-                                                                _selectedLatLng =
-                                                                    newPosition;
-                                                                _latitudeController
-                                                                        .text =
-                                                                    newPosition
-                                                                        .latitude
-                                                                        .toStringAsFixed(
-                                                                            6);
-                                                                _longitudeController
-                                                                        .text =
-                                                                    newPosition
-                                                                        .longitude
-                                                                        .toStringAsFixed(
-                                                                            6);
-                                                              });
-                                                              final controller =
-                                                                  await _mapController
-                                                                      .future;
-                                                              controller.animateCamera(
-                                                                  CameraUpdate
-                                                                      .newLatLng(
-                                                                          newPosition));
-                                                              await _updateAddressFromCoordinates(
-                                                                  newPosition);
-                                                            }
-                                                          },
+                                                                  // New York fallback
+                                                                  zoom: 12,
+                                                                ),
+                                                  onMapCreated: (controller) {
+                                                    _mapController
+                                                        .complete(controller);
+
+                                                    // If we have current location but no selected location, move camera to current location
+                                                    if (_currentPosition !=
+                                                            null &&
+                                                        _selectedLatLng ==
+                                                            null) {
+                                                      WidgetsBinding.instance
+                                                          .addPostFrameCallback(
+                                                              (_) {
+                                                        controller
+                                                            .animateCamera(
+                                                          CameraUpdate
+                                                              .newLatLngZoom(
+                                                            LatLng(
+                                                                _currentPosition!
+                                                                    .latitude,
+                                                                _currentPosition!
+                                                                    .longitude),
+                                                            16,
+                                                          ),
+                                                        );
+                                                      });
+                                                    }
+                                                  },
+                                                  markers: {
+                                                    if (_selectedLatLng != null)
+                                                      Marker(
+                                                        markerId: const MarkerId(
+                                                            'selected_location'),
+                                                        position:
+                                                            _selectedLatLng!,
+                                                        draggable:
+                                                            isSearchSelected,
+                                                        icon: BitmapDescriptor
+                                                            .defaultMarkerWithHue(
+                                                          BitmapDescriptor
+                                                              .hueRed,
                                                         ),
-                                                    },
-
-                                                    onTap: (position) async {
-                                                      if (isSearchSelected) {
-                                                        setState(() {
-                                                          _selectedLatLng =
-                                                              position;
-                                                          _latitudeController
-                                                                  .text =
-                                                              position.latitude
-                                                                  .toStringAsFixed(
-                                                                      6);
-                                                          _longitudeController
-                                                                  .text =
-                                                              position.longitude
-                                                                  .toStringAsFixed(
-                                                                      6);
-                                                        });
-                                                        await _updateAddressFromCoordinates(
-                                                            position);
-                                                      }
-                                                    },
-
-                                                    onCameraMove: (_) {},
-                                                    gestureRecognizers: {
-                                                      Factory<OneSequenceGestureRecognizer>(
-                                                          () =>
-                                                              EagerGestureRecognizer()),
-                                                    },
-                                                  ),
-                                                )
-                                                //     : Image.asset(
-                                                //   'assets/images/google_map.png',
-                                                //   fit: BoxFit.cover,
-                                                // ),
+                                                        onDragEnd:
+                                                            (newPosition) async {
+                                                          if (isSearchSelected) {
+                                                            setState(() {
+                                                              _selectedLatLng =
+                                                                  newPosition;
+                                                              _latitudeController
+                                                                      .text =
+                                                                  newPosition
+                                                                      .latitude
+                                                                      .toStringAsFixed(
+                                                                          6);
+                                                              _longitudeController
+                                                                      .text =
+                                                                  newPosition
+                                                                      .longitude
+                                                                      .toStringAsFixed(
+                                                                          6);
+                                                            });
+                                                            final controller =
+                                                                await _mapController
+                                                                    .future;
+                                                            controller
+                                                                .animateCamera(
+                                                              CameraUpdate
+                                                                  .newLatLng(
+                                                                      newPosition),
+                                                            );
+                                                            await _updateAddressFromCoordinates(
+                                                                newPosition);
+                                                          }
+                                                        },
+                                                      ),
+                                                    // Add current location marker if available and no selected location
+                                                    if (_currentPosition !=
+                                                            null &&
+                                                        _selectedLatLng == null)
+                                                      Marker(
+                                                        markerId: const MarkerId(
+                                                            'current_location'),
+                                                        position: LatLng(
+                                                            _currentPosition!
+                                                                .latitude,
+                                                            _currentPosition!
+                                                                .longitude),
+                                                        icon: BitmapDescriptor
+                                                            .defaultMarkerWithHue(
+                                                          BitmapDescriptor
+                                                              .hueBlue,
+                                                        ),
+                                                        infoWindow: InfoWindow(
+                                                            title:
+                                                                'Current Location'),
+                                                      ),
+                                                  },
+                                                  onTap: (position) async {
+                                                    if (isSearchSelected) {
+                                                      setState(() {
+                                                        _selectedLatLng =
+                                                            position;
+                                                        _latitudeController
+                                                                .text =
+                                                            position.latitude
+                                                                .toStringAsFixed(
+                                                                    6);
+                                                        _longitudeController
+                                                                .text =
+                                                            position.longitude
+                                                                .toStringAsFixed(
+                                                                    6);
+                                                      });
+                                                      await _updateAddressFromCoordinates(
+                                                          position);
+                                                    }
+                                                  },
+                                                  onCameraMove: (_) {},
+                                                  gestureRecognizers: {
+                                                    Factory<
+                                                        OneSequenceGestureRecognizer>(
+                                                      () =>
+                                                          EagerGestureRecognizer(),
+                                                    ),
+                                                  },
                                                 ),
+                                              ),
+                                              //     AbsorbPointer(
+                                              //   absorbing: !isSearchSelected,
+                                              //   child: GoogleMap(
+                                              //     zoomControlsEnabled: false,
+                                              //     zoomGesturesEnabled: true,
+                                              //     scrollGesturesEnabled: true,
+                                              //     rotateGesturesEnabled:
+                                              //         isSearchSelected,
+                                              //     tiltGesturesEnabled:
+                                              //         isSearchSelected,
+                                              //     mapType: MapType.normal,
+                                              //     initialCameraPosition: _selectedLatLng != null
+                                              //         ? CameraPosition(
+                                              //       target: _selectedLatLng!,
+                                              //       zoom: 16,
+                                              //     )
+                                              //         : _currentPosition != null
+                                              //         ? CameraPosition(
+                                              //       target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                                              //       zoom: 16,
+                                              //     )
+                                              //         : CameraPosition(
+                                              //       target: const LatLng(40.7128, -74.0060), // New York fallback
+                                              //       zoom: 12,
+                                              //     ),
+                                              //
+                                              //     // initialCameraPosition:
+                                              //     //     _selectedLatLng != null
+                                              //     //         ? CameraPosition(
+                                              //     //             target:
+                                              //     //                 _selectedLatLng!,
+                                              //     //             zoom: 16)
+                                              //     //         : CameraPosition(
+                                              //     //             target:
+                                              //     //                 const LatLng(
+                                              //     //                     40.7128,
+                                              //     //                     -74.0060),
+                                              //     //             // New York
+                                              //     //             zoom: 12,
+                                              //     //           ),
+                                              //     onMapCreated: (controller) {
+                                              //       _mapController
+                                              //           .complete(controller);
+                                              //     },
+                                              //
+                                              //     markers: {
+                                              //       if (_selectedLatLng !=
+                                              //           null)
+                                              //         Marker(
+                                              //           markerId: const MarkerId(
+                                              //               'selected_location'),
+                                              //           // position: _selectedLatLng!,
+                                              //           position:
+                                              //               _selectedLatLng ??
+                                              //                   const LatLng(
+                                              //                       40.7128,
+                                              //                       -74.0060),
+                                              //           draggable:
+                                              //               isSearchSelected,
+                                              //           // 👈 draggable only when true
+                                              //           icon: BitmapDescriptor
+                                              //               .defaultMarkerWithHue(
+                                              //                   BitmapDescriptor
+                                              //                       .hueRed),
+                                              //           onDragEnd:
+                                              //               (newPosition) async {
+                                              //             if (isSearchSelected) {
+                                              //               setState(() {
+                                              //                 _selectedLatLng =
+                                              //                     newPosition;
+                                              //                 _latitudeController
+                                              //                         .text =
+                                              //                     newPosition
+                                              //                         .latitude
+                                              //                         .toStringAsFixed(
+                                              //                             6);
+                                              //                 _longitudeController
+                                              //                         .text =
+                                              //                     newPosition
+                                              //                         .longitude
+                                              //                         .toStringAsFixed(
+                                              //                             6);
+                                              //               });
+                                              //               final controller =
+                                              //                   await _mapController
+                                              //                       .future;
+                                              //               controller.animateCamera(
+                                              //                   CameraUpdate
+                                              //                       .newLatLng(
+                                              //                           newPosition));
+                                              //               await _updateAddressFromCoordinates(
+                                              //                   newPosition);
+                                              //             }
+                                              //           },
+                                              //         ),
+                                              //     },
+                                              //
+                                              //     onTap: (position) async {
+                                              //       if (isSearchSelected) {
+                                              //         setState(() {
+                                              //           _selectedLatLng =
+                                              //               position;
+                                              //           _latitudeController
+                                              //                   .text =
+                                              //               position.latitude
+                                              //                   .toStringAsFixed(
+                                              //                       6);
+                                              //           _longitudeController
+                                              //                   .text =
+                                              //               position.longitude
+                                              //                   .toStringAsFixed(
+                                              //                       6);
+                                              //         });
+                                              //         await _updateAddressFromCoordinates(
+                                              //             position);
+                                              //       }
+                                              //     },
+                                              //
+                                              //     onCameraMove: (_) {},
+                                              //     gestureRecognizers: {
+                                              //       Factory<OneSequenceGestureRecognizer>(
+                                              //           () =>
+                                              //               EagerGestureRecognizer()),
+                                              //     },
+                                              //   ),
+                                              // )
+                                              //     : Image.asset(
+                                              //   'assets/images/google_map.png',
+                                              //   fit: BoxFit.cover,
+                                              // ),
+                                            ),
                                           ),
-
-                                          // Container(
-                                          //   margin: const EdgeInsets.symmetric(horizontal: 8),
-                                          //   child: SizedBox(
-                                          //     height: 250,
-                                          //     width: double.infinity,
-                                          //     child: _isSelectedFromAutocomplete
-                                          //         ? AbsorbPointer(
-                                          //       absorbing: !isSearchSelected, // 👈 disables gestures when false
-                                          //       child: GoogleMap(
-                                          //         zoomControlsEnabled: false,
-                                          //         zoomGesturesEnabled: isSearchSelected,
-                                          //         scrollGesturesEnabled: isSearchSelected,
-                                          //         rotateGesturesEnabled: isSearchSelected,
-                                          //         tiltGesturesEnabled: isSearchSelected,
-                                          //         mapType: MapType.normal,
-                                          //         initialCameraPosition: _selectedLatLng != null
-                                          //             ? CameraPosition(
-                                          //           target: _selectedLatLng!,
-                                          //           zoom: 16,
-                                          //         )
-                                          //             : _defaultLocation,
-                                          //         onMapCreated: (controller) {
-                                          //           _mapController.complete(controller);
-                                          //         },
-                                          //
-                                          //         // 👇 Marker only when isSearchSelected == true
-                                          //         markers: isSearchSelected && _selectedLatLng != null
-                                          //             ? {
-                                          //           Marker(
-                                          //             markerId: const MarkerId('selected_location'),
-                                          //             position: _selectedLatLng!,
-                                          //             draggable: true,
-                                          //             icon: BitmapDescriptor.defaultMarkerWithHue(
-                                          //                 BitmapDescriptor.hueRed),
-                                          //             onDragEnd: (newPosition) async {
-                                          //               if (isSearchSelected) {
-                                          //                 setState(() {
-                                          //                   _selectedLatLng = newPosition;
-                                          //                   _latitudeController.text =
-                                          //                       newPosition.latitude.toStringAsFixed(6);
-                                          //                   _longitudeController.text =
-                                          //                       newPosition.longitude.toStringAsFixed(6);
-                                          //                 });
-                                          //                 final controller = await _mapController.future;
-                                          //                 controller.animateCamera(
-                                          //                     CameraUpdate.newLatLng(newPosition));
-                                          //                 await _updateAddressFromCoordinates(newPosition);
-                                          //               }
-                                          //             },
-                                          //           ),
-                                          //         }
-                                          //             : {},
-                                          //
-                                          //         onTap: (position) async {
-                                          //           if (isSearchSelected) {
-                                          //             setState(() {
-                                          //               _selectedLatLng = position;
-                                          //               _latitudeController.text =
-                                          //                   position.latitude.toStringAsFixed(6);
-                                          //               _longitudeController.text =
-                                          //                   position.longitude.toStringAsFixed(6);
-                                          //             });
-                                          //             await _updateAddressFromCoordinates(position);
-                                          //           }
-                                          //         },
-                                          //         onCameraMove: (_) {},
-                                          //         gestureRecognizers: {
-                                          //           Factory<OneSequenceGestureRecognizer>(
-                                          //                   () => EagerGestureRecognizer()),
-                                          //         },
-                                          //       ),
-                                          //     )
-                                          //         : Image.asset(
-                                          //       'assets/images/google_map.png',
-                                          //       fit: BoxFit.cover,
-                                          //     ),
-                                          //   ),
-                                          // ),
-
-                                          // Container(
-                                          //   margin: const EdgeInsets.symmetric(
-                                          //       horizontal: 8),
-                                          //   child: SizedBox(
-                                          //     height: 250,
-                                          //     width: double.infinity,
-                                          //     child: _isSelectedFromAutocomplete
-                                          //         ? Listener(
-                                          //             onPointerDown: (_) {},
-                                          //             child: GoogleMap(
-                                          //               zoomControlsEnabled:
-                                          //                   false,
-                                          //               zoomGesturesEnabled:
-                                          //                   true,
-                                          //               scrollGesturesEnabled: isSearchSelected,
-                                          //
-                                          //               rotateGesturesEnabled:
-                                          //                   true,
-                                          //               tiltGesturesEnabled:
-                                          //                   true,
-                                          //               mapType: MapType.normal,
-                                          //               initialCameraPosition:
-                                          //                   _selectedLatLng !=
-                                          //                           null
-                                          //                       ? CameraPosition(
-                                          //                           target:
-                                          //                               _selectedLatLng!,
-                                          //                           zoom: 16,
-                                          //                         )
-                                          //                       : _defaultLocation,
-                                          //               onMapCreated:
-                                          //                   (controller) {
-                                          //                 _mapController
-                                          //                     .complete(
-                                          //                         controller);
-                                          //               },
-                                          //               markers: {
-                                          //                 if (_selectedLatLng !=
-                                          //                     null)
-                                          //                   Marker(
-                                          //                     markerId:
-                                          //                         const MarkerId(
-                                          //                             'selected_location'),
-                                          //                     position:
-                                          //                         _selectedLatLng!,
-                                          //                     draggable: true,
-                                          //                     icon: BitmapDescriptor
-                                          //                         .defaultMarkerWithHue(
-                                          //                             BitmapDescriptor
-                                          //                                 .hueRed),
-                                          //                     onDrag:
-                                          //                         (newPosition) {
-                                          //                       setState(() {
-                                          //                         _selectedLatLng =
-                                          //                             newPosition;
-                                          //                       });
-                                          //                     },
-                                          //                     onDragEnd:
-                                          //                         (newPosition) async {
-                                          //                       if (isSearchSelected) {
-                                          //                         setState(() {
-                                          //                           _selectedLatLng =
-                                          //                               newPosition;
-                                          //                           _latitudeController
-                                          //                                   .text =
-                                          //                               newPosition
-                                          //                                   .latitude
-                                          //                                   .toStringAsFixed(6);
-                                          //                           _longitudeController
-                                          //                                   .text =
-                                          //                               newPosition
-                                          //                                   .longitude
-                                          //                                   .toStringAsFixed(6);
-                                          //                         });
-                                          //                         final controller =
-                                          //                             await _mapController
-                                          //                                 .future;
-                                          //                         controller.animateCamera(
-                                          //                             CameraUpdate
-                                          //                                 .newLatLng(
-                                          //                                     newPosition));
-                                          //                         await _updateAddressFromCoordinates(
-                                          //                             newPosition);
-                                          //                       }
-                                          //                     },
-                                          //                   ),
-                                          //               },
-                                          //               onTap: (position) {
-                                          //                 if (!isSearchSelected) {
-                                          //                   setState(() {
-                                          //                     _selectedLatLng =
-                                          //                         position;
-                                          //                     _latitudeController
-                                          //                             .text =
-                                          //                         position
-                                          //                             .latitude
-                                          //                             .toStringAsFixed(
-                                          //                                 6);
-                                          //                     _longitudeController
-                                          //                             .text =
-                                          //                         position
-                                          //                             .longitude
-                                          //                             .toStringAsFixed(
-                                          //                                 6);
-                                          //                   });
-                                          //                   _updateAddressFromCoordinates(
-                                          //                       position);
-                                          //                 }
-                                          //               },
-                                          //               onCameraMove:
-                                          //                   (position) {},
-                                          //               gestureRecognizers: <Factory<
-                                          //                   OneSequenceGestureRecognizer>>{
-                                          //                 Factory<
-                                          //                     OneSequenceGestureRecognizer>(
-                                          //                   () =>
-                                          //                       EagerGestureRecognizer(),
-                                          //                 ),
-                                          //               },
-                                          //             ),
-                                          //           )
-                                          //         : Image.asset(
-                                          //             'assets/images/google_map.png',
-                                          //             fit: BoxFit.cover,
-                                          //           ),
-                                          //   ),
-                                          // ),
                                         ],
 
                                         SizedBox(height: CustomSpacing.four),
@@ -692,54 +724,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   : "Edit Location",
                                               style: typography.H5_Regular),
                                         ),
-                                        // Text(hasGeocodingStatus.toString()),
-                                        // Text(userProfileProvider
-                                        //     .trialInfo['status']
-                                        //     .toString()),
-                                        // if (trialStatus.isNotEmpty ||
-                                        //     hasGeocodingStatus!.isNotEmpty)
 
-                                        //   Padding(
-                                        //     padding: const EdgeInsets.all(8.0),
-                                        //     child:
-                                        //         // hasAnyPlan.toString() == 'true' ?Container(child: Text("data")):
-                                        //         MessageCard(
-                                        //             isError:
-                                        //                 hasAnyPlan.toString() ==
-                                        //                         'true'
-                                        //                     ? locations > 1
-                                        //                     : locations < 1,
-                                        //             messageTextSpans: [
-                                        //           TextSpan(
-                                        //             text: hasAnyPlan
-                                        //                         .toString() ==
-                                        //                     'true'
-                                        //                 ? 'Available Credits: ${hasHazardLicenseStatus} locations.'
-                                        //                 : 'Available Credits: $locations of $total locations.',
-                                        //           ),
-                                        //           hasAnyPlan.toString() ==
-                                        //                   'true'
-                                        //               ? TextSpan(
-                                        //                   text: ' ',
-                                        //                 )
-                                        //               : TextSpan(
-                                        //                   recognizer:
-                                        //                       TapGestureRecognizer()
-                                        //                         ..onTap = () {
-                                        //                           Navigator.of(
-                                        //                                   context)
-                                        //                               .push(MaterialPageRoute(
-                                        //                                   builder: (_) =>
-                                        //                                       PurchaseLicensePage()));
-                                        //                         },
-                                        //                   text: ' Upgrade Now!',
-                                        //                   style: TextStyle(
-                                        //                     color: AppColors
-                                        //                         .primaryMain,
-                                        //                   ),
-                                        //                 ),
-                                        //         ]),
-                                        //   ),
                                         Padding(
                                           padding:
                                               const EdgeInsets.only(left: 8.0),
@@ -953,8 +938,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 },
                                                 decoration: InputDecoration(
                                                   labelText: isSearchSelected
-                                                      ? "Search for Your property"
-                                                      : "Enter address manually",
+                                                      ? "Enter address manually"
+                                                      : "Search for Your property",
                                                   border:
                                                       const OutlineInputBorder(),
                                                   prefixIcon:
@@ -1430,35 +1415,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           ),
                                         ),
 
-                                        // Padding(
-                                        //   padding: const EdgeInsets.all(8.0),
-                                        //   child: DropdownButtonFormField2<String>(
-                                        //
-                                        //
-                                        //     decoration: InputDecoration(
-                                        //       labelText: LanguageService.getTranslated(
-                                        //           context, "addlocation_location_type"),
-                                        //       border: OutlineInputBorder(),
-                                        //     ),
-                                        //     isExpanded: true,
-                                        //     value: _selectedLocationType,
-                                        //     onChanged: areFieldsDisabled()
-                                        //         ? null
-                                        //         : (String? newValue) {
-                                        //       setState(() {
-                                        //         _selectedLocationType = newValue;
-                                        //       });
-                                        //     },
-                                        //     items: ['Residential', 'Commercial', 'Industrial']
-                                        //         .map((item) => DropdownMenuItem<String>(
-                                        //       value: item,
-                                        //       child: Text(item),
-                                        //     ))
-                                        //         .toList(),
-                                        //
-                                        //   ),
-                                        // ),
-
                                         SizedBox(height: CustomSpacing.three),
                                         // Location City
                                         Padding(
@@ -1542,17 +1498,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                                   !addToSOVCheck;
                                                             });
                                                           },
-                                                // onChanged: trialStatus
-                                                //         .isNotEmpty
-                                                //     ? null
-                                                //     : areFieldsDisabled()
-                                                //         ? null // Disable checkbox if `areFieldsDisabled` is true
-                                                //         : (bool? value) {
-                                                //             setState(() {
-                                                //               addToSOVCheck =
-                                                //                   !addToSOVCheck;
-                                                //             });
-                                                //           },
                                               ),
                                               SizedBox(width: 8),
                                               Text(
@@ -1664,15 +1609,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                             }
                                                             return null;
                                                           },
-                                                          // validator: (value) {
-                                                          //   if (value == null || value.isEmpty) {
-                                                          //     return LanguageService.getTranslated(
-                                                          //         context,
-                                                          //         "addlocation_address_error");
-                                                          //   }
-                                                          //   return null;
-                                                          // },
-
                                                           decoration:
                                                               InputDecoration(
                                                             labelText:
@@ -1845,7 +1781,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   Future<void> _handleAddLocation(
       BuildContext context, Map<String, dynamic> body) async {
-    print("object11");
     final locationListProvider =
         Provider.of<LocationListProvider>(context, listen: false);
     await locationListProvider.addLocation(
@@ -1906,35 +1841,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         });
       }
     }
-
-    // if (success.toLowerCase() == 'true' && mounted) {
-    //   // Navigate and clear stack
-    //   Navigator.pop(context);
-    //   Future.microtask(() {
-    //     WidgetsBinding.instance.addPostFrameCallback((_) {
-    //       if (mounted) {
-    //         Navigator.pushAndRemoveUntil(
-    //           context,
-    //           MaterialPageRoute(
-    //             builder: (context) => LocationProfile(
-    //               accountId: widget.accountId,
-    //               subAccountId: widget.subAccountId,
-    //               sovId: widget.sovId,
-    //               accountName: widget.accountName,
-    //               subAccountName: widget.subAccountName,
-    //               sovName: widget.sovName,
-    //               locationId: widget.locationId,
-    //               searchQuery: widget.searchQuery,
-    //               page: widget.page,
-    //               totalPages: widget.totalPages,
-    //             ),
-    //           ),
-    //           (route) => false,
-    //         );
-    //       }
-    //     });
-    //   });
-    // }
   }
 
   Widget _buildButtonChild(BuildContext context) {
@@ -2046,75 +1952,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
   }
 
-  // void _handlePlaceSelection(Suggestion suggestion) async {
-  //   final placeApiProvider = PlaceApiProvider(sessionToken);
-  //   try {
-  //     final placeDetails =
-  //         await placeApiProvider.getPlaceDetails(suggestion.placeId);
-  //
-  //     // Extract address components
-  //     final addressComponents = placeDetails['address_components'] as List;
-  //     String? city, state, country, postalCode;
-  //
-  //     for (var component in addressComponents) {
-  //       final types = component['types'] as List;
-  //       if (types.contains('locality')) {
-  //         city = component['long_name'];
-  //       } else if (types.contains('administrative_area_level_1')) {
-  //         state = component['long_name'];
-  //       } else if (types.contains('country')) {
-  //         country = component['long_name'];
-  //       } else if (types.contains('postal_code')) {
-  //         postalCode = component['long_name'];
-  //       }
-  //     }
-  //
-  //     // Update form fields
-  //     setState(() {
-  //       _locationNameController.text = placeDetails['name'] ?? '';
-  //       _locationAddressController.text =
-  //           placeDetails['formatted_address'] ?? '';
-  //       if (city != null) _locationCityController.text = city;
-  //       if (state != null) _locationStateController.text = state;
-  //
-  //       if (postalCode != null) _locationZipCodeController.text = postalCode;
-  //     });
-  //     if (country != null) _updateSelectedCountry(country);
-  //
-  //     // Add marker
-  //     final geometry = placeDetails['geometry']['location'];
-  //     final MarkerId markerId = MarkerId("selected_location");
-  //     final marker = Marker(
-  //       markerId: markerId,
-  //       draggable: true,
-  //       position: LatLng(geometry['lat'], geometry['lng']),
-  //       infoWindow: InfoWindow(
-  //         title: placeDetails['name'],
-  //         snippet: placeDetails['formatted_address'],
-  //       ),
-  //     );
-  //
-  //     setState(() {
-  //       markers[markerId] = marker;
-  //     });
-  //
-  //     // Move camera to selected location
-  //     final GoogleMapController controller = await _mapController.future;
-  //     controller.animateCamera(CameraUpdate.newLatLng(
-  //       LatLng(geometry['lat'], geometry['lng']),
-  //     ));
-  //
-  //     // Set flag to true
-  //     _isSelectedFromAutocomplete = true;
-  //   } catch (e) {
-  //     // Handle error
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Failed to get place details: $e')),
-  //     );
-  //   }
-  // }
-
-  // Method to handle country update
   void _updateSelectedCountry(String country) {
     setState(() {
       _selectedCountry = country;
@@ -2123,11 +1960,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   }
 
   Future<void> _updateAddressFromCoordinates(LatLng position) async {
-    print(
-        "📍 Coordinates received: ${position.latitude}, ${position.longitude}");
+    print(" Coordinates received: ${position.latitude}, ${position.longitude}");
 
     try {
-      print("🔄 Attempting reverse geocoding...");
+      print(" Attempting reverse geocoding...");
 
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
@@ -2135,7 +1971,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       );
 
       print(
-          "✅ Reverse geocoding successful, found ${placemarks.length} placemarks");
+          " Reverse geocoding successful, found ${placemarks.length} placemarks");
 
       if (placemarks.isNotEmpty) {
         final place = placemarks[0];
@@ -2149,12 +1985,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
         _updateFormFieldsWithPlacemark(place);
       } else {
-        print("❌ No placemarks found");
+        print(" No placemarks found");
         _setFallbackAddress(position);
       }
     } catch (e) {
-      print("❌ Reverse geocoding failed: $e");
-      print("📱 Platform: ${Theme.of(context).platform}");
+      print("Reverse geocoding failed: $e");
+      print(" Platform: ${Theme.of(context).platform}");
 
       // Use fallback address with coordinates
       _setFallbackAddress(position);
@@ -2214,71 +2050,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         _selectedCountry = place.country!;
       }
     });
-//, Jayanagar, Bengaluru, Karnataka 560041, India
     // Update country picker if country changed
     if (place.country != null && place.country!.isNotEmpty) {
       _updateSelectedCountry(place.country!);
     }
   }
-
-  // Future<void> _updateAddressFromCoordinates(LatLng position) async {
-  //   try {
-  //     List<Placemark> placemarks = await placemarkFromCoordinates(
-  //       position.latitude,
-  //       position.longitude,
-  //     );
-  //
-  //     if (placemarks.isNotEmpty) {
-  //       final place = placemarks.first;
-  //
-  //       setState(() {
-  //         _locationAddressController.text =
-  //             "${place.street ?? ''} ${place.subThoroughfare ?? ''}".trim();
-  //         if (_locationAddressController.text.endsWith(',')) {
-  //           _locationAddressController.text = _locationAddressController.text
-  //               .substring(0, _locationAddressController.text.length - 1);
-  //         }
-  //         _locationCityController.text = place.locality ?? '';
-  //         _locationStateController.text = place.administrativeArea ?? '';
-  //         _locationZipCodeController.text = place.postalCode ?? '';
-  //         _selectedCountry = place.country ?? _selectedCountry;
-  //       });
-  //
-  //       // Update country if needed
-  //       if (place.country != null && place.country!.isNotEmpty) {
-  //         _updateSelectedCountry(place.country!);
-  //       }
-  //     }
-  //   } catch (e) {
-  //     print("Reverse geocoding failed: $e");
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Failed to get address: $e')),
-  //     );
-  //   }
-  // }
-
-  // Future<void> _updateAddressFromCoordinates(LatLng position) async {
-  //   try {
-  //     List<Placemark> placemarks = await placemarkFromCoordinates(
-  //       position.latitude,
-  //       position.longitude,
-  //     );
-  //
-  //     if (placemarks.isNotEmpty) {
-  //       final place = placemarks.first;
-  //
-  //       setState(() {
-  //         _locationAddressController.text =
-  //             "${place.street ?? ''}, ${place.subLocality ?? ''}, ${place.locality ?? ''}";
-  //         _locationCityController.text = place.locality ?? '';
-  //         _locationStateController.text = place.administrativeArea ?? '';
-  //         _locationZipCodeController.text = place.postalCode ?? '';
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print("Reverse geocoding failed: $e");
-  //   }
-  // }
 
   Widget _buildToggleButton({
     required String title,
@@ -2292,10 +2068,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         decoration: BoxDecoration(
           color: isSelected ? Color(0xFF90CAF9) : Colors.black26,
           borderRadius: BorderRadius.only(
-            topLeft: !isSearchSelected ?Radius.circular(1):Radius.circular(8),
-            bottomLeft: !isSearchSelected ?Radius.circular(1):Radius.circular(8),
-            topRight: isSearchSelected ?Radius.circular(8):Radius.circular(1),
-            bottomRight: isSearchSelected ?Radius.circular(8):Radius.circular(1),
+            topLeft:
+                !isSearchSelected ? Radius.circular(1) : Radius.circular(8),
+            bottomLeft:
+                !isSearchSelected ? Radius.circular(1) : Radius.circular(8),
+            topRight:
+                isSearchSelected ? Radius.circular(8) : Radius.circular(1),
+            bottomRight:
+                isSearchSelected ? Radius.circular(8) : Radius.circular(1),
           ),
         ),
         child: Text(
@@ -2305,21 +2085,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoButton() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.black87,
-        shape: BoxShape.circle,
-      ),
-      padding: const EdgeInsets.all(6),
-      child: const Icon(
-        Icons.info_outline,
-        color: Colors.white,
-        size: 16,
       ),
     );
   }

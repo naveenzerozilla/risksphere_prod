@@ -69,43 +69,6 @@ void main() async {
   );
 }
 
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await EasyLocalization.ensureInitialized();
-//   FirebasePerformance performance = FirebasePerformance.instance;
-//   try {
-//     await Firebase.initializeApp(
-//       options: DefaultFirebaseOptions.currentPlatform,
-//     );
-//     // Enable performance collection
-//     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-//   } catch (e) {
-//     debugPrint('Firebase initialization error: $e');
-//   }
-//
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-//
-//   try {
-//     Stripe.publishableKey =
-//         'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
-//     await Stripe.instance.applySettings();
-//   } catch (e, stackTrace) {
-//     debugPrint('Stripe initialization failed: $e');
-//     debugPrint('Stack trace: $stackTrace');
-//   }
-//
-//   initializeNotifications();
-//
-//   runApp(
-//     EasyLocalization(
-//       supportedLocales: const [Locale('en')],
-//       path: 'assets/translations',
-//       fallbackLocale: const Locale('en'),
-//       child: AppLifecycleManager(),
-//     ),
-//   );
-// }
-
 class AppLifecycleManager extends StatefulWidget {
   @override
   State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
@@ -388,3 +351,4 @@ class CustomToast {
     }
   }
 }
+

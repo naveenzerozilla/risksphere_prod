@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,22 @@ import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
+import 'package:tuple/tuple.dart';
+
+// ✅ Moved outside class — compute() requires top-level/static function
+Future<void> storeClaimsInBackground(Tuple2<Map<String, dynamic>, String> data) async {
+  final claims = data.item1;
+  final token = data.item2;
+
+  try {
+    await SharedPreferenceService.setClaims(claims);
+    // optionally store token if needed
+    // await SharedPreferenceService.setToken(token);
+    await SharedPreferenceService.getAllClaims();
+  } catch (e) {
+    debugPrint("Error storing claims in isolate: $e");
+  }
+}
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -28,10 +45,11 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     _controller.forward();
+
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     _initialScreenFuture = _determineInitialScreen();
   }
@@ -40,56 +58,46 @@ class _SplashScreenState extends State<SplashScreen>
     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     authNotifier.initialOptions();
 
-    _test(); // Optional
-
     try {
-      // Wait a little for Firebase to restore the session
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Give Firebase time to restore session
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      // 👇 Use direct currentUser check
-      User? currentUser = FirebaseAuth.instance.currentUser;
+      final user = FirebaseAuth.instance.currentUser;
 
-      if (currentUser == null) {
+      if (user == null) {
         log("No currentUser found.");
         return const LoginScreen();
       }
 
-      // Reload to ensure token/claims are updated
-      await currentUser.reload();
-      final tokenResult = await currentUser.getIdTokenResult();
-      final tokenString = await currentUser.getIdToken();
+      // Run Firebase calls in parallel
+      final results = await Future.wait([
+        user.reload(),
+        user.getIdTokenResult(),
+        user.getIdToken(),
+      ]);
+
+      final tokenResult = results[1] as IdTokenResult;
+      final tokenString = results[2] as String;
       final claims = tokenResult.claims ?? {};
 
-      log("Claims: $claims");
-      log("Token: $tokenString");
+      // ✅ Run heavy preference writes off main thread
+      await compute(storeClaimsInBackground, Tuple2(claims, tokenString));
 
-      await SharedPreferenceService.setClaims(claims);
-      await SharedPreferenceService.getAllClaims();
-
-      Future.microtask(() {
-        Provider.of<UserProfileProvider>(context, listen: false)
-            .getAllUserData(context, '', '');
+      // ✅ Fetch profile after UI builds
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.microtask(() {
+          final profileProvider =
+          Provider.of<UserProfileProvider>(context, listen: false);
+          profileProvider.getAllUserData(context, '', '');
+        });
       });
 
-      return DashboardScreen(); // ✅ Go to dashboard
+      // ✅ Instantly go to Dashboard
+      return const DashboardScreen();
     } catch (e, stackTrace) {
       log("Error in _determineInitialScreen: $e\n$stackTrace");
       return const LoginScreen();
     }
-  }
-
-
-  void _test() {
-    final db = FirebaseFirestore.instance;
-    final docRef = db.collection("test_process").doc("6gIC6Ljq3A3TQxUIH2oz");
-
-    docRef.snapshots().listen(
-      (event) {
-        log("current data: ${event.data()}");
-        log("loading percent: ${event.data()?['progress']}");
-      },
-      onError: (error) => log("Listen failed: $error"),
-    );
   }
 
   @override
@@ -109,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
             body: Center(
               child: FadeTransition(
                 opacity: _animation,
-                child: Container(
+                child: SizedBox(
                   width: 200,
                   height: 200,
                   child: SvgPicture.asset(
@@ -133,9 +141,9 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 // import 'dart:developer';
-//
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:flutter/foundation.dart';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_svg/flutter_svg.dart';
 // import 'package:provider/provider.dart';
@@ -145,8 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
 // import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 // import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 // import 'package:RiskSphere/service/shared_preference_service.dart';
-//
-// import 'login_screen_new.dart';
+// import 'package:tuple/tuple.dart';
 //
 // class SplashScreen extends StatefulWidget {
 //   @override
@@ -158,11 +165,11 @@ class _SplashScreenState extends State<SplashScreen>
 //   late AnimationController _controller;
 //   late Animation<double> _animation;
 //   late ThemeProvider themeProvider;
+//   late Future<Widget> _initialScreenFuture;
 //
 //   @override
 //   void initState() {
 //     super.initState();
-//     _initialize();
 //     _controller = AnimationController(
 //       vsync: this,
 //       duration: Duration(milliseconds: 300),
@@ -170,78 +177,111 @@ class _SplashScreenState extends State<SplashScreen>
 //     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
 //     _controller.forward();
 //     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-//   }
+//     _initialScreenFuture = _determineInitialScreen();
+//   } // for compute
 //
-//
-//   Future<void> _initialize() async {
+//   Future<Widget> _determineInitialScreen() async {
 //     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
 //     authNotifier.initialOptions();
 //
-//     _test();
-//
 //     try {
-//       // 👇 Wait for Firebase to restore auth state properly
-//       final currentUser = await FirebaseAuth.instance.authStateChanges().first;
+//       // Let Firebase restore session briefly
+//       await Future.delayed(const Duration(milliseconds: 300));
 //
-//       if (currentUser == null) {
-//         log("No current user found. Redirecting to LoginScreen.");
-//         WidgetsBinding.instance.addPostFrameCallback((_) {
-//           Navigator.pushReplacement(
-//             context,
-//             MaterialPageRoute(builder: (_) => const LoginScreen()),
-//           );
-//         });
-//         return;
+//       final user = FirebaseAuth.instance.currentUser;
+//
+//       if (user == null) {
+//         log("No currentUser found.");
+//         return const LoginScreen();
 //       }
 //
-//       await currentUser.reload();
+//       // Parallel: reload user + fetch token + claims
+//       final results = await Future.wait([
+//         user.reload(),
+//         user.getIdTokenResult(),
+//         user.getIdToken(),
+//       ]);
 //
-//       final tokenResult = await currentUser.getIdTokenResult();
-//       final tokenString = await currentUser.getIdToken();
+//       final tokenResult = results[1] as IdTokenResult;
+//       final tokenString = results[2] as String;
 //       final claims = tokenResult.claims ?? {};
 //
-//       log("Claims: $claims");
-//       log("Token: $tokenString");
+//       // ✅ Move SharedPreferences + claim storage off the main thread
+//       await compute(_storeClaimsInBackground, Tuple2(claims, tokenString));
 //
-//       await SharedPreferenceService.setClaims(claims);
-//       await SharedPreferenceService.getAllClaims();
-//
-//       final isUserRegistered = claims['isIndividual'] != null;
-//       log("isUserRegistered: $isUserRegistered");
-//
-//       if (tokenString != null && tokenString.isNotEmpty) {
-//         WidgetsBinding.instance.addPostFrameCallback((_) {
-//           Navigator.pushReplacement(
-//             context,
-//             MaterialPageRoute(builder: (_) => DashboardScreen()),
-//           );
-//         });
-//
-//         // Load user profile in background
-//         Future.microtask(() {
-//           Provider.of<UserProfileProvider>(context, listen: false)
-//               .getAllUserData(context, '', '');
-//         });
-//       } else {
-//         log("Empty tokenString. Redirecting to LoginScreen.");
-//         WidgetsBinding.instance.addPostFrameCallback((_) {
-//           Navigator.pushReplacement(
-//             context,
-//             MaterialPageRoute(builder: (_) => const LoginScreen()),
-//           );
-//         });
-//       }
-//     } catch (e, stackTrace) {
-//       log("Navigation error: $e\n$stackTrace");
+//       // ✅ Schedule user profile fetch after UI builds
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
-//         Navigator.pushReplacement(
-//           context,
-//           MaterialPageRoute(builder: (_) => const LoginScreen()),
-//         );
+//         Future.microtask(() {
+//           final profileProvider =
+//               Provider.of<UserProfileProvider>(context, listen: false);
+//           profileProvider.getAllUserData(context, '', '');
+//         });
 //       });
+//
+//       // ✅ Instantly return dashboard while background tasks continue
+//       return const DashboardScreen();
+//     } catch (e, stackTrace) {
+//       log("Error in _determineInitialScreen: $e\n$stackTrace");
+//       return const LoginScreen();
 //     }
 //   }
 //
+// // Runs in a background isolate
+//   void _storeClaimsInBackground(
+//       Tuple2<Map<String, dynamic>, String> data) async {
+//     final claims = data.item1;
+//     final token = data.item2;
+//
+//     try {
+//       await SharedPreferenceService.setClaims(claims);
+//       // await SharedPreferenceService.setToken(token);
+//       await SharedPreferenceService.getAllClaims();
+//     } catch (e) {
+//       debugPrint("Error storing claims in isolate: $e");
+//     }
+//   }
+//
+//   // Future<Widget> _determineInitialScreen() async {
+//   //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+//   //   authNotifier.initialOptions();
+//   //
+//   //   _test(); // Optional
+//   //
+//   //   try {
+//   //     // Wait a little for Firebase to restore the session
+//   //     await Future.delayed(const Duration(milliseconds: 500));
+//   //
+//   //     // 👇 Use direct currentUser check
+//   //     User? currentUser = FirebaseAuth.instance.currentUser;
+//   //
+//   //     if (currentUser == null) {
+//   //       log("No currentUser found.");
+//   //       return const LoginScreen();
+//   //     }
+//   //
+//   //     // Reload to ensure token/claims are updated
+//   //     await currentUser.reload();
+//   //     final tokenResult = await currentUser.getIdTokenResult();
+//   //     final tokenString = await currentUser.getIdToken();
+//   //     final claims = tokenResult.claims ?? {};
+//   //
+//   //     log("Claims: $claims");
+//   //     log("Token: $tokenString");
+//   //
+//   //     await SharedPreferenceService.setClaims(claims);
+//   //     await SharedPreferenceService.getAllClaims();
+//   //
+//   //     Future.microtask(() {
+//   //       Provider.of<UserProfileProvider>(context, listen: false)
+//   //           .getAllUserData(context, '', '');
+//   //     });
+//   //
+//   //     return DashboardScreen(); // ✅ Go to dashboard
+//   //   } catch (e, stackTrace) {
+//   //     log("Error in _determineInitialScreen: $e\n$stackTrace");
+//   //     return const LoginScreen();
+//   //   }
+//   // }
 //
 //   void _test() {
 //     final db = FirebaseFirestore.instance;
@@ -264,21 +304,34 @@ class _SplashScreenState extends State<SplashScreen>
 //
 //   @override
 //   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: themeProvider.getTheme.scaffoldBackgroundColor,
-//       body: Center(
-//         child: FadeTransition(
-//           opacity: _animation,
-//           child: Container(
-//             width: 200,
-//             height: 200,
-//             child: SvgPicture.asset(
-//               'assets/images/logo.svg',
-//               semanticsLabel: 'Logo',
+//     return FutureBuilder<Widget>(
+//       future: _initialScreenFuture,
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//           return Scaffold(
+//             backgroundColor: themeProvider.getTheme.scaffoldBackgroundColor,
+//             body: Center(
+//               child: FadeTransition(
+//                 opacity: _animation,
+//                 child: Container(
+//                   width: 200,
+//                   height: 200,
+//                   child: SvgPicture.asset(
+//                     'assets/images/logo.svg',
+//                     semanticsLabel: 'Logo',
+//                   ),
+//                 ),
+//               ),
 //             ),
-//           ),
-//         ),
-//       ),
+//           );
+//         }
+//
+//         if (snapshot.hasError || !snapshot.hasData) {
+//           return const LoginScreen();
+//         }
+//
+//         return snapshot.data!;
+//       },
 //     );
 //   }
 // }

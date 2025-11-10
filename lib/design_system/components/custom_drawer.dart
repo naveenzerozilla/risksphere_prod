@@ -32,6 +32,7 @@ import '../../screens/payments/transaction_summary.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/debouncer.dart';
+import '../../utils/global_imports.dart';
 import '../primitives/app_colors.dart';
 import '../primitives/utilities/custom_spacing.dart';
 import 'custom_button.dart';
@@ -800,7 +801,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           // Sign out from Google
                                           await _googleSignIn.signOut();
                                         }
-
+                                        final prefs = await SharedPreferences
+                                            .getInstance();
+                                        await prefs.setBool(
+                                            'isFirstTime', false);
                                         // Step 2: Sign out from Firebase
                                         await FirebaseAuth.instance.signOut();
                                         await authNotifier.signOut();
@@ -997,13 +1001,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         return Consumer<UserProfileProvider>(
                           builder: (context, userProfileProvider, child) {
                             bool isNotIndividual =
-                            !(userProfileProvider.userData.isIndividual ??
-                                true); // Defaulting to true if null
+                                !(userProfileProvider.userData.isIndividual ??
+                                    true); // Defaulting to true if null
 
                             return userProfileProvider.isLoading
                                 ? Center(child: CircularProgressIndicator())
                                 : isNotIndividual
-                                ? Container(
+                                    ? Container(
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(66),

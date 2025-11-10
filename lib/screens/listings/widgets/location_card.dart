@@ -172,7 +172,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             long: widget.long,
                             geocodingAddress: widget.address,
                             conflict: widget.conflict,
-                            sovId: 'null',
+                            sovId: widget.sovId!,
                           )))
                   .then((result) {
                   if (result == true) {
@@ -357,7 +357,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                           ),
                         ),
                         TextSpan(
-                          text: widget.ownerName ?? "",
+                          text: "Admin"?? "",
                           style: typography.Body2.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark

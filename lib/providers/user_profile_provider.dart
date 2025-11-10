@@ -36,6 +36,30 @@ class UserProfileProvider with ChangeNotifier {
     });
   }
 
+// Tracks if last API call failed
+  bool _hasError = false;
+
+  bool get hasError => _hasError;
+
+  set hasError(bool value) {
+    _hasError = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+// Tracks if user data has been successfully fetched
+  bool _isDataFetched = false;
+
+  bool get isDataFetched => _isDataFetched;
+
+  set isDataFetched(bool value) {
+    _isDataFetched = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   bool _isRolesLoading = false;
 
   bool get isRolesLoading => _isRolesLoading;
@@ -138,53 +162,98 @@ class UserProfileProvider with ChangeNotifier {
   Future<UserData?> getAllUserData(
       BuildContext context, String searchText, String filter) async {
     try {
-      // Set loading state to true
       isLoading = true;
-      // Use API Service to fetch companies
+      hasError = false;
+      isDataFetched = false;
+
       ApiService apiService = ApiService(AppConstant.GET_USER_DETAILS);
-      // Send a GET request to the API
       Map<String, dynamic> response =
           await apiService.get('?current_user=true');
-      // Parse the response into a list of employees
+
       UserData? userDataLocal;
-      print("Contains Key user? ${response.containsKey('user')}");
       if (response.containsKey('user')) {
         userDataLocal = UserData.fromJson(response['user']);
       }
-      print("user: $userDataLocal");
-      // Update the list of companies and notify listeners
+
       if (userDataLocal != null) {
         _userData = userDataLocal;
+        isDataFetched = true; // ✅ Mark as successfully fetched
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
       }
+
       await fetchTrialInfo();
       isLoading = false;
       return userDataLocal;
     } on BackendException catch (e) {
-      // Catch any errors that occur during the process
-      print('Error1: $e'); // Log the error
-      // Show a generic error message to the user
-      // if (context.mounted) CustomToast.error(context, e.message);
-      await fetchTrialInfo();
+      log('Error1: $e');
+      hasError = true; // ✅ mark error state
       isLoading = false;
-      return null; // Return an empty list in case of error
+      isDataFetched = false;
+      await fetchTrialInfo();
+      return null;
     } catch (e, stackTrace) {
-      // Catch any errors that occur during the process
-      print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-      log('Error2: $e'); // Log the error
-      // Show a generic error message to the user
-      // TODO: Display a generic error message to the user
-
-      await fetchTrialInfo();
+      log('Error2: $e\nStack Trace: $stackTrace');
+      hasError = true;
       isLoading = false;
+      isDataFetched = false;
+      await fetchTrialInfo();
       if (!context.mounted) return null;
-      /* CustomToast.error(
-          context, 'Error fetching companies. Please try again later.');*/
-      return null; // Return an empty list in case of error
+      return null;
     }
   }
+
+  // Future<UserData?> getAllUserData(
+  //     BuildContext context, String searchText, String filter) async {
+  //   try {
+  //     // Set loading state to true
+  //     isLoading = true;
+  //     // Use API Service to fetch companies
+  //     ApiService apiService = ApiService(AppConstant.GET_USER_DETAILS);
+  //     // Send a GET request to the API
+  //     Map<String, dynamic> response =
+  //         await apiService.get('?current_user=true');
+  //     // Parse the response into a list of employees
+  //     UserData? userDataLocal;
+  //     print("Contains Key user? ${response.containsKey('user')}");
+  //     if (response.containsKey('user')) {
+  //       userDataLocal = UserData.fromJson(response['user']);
+  //     }
+  //     print("user: $userDataLocal");
+  //     // Update the list of companies and notify listeners
+  //     if (userDataLocal != null) {
+  //       _userData = userDataLocal;
+  //       WidgetsBinding.instance.addPostFrameCallback((_) {
+  //         notifyListeners();
+  //       });
+  //     }
+  //     await fetchTrialInfo();
+  //     isLoading = false;
+  //     return userDataLocal;
+  //   } on BackendException catch (e) {
+  //     // Catch any errors that occur during the process
+  //     print('Error1: $e'); // Log the error
+  //     // Show a generic error message to the user
+  //     // if (context.mounted) CustomToast.error(context, e.message);
+  //     await fetchTrialInfo();
+  //     isLoading = false;
+  //     return null; // Return an empty list in case of error
+  //   } catch (e, stackTrace) {
+  //     // Catch any errors that occur during the process
+  //     print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
+  //     log('Error2: $e'); // Log the error
+  //     // Show a generic error message to the user
+  //     // TODO: Display a generic error message to the user
+  //
+  //     await fetchTrialInfo();
+  //     isLoading = false;
+  //     if (!context.mounted) return null;
+  //     /* CustomToast.error(
+  //         context, 'Error fetching companies. Please try again later.');*/
+  //     return null; // Return an empty list in case of error
+  //   }
+  // }
 
   Future<void> fetchTrialInfo() async {
     bool isTrialApplicable =
@@ -574,15 +643,15 @@ class UserProfileProvider with ChangeNotifier {
     }
   }
 
-  Future<void> signInRoleBasedSwitch(BuildContext context, Map<String, dynamic> payload) async {
-
+  Future<void> signInRoleBasedSwitch(
+      BuildContext context, Map<String, dynamic> payload) async {
     try {
-      ApiService apiService = ApiService('${AppConstant.SWITCH_INDIVIDUAL_URL}');
-    var response = await apiService.post(payload);
-      if (response['message'] == "Last selected role updated successfully" ) {
+      ApiService apiService =
+          ApiService('${AppConstant.SWITCH_INDIVIDUAL_URL}');
+      var response = await apiService.post(payload);
+      if (response['message'] == "Last selected role updated successfully") {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-              builder: (_) => DashboardScreen()),
+          MaterialPageRoute(builder: (_) => DashboardScreen()),
         );
         CustomToast.success(context, 'Last selected role updated successfully');
       } else {

@@ -37,6 +37,9 @@ class DataTab extends StatefulWidget {
   final String? accountId;
   final String? subaccountId;
   final String? locationId;
+  final String? sovId;
+  final String? campusId;
+  final bool? campusStatus;
 
   const DataTab({
     Key? key,
@@ -44,6 +47,9 @@ class DataTab extends StatefulWidget {
     this.accountId,
     this.subaccountId,
     this.locationId,
+    this.sovId,
+    this.campusId,
+    this.campusStatus,
   }) : super(key: key);
 
   @override
@@ -51,11 +57,13 @@ class DataTab extends StatefulWidget {
 }
 
 class _DataTabState extends State<DataTab> {
+  String? selectedParameterList = 'Sub Account';
   TextEditingController _userSearchController = TextEditingController();
   List<String> selectedServices = [];
   List<int> selectedStars = [];
   List<String> vendorList = [];
   String? expandedElement;
+  bool isDropdownOpen = false;
 
   @override
   void initState() {
@@ -69,13 +77,13 @@ class _DataTabState extends State<DataTab> {
       Provider.of<SubaccountParameterProvider>(context, listen: false)
           .fetchHazardList(context);
       Provider.of<SubaccountParameterProvider>(context, listen: false)
-          .fetchSubaccountParameters(context, widget.subaccountId, '', '', '');
+          .fetchSubaccountParameters(context, widget.subaccountId, '', '', '',
+              '', selectedParameterList, widget.sovId, widget.campusId);
     });
   }
 
   String? selectedHazard;
   String selectedParameter = 'All Parameters';
-  String selectedParameterList = 'Select';
 
   final uniqueResults = <String, Result>{};
 
@@ -132,12 +140,6 @@ class _DataTabState extends State<DataTab> {
     'Low Impact Parameters',
     'My Parameters',
   ];
-  List<String> parametersList = [
-    'Sub Account',
-    'Location',
-    'Campus',
-    'Sov',
-  ];
 
   // List<String> parameters = ['Earthquake', 'Riverine Flood', 'Wildfire'];
   List<String> filteredParameters = [];
@@ -175,7 +177,15 @@ class _DataTabState extends State<DataTab> {
     print(" Submitting hazard: $hazardName");
     await Provider.of<SubaccountParameterProvider>(context, listen: false)
         .fetchSubaccountParameters(
-            context, widget.subaccountId, hazardName, '', widget.locationId);
+            context,
+            widget.subaccountId,
+            hazardName,
+            '',
+            widget.locationId,
+            '',
+            selectedParameterList,
+            widget.sovId,
+            widget.campusId);
   }
 
   String _searchText = '';
@@ -198,22 +208,32 @@ class _DataTabState extends State<DataTab> {
           // Grouping logic starts here
           Map<String, List<Result>> groupedResults = {};
 
-         for (final result in (provider.parameters?.result ?? const <Result>[])) {
-           final impactType = result.criticality?.impactType?.toString() ?? 'Unknown';
+          for (final result
+              in (provider.parameters?.result ?? const <Result>[])) {
+            final impactType =
+                result.criticality?.impactType?.toString() ?? 'Unknown';
 
-           final list = groupedResults.putIfAbsent(impactType, () => []);
+            final list = groupedResults.putIfAbsent(impactType, () => []);
 
-           if (!list.any((r) => r.name == result.name)) {
-             list.add(result);
-           }
-         }
+            if (!list.any((r) => r.name == result.name)) {
+              list.add(result);
+            }
+          }
           final uniqueResultList = uniqueResults.values.toList();
           return RefreshIndicator(
             onRefresh: () async {
               await Provider.of<SubaccountParameterProvider>(context,
                       listen: false)
                   .fetchSubaccountParameters(
-                      context, widget.subaccountId, '', '', '');
+                      context,
+                      widget.subaccountId,
+                      '',
+                      '',
+                      '',
+                      '',
+                      selectedParameterList,
+                      widget.sovId,
+                      widget.campusId);
             },
             child: SingleChildScrollView(
               child: Column(
@@ -226,80 +246,7 @@ class _DataTabState extends State<DataTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (showDropdownList)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[900],
-                              border: Border.all(color: Colors.white24),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemCount: parametersList.length,
-                                  itemBuilder: (context, index) {
-                                    final item = parametersList[index];
-                                    final isSelected =
-                                        selectedParameterList == item;
-
-                                    return ListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      leading: Icon(
-                                        isSelected
-                                            ? Icons.radio_button_checked
-                                            : Icons.radio_button_unchecked,
-                                        color: isSelected
-                                            ? Colors.lightBlue
-                                            : Colors.white,
-                                      ),
-                                      title: Text(
-                                        item,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? Colors.lightBlue
-                                              : Colors.white,
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                      tileColor: isSelected
-                                          ? Colors.blueGrey[800]
-                                          : Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      onTap: () {
-                                        setState(() {
-                                          selectedParameterList = item;
-                                          _controllerlist.text = item;
-                                          showDropdownList = false;
-                                        });
-                                        print(item);
-                                        print(selectedParameterList);
-                                        Provider.of<SubaccountParameterProvider>(
-                                                context,
-                                                listen: false)
-                                            .fetchSubaccountParameters(
-                                          context,
-                                          widget.subaccountId,
-                                          '',
-                                          selectedParameterList,
-                                          widget.locationId,
-                                        );
-                                      },
-                                    );
-                                  },
-                                )
-                              ],
-                            ),
-                          ),
-
+                        twoButtonDropdown(context),
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: _controller,
@@ -835,20 +782,23 @@ class _DataTabState extends State<DataTab> {
                           padding:
                               EdgeInsets.only(left: 10, right: 10, bottom: 10),
                           child: ImpactDataCard(
-                            subAccountId: widget.subaccountId,
-                            title: impactType,
-                            titleColor: impactType == "high"
-                                ? Color(0xFFEF5350)
-                                : impactType == "low"
-                                    ? const Color(0xFF9C27B0)
-                                    : impactType == "medium"
-                                        ? const Color(0xFFEF6C00)
-                                        : impactType == "general"
-                                            ? const Color.fromARGB(
-                                                255, 41, 182, 246)
-                                            : Colors.white,
-                            dataElements: dataElements,
-                          ),
+                              subAccountId: widget.subaccountId,
+                              locationId: widget.locationId,
+                              sovId: widget.sovId,
+                              campusId: widget.campusId,
+                              title: impactType,
+                              titleColor: impactType == "high"
+                                  ? Color(0xFFEF5350)
+                                  : impactType == "low"
+                                      ? const Color(0xFF9C27B0)
+                                      : impactType == "medium"
+                                          ? const Color(0xFFEF6C00)
+                                          : impactType == "general"
+                                              ? const Color.fromARGB(
+                                                  255, 41, 182, 246)
+                                              : Colors.white,
+                              dataElements: dataElements,
+                              selectedParameterList: selectedParameterList!),
                         );
                       },
                     ),
@@ -864,6 +814,160 @@ class _DataTabState extends State<DataTab> {
           );
         },
       ),
+    );
+  }
+
+  Widget twoButtonDropdown(BuildContext context) {
+    // ✅ One master list
+    final List<String> parametersList = [
+      'Sub Account',
+      'Location',
+      'Campus',
+      'Sov',
+    ];
+
+    // ✅ Dynamically filter based on sovId and campusStatus
+    final filteredParametersList = parametersList.where((item) {
+      final sovId = widget.sovId;
+      final campusStatus = widget.campusStatus ?? false;
+
+      // 🔸 Hide "Campus" if campusStatus is false (regardless of sovId)
+      if (!campusStatus && item == 'Campus') {
+        return false;
+      }
+
+      // 🔸 If sovId == null → hide Campus & Sov
+      if (sovId == null && (item == 'Campus' || item == 'Sov')) {
+        return false;
+      }
+
+      // 🔸 If sovId == "" → hide Sov
+      if (sovId != null && sovId.isEmpty && item == 'Sov') {
+        return false;
+      }
+
+      // 🔸 If sovId not empty & campusStatus false → hide Campus
+      if (sovId != null &&
+          sovId.isNotEmpty &&
+          !campusStatus &&
+          item == 'Campus') {
+        return false;
+      }
+
+      // ✅ Otherwise show item
+      return true;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      isDropdownOpen = !isDropdownOpen;
+                    });
+                  },
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      selectedParameterList!.isEmpty
+                          ? "Sub Account"
+                          : selectedParameterList!,
+                      style: TextStyle(
+                        color: selectedParameterList!.isEmpty
+                            ? Colors.white54
+                            : Colors.white,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    isDropdownOpen = !isDropdownOpen;
+                  });
+                },
+                icon: Icon(
+                  isDropdownOpen
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Dropdown list
+        if (isDropdownOpen)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey[850],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Column(
+              children: filteredParametersList.map((item) {
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      selectedParameterList = item;
+                      _controllerlist.text = item;
+                      isDropdownOpen = false;
+                    });
+
+                    // Call provider
+                    Provider.of<SubaccountParameterProvider>(
+                      context,
+                      listen: false,
+                    ).fetchSubaccountParameters(
+                        context,
+                        widget.subaccountId,
+                        '',
+                        selectedParameterList,
+                        widget.locationId,
+                        widget.campusId,
+                        selectedParameterList,
+                        selectedParameterList,
+                        widget.sovId);
+                    print(selectedParameterList);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          item,
+                          style: TextStyle(
+                            color: selectedParameterList == item
+                                ? Colors.lightBlue
+                                : Colors.white,
+                            fontWeight: selectedParameterList == item
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -964,20 +1068,28 @@ class _DataTabState extends State<DataTab> {
 
 class ImageUploadCard extends StatefulWidget {
   final String subAccountId;
+  final String locationId;
+  final String sovId;
+  final String campusId;
   final String title;
   User user;
   Result result;
   ParameterType? parametertype;
   final Function(List<ImageProvider>) onImagesUpdated;
+  final String selectedParameterList;
 
   ImageUploadCard({
     Key? key,
     required this.subAccountId,
+    required this.locationId,
+    required this.sovId,
+    required this.campusId,
     required this.title,
     required this.user,
     required this.result,
     required this.onImagesUpdated,
     required this.parametertype,
+    required this.selectedParameterList,
   }) : super(key: key);
 
   @override
@@ -1265,12 +1377,16 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                     );
 
                                     await provider.submitParameterUpdate(
-                                      context: context,
-                                      subaccountId: widget.subAccountId,
-                                      parameterId:
-                                          widget.result.dataCategoryId!,
-                                      updatedFields: updatedFields,
-                                    );
+                                        context: context,
+                                        subaccountId: widget.subAccountId,
+                                        locationId: widget.locationId,
+                                        sovId: widget.sovId,
+                                        campusId: widget.campusId,
+                                        parameterId:
+                                            widget.result.dataCategoryId!,
+                                        updatedFields: updatedFields,
+                                        selectedParameterList:
+                                            widget.selectedParameterList);
 
                                     if (context.mounted) {
                                       WidgetsBinding.instance
@@ -1279,8 +1395,16 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                             SubaccountParameterProvider>(
                                           context,
                                           listen: false,
-                                        ).fetchSubaccountParameters(context,
-                                            widget.subAccountId, '', '', '');
+                                        ).fetchSubaccountParameters(
+                                            context,
+                                            widget.subAccountId,
+                                            '',
+                                            '',
+                                            '',
+                                            '',
+                                            '',
+                                            '',
+                                            '');
                                       });
                                       Navigator.pop(context);
                                     }
@@ -1298,127 +1422,13 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                     }
                                   }
                                 },
-
-                          // onPressed: isUploading
-                          //     ? null
-                          //     : () async {
-                          //         widget
-                          //             .result.parameterValue!.reference!.length;
-                          //         String selectedImageUrl = '';
-                          //
-                          //         if (widget.result.parameterValue!.reference!
-                          //                 .length >
-                          //             0) {
-                          //           selectedImageUrl = widget
-                          //               .result
-                          //               .parameterValue!
-                          //               .reference![0]
-                          //               .url[0]; // Get the first URL
-                          //         }
-                          //
-                          //         // Ensure either selected images or an existing image URL is provided
-                          //         if (selectedImages.isEmpty &&
-                          //             existingImageUrl.isEmpty) {
-                          //           Fluttertoast.showToast(
-                          //               msg:
-                          //                   "Please select file(s) or provide an existing image URL");
-                          //           return;
-                          //         }
-                          //
-                          //         setModalState(() => isUploading = true);
-                          //
-                          //         try {
-                          //           List<String> downloadUrls = [];
-                          //
-                          //           // If there are selected images, upload them and get their download URLs
-                          //           for (File file in selectedImages) {
-                          //             final fileName =
-                          //                 file.path.split('/').last;
-                          //             final storageRef =
-                          //                 FirebaseStorage.instance.ref().child(
-                          //                     'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName');
-                          //
-                          //             final uploadTask =
-                          //                 storageRef.putFile(file);
-                          //             final snapshot = await uploadTask;
-                          //             final downloadUrl =
-                          //                 await snapshot.ref.getDownloadURL();
-                          //             downloadUrls.add(downloadUrl);
-                          //           }
-                          //
-                          //           final List<Map<String, dynamic>>
-                          //               references = [];
-                          //
-                          //           // Add the existing image URL if provided
-                          //           if (existingImageUrl.isNotEmpty) {
-                          //             references.add({
-                          //               "url": [existingImageUrl],
-                          //               // Use the existing image URL
-                          //               "tags": [],
-                          //               // Handle the existing image's tags if needed
-                          //               "name": "existing_image",
-                          //               // Use a name or leave it as 'existing_image'
-                          //             });
-                          //           }
-                          //
-                          //           // Add newly uploaded file URLs to the references list
-                          //           for (int i = 0;
-                          //               i < selectedImages.length;
-                          //               i++) {
-                          //             final file = selectedImages[i];
-                          //             references.add({
-                          //               "url": [downloadUrls[i]],
-                          //               // New download URL
-                          //               "tags": fileTags[file] ?? [],
-                          //               // Tags for the file
-                          //               "name": file.path.split('/').last,
-                          //               // Name of the uploaded file
-                          //             });
-                          //           }
-                          //
-                          //           final updatedFields = {
-                          //             "value": "",
-                          //             "param_type": "Files",
-                          //             "reference": references,
-                          //             // This contains both the existing and newly uploaded URLs
-                          //           };
-                          //
-                          //           final provider = Provider.of<
-                          //                   SubaccountParameterProvider>(
-                          //               context,
-                          //               listen: false);
-                          //
-                          //           await provider.submitParameterUpdate(
-                          //             context: context,
-                          //             subaccountId: widget.subAccountId,
-                          //             parameterId:
-                          //                 widget.result.dataCategoryId!,
-                          //             updatedFields: updatedFields,
-                          //           );
-                          //
-                          //           if (context.mounted) {
-                          //             Navigator.pop(context);
-                          //           }
-                          //         } catch (e) {
-                          //           if (context.mounted) {
-                          //             ScaffoldMessenger.of(context)
-                          //                 .showSnackBar(SnackBar(
-                          //                     content:
-                          //                         Text("Upload failed: $e")));
-                          //           }
-                          //         } finally {
-                          //           if (context.mounted) {
-                          //             setModalState(() => isUploading = false);
-                          //           }
-                          //         }
-                          //       },
                           child: isUploading
                               ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2))
-                              : Text("Submit"),
+                              : Text("Submit2"),
                         ),
                       ],
                     ),
@@ -1778,7 +1788,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                     right: 4,
                                     child: GestureDetector(
                                       onTap: () {
-                                        print("Deleter");
                                         setState(() {
                                           references![refIndex]
                                               .url
@@ -1800,6 +1809,10 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                               .fetchSubaccountParameters(
                                                   context,
                                                   widget.subAccountId,
+                                                  '',
+                                                  '',
+                                                  '',
+                                                  '',
                                                   '',
                                                   '',
                                                   '');
@@ -2020,7 +2033,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                   ),
                 )
               : Text(
-                  'Submit',
+                  "Submit",
                   style: typography.Body1.copyWith(color: AppColors.black),
                 ),
           type: ButtonType.elevated,
@@ -2155,8 +2168,12 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       await provider.submitParameterUpdate(
         context: context,
         subaccountId: widget.subAccountId,
+        locationId: widget.locationId,
+        sovId: widget.sovId,
+        campusId: widget.campusId,
         parameterId: widget.result.dataCategoryId!,
         updatedFields: updatedFields,
+        selectedParameterList: widget.selectedParameterList!,
       );
     } catch (e) {
       _showError('Error: ${e.toString()}');
@@ -2353,11 +2370,10 @@ class DataCompletenessCard extends StatelessWidget {
             style: TextStyle(color: Colors.white60, fontSize: 13),
           ),
           const SizedBox(height: 4),
-      Text(
-        parameterType.toLowerCase() == 'high'
-            ? (weightage?.high ?? 0).toString()
-            : (weightage?.low ?? 0).toString(),
-
+          Text(
+            parameterType.toLowerCase() == 'high'
+                ? (weightage?.high ?? 0).toString()
+                : (weightage?.low ?? 0).toString(),
             style: const TextStyle(
               fontSize: 18,
               color: Colors.white,

@@ -1,6 +1,4 @@
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-
+import 'package:tuple/tuple.dart';
 import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
@@ -52,31 +50,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
   GlobalKey keyFeature3 = GlobalKey();
   List<TargetFocus> targets = [];
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _scrollController = ScrollController();
-  //   _initializeData();
-  //
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     final prefs = await SharedPreferences.getInstance();
-  //     bool isFirstTime = prefs.getBool('isTutorialShown') ?? true;
-  //
-  //     if (isFirstTime) {
-  //       await Future.delayed(Duration(milliseconds: 10));
-  //       initTargets();
-  //       showTutorial();
-  //       await prefs.setBool('isTutorialShown', false);
-  //     }
-  //   });
-  // }
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Kick off initialization in background
     _initializeData();
 
-    _tryShowTutorialOnce();
+    // Show tutorial asynchronously (non-blocking)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tryShowTutorialOnce();
+    });
+  }
+
+  Future<void> _initializeData() async {
+    // Load static or cacheable data first (SharedPreferences, claims)
+    await _setClaims();
+
+    // Start async loading of dynamic data (feeds, dashboard, etc.)
+    unawaited(_loadAsyncData());
+  }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_PG_ADMIN) ??
+        false;
+    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_ADMIN) ??
+        false;
+    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.IS_SUPER_ADMIN) ??
+        false;
+    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+            SharedPreferenceService.Is_Indivudual) ??
+        false;
+    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
+    showTotalCorporates = results[0] ?? false;
+    showAllUsers = results[1] ?? false;
+    showConnectionRequests = results[2] ?? false;
+    showCompanyOnboardingStats = results[3] ?? false;
+    showUserOnboardingStats = results[4] ?? false;
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
+        showVerificationRequests =
+            showCorporateVerificationRequests || showUserVerificationRequests;
+
+    _getData();
+    _getMaintainancePeriod();
+    setState(() {});
+  }
+
+  Future<void> _loadAsyncData() async {
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
+    final userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final configProvider =
+        Provider.of<ConfigurationProvider>(context, listen: false);
+    final newsProvider = Provider.of<NewsFeedProvider>(context, listen: false);
+
+    try {
+      // Run all heavy network calls concurrently
+      await Future.wait([
+        dashboardProvider.getDashboardData(context),
+        userProfileProvider.getAllUserData(context, "", ""),
+        configProvider.getConfiguration(accountId: null, subAccountId: null),
+        configProvider.getVendors(),
+        newsProvider.fetchNewsFeed(),
+      ]);
+
+      userProfileProvider.fetchTrialInfo();
+
+      final config = configProvider.configurations['result'] ?? {};
+      subscriptions = config['subscribe'] ?? {};
+      vendorList = configProvider.vendors['result'] ?? [];
+
+      if (mounted) setState(() {});
+    } catch (error, stack) {
+      debugPrint("⚠️ Error fetching data: $error\n$stack");
+    }
   }
 
   void _tryShowTutorialOnce() async {
@@ -104,18 +177,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     });
   }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _scrollController = ScrollController();
-  //   _initializeData(); // Any async loading if needed
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     await Future.delayed(Duration(milliseconds: 300));
-  //     initTargets();
-  //     showTutorial();
-  //   });
-  // }
 
   void initTargets() {
     targets.addAll([
@@ -209,67 +270,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ).show(context: context);
   }
 
-  Future<void> _initializeData() async {
-    await Future.wait([
-      _setClaims(),
-      Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed(),
-    ]);
-  }
-
-  Future<void> _setClaims() async {
-    final results = await Future.wait([
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASTC),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASTU),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASCR),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASCO),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASUO),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.CAMLL),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.CAMVU),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASVR),
-    ]);
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_ADMIN) ??
-        false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_SUPER_ADMIN) ??
-        false;
-    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.Is_Indivudual) ??
-        false;
-    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
-    showTotalCorporates = results[0] ?? false;
-    showAllUsers = results[1] ?? false;
-    showConnectionRequests = results[2] ?? false;
-    showCompanyOnboardingStats = results[3] ?? false;
-    showUserOnboardingStats = results[4] ?? false;
-
-    bool showCorporateVerificationRequests = results[5] ?? false;
-    bool showUserVerificationRequests = results[6] ?? false;
-    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
-        showVerificationRequests =
-            showCorporateVerificationRequests || showUserVerificationRequests;
-
-    _getData();
-    _getMaintainancePeriod();
-    setState(() {});
-  }
-
   Future<void> _getMaintainancePeriod() async {
     isMaintenance =
         await SharedPreferenceService.getScheduleInProgress() ?? "false";
-    startDate=await SharedPreferenceService.getUpcomingScheduleStartTime() ?? "";
-    endDate=await SharedPreferenceService.getUpcomingScheduleEndTime() ?? "";
+    startDate =
+        await SharedPreferenceService.getUpcomingScheduleStartTime() ?? "";
+    endDate = await SharedPreferenceService.getUpcomingScheduleEndTime() ?? "";
   }
 
   Future<void> _getData() async {
@@ -470,8 +476,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: MaintenanceUI(
                             isMaintenance: "isMaintenance",
                             startDate: startDate,
-                            endDate: endDate
-                        ),
+                            endDate: endDate),
                       )
                     ],
                     Text(
@@ -823,74 +828,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _subscriptionBody() {
-    return Consumer2<UserProfileProvider, ConfigurationProvider>(
-        builder: (context, userProfileProvider, provider, child) {
-      return provider.isLoading
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 50),
-              alignment: Alignment.center,
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height / 2,
-              child: const CircularProgressIndicator(),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: subscriptions.keys.map((key) {
-                return FutureBuilder<Map<String, dynamic>?>(
-                  future: _fetchSubscriptionData(key), // Fetch data per item
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting ||
-                        loadingSubscriptions.contains(key)) {
-                      return Center(
-                          child:
-                              CircularProgressIndicator()); // Loader for this item
-                    }
+    return Selector2<UserProfileProvider, ConfigurationProvider,
+        Tuple4<bool, Map<String, dynamic>?, bool, String>>(
+      selector: (_, userProfile, config) => Tuple4(
+          config.isLoading,
+          userProfile.trialInfo,
+          (userProfile.trialInfo['status']?.toString() ?? '') == 'active',
+          ''
 
-                    if (!snapshot.hasData) {
-                      return SizedBox.shrink(); // Hide if no data
-                    }
+          // userProfile.isSubscribed,
+          // userProfile.subscriptionStatus ?? '',
+          ),
+      builder: (context, data, child) {
+        final isConfigLoading = data.item1;
+        final trialInfo = data.item2;
+        final isSubscribed = data.item3;
+        final subscriptionStatus = data.item4;
 
-                    final data = snapshot.data!;
-                    return Column(
-                      children: [
-                        Consumer<UserProfileProvider>(
-                            builder: (context, userProfile, child) {
-                          final trialStatus =
-                              userProfile.trialInfo['status'] ?? '';
+        if (isConfigLoading) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 50),
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height / 2,
+            child: const CircularProgressIndicator(),
+          );
+        }
 
-                          return SubscriptionCard(
-                            title:
-                                '${data['hazardLabel']} (${data['vendorName']})',
-                            description: data['description'] ??
-                                "Basic Subscription plan",
-                            iconPath: data['vendorImage'],
-                            isSubscribed: data['isSubscribed'],
-                            onSubscribe: () async {
-                              setState(() =>
-                                  loadingSubscriptions.add(key)); // Show loader
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => PurchaseLicensePage()));
-                              // await _updateSubscription(
-                              //     key,
-                              //     data['isSubscribed'],
-                              //     data['mainId'],
-                              //     data['level']);
-                              setState(() => loadingSubscriptions
-                                  .remove(key)); // Remove loader
-                            },
-                            isPgAdmin: isPgAdmin,
-                            isAdmin: isAdmin,
-                            isSuperAdmin: isSuperAdmin,
-                          );
-                        }),
-                        SizedBox(height: CustomSpacing.one),
-                      ],
-                    );
-                  },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: subscriptions.keys.map((key) {
+            return FutureBuilder<Map<String, dynamic>?>(
+              future: _fetchSubscriptionData(key),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    loadingSubscriptions.contains(key)) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+
+                final data = snapshot.data!;
+                final trialStatus = trialInfo?['status'] ?? '';
+
+                return Column(
+                  children: [
+                    SubscriptionCard(
+                      title: '${data['hazardLabel']} (${data['vendorName']})',
+                      description:
+                          data['description'] ?? "Basic Subscription plan",
+                      iconPath: data['vendorImage'],
+                      isSubscribed: data['isSubscribed'],
+                      onSubscribe: () async {
+                        setState(() => loadingSubscriptions.add(key));
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const PurchaseLicensePage()));
+                        setState(() => loadingSubscriptions.remove(key));
+                      },
+                      isPgAdmin: isPgAdmin,
+                      isAdmin: isAdmin,
+                      isSuperAdmin: isSuperAdmin,
+                    ),
+                    SizedBox(height: CustomSpacing.one),
+                  ],
                 );
-              }).toList(),
+              },
             );
-    });
+          }).toList(),
+        );
+      },
+    );
   }
 
   /// Fetch vendor and hazard data for each subscription key

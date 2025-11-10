@@ -33,7 +33,7 @@ class MyScrollableScoresWidget extends StatelessWidget {
               children: [
                 _buildScoreCard(context, 'Geocoding Score', geocodingScore,true),
                 _buildScoreCard(context, 'Risk Score', int.parse(riskScore.toString()),true),
-                _buildScoreCard(context, 'Completeness',  int.parse(dataCompleteness),true),
+                _buildScoreCard(context, 'Data Completeness', dataCompleteness == 0 ? 1 : int.parse(dataCompleteness), true),
                 // _buildScoreCard(context, 'Construction', riskScore),
               ],
             ),
@@ -58,7 +58,7 @@ class MyScrollableScoresWidget extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(right: 8),
       padding: EdgeInsets.all(8),
-      width: 100,
+      width: 130,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHigh,

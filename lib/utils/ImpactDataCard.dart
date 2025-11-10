@@ -15,16 +15,24 @@ import '../screens/listings/widgets/data_tab.dart';
 
 class ImpactDataCard extends StatefulWidget {
   final String? subAccountId;
+  final String? locationId;
+  final String? sovId;
+  final String? campusId;
   final String title;
   final Color titleColor;
   final List<ImpactDataElement> dataElements;
+  final String? selectedParameterList;
 
   const ImpactDataCard({
     Key? key,
     this.subAccountId,
+    this.locationId,
+    this.sovId,
+    this.campusId,
     required this.title,
     required this.titleColor,
     required this.dataElements,
+    required this.selectedParameterList,
   }) : super(key: key);
 
   @override
@@ -269,6 +277,9 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                           padding: const EdgeInsets.all(16.0),
                           child: ImageUploadCard(
                             subAccountId: widget.subAccountId!,
+                            locationId: widget.locationId!,
+                            sovId: widget.sovId ?? '',
+                            campusId: widget.campusId ?? '',
                             title: element.name,
                             user: element.user,
                             result: element.result,
@@ -276,6 +287,8 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             onImagesUpdated: (images) {
                               print("Uploaded Images Count: ${images.length}");
                             },
+                            selectedParameterList:
+                                widget.selectedParameterList!,
                           ),
                         ),
                     ],
@@ -608,8 +621,7 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
           final date = DateTime.tryParse(value);
           if (date != null) {
             return Text(
-              "Added Value : "+
-              DateFormat('dd/MM/yyyy HH:mm:ss').format(date),
+              "Added Value : " + DateFormat('dd/MM/yyyy HH:mm:ss').format(date),
               style: TextStyle(color: Colors.white),
             );
           }
@@ -635,7 +647,8 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
         }
 
         // Otherwise, return plain string
-        return Text("Added Value : "+value, style: TextStyle(color: Colors.white));
+        return Text("Added Value : " + value,
+            style: TextStyle(color: Colors.white));
       }
 
       // Handle if value is already a Map
@@ -644,9 +657,11 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
       }
 
       // Fallback
-      return Text("123456789"+value.toString(), style: TextStyle(color: Colors.white));
+      return Text("123456789" + value.toString(),
+          style: TextStyle(color: Colors.white));
     } catch (e) {
-      return Text("12345678"+value.toString(), style: TextStyle(color: Colors.white));
+      return Text("12345678" + value.toString(),
+          style: TextStyle(color: Colors.white));
     }
   }
 
@@ -655,7 +670,7 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
     // Priority: Show "value" key if exists and not empty
     if (map.containsKey("value") &&
         (map["value"]?.toString().isNotEmpty ?? false)) {
-      return Text("Added Value : "+map["value"].toString(),
+      return Text("Added Value : " + map["value"].toString(),
           style: TextStyle(color: Colors.white));
     }
 
@@ -663,7 +678,8 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
     for (var entry in map.entries) {
       final val = entry.value?.toString() ?? "";
       if (val.trim().isNotEmpty) {
-        return Text("Added Value : "+val, style: TextStyle(color: Colors.white));
+        return Text("Added Value : " + val,
+            style: TextStyle(color: Colors.white));
       }
     }
 

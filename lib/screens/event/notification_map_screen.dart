@@ -167,13 +167,13 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
                     target: LatLng(20.5937, 78.9629), // Example: India
                     zoom: 5.0,
                   ),
-                  tileOverlays: {
-                    if (mapUrl != null)
-                      TileOverlay(
-                        tileOverlayId: TileOverlayId('map'),
-                        tileProvider: CustomTileProvider(baseUrl: mapUrl!),
-                      ),
-                  },
+                  // tileOverlays: {
+                  //   if (mapUrl != null)
+                  //     TileOverlay(
+                  //       tileOverlayId: TileOverlayId('map'),
+                  //       tileProvider: CustomTileProvider(baseUrl: mapUrl!),
+                  //     ),
+                  // },
                 ),
               ),
             ),

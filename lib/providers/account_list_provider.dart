@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:RiskSphere/models/PricingModel.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -294,9 +295,8 @@ class AccountListProvider extends ChangeNotifier {
       log('API response: $response'); // full response log
       print(response.toString());
 
-      PricingModel pricingListData = PricingModel.fromJson(response);
+      final pricingListData = await compute(PricingModel.fromJson, response);
       pricingList = pricingListData.result!;
-      log('✅ Success: Pricing list fetched successfully. Total records: $pricingListData');
 
       isLoading = false;
       isNextPageLoading = false;
@@ -389,62 +389,105 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetch account list with pagination and search query
   Future<void> fetchAccountList(
       BuildContext context, String searchQuery, int page, int pageSize) async {
-    var typography = CustomTypography(context);
+    final typography = CustomTypography(context);
 
     try {
       if (isLoading || isNextPageLoading) return;
+
       if (page == 1) {
         isLoading = true;
       } else {
         isNextPageLoading = true;
       }
-      ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      String url = '?page=$page&pageSize=$pageSize';
-      if (searchQuery.isNotEmpty) {
-        url += '&search=$searchQuery'; // Change ? to & here
-      }
-      var response = await apiService.get(url);
-      log(response.toString());
 
-      AccountListModel accountListModel = AccountListModel.fromJson(response);
+      final apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+      var url = '?page=$page&pageSize=$pageSize';
+      if (searchQuery.isNotEmpty) {
+        url += '&search=$searchQuery';
+      }
+      final response = await apiService.get(url);
+      final accountListModel =
+          await compute(AccountListModel.fromJson, response);
       showOwner = accountListModel.settings?.owner ?? true;
       showSOVCount = accountListModel.settings?.sovCount ?? true;
       showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
       showOverallScore = accountListModel.settings?.overallScore ?? true;
       accountHits = accountListModel.totalRecords ?? 0;
-      totalPages = accountHits ~/ pageSize;
+      totalPages = (accountHits / pageSize).ceil();
+
       if (page == 1) {
         accountList = accountListModel.results ?? [];
       } else {
         addToAccountList(accountListModel.results ?? []);
       }
-      isLoading = false;
-      isNextPageLoading = false;
     } on BackendException catch (e, stackTrace) {
-      print(stackTrace);
-      isLoading = false;
-      isNextPageLoading = false;
-      print(e.message.toString());
+      debugPrintStack(stackTrace: stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          e.message,
-          style: typography.Body1,
-        ),
+        content: Text(e.message, style: typography.Body1),
       ));
     } catch (e, stackTrace) {
-      print(stackTrace);
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
       isLoading = false;
       isNextPageLoading = false;
-      print(e.toString());
-      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      //   content: Text(e.toString(), style: typography.Body1,),
-      //
-      // ));
+      notifyListeners(); // make sure this is called only once at the end
     }
   }
+
+  // Future<void> fetchAccountList(
+  //     BuildContext context, String searchQuery, int page, int pageSize) async {
+  //   var typography = CustomTypography(context);
+  //
+  //   try {
+  //     if (isLoading || isNextPageLoading) return;
+  //     if (page == 1) {
+  //       isLoading = true;
+  //     } else {
+  //       isNextPageLoading = true;
+  //     }
+  //     ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
+  //     String url = '?page=$page&pageSize=$pageSize';
+  //     if (searchQuery.isNotEmpty) {
+  //       url += '&search=$searchQuery'; // Change ? to & here
+  //     }
+  //     var response = await apiService.get(url);
+  //     log(response.toString());
+  //
+  //     AccountListModel accountListModel = AccountListModel.fromJson(response);
+  //     showOwner = accountListModel.settings?.owner ?? true;
+  //     showSOVCount = accountListModel.settings?.sovCount ?? true;
+  //     showSubAccountCount = accountListModel.settings?.subAccountCount ?? true;
+  //     showOverallScore = accountListModel.settings?.overallScore ?? true;
+  //     accountHits = accountListModel.totalRecords ?? 0;
+  //     totalPages = accountHits ~/ pageSize;
+  //     if (page == 1) {
+  //       accountList = accountListModel.results ?? [];
+  //     } else {
+  //       addToAccountList(accountListModel.results ?? []);
+  //     }
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //   } on BackendException catch (e, stackTrace) {
+  //     print(stackTrace);
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(e.message.toString());
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  //       content: Text(
+  //         e.message,
+  //         style: typography.Body1,
+  //       ),
+  //     ));
+  //   } catch (e, stackTrace) {
+  //     print(stackTrace);
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     print(e.toString());
+  //
+  //   }
+  // }
 
   /// Rename account
   Future<void> renameAccount(
@@ -531,7 +574,6 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  /// Change column visibility
   Future<bool> changeColumnVisibility(BuildContext context,
       {required bool showOwner,
       required bool showSOVCount,
@@ -607,8 +649,10 @@ class AccountListProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
 
-      AccountListModel accountListModel = AccountListModel.fromJson(response);
+      // AccountListModel accountListModel = AccountListModel.fromJson(response);
 
+      final accountListModel =
+          await compute(AccountListModel.fromJson, response);
       autoCompleteAccountList = accountListModel.results ?? [];
       log(autoCompleteAccountList.toString());
       print("Updated autoCompleteAccountList: $autoCompleteAccountList");

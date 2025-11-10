@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -38,6 +39,7 @@ class MyLocationListProvider extends ChangeNotifier {
   bool get isFetchingMore => isNextPageLoading; // optional alias for clarity
 
   bool get isLastPage => currentPage >= totalPages;
+
   void setLoading(bool value) {
     isLoading = value;
     notifyListeners();
@@ -416,6 +418,7 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   List<MyLocation> _overallLocationList = [];
 
   List<MyLocation> get overallLocationList => _overallLocationList;
@@ -426,8 +429,6 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
-
-
 
   List<MyLocation> _myLocationConflictList = [];
 
@@ -769,36 +770,65 @@ class MyLocationListProvider extends ChangeNotifier {
       isAddToSOVLoading = false;
     }
   }
-  Future<void> addCommentsLocation(BuildContext context, String locationId,
-      String comment) async {
+
+  Future<Map<String, dynamic>?> addCommentsLocation(
+      BuildContext context, String locationId, String comment) async {
     try {
       isAddTagsLoading = true;
       ApiService apiService = ApiService(AppConstant.ADD_COMMENT);
+
       var body = {
-
-          "location_id": locationId,
-          "comment": comment,
-
+        "location_id": locationId,
+        "comment": comment,
       };
+
       var response = await apiService.post(body);
       log(response.toString());
-      CustomToast.success(context, response['message']);
 
+      if (response['message'] != null) {
+        CustomToast.success(context, response['message']);
+      }
+
+      // ✅ Return full API response to the caller
+      return response;
     } on BackendException catch (e, stackTrace) {
       log("Error adding tags to location: ${e.message}");
       log(stackTrace.toString());
       CustomToast.error(context, e.message);
+      return null;
     } catch (e, stackTrace) {
       log("Error adding tags to location: $e");
-      log(e.toString());
       log(stackTrace.toString());
-
+      return null;
     } finally {
       isAddTagsLoading = false;
     }
   }
 
-
+  // Future<void> addCommentsLocation(
+  //     BuildContext context, String locationId, String comment) async {
+  //   try {
+  //     isAddTagsLoading = true;
+  //     ApiService apiService = ApiService(AppConstant.ADD_COMMENT);
+  //     var body = {
+  //       "location_id": locationId,
+  //       "comment": comment,
+  //     };
+  //     var response = await apiService.post(body);
+  //     log(response.toString());
+  //     CustomToast.success(context, response['message']);
+  //   } on BackendException catch (e, stackTrace) {
+  //     log("Error adding tags to location: ${e.message}");
+  //     log(stackTrace.toString());
+  //     CustomToast.error(context, e.message);
+  //   } catch (e, stackTrace) {
+  //     log("Error adding tags to location: $e");
+  //     log(e.toString());
+  //     log(stackTrace.toString());
+  //   } finally {
+  //     isAddTagsLoading = false;
+  //   }
+  // }
 
   // Add Tags to location
   Future<void> addTagsToLocation(BuildContext context, String accountId,
@@ -974,8 +1004,12 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
+
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
 
@@ -1010,19 +1044,17 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-// Add this flag in your provider class
-//   bool _isFetching = false;
   Future<void> fetchLocationList(
-      BuildContext context,
-      String searchQuery,
-      int page,
-      int pageSize,
-      String? accountID,
-      String? subAccountID,
-      String? processId,
-      String? subProcessId,
-      String? sovID,
-      ) async {
+    BuildContext context,
+    String searchQuery,
+    int page,
+    int pageSize,
+    String? accountID,
+    String? subAccountID,
+    String? processId,
+    String? subProcessId,
+    String? sovID,
+  ) async {
     if (_isFetching) return; // Prevent multiple concurrent calls
     _isFetching = true;
 
@@ -1054,9 +1086,11 @@ class MyLocationListProvider extends ChangeNotifier {
           if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (hazardRatings.isNotEmpty)
+        url += "&hazard=${jsonEncode(hazardRatings)}";
       if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (_selectedCampusIds.isNotEmpty)
+        url += "&campus_id=${_selectedCampusIds.join(',')}";
       if (processId != null) url += "&process_id=$processId";
       if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
@@ -1065,13 +1099,18 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
 
         locationHits = locationListModel.totalRecords ?? 0;
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         isConflict = locationListModel.isConflict ?? false;
         isHazardCanStart = locationListModel.isHazardCanStart ?? false;
-        isAnyLocationSelected = locationListModel.isAnyHazardProcessing ?? false;
+        isAnyLocationSelected =
+            locationListModel.isAnyHazardProcessing ?? false;
 
         // Calculate total pages
         totalPages = (locationHits / pageSize).ceil();
@@ -1085,7 +1124,8 @@ class MyLocationListProvider extends ChangeNotifier {
           addToMyLocationList(locationListModel.results ?? []);
         }
       } else {
-        var errorMsg = json.decode(response.body)["error"] ?? "Failed to load data";
+        var errorMsg =
+            json.decode(response.body)["error"] ?? "Failed to load data";
         throw Exception(errorMsg);
       }
     } catch (e, stackTrace) {
@@ -1099,17 +1139,17 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<void> fetchLocationList1(
-      BuildContext context,
 
-      int page,
-      int pageSize,
-      String? accountID,
-      String? subAccountID,
-      String? processId,
-      String? subProcessId,
-      String? sovID,
-      ) async {
+  Future<void> fetchLocationList1(
+    BuildContext context,
+    int page,
+    int pageSize,
+    String? accountID,
+    String? subAccountID,
+    String? processId,
+    String? subProcessId,
+    String? sovID,
+  ) async {
     if (_isFetching) return; // Prevent multiple concurrent calls
     _isFetching = true;
 
@@ -1141,9 +1181,11 @@ class MyLocationListProvider extends ChangeNotifier {
           if (cert == "Auto Certified") url += "&auto_certified=true";
         }
       }
-      if (hazardRatings.isNotEmpty) url += "&hazard=${jsonEncode(hazardRatings)}";
+      if (hazardRatings.isNotEmpty)
+        url += "&hazard=${jsonEncode(hazardRatings)}";
       if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-      if (_selectedCampusIds.isNotEmpty) url += "&campus_id=${_selectedCampusIds.join(',')}";
+      if (_selectedCampusIds.isNotEmpty)
+        url += "&campus_id=${_selectedCampusIds.join(',')}";
       if (processId != null) url += "&process_id=$processId";
       if (subProcessId != null) url += "&sub_process_id=$subProcessId";
 
@@ -1152,21 +1194,26 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel = MyLocationModel.fromJson(jsonResponse);
-        isAnyLocationSelected = locationListModel.isAnyHazardProcessing ?? false;
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
+        isAnyLocationSelected =
+            locationListModel.isAnyHazardProcessing ?? false;
 
         // Calculate total pages
         totalPages = (locationHits / pageSize).ceil();
 
         if (page == 1) {
           overallLocationList = locationListModel.results ?? [];
-
         } else {
           // Append next page results
           addToMyLocationList(locationListModel.results ?? []);
         }
       } else {
-        var errorMsg = json.decode(response.body)["error"] ?? "Failed to load data";
+        var errorMsg =
+            json.decode(response.body)["error"] ?? "Failed to load data";
         throw Exception(errorMsg);
       }
     } catch (e, stackTrace) {
@@ -1180,109 +1227,6 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  // Future<void> fetchLocationList(
-  //     BuildContext context,
-  //     String searchQuery,
-  //     int page,
-  //     int pageSize,
-  //     String? accountID,
-  //     String? subAccountID,
-  //     String? processId,
-  //     String? subProcessId,
-  //     String? sovID
-  //     ) async {
-  //   print("sov id: $sovID");
-  //   if (_isFetching) return; // Prevent multiple concurrent calls
-  //   _isFetching = true;
-  //
-  //   var typography = CustomTypography(context);
-  //   try {
-  //     if (page - 1 > totalPages) return;
-  //
-  //     if (page == 1) {
-  //       myLocationList = [];
-  //       isLoading = true;
-  //     } else {
-  //       isNextPageLoading = true;
-  //     }
-  //
-  //     var headers = await CommonHeaders.createHeaders();
-  //     log(headers.toString());
-  //
-  //     // Build URL
-  //     var url;
-  //     if (sovID != null && sovID.isNotEmpty) {
-  //       print("sov id: $sovID");
-  //       url =
-  //           "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID&zip=&search=&sort=&campus_name=";
-  //     } else {
-  //       url =
-  //           "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-  //     }
-  //
-  //     if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
-  //     if (zipcode.isNotEmpty) url += "&zip=$state";
-  //     if (sortBy.isNotEmpty) url += "&sort=$sortBy";
-  //     if (certifications.isNotEmpty) {
-  //       for (var cert in certifications) {
-  //         if (cert == "Manual Certified") url += "&manual_certified=true";
-  //         if (cert == "Auto Certified") url += "&auto_certified=true";
-  //       }
-  //     }
-  //     if (hazardRatings.isNotEmpty)
-  //       url += "&hazard=${jsonEncode(hazardRatings)}";
-  //     if (rating.isNotEmpty) url += "&score=${rating.join(',')}";
-  //     if (_selectedCampusIds.isNotEmpty)
-  //       url += "&campus_id=${_selectedCampusIds.join(',')}";
-  //     if (processId != null) url += "&process_id=$processId";
-  //     if (subProcessId != null) url += "&sub_process_id=$subProcessId";
-  //
-  //     print(url);
-  //     var uri = Uri.parse(url);
-  //
-  //     var response = await http.get(uri, headers: headers);
-  //     log(response.body);
-  //     print(response.statusCode);
-  //
-  //     if (response.statusCode == 200) {
-  //       var jsonResponse = json.decode(response.body);
-  //       MyLocationModel locationListModel =
-  //           MyLocationModel.fromJson(jsonResponse);
-  //
-  //       locationHits = locationListModel.totalRecords ?? 0;
-  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
-  //       isConflict = locationListModel.isConflict!;
-  //       isHazardCanStart = locationListModel.isHazardCanStart!;
-  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
-  //       totalPages = locationHits ~/ pageSize;
-  //
-  //       if (page == 1) {
-  //         locationcount = locationListModel.totalRecords ?? 1;
-  //         myLocationList = locationListModel.results ?? [];
-  //         grapDataProfile= locationListModel.graphData ;
-  //       } else {
-  //         addToMyLocationList(locationListModel.results ?? []);
-  //       }
-  //
-  //       log(myLocationList.toString());
-  //       print("totalPages: $totalPages");
-  //       log(page.toString());
-  //     } else {
-  //       print(json.decode(response.body)["error"]);
-  //       throw Exception('Failed to load data');
-  //     }
-  //   } on BackendException catch (e, stackTrace) {
-  //     print(stackTrace);
-  //     print(e.message);
-  //   } catch (e, stackTrace) {
-  //     print(stackTrace);
-  //   } finally {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     _isFetching = false; // Release the fetch lock
-  //     notifyListeners(); // Notify UI only once at the end
-  //   }
-  // }
 
   Future<void> fetchLocationConflictList(
       BuildContext context,
@@ -1317,7 +1261,7 @@ class MyLocationListProvider extends ChangeNotifier {
             "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
       } else {
         url =
-            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
+            "${AppConstant.MY_LOCATION}?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&conflicts=true&show_full_list=true";
       }
 
       if (countries.isNotEmpty) url += "&country=${countries.join(',')}";
@@ -1341,14 +1285,16 @@ class MyLocationListProvider extends ChangeNotifier {
       var uri = Uri.parse(url);
 
       var response = await http.get(uri, headers: headers);
-      log(response.body);
-      print(response.statusCode);
+      // log(response.body);
+      // print(response.statusCode);
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
-
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
         // locationHits = locationListModel.totalRecords ?? 0;
         // certifiedLocationHits = locationListModel.totalCertified ?? 0;
         isConflict = locationListModel.isConflict!;
@@ -1364,7 +1310,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
         log(myLocationConflictList.toString());
         print("totalPages: $totalPages");
-        log(page.toString());
+        // log(page.toString());
       } else {
         print(json.decode(response.body)["error"]);
         throw Exception('Failed to load data');
@@ -1744,8 +1690,11 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
         certifiedLocationHits = locationListModel.totalCertified ?? 0;
         totalPages = locationListModel.totalRecords ?? 1;
 
@@ -2097,69 +2046,77 @@ class MyLocationListProvider extends ChangeNotifier {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [Expanded(
-                            child: isAddToSOVLoading
-                                ? const Center(
-                              child: CircularProgressIndicator(),
-                            )
-                                : CustomButton(
-                              onPressed: () async {
-                                if (sovController.text.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Please select or enter an SoV name.",
-                                        style: typography.Body1,
+                          children: [
+                            Expanded(
+                              child: isAddToSOVLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : CustomButton(
+                                      onPressed: () async {
+                                        if (sovController.text.isEmpty) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                "Please select or enter an SoV name.",
+                                                style: typography.Body1,
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        setState(() {
+                                          isAddToSOVLoading =
+                                              true; // 🔹 Show loader
+                                        });
+
+                                        try {
+                                          // Prepare the body
+                                          Map<String, dynamic> body = {
+                                            "location_list": locationId == null
+                                                ? _selectedLocations
+                                                    .map((location) =>
+                                                        location.id)
+                                                    .toList()
+                                                : [locationId],
+                                            "account_id": accountID,
+                                            "sub_account_id": subAccountID,
+                                            "sov": {
+                                              "sov_id": selectedSovId,
+                                              "sov_name": sovController.text,
+                                            }
+                                          };
+
+                                          // 🔹 Perform async operation
+                                          await addLocationToSOV(context, body);
+
+                                          // 🔹 After success, navigate or perform next action
+                                          setState(() {
+                                            masterTabController?.animateTo(1);
+                                          });
+                                        } catch (e) {
+                                          // 🔹 Handle errors
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text("Error: $e")),
+                                          );
+                                        } finally {
+                                          // 🔹 Always hide loader
+                                          setState(() {
+                                            isAddToSOVLoading = false;
+                                          });
+                                        }
+                                      },
+                                      child: Text(
+                                        "Add",
+                                        style: typography.ButtonLargeBlack,
                                       ),
+                                      type: ButtonType.elevated,
                                     ),
-                                  );
-                                  return;
-                                }
-
-                                setState(() {
-                                  isAddToSOVLoading = true; // 🔹 Show loader
-                                });
-
-                                try {
-                                  // Prepare the body
-                                  Map<String, dynamic> body = {
-                                    "location_list": locationId == null
-                                        ? _selectedLocations.map((location) => location.id).toList()
-                                        : [locationId],
-                                    "account_id": accountID,
-                                    "sub_account_id": subAccountID,
-                                    "sov": {
-                                      "sov_id": selectedSovId,
-                                      "sov_name": sovController.text,
-                                    }
-                                  };
-
-                                  // 🔹 Perform async operation
-                                  await addLocationToSOV(context, body);
-
-                                  // 🔹 After success, navigate or perform next action
-                                  setState(() {
-                                    masterTabController?.animateTo(1);
-                                  });
-                                } catch (e) {
-                                  // 🔹 Handle errors
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Error: $e")),
-                                  );
-                                } finally {
-                                  // 🔹 Always hide loader
-                                  setState(() {
-                                    isAddToSOVLoading = false;
-                                  });
-                                }
-                              },
-                              child: Text(
-                                "Add",
-                                style: typography.ButtonLargeBlack,
-                              ),
-                              type: ButtonType.elevated,
-                            ),
-                          )
+                            )
 
                             // Expanded(
                             //   child: isAddToSOVLoading
@@ -2759,11 +2716,12 @@ class MyLocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        MyLocationModel locationListModel =
-            MyLocationModel.fromJson(jsonResponse);
-        print(locationListModel.page.toString());
-        print(locationListModel.pageSize.toString());
-        print("totalPages");
+        // MyLocationModel locationListModel =
+        //     MyLocationModel.fromJson(jsonResponse);
+        final locationListModel =
+            await compute<Map<String, dynamic>, MyLocationModel>(
+                MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
+
         //summaryList = locationListModel.summaryList ?? [];
         //mainSovRating = locationListModel. ?? 0.0;
 
@@ -2774,11 +2732,11 @@ class MyLocationListProvider extends ChangeNotifier {
         }
         if (locationId != null && locationId.isNotEmpty) {
           locationProfile = locationListModel.filterByLocationResult?.first;
-          grapDataProfile=  locationListModel.graphData;
+          grapDataProfile = locationListModel.graphData;
           resetTotalPage = locationListModel.totalRecords ?? 1;
         } else {
           locationProfile = locationListModel.results?.first;
-          grapDataProfile=  locationListModel.graphData;
+          grapDataProfile = locationListModel.graphData;
         }
 
         log(resetTotalPage.toString() ?? "");
@@ -3156,27 +3114,27 @@ class MyLocationListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<bool> markAsCompleteSov(
-      BuildContext context,
-      String accountId,
-      String subAccountId,
-      String sovId,
-     ) async {
+    BuildContext context,
+    String accountId,
+    String subAccountId,
+    String sovId,
+  ) async {
     var typography = CustomTypography(context);
     try {
       isLoading = true;
       notifyListeners();
-      String url =
-          "${AppConstant.SOV_COMPLETE_STATUS}";
+      String url = "${AppConstant.SOV_COMPLETE_STATUS}";
       ApiService apiService = ApiService(url);
       // Create data payload
       List<String> locationIds =
-      _selectedLocations.map((location) => location.id ?? "").toList();
-    final data = {
-      "status": "completed",
-      "location_id": locationIds,
-      "sov_id": sovId,
-    };
+          _selectedLocations.map((location) => location.id ?? "").toList();
+      final data = {
+        "status": "completed",
+        "location_id": locationIds,
+        "sov_id": sovId,
+      };
       var body = data;
       var response = await apiService.patch(body);
       if (response.containsKey('result')) {
@@ -3212,6 +3170,7 @@ class MyLocationListProvider extends ChangeNotifier {
       return true;
     }
   }
+
   Future<bool> updateLocationName(
       BuildContext context,
       String accountId,

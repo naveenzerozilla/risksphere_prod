@@ -101,6 +101,8 @@ class Result {
   dynamic role;
   String? companyName;
   String? status;
+  int? geocodeAvg;
+  int? overallAvg;
   SovGraphData? sovGraphData;
   TotalDataCompleteness? totalDataCompleteness;
 
@@ -121,6 +123,8 @@ class Result {
       this.role,
       this.companyName,
       this.status,
+        this.geocodeAvg,
+        this.overallAvg,
       this.sovGraphData,
       this.totalDataCompleteness});
 
@@ -162,6 +166,8 @@ class Result {
 
     companyName = json['company_name'];
     status = json['status'];
+    geocodeAvg = json['geocode_avg'];
+    overallAvg = json['overall_avg'];
     sovGraphData = json['sov_graph_data'] != null
         ? new SovGraphData.fromJson(json['sov_graph_data'])
         : null;
@@ -203,6 +209,9 @@ class Result {
     }
     data['company_name'] = this.companyName;
     data['status'] = this.status;
+    data['geocode_avg'] = this.geocodeAvg;
+    data['overall_avg'] = this.overallAvg;
+
     if (this.sovGraphData != null) {
       data['sov_graph_data'] = this.sovGraphData!.toJson();
     }

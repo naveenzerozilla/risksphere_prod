@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -66,6 +67,7 @@ class _MappingScreenState extends State<MappingScreen> {
       _automappedfields.clear();
       _fields = provider.sovUploadModel!.result!.map((result) {
         return {
+          'id': result.matchedField?.id ?? result.id,
           'target': result.targetField,
           'spreadsheet': result.matchedField?.name ?? '',
           'initialSpreadsheet': result.matchedField?.name ?? '',
@@ -73,11 +75,13 @@ class _MappingScreenState extends State<MappingScreen> {
           'initialStatus': result.mappingStatus?.label ?? 'Unmapped',
           'isChecked': result.isChecked,
           'isUserEdited': result.isUserEdited,
+          'is_data_parameter': result.matchedField?.is_data_parameter,
           'matchPercent': result.matchedField?.percentage ?? 0,
         };
       }).toList();
       _initialfields = provider.sovUploadModel!.result!.map((result) {
         return {
+          'id': result.matchedField?.id ?? result.id,
           'target': result.targetField,
           'spreadsheet': result.matchedField?.name ?? '',
           'initialSpreadsheet': result.matchedField?.name ?? '',
@@ -85,6 +89,7 @@ class _MappingScreenState extends State<MappingScreen> {
           'initialStatus': result.mappingStatus?.label ?? 'Unmapped',
           'isChecked': result.isChecked,
           'isUserEdited': result.isUserEdited,
+          'is_data_parameter': result.matchedField?.is_data_parameter,
           'matchPercent': result.matchedField?.percentage ?? 0,
         };
       }).toList();
@@ -401,121 +406,158 @@ class _MappingScreenState extends State<MappingScreen> {
                                                               8),
                                                     ),
                                                     child:
-                                                        DropdownButton<String>(
-                                                      isExpanded: true,
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 10),
-                                                      menuMaxHeight: 300,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      style: CustomTypography(
-                                                              context)
-                                                          .Subtitle1,
-                                                      underline: SizedBox(),
-                                                      menuWidth: 250,
+                                                        DropdownButtonHideUnderline(
+                                                      child: DropdownButton2<
+                                                          String>(
+                                                        isExpanded: true,
+                                                        // dropdownStyleData:
+                                                        dropdownStyleData:
+                                                            DropdownStyleData(
+                                                          maxHeight: 300,
+                                                          width: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  0.9 -
+                                                              75,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            color: Theme.of(
+                                                                    context)
+                                                                .colorScheme
+                                                                .surface,
+                                                          ),
+                                                          // Show dropdown above if there's not enough space below
+                                                          // direction: DropdownDirection.down,
+                                                          offset: const Offset(
+                                                              0, -2),
+                                                        ),
 
-                                                      // Ensure selected value exists in dropdown items, otherwise set null
-                                                      value: provider
-                                                                  .sovUploadModel
-                                                                  ?.result
-                                                                  ?.firstWhereOrNull((res) =>
-                                                                      res.targetField ==
-                                                                      field[
-                                                                          'target'])
-                                                                  ?.matches
-                                                                  ?.any((match) =>
-                                                                      match
-                                                                          .name ==
-                                                                      field[
-                                                                          'spreadsheet']) ??
-                                                              false
-                                                          ? field['spreadsheet']
-                                                          : null,
-
-                                                      hint: Text(
-                                                        "Ignore",
+                                                        buttonStyleData:
+                                                            const ButtonStyleData(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      10),
+                                                        ),
                                                         style: CustomTypography(
                                                                 context)
                                                             .Subtitle1,
-                                                      ),
+                                                        hint: Text(
+                                                          "Ignore",
+                                                          style:
+                                                              CustomTypography(
+                                                                      context)
+                                                                  .Subtitle1,
+                                                        ),
 
-                                                      items: provider
-                                                              .sovUploadModel
-                                                              ?.result
-                                                              ?.firstWhereOrNull((res) =>
-                                                                  res.targetField ==
-                                                                  field[
-                                                                      'target'])
-                                                              ?.matches
-                                                              ?.map((match) {
-                                                            return DropdownMenuItem<
-                                                                String>(
-                                                              value: match.name,
-                                                              child: Row(
-                                                                children: [
-                                                                  Text(
+                                                        // 👇 value check logic
+                                                        value: provider
+                                                                    .sovUploadModel
+                                                                    ?.result
+                                                                    ?.firstWhereOrNull(
+                                                                      (res) =>
+                                                                          res.targetField ==
+                                                                          field[
+                                                                              'target'],
+                                                                    )
+                                                                    ?.matches
+                                                                    ?.any((match) =>
+                                                                        match
+                                                                            .name ==
+                                                                        field[
+                                                                            'spreadsheet']) ??
+                                                                false
+                                                            ? field[
+                                                                'spreadsheet']
+                                                            : null,
+
+                                                        items: provider
+                                                                .sovUploadModel
+                                                                ?.result
+                                                                ?.firstWhereOrNull(
+                                                                  (res) =>
+                                                                      res.targetField ==
+                                                                      field[
+                                                                          'target'],
+                                                                )
+                                                                ?.matches
+                                                                ?.map((match) {
+                                                              return DropdownMenuItem<
+                                                                  String>(
+                                                                value:
+                                                                    match.name,
+                                                                child: Row(
+                                                                  children: [
+                                                                    Text(
+                                                                      match.name ??
+                                                                          "Unknown",
+                                                                      style: CustomTypography(
+                                                                              context)
+                                                                          .Subtitle2,
+                                                                    ),
+                                                                    const Spacer(),
+                                                                    Text(
+                                                                      '${match.percentage ?? 0}% Match',
+                                                                      style: CustomTypography(
+                                                                              context)
+                                                                          .Caption,
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
+                                                            }).toList() ??
+                                                            [],
+
+                                                        selectedItemBuilder:
+                                                            (context) {
+                                                          return provider
+                                                                  .sovUploadModel
+                                                                  ?.result
+                                                                  ?.firstWhereOrNull(
+                                                                    (res) =>
+                                                                        res.targetField ==
+                                                                        field[
+                                                                            'target'],
+                                                                  )
+                                                                  ?.matches
+                                                                  ?.map(
+                                                                      (match) {
+                                                                return Align(
+                                                                  alignment:
+                                                                      Alignment
+                                                                          .centerLeft,
+                                                                  child: Text(
                                                                     match.name ??
                                                                         "Unknown",
                                                                     style: CustomTypography(
                                                                             context)
-                                                                        .Subtitle2,
+                                                                        .Subtitle1,
                                                                   ),
-                                                                  Spacer(),
-                                                                  Text(
-                                                                    '${match.percentage ?? 0}% Match',
-                                                                    style: CustomTypography(
-                                                                            context)
-                                                                        .Caption,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            );
-                                                          }).toList() ??
-                                                          [],
-                                                      // Prevent null list
-                                                      selectedItemBuilder:
-                                                          (context) {
-                                                        return provider
-                                                                .sovUploadModel
-                                                                ?.result
-                                                                ?.firstWhereOrNull((res) =>
-                                                                    res.targetField ==
-                                                                    field[
-                                                                        'target'])
-                                                                ?.matches
-                                                                ?.map((match) {
-                                                              return Align(
-                                                                alignment: Alignment
-                                                                    .centerLeft,
-                                                                child: Text(
-                                                                  match.name ??
-                                                                      "Unknown",
-                                                                  style: CustomTypography(
-                                                                          context)
-                                                                      .Subtitle1,
-                                                                ),
-                                                              );
-                                                            }).toList() ??
-                                                            [];
-                                                      },
+                                                                );
+                                                              }).toList() ??
+                                                              [];
+                                                        },
 
-                                                      onChanged: (newValue) {
-                                                        setState(() {
-                                                          field['spreadsheet'] =
-                                                              newValue!;
-                                                          field['status'] =
-                                                              'Manual Mapped';
-                                                          _tempfields
-                                                              .add(field);
-                                                        });
-                                                        print(
-                                                            "Status: ${field['status']}");
-
-                                                        print(
-                                                            "Selected Value1: $newValue");
-                                                      },
+                                                        onChanged: (newValue) {
+                                                          setState(() {
+                                                            field['spreadsheet'] =
+                                                                newValue!;
+                                                            field['status'] =
+                                                                'Manual Mapped';
+                                                            _tempfields
+                                                                .add(field);
+                                                          });
+                                                          print(
+                                                              "Status: ${field['status']}");
+                                                          print(
+                                                              "Selected Value1: $newValue");
+                                                        },
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -694,23 +736,50 @@ class _MappingScreenState extends State<MappingScreen> {
                                                               BorderRadius
                                                                   .circular(8),
                                                         ),
-                                                        child: DropdownButton<
+                                                        child: DropdownButton2<
                                                             String>(
                                                           isExpanded: true,
-                                                          padding: EdgeInsets
-                                                              .symmetric(
-                                                                  horizontal:
-                                                                      10),
-                                                          menuMaxHeight: 300,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
+                                                          dropdownStyleData:
+                                                              DropdownStyleData(
+                                                            maxHeight: 300,
+                                                            // 👇 Reduce dropdown width slightly
+                                                            width: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .width *
+                                                                    0.9 -
+                                                                40,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              color: Theme.of(
+                                                                      context)
+                                                                  .colorScheme
+                                                                  .surface,
+                                                            ),
+                                                            // 👇 Adjust offset so it aligns nicely under the field
+                                                            offset:
+                                                                const Offset(
+                                                                    10, 4),
+                                                          ),
+                                                          buttonStyleData:
+                                                              const ButtonStyleData(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        10,
+                                                                    vertical:
+                                                                        4),
+                                                          ),
                                                           style:
                                                               CustomTypography(
                                                                       context)
                                                                   .Subtitle1,
-                                                          underline: SizedBox(),
-                                                          menuWidth: 250,
+                                                          underline:
+                                                              const SizedBox(),
                                                           value: provider
                                                                       .sovUploadModel
                                                                       ?.result
@@ -728,8 +797,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                               ? field[
                                                                   'spreadsheet']
                                                               : null,
-                                                          // Ensure value exists in dropdown
-
                                                           hint: Text(
                                                             "Ignore",
                                                             style:
@@ -737,7 +804,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                         context)
                                                                     .Subtitle1,
                                                           ),
-
                                                           items: provider
                                                                   .sovUploadModel
                                                                   ?.result
@@ -760,7 +826,7 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                         style: CustomTypography(context)
                                                                             .Subtitle2,
                                                                       ),
-                                                                      Spacer(),
+                                                                      const Spacer(),
                                                                       Text(
                                                                         '${match.percentage ?? 0}% Match',
                                                                         style: CustomTypography(context)
@@ -771,8 +837,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                 );
                                                               }).toList() ??
                                                               [],
-                                                          // Prevent null list
-
                                                           selectedItemBuilder:
                                                               (context) {
                                                             return provider
@@ -800,7 +864,6 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                 }).toList() ??
                                                                 [];
                                                           },
-
                                                           onChanged:
                                                               (newValue) {
                                                             setState(() {
@@ -815,6 +878,139 @@ class _MappingScreenState extends State<MappingScreen> {
                                                         ),
                                                       ),
                                                     ),
+
+                                                    // Expanded(
+                                                    //   child: Container(
+                                                    //     decoration:
+                                                    //         BoxDecoration(
+                                                    //       border: Border.all(
+                                                    //           color:
+                                                    //               Colors.grey),
+                                                    //       borderRadius:
+                                                    //           BorderRadius
+                                                    //               .circular(8),
+                                                    //     ),
+                                                    //     child: DropdownButton<
+                                                    //         String>(
+                                                    //       isExpanded: true,
+                                                    //       padding: EdgeInsets
+                                                    //           .symmetric(
+                                                    //               horizontal:
+                                                    //                   10),
+                                                    //       menuMaxHeight: 300,
+                                                    //       borderRadius:
+                                                    //           BorderRadius
+                                                    //               .circular(8),
+                                                    //       style:
+                                                    //           CustomTypography(
+                                                    //                   context)
+                                                    //               .Subtitle1,
+                                                    //       underline: SizedBox(),
+                                                    //       menuWidth: 250,
+                                                    //       value: provider
+                                                    //                   .sovUploadModel
+                                                    //                   ?.result
+                                                    //                   ?.firstWhereOrNull((res) =>
+                                                    //                       res.targetField ==
+                                                    //                       field[
+                                                    //                           'target'])
+                                                    //                   ?.matches
+                                                    //                   ?.any((match) =>
+                                                    //                       match
+                                                    //                           .name ==
+                                                    //                       field[
+                                                    //                           'spreadsheet']) ??
+                                                    //               false
+                                                    //           ? field[
+                                                    //               'spreadsheet']
+                                                    //           : null,
+                                                    //       // Ensure value exists in dropdown
+                                                    //
+                                                    //       hint: Text(
+                                                    //         "Ignore",
+                                                    //         style:
+                                                    //             CustomTypography(
+                                                    //                     context)
+                                                    //                 .Subtitle1,
+                                                    //       ),
+                                                    //
+                                                    //       items: provider
+                                                    //               .sovUploadModel
+                                                    //               ?.result
+                                                    //               ?.firstWhereOrNull((res) =>
+                                                    //                   res.targetField ==
+                                                    //                   field[
+                                                    //                       'target'])
+                                                    //               ?.matches
+                                                    //               ?.map(
+                                                    //                   (match) {
+                                                    //             return DropdownMenuItem<
+                                                    //                 String>(
+                                                    //               value: match
+                                                    //                   .name,
+                                                    //               child: Row(
+                                                    //                 children: [
+                                                    //                   Text(
+                                                    //                     match.name ??
+                                                    //                         "Unknown",
+                                                    //                     style: CustomTypography(context)
+                                                    //                         .Subtitle2,
+                                                    //                   ),
+                                                    //                   Spacer(),
+                                                    //                   Text(
+                                                    //                     '${match.percentage ?? 0}% Match',
+                                                    //                     style: CustomTypography(context)
+                                                    //                         .Caption,
+                                                    //                   ),
+                                                    //                 ],
+                                                    //               ),
+                                                    //             );
+                                                    //           }).toList() ??
+                                                    //           [],
+                                                    //       // Prevent null list
+                                                    //
+                                                    //       selectedItemBuilder:
+                                                    //           (context) {
+                                                    //         return provider
+                                                    //                 .sovUploadModel
+                                                    //                 ?.result
+                                                    //                 ?.firstWhereOrNull((res) =>
+                                                    //                     res.targetField ==
+                                                    //                     field[
+                                                    //                         'target'])
+                                                    //                 ?.matches
+                                                    //                 ?.map(
+                                                    //                     (match) {
+                                                    //               return Align(
+                                                    //                 alignment:
+                                                    //                     Alignment
+                                                    //                         .centerLeft,
+                                                    //                 child: Text(
+                                                    //                   match.name ??
+                                                    //                       "Unknown",
+                                                    //                   style: CustomTypography(
+                                                    //                           context)
+                                                    //                       .Subtitle1,
+                                                    //                 ),
+                                                    //               );
+                                                    //             }).toList() ??
+                                                    //             [];
+                                                    //       },
+                                                    //
+                                                    //       onChanged:
+                                                    //           (newValue) {
+                                                    //         setState(() {
+                                                    //           field['spreadsheet'] =
+                                                    //               newValue!;
+                                                    //           field['status'] =
+                                                    //               'Manual Mapped';
+                                                    //           _tempfields
+                                                    //               .add(field);
+                                                    //         });
+                                                    //       },
+                                                    //     ),
+                                                    //   ),
+                                                    // ),
                                                     SizedBox(width: 10),
                                                     TextButton(
                                                       onPressed: field[
@@ -964,133 +1160,297 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                           8),
                                                             ),
                                                             child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                      horizontal:
-                                                                          10),
-                                                              menuMaxHeight:
-                                                                  300,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                              style: CustomTypography(
-                                                                      context)
-                                                                  .Subtitle1,
-                                                              underline:
-                                                                  SizedBox(),
-                                                              menuWidth: 250,
+                                                                DropdownButtonHideUnderline(
+                                                              child:
+                                                                  DropdownButton2<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
 
-                                                              // Ensure selected value exists in dropdown items, otherwise set null
-                                                              value: provider
-                                                                          .sovUploadModel
-                                                                          ?.result
-                                                                          ?.firstWhereOrNull((res) =>
-                                                                              res.targetField ==
-                                                                              field[
-                                                                                  'target'])
-                                                                          ?.matches
-                                                                          ?.any((match) =>
-                                                                              match.name ==
-                                                                              field[
-                                                                                  'spreadsheet']) ??
-                                                                      false
-                                                                  ? field[
-                                                                      'spreadsheet']
-                                                                  : null,
+                                                                dropdownStyleData:
+                                                                    DropdownStyleData(
+                                                                  maxHeight:
+                                                                      300,
+                                                                  // 👇 dropdown width reduced slightly compared to the field
+                                                                  width: MediaQuery.of(context)
+                                                                              .size
+                                                                              .width *
+                                                                          0.9 -
+                                                                      75,
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                    color: Theme.of(
+                                                                            context)
+                                                                        .colorScheme
+                                                                        .surface,
+                                                                  ),
+                                                                  // 👇 ensures dropdown appears just below the field
+                                                                  offset:
+                                                                      const Offset(
+                                                                          0,
+                                                                          -2),
+                                                                ),
 
-                                                              hint: Text(
-                                                                "Ignore",
+                                                                buttonStyleData:
+                                                                    const ButtonStyleData(
+                                                                  padding: EdgeInsets
+                                                                      .symmetric(
+                                                                          horizontal:
+                                                                              10),
+                                                                ),
+
                                                                 style: CustomTypography(
                                                                         context)
                                                                     .Subtitle1,
-                                                              ),
 
-                                                              items: provider
-                                                                      .sovUploadModel
-                                                                      ?.result
-                                                                      ?.firstWhereOrNull((res) =>
-                                                                          res.targetField ==
-                                                                          field[
-                                                                              'target'])
-                                                                      ?.matches
-                                                                      ?.map(
-                                                                          (match) {
-                                                                    return DropdownMenuItem<
-                                                                        String>(
-                                                                      value: match
-                                                                          .name,
-                                                                      child:
-                                                                          Row(
-                                                                        children: [
-                                                                          Text(
-                                                                            match.name ??
-                                                                                "Unknown",
-                                                                            style:
-                                                                                CustomTypography(context).Subtitle2,
-                                                                          ),
-                                                                          Spacer(),
-                                                                          Text(
-                                                                            '${match.percentage ?? 0}% Match',
-                                                                            style:
-                                                                                CustomTypography(context).Caption,
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    );
-                                                                  }).toList() ??
-                                                                  [],
-                                                              // Prevent null list
+                                                                hint: Text(
+                                                                  "Ignore",
+                                                                  style: CustomTypography(
+                                                                          context)
+                                                                      .Subtitle1,
+                                                                ),
 
-                                                              selectedItemBuilder:
-                                                                  (context) {
-                                                                return provider
+                                                                // 👇 Ensure selected value exists in dropdown items, otherwise null
+                                                                value: provider
+                                                                            .sovUploadModel
+                                                                            ?.result
+                                                                            ?.firstWhereOrNull(
+                                                                              (res) => res.targetField == field['target'],
+                                                                            )
+                                                                            ?.matches
+                                                                            ?.any((match) =>
+                                                                                match.name ==
+                                                                                field['spreadsheet']) ??
+                                                                        false
+                                                                    ? field['spreadsheet']
+                                                                    : null,
+
+                                                                items: provider
                                                                         .sovUploadModel
                                                                         ?.result
-                                                                        ?.firstWhereOrNull((res) =>
-                                                                            res.targetField ==
-                                                                            field[
-                                                                                'target'])
+                                                                        ?.firstWhereOrNull(
+                                                                          (res) =>
+                                                                              res.targetField ==
+                                                                              field['target'],
+                                                                        )
                                                                         ?.matches
                                                                         ?.map(
                                                                             (match) {
-                                                                      return Align(
-                                                                        alignment:
-                                                                            Alignment.centerLeft,
+                                                                      return DropdownMenuItem<
+                                                                          String>(
+                                                                        value: match
+                                                                            .name,
                                                                         child:
+                                                                            Row(
+                                                                          children: [
                                                                             Text(
-                                                                          match.name ??
-                                                                              "Unknown",
-                                                                          style:
-                                                                              CustomTypography(context).Subtitle1,
+                                                                              match.name ?? "Unknown",
+                                                                              style: CustomTypography(context).Subtitle2,
+                                                                            ),
+                                                                            const Spacer(),
+                                                                            Text(
+                                                                              '${match.percentage ?? 0}% Match',
+                                                                              style: CustomTypography(context).Caption,
+                                                                            ),
+                                                                          ],
                                                                         ),
                                                                       );
                                                                     }).toList() ??
-                                                                    [];
-                                                              },
+                                                                    [],
 
-                                                              onChanged:
-                                                                  (newValue) {
-                                                                setState(() {
-                                                                  field['spreadsheet'] =
-                                                                      newValue!;
-                                                                  field['status'] =
-                                                                      'Auto Mapped';
-                                                                  _tempfields
-                                                                      .add(
-                                                                          field);
-                                                                });
-                                                                print(
-                                                                    "Status: ${field['status']}");
-                                                                print(
-                                                                    "Selected Value: $newValue");
-                                                              },
+                                                                // 👇 Prevent null list
+                                                                selectedItemBuilder:
+                                                                    (context) {
+                                                                  return provider
+                                                                          .sovUploadModel
+                                                                          ?.result
+                                                                          ?.firstWhereOrNull(
+                                                                            (res) =>
+                                                                                res.targetField ==
+                                                                                field['target'],
+                                                                          )
+                                                                          ?.matches
+                                                                          ?.map(
+                                                                              (match) {
+                                                                        return Align(
+                                                                          alignment:
+                                                                              Alignment.centerLeft,
+                                                                          child:
+                                                                              Text(
+                                                                            match.name ??
+                                                                                "Unknown",
+                                                                            style:
+                                                                                CustomTypography(context).Subtitle1,
+                                                                          ),
+                                                                        );
+                                                                      }).toList() ??
+                                                                      [];
+                                                                },
+
+                                                                onChanged:
+                                                                    (newValue) {
+                                                                  setState(() {
+                                                                    field['spreadsheet'] =
+                                                                        newValue!;
+                                                                    field['status'] =
+                                                                        'Auto Mapped';
+                                                                    _tempfields
+                                                                        .add(
+                                                                            field);
+                                                                  });
+                                                                  print(
+                                                                      "Status: ${field['status']}");
+                                                                  print(
+                                                                      "Selected Value: $newValue");
+                                                                },
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
+
+                                                        // Expanded(
+                                                        //   child: Container(
+                                                        //     decoration:
+                                                        //         BoxDecoration(
+                                                        //       border: Border.all(
+                                                        //           color: Colors
+                                                        //               .grey),
+                                                        //       borderRadius:
+                                                        //           BorderRadius
+                                                        //               .circular(
+                                                        //                   8),
+                                                        //     ),
+                                                        //     child:
+                                                        //         DropdownButton<
+                                                        //             String>(
+                                                        //       isExpanded: true,
+                                                        //       padding: EdgeInsets
+                                                        //           .symmetric(
+                                                        //               horizontal:
+                                                        //                   10),
+                                                        //       menuMaxHeight:
+                                                        //           300,
+                                                        //       borderRadius:
+                                                        //           BorderRadius
+                                                        //               .circular(
+                                                        //                   8),
+                                                        //       style: CustomTypography(
+                                                        //               context)
+                                                        //           .Subtitle1,
+                                                        //       underline:
+                                                        //           SizedBox(),
+                                                        //       menuWidth: 250,
+                                                        //
+                                                        //       // Ensure selected value exists in dropdown items, otherwise set null
+                                                        //       value: provider
+                                                        //                   .sovUploadModel
+                                                        //                   ?.result
+                                                        //                   ?.firstWhereOrNull((res) =>
+                                                        //                       res.targetField ==
+                                                        //                       field[
+                                                        //                           'target'])
+                                                        //                   ?.matches
+                                                        //                   ?.any((match) =>
+                                                        //                       match.name ==
+                                                        //                       field[
+                                                        //                           'spreadsheet']) ??
+                                                        //               false
+                                                        //           ? field[
+                                                        //               'spreadsheet']
+                                                        //           : null,
+                                                        //
+                                                        //       hint: Text(
+                                                        //         "Ignore",
+                                                        //         style: CustomTypography(
+                                                        //                 context)
+                                                        //             .Subtitle1,
+                                                        //       ),
+                                                        //
+                                                        //       items: provider
+                                                        //               .sovUploadModel
+                                                        //               ?.result
+                                                        //               ?.firstWhereOrNull((res) =>
+                                                        //                   res.targetField ==
+                                                        //                   field[
+                                                        //                       'target'])
+                                                        //               ?.matches
+                                                        //               ?.map(
+                                                        //                   (match) {
+                                                        //             return DropdownMenuItem<
+                                                        //                 String>(
+                                                        //               value: match
+                                                        //                   .name,
+                                                        //               child:
+                                                        //                   Row(
+                                                        //                 children: [
+                                                        //                   Text(
+                                                        //                     match.name ??
+                                                        //                         "Unknown",
+                                                        //                     style:
+                                                        //                         CustomTypography(context).Subtitle2,
+                                                        //                   ),
+                                                        //                   Spacer(),
+                                                        //                   Text(
+                                                        //                     '${match.percentage ?? 0}% Match',
+                                                        //                     style:
+                                                        //                         CustomTypography(context).Caption,
+                                                        //                   ),
+                                                        //                 ],
+                                                        //               ),
+                                                        //             );
+                                                        //           }).toList() ??
+                                                        //           [],
+                                                        //       // Prevent null list
+                                                        //
+                                                        //       selectedItemBuilder:
+                                                        //           (context) {
+                                                        //         return provider
+                                                        //                 .sovUploadModel
+                                                        //                 ?.result
+                                                        //                 ?.firstWhereOrNull((res) =>
+                                                        //                     res.targetField ==
+                                                        //                     field[
+                                                        //                         'target'])
+                                                        //                 ?.matches
+                                                        //                 ?.map(
+                                                        //                     (match) {
+                                                        //               return Align(
+                                                        //                 alignment:
+                                                        //                     Alignment.centerLeft,
+                                                        //                 child:
+                                                        //                     Text(
+                                                        //                   match.name ??
+                                                        //                       "Unknown",
+                                                        //                   style:
+                                                        //                       CustomTypography(context).Subtitle1,
+                                                        //                 ),
+                                                        //               );
+                                                        //             }).toList() ??
+                                                        //             [];
+                                                        //       },
+                                                        //
+                                                        //       onChanged:
+                                                        //           (newValue) {
+                                                        //         setState(() {
+                                                        //           field['spreadsheet'] =
+                                                        //               newValue!;
+                                                        //           field['status'] =
+                                                        //               'Auto Mapped';
+                                                        //           _tempfields
+                                                        //               .add(
+                                                        //                   field);
+                                                        //         });
+                                                        //         print(
+                                                        //             "Status: ${field['status']}");
+                                                        //         print(
+                                                        //             "Selected Value: $newValue");
+                                                        //       },
+                                                        //     ),
+                                                        //   ),
+                                                        // ),
                                                         SizedBox(width: 10),
                                                         TextButton(
                                                           onPressed: field[
@@ -1268,133 +1628,398 @@ class _MappingScreenState extends State<MappingScreen> {
                                                                           8),
                                                             ),
                                                             child:
-                                                                DropdownButton<
-                                                                    String>(
-                                                              isExpanded: true,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                      horizontal:
-                                                                          10),
-                                                              menuMaxHeight:
-                                                                  300,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                              style: CustomTypography(
-                                                                      context)
-                                                                  .Subtitle1,
-                                                              underline:
-                                                                  SizedBox(),
-                                                              menuWidth: 250,
+                                                                DropdownButtonHideUnderline(
+                                                              child:
+                                                                  DropdownButton2<
+                                                                      String>(
+                                                                isExpanded:
+                                                                    true,
 
-                                                              // Ensure selected value exists in dropdown items, otherwise set null
-                                                              value: provider
-                                                                          .sovUploadModel
-                                                                          ?.result
-                                                                          ?.firstWhereOrNull((res) =>
+                                                                dropdownStyleData:
+                                                                    DropdownStyleData(
+                                                                  maxHeight:
+                                                                      300,
+                                                                  width: MediaQuery.of(context)
+                                                                              .size
+                                                                              .width *
+                                                                          0.9 -
+                                                                      75,
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
+                                                                    color: Theme.of(
+                                                                            context)
+                                                                        .colorScheme
+                                                                        .surface,
+                                                                  ),
+                                                                  offset:
+                                                                      const Offset(
+                                                                          0,
+                                                                          -2),
+                                                                ),
+
+                                                                buttonStyleData:
+                                                                    const ButtonStyleData(
+                                                                  padding: EdgeInsets
+                                                                      .symmetric(
+                                                                          horizontal:
+                                                                              10),
+                                                                ),
+
+                                                                style: CustomTypography(
+                                                                        context)
+                                                                    .Subtitle1,
+
+                                                                hint: Text(
+                                                                  "Ignore",
+                                                                  style: CustomTypography(
+                                                                          context)
+                                                                      .Subtitle1,
+                                                                ),
+
+                                                                // ✅ Selected Value Validation
+                                                                value: provider
+                                                                            .sovUploadModel
+                                                                            ?.result
+                                                                            ?.firstWhereOrNull(
+                                                                              (res) => res.targetField == field['target'],
+                                                                            )
+                                                                            ?.matches
+                                                                            ?.any((match) =>
+                                                                                match.name ==
+                                                                                field['spreadsheet']) ??
+                                                                        false
+                                                                    ? field['spreadsheet']
+                                                                    : null,
+
+                                                                // ✅ Dropdown Items
+                                                                items: provider
+                                                                        .sovUploadModel
+                                                                        ?.result
+                                                                        ?.firstWhereOrNull(
+                                                                          (res) =>
+                                                                              res.targetField ==
+                                                                              field['target'],
+                                                                        )
+                                                                        ?.matches
+                                                                        ?.map((match) =>
+                                                                            match
+                                                                                .name)
+                                                                        ?.toSet()
+                                                                        ?.map(
+                                                                            (uniqueName) {
+                                                                      final match = provider
+                                                                          .sovUploadModel!
+                                                                          .result!
+                                                                          .firstWhereOrNull((res) =>
                                                                               res.targetField ==
                                                                               field[
                                                                                   'target'])
                                                                           ?.matches
-                                                                          ?.any((match) =>
-                                                                              match.name ==
-                                                                              field[
-                                                                                  'spreadsheet']) ??
-                                                                      false
-                                                                  ? field[
-                                                                      'spreadsheet']
-                                                                  : null,
+                                                                          ?.firstWhere((m) =>
+                                                                              m.name ==
+                                                                              uniqueName);
 
-                                                              hint: Text(
-                                                                "Ignore",
-                                                                style: CustomTypography(
-                                                                        context)
-                                                                    .Subtitle1,
-                                                              ),
-
-                                                              items: provider
-                                                                      .sovUploadModel
-                                                                      ?.result
-                                                                      ?.firstWhereOrNull((res) =>
-                                                                          res.targetField ==
-                                                                          field[
-                                                                              'target'])
-                                                                      ?.matches
-                                                                      ?.map(
-                                                                          (match) {
-                                                                    return DropdownMenuItem<
-                                                                        String>(
-                                                                      value: match
-                                                                          .name,
-                                                                      child:
-                                                                          Row(
-                                                                        children: [
-                                                                          Text(
-                                                                            match.name ??
-                                                                                "Unknown",
-                                                                            style:
-                                                                                CustomTypography(context).Subtitle2,
-                                                                          ),
-                                                                          Spacer(),
-                                                                          Text(
-                                                                            '${match.percentage ?? 0}% Match',
-                                                                            style:
-                                                                                CustomTypography(context).Caption,
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    );
-                                                                  }).toList() ??
-                                                                  [],
-                                                              // Prevent null list
-
-                                                              selectedItemBuilder:
-                                                                  (context) {
-                                                                return provider
-                                                                        .sovUploadModel
-                                                                        ?.result
-                                                                        ?.firstWhereOrNull((res) =>
-                                                                            res.targetField ==
-                                                                            field[
-                                                                                'target'])
-                                                                        ?.matches
-                                                                        ?.map(
-                                                                            (match) {
-                                                                      return Align(
-                                                                        alignment:
-                                                                            Alignment.centerLeft,
+                                                                      return DropdownMenuItem<
+                                                                          String>(
+                                                                        value:
+                                                                            uniqueName,
                                                                         child:
+                                                                            Row(
+                                                                          children: [
                                                                             Text(
-                                                                          match.name ??
-                                                                              "Unknown",
-                                                                          style:
-                                                                              CustomTypography(context).Subtitle1,
+                                                                              uniqueName ?? "Unknown",
+                                                                              style: CustomTypography(context).Subtitle2,
+                                                                            ),
+                                                                            const Spacer(),
+                                                                            Text(
+                                                                              '${match?.percentage ?? 0}% Match',
+                                                                              style: CustomTypography(context).Caption,
+                                                                            ),
+                                                                          ],
                                                                         ),
                                                                       );
                                                                     }).toList() ??
-                                                                    [];
-                                                              },
+                                                                    [],
 
-                                                              onChanged:
-                                                                  (newValue) {
-                                                                setState(() {
-                                                                  field['spreadsheet'] =
-                                                                      newValue!;
-                                                                  field['status'] =
-                                                                      'Manual Mapped';
-                                                                  _tempfields
-                                                                      .add(
-                                                                          field);
-                                                                });
-                                                                print(
-                                                                    "Status: ${field['status']}");
-                                                                print(
-                                                                    "Selected Value: $newValue");
-                                                              },
+                                                                // ✅ Selected Item Builder
+                                                                selectedItemBuilder:
+                                                                    (context) {
+                                                                  return provider
+                                                                          .sovUploadModel
+                                                                          ?.result
+                                                                          ?.firstWhereOrNull(
+                                                                            (res) =>
+                                                                                res.targetField ==
+                                                                                field['target'],
+                                                                          )
+                                                                          ?.matches
+                                                                          ?.map(
+                                                                              (match) {
+                                                                        return Align(
+                                                                          alignment:
+                                                                              Alignment.centerLeft,
+                                                                          child:
+                                                                              Text(
+                                                                            match.name ??
+                                                                                "Unknown",
+                                                                            style:
+                                                                                CustomTypography(context).Subtitle1,
+                                                                          ),
+                                                                        );
+                                                                      }).toList() ??
+                                                                      [];
+                                                                },
+
+                                                                // ✅ On Change Handler
+                                                                onChanged:
+                                                                    (newValue) {
+                                                                  setState(() {
+                                                                    field['spreadsheet'] =
+                                                                        newValue!;
+                                                                    field['status'] =
+                                                                        'Manual Mapped';
+                                                                    _tempfields
+                                                                        .add(
+                                                                            field);
+                                                                  });
+
+                                                                  final match = provider
+                                                                      .sovUploadModel
+                                                                      ?.result
+                                                                      ?.firstWhereOrNull(
+                                                                        (res) =>
+                                                                            res.targetField ==
+                                                                            field['target'],
+                                                                      )
+                                                                      ?.matches
+                                                                      ?.firstWhereOrNull((m) =>
+                                                                          m.name ==
+                                                                          newValue);
+
+                                                                  print(
+                                                                      "Selected Value: $newValue");
+                                                                  print(
+                                                                      "ID: ${match?.id}");
+                                                                  print(
+                                                                      "Percentage: ${match?.percentage}");
+                                                                  print(
+                                                                      "is_data_parameter: ${match?.is_data_parameter}");
+                                                                  print(
+                                                                      "Status: ${field['status']}");
+                                                                },
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
+
+                                                        // Expanded(
+                                                        //   child: Container(
+                                                        //     decoration:
+                                                        //         BoxDecoration(
+                                                        //       border: Border.all(
+                                                        //           color: Colors
+                                                        //               .grey),
+                                                        //       borderRadius:
+                                                        //           BorderRadius
+                                                        //               .circular(
+                                                        //                   8),
+                                                        //     ),
+                                                        //     child:
+                                                        //         DropdownButton<
+                                                        //             String>(
+                                                        //       isExpanded: true,
+                                                        //       padding: EdgeInsets
+                                                        //           .symmetric(
+                                                        //               horizontal:
+                                                        //                   10),
+                                                        //       menuMaxHeight:
+                                                        //           300,
+                                                        //       borderRadius:
+                                                        //           BorderRadius
+                                                        //               .circular(
+                                                        //                   8),
+                                                        //       style: CustomTypography(
+                                                        //               context)
+                                                        //           .Subtitle1,
+                                                        //       underline:
+                                                        //           SizedBox(),
+                                                        //       menuWidth: 250,
+                                                        //
+                                                        //       // Ensure selected value exists in dropdown items, otherwise set null
+                                                        //       value: provider
+                                                        //                   .sovUploadModel
+                                                        //                   ?.result
+                                                        //                   ?.firstWhereOrNull((res) =>
+                                                        //                       res.targetField ==
+                                                        //                       field[
+                                                        //                           'target'])
+                                                        //                   ?.matches
+                                                        //                   ?.any((match) =>
+                                                        //                       match.name ==
+                                                        //                       field[
+                                                        //                           'spreadsheet']) ??
+                                                        //               false
+                                                        //           ? field[
+                                                        //               'spreadsheet']
+                                                        //           : null,
+                                                        //
+                                                        //       hint: Text(
+                                                        //         "Ignore",
+                                                        //         style: CustomTypography(
+                                                        //                 context)
+                                                        //             .Subtitle1,
+                                                        //       ),
+                                                        //       items: provider
+                                                        //               .sovUploadModel
+                                                        //               ?.result
+                                                        //               ?.firstWhereOrNull((res) =>
+                                                        //                   res.targetField ==
+                                                        //                   field[
+                                                        //                       'target'])
+                                                        //               ?.matches
+                                                        //               ?.map((match) =>
+                                                        //                   match
+                                                        //                       .name)
+                                                        //               ?.toSet()
+                                                        //               ?.map(
+                                                        //                   (uniqueName) {
+                                                        //             final match = provider
+                                                        //                 .sovUploadModel!
+                                                        //                 .result!
+                                                        //                 .firstWhereOrNull((res) =>
+                                                        //                     res.targetField ==
+                                                        //                     field[
+                                                        //                         'target'])
+                                                        //                 ?.matches
+                                                        //                 ?.firstWhere((m) =>
+                                                        //                     m.name ==
+                                                        //                     uniqueName);
+                                                        //             return DropdownMenuItem<
+                                                        //                 String>(
+                                                        //               value:
+                                                        //                   uniqueName,
+                                                        //               child:
+                                                        //                   Row(
+                                                        //                 children: [
+                                                        //                   Text(
+                                                        //                     uniqueName ??
+                                                        //                         "Unknown",
+                                                        //                     style:
+                                                        //                         CustomTypography(context).Subtitle2,
+                                                        //                   ),
+                                                        //                   Spacer(),
+                                                        //                   Text(
+                                                        //                     '${match?.percentage ?? 0}% Match',
+                                                        //                     style:
+                                                        //                         CustomTypography(context).Caption,
+                                                        //                   ),
+                                                        //                 ],
+                                                        //               ),
+                                                        //             );
+                                                        //           }).toList() ??
+                                                        //           [],
+                                                        //       // items: provider
+                                                        //       //         .sovUploadModel
+                                                        //       //         ?.result
+                                                        //       //         ?.firstWhereOrNull((res) =>
+                                                        //       //             res.targetField ==
+                                                        //       //             field[
+                                                        //       //                 'target'])
+                                                        //       //         ?.matches
+                                                        //       //         ?.map(
+                                                        //       //             (match) {
+                                                        //       //       return DropdownMenuItem<
+                                                        //       //           String>(
+                                                        //       //         value: match
+                                                        //       //             .name,
+                                                        //       //         child:
+                                                        //       //             Row(
+                                                        //       //           children: [
+                                                        //       //             Text(
+                                                        //       //               match.name ??
+                                                        //       //                   "Unknown",
+                                                        //       //               style:
+                                                        //       //                   CustomTypography(context).Subtitle2,
+                                                        //       //             ),
+                                                        //       //             Spacer(),
+                                                        //       //             Text(
+                                                        //       //               '${match.percentage ?? 0}% Match',
+                                                        //       //               style:
+                                                        //       //                   CustomTypography(context).Caption,
+                                                        //       //             ),
+                                                        //       //           ],
+                                                        //       //         ),
+                                                        //       //       );
+                                                        //       //     }).toList() ??
+                                                        //       //     [],
+                                                        //       // Prevent null list
+                                                        //
+                                                        //       selectedItemBuilder:
+                                                        //           (context) {
+                                                        //         return provider
+                                                        //                 .sovUploadModel
+                                                        //                 ?.result
+                                                        //                 ?.firstWhereOrNull((res) =>
+                                                        //                     res.targetField ==
+                                                        //                     field[
+                                                        //                         'target'])
+                                                        //                 ?.matches
+                                                        //                 ?.map(
+                                                        //                     (match) {
+                                                        //               return Align(
+                                                        //                 alignment:
+                                                        //                     Alignment.centerLeft,
+                                                        //                 child:
+                                                        //                     Text(
+                                                        //                   match.name ??
+                                                        //                       "Unknown",
+                                                        //                   style:
+                                                        //                       CustomTypography(context).Subtitle1,
+                                                        //                 ),
+                                                        //               );
+                                                        //             }).toList() ??
+                                                        //             [];
+                                                        //       },
+                                                        //       onChanged:
+                                                        //           (newValue) {
+                                                        //         setState(() {
+                                                        //           field['spreadsheet'] =
+                                                        //               newValue!;
+                                                        //           field['status'] =
+                                                        //               'Manual Mapped';
+                                                        //           _tempfields
+                                                        //               .add(
+                                                        //                   field);
+                                                        //         });
+                                                        //         final match = provider
+                                                        //             .sovUploadModel
+                                                        //             ?.result
+                                                        //             ?.firstWhereOrNull((res) =>
+                                                        //                 res.targetField ==
+                                                        //                 field[
+                                                        //                     'target'])
+                                                        //             ?.matches
+                                                        //             ?.firstWhereOrNull((m) =>
+                                                        //                 m.name ==
+                                                        //                 newValue);
+                                                        //
+                                                        //         print(
+                                                        //             "Selected Value: $newValue");
+                                                        //         print(
+                                                        //             "ID: ${match?.id}");
+                                                        //         print(
+                                                        //             "Percentage: ${match?.percentage}");
+                                                        //         print(
+                                                        //             "Percentage: ${match?.is_data_parameter}");
+                                                        //         print(
+                                                        //             "Status: ${field['status']}");
+                                                        //       },
+                                                        //     ),
+                                                        //   ),
+                                                        // ),
                                                         SizedBox(width: 10),
                                                         TextButton(
                                                           onPressed: field[
@@ -1522,27 +2147,26 @@ class _MappingScreenState extends State<MappingScreen> {
   }
 
   void _handleNext() {
-    bool hasUnmappedFields =
-        _fields.any((field) => field['status'] == 'Unmapped');
+    // Ensure correct data parameter handling
+    List<Map<String, dynamic>> fieldsToSubmit = _fields.map((field) {
+      // Only include 'is_data_parameter' if true
+      final Map<String, dynamic> updatedField =
+          Map<String, dynamic>.from(field);
+      if (field['is_data_parameter'] != true) {
+        updatedField.remove('is_data_parameter');
+      } else {
+        updatedField['is_data_parameter'] = true;
+      }
+      return updatedField;
+    }).toList();
 
-    // if (hasUnmappedFields) {
-    //   // Show a warning if there are unmapped fields
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(LanguageService.getTranslated(
-    //           context, "app_unmapped_fields_warning")),
-    //       backgroundColor: Colors.redAccent,
-    //     ),
-    //   );
-    // } else {
-    // Proceed with the submission process if all fields are mapped
     final provider = Provider.of<UploadSovProvider>(context, listen: false);
-    if (widget.accountId != '' && widget.accountName != '') {
+    if (widget.accountId.isNotEmpty && widget.accountName.isNotEmpty) {
       provider.submitSovHeadersSubAccounts(
         context,
         widget.tempId,
         provider.sovUploadModel?.url ?? "",
-        _fields,
+        fieldsToSubmit,
         widget.accountId,
         widget.accountName,
         widget.subAccountName ?? "",
@@ -1553,10 +2177,48 @@ class _MappingScreenState extends State<MappingScreen> {
         context,
         widget.tempId,
         provider.sovUploadModel?.url ?? "",
-        _fields,
+        fieldsToSubmit,
         widget.subAccountName ?? "",
       );
     }
-    // }
   }
+
+// void _handleNext() {
+//   bool hasUnmappedFields =
+//       _fields.any((field) => field['status'] == 'Unmapped');
+//
+//   // if (hasUnmappedFields) {
+//   //   // Show a warning if there are unmapped fields
+//   //   ScaffoldMessenger.of(context).showSnackBar(
+//   //     SnackBar(
+//   //       content: Text(LanguageService.getTranslated(
+//   //           context, "app_unmapped_fields_warning")),
+//   //       backgroundColor: Colors.redAccent,
+//   //     ),
+//   //   );
+//   // } else {
+//   // Proceed with the submission process if all fields are mapped
+//   final provider = Provider.of<UploadSovProvider>(context, listen: false);
+//   if (widget.accountId != '' && widget.accountName != '') {
+//     provider.submitSovHeadersSubAccounts(
+//       context,
+//       widget.tempId,
+//       provider.sovUploadModel?.url ?? "",
+//       _fields,
+//       widget.accountId,
+//       widget.accountName,
+//       widget.subAccountName ?? "",
+//       widget.subAccountId,
+//     );
+//   } else {
+//     provider.submitSovHeadersAccounts(
+//       context,
+//       widget.tempId,
+//       provider.sovUploadModel?.url ?? "",
+//       _fields,
+//       widget.subAccountName ?? "",
+//     );
+//   }
+//   // }
+// }
 }

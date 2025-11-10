@@ -168,14 +168,12 @@ class SubscriptionCard extends StatelessWidget {
               ],
             ),
           ),
-
-          Divider(
-            color: Theme.of(context).colorScheme.surfaceContainerLowest,
-            thickness: 2,
-          ),
-
           // Bottom Section: Subscribed or Subscribe Button
           if (Platform.isAndroid) ...[
+            Divider(
+              color: Theme.of(context).colorScheme.surfaceContainerLowest,
+              thickness: 2,
+            ),
             Consumer<UserProfileProvider>(
                 builder: (context, userProfile, child) {
               final trialStatus = userProfile.trialInfo['status'] ?? '';

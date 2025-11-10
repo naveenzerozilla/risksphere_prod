@@ -256,8 +256,6 @@ class Role {
   }
 }
 
-
-
 class Categories {
   Categories({
     required this.isForIndividual,

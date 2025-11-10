@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:RiskSphere/screens/listings/my_location_list.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
@@ -492,8 +493,11 @@ class LocationListProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        LocationListModel locationListModel =
-            LocationListModel.fromJson(jsonResponse);
+
+        final locationListModel =
+            await compute<Map<String, dynamic>, LocationListModel>(
+                LocationListModel.fromJson,
+                jsonResponse as Map<String, dynamic>);
         certifiedLocationHits = locationListModel.totalHits ?? 0;
         totalPages = locationListModel.totalPages ?? 1;
         summaryList = locationListModel.summaryList ?? [];
@@ -654,7 +658,7 @@ class LocationListProvider extends ChangeNotifier {
       print(apiService);
       // Send a POST request to the API to upload the image
       Map<String, dynamic> response = await apiService.postMultiPartSOVPartial(
-          sovFile, accountId, subAccountId, sovId, "", "",context);
+          sovFile, accountId, subAccountId, sovId, "", "", context);
       // print(response!.message.toString());
       isImageUploadLoading = false;
       Navigator.pop(context);
