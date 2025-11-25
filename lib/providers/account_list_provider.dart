@@ -22,7 +22,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -33,7 +33,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -44,7 +44,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isRenameLoading(bool value) {
     _isRenameLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -75,7 +75,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isOwnerLoading(bool value) {
     _isOwnerLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -86,7 +86,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showSOVCountLoading(bool value) {
     _showSOVCountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -97,7 +97,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showSubAccountCountLoading(bool value) {
     _showSubAccountCountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -108,7 +108,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showOverallScoreLoading(bool value) {
     _showOverallScoreLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -119,7 +119,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isAddAccountLoading(bool value) {
     _isAddAccountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -130,7 +130,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isAutoCompleteLoading(bool value) {
     _isAutoCompleteLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -152,7 +152,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set isTransferLoading(bool value) {
     _isTransferLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -164,7 +164,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showOwner(bool value) {
     _showOwner = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -175,7 +175,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showSOVCount(bool value) {
     _showSOVCount = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -186,7 +186,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showSubAccountCount(bool value) {
     _showSubAccountCount = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -197,7 +197,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set showOverallScore(bool value) {
     _showOverallScore = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -209,7 +209,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set page(int value) {
     _page = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -220,7 +220,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set totalPages(int value) {
     _totalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -233,7 +233,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set accountList(List<Accounts> value) {
     _accountList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -244,7 +244,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set pricingList(List<Result> value) {
     _pricingList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -554,7 +554,7 @@ class AccountListProvider extends ChangeNotifier {
       // Prepend the duplicated account to the beginning of the list
       accountList = [duplicatedAccount, ...accountList];
 
-      isDuplicateLoading = false;
+      // isDuplicateLoading = false;
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -744,7 +744,7 @@ class AccountListProvider extends ChangeNotifier {
       // CustomToast.error(context, "An unexpected error occurred");
       return false;
     } finally {
-      isDeleteLocationLoading = false;
+      // isDeleteLocationLoading = false;
       notifyListeners(); // Notify UI to remove the loader
     }
   }

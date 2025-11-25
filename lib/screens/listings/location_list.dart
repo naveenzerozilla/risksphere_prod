@@ -27,11 +27,12 @@ import '../../design_system/components/rating_bar.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
+import '../../models/initial_data_model.dart' as roleModel;
 import '../../models/location_list_model.dart';
 import '../../providers/configuration_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphere/models/role_model.dart' as roleModel;
+import 'package:RiskSphere/models/role_model.dart' as roleModel hide Roles;
 import '../../providers/upload_sov_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../service/language_service.dart';
@@ -679,7 +680,7 @@ class _LocationListState extends State<LocationList>
                                             icon: _buildTabIcon(
                                                 context,
                                                 'assets/images/risk_tab_icon.svg',
-                                                'Risk Score',
+                                                'Hazard Score',
                                                 2),
                                           ),
                                         ],

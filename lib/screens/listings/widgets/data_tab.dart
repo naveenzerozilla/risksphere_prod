@@ -57,7 +57,7 @@ class DataTab extends StatefulWidget {
 }
 
 class _DataTabState extends State<DataTab> {
-  String? selectedParameterList = 'Sub Account';
+  String? selectedParameterList = 'Location';
   TextEditingController _userSearchController = TextEditingController();
   List<String> selectedServices = [];
   List<int> selectedStars = [];
@@ -72,13 +72,59 @@ class _DataTabState extends State<DataTab> {
   }
 
   _getData() async {
-    // Fetch data from API
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SubaccountParameterProvider>(context, listen: false)
-          .fetchHazardList(context);
-      Provider.of<SubaccountParameterProvider>(context, listen: false)
-          .fetchSubaccountParameters(context, widget.subaccountId, '', '', '',
-              '', selectedParameterList, widget.sovId, widget.campusId);
+      final provider =
+          Provider.of<SubaccountParameterProvider>(context, listen: false);
+
+      provider.fetchHazardList(context);
+
+      provider.fetchSubaccountParameters(
+        context,
+        widget.subaccountId,
+        // ✔ Correct
+        '',
+        // hazard (empty initially)
+        selectedParameterList,
+        // ✔ Correct parameter type (Location/SubAccount/etc.)
+        widget.locationId,
+        // ✔ Correct locationId
+        widget.campusId,
+        // ✔ Correct campusId
+        selectedParameterList,
+        // ✔ Correct
+        selectedParameterList,
+        // ✔ (your API signature uses this twice)
+        widget.sovId, // ✔ Correct sovId
+      );
+    });
+  }
+
+  // _getData() async {
+  //   // Fetch data from API
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     Provider.of<SubaccountParameterProvider>(context, listen: false)
+  //         .fetchHazardList(context);
+  //     Provider.of<SubaccountParameterProvider>(context, listen: false)
+  //         .fetchSubaccountParameters(context, '', '', '', widget.locationId,
+  //             '', selectedParameterList, widget.sovId, widget.campusId);
+  //   });
+  // }
+  Future<void> _getRefreshData() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SubaccountParameterProvider>(
+        context,
+        listen: false,
+      ).fetchSubaccountParameters(
+          context,
+          widget.subaccountId,
+          '',
+          selectedParameterList,
+          widget.locationId,
+          widget.campusId,
+          selectedParameterList,
+          selectedParameterList,
+          widget.sovId);
+      print(selectedParameterList);
     });
   }
 
@@ -200,26 +246,39 @@ class _DataTabState extends State<DataTab> {
           if (provider.isLoading == true) {
             return const Center(child: CircularProgressIndicator());
           }
-          // if (provider.parameters == null ||
-          //     provider.parameters!.result == null) {
-          //   return const Center(child: Text("No parameters found"));
-          // }
 
-          // Grouping logic starts here
-          Map<String, List<Result>> groupedResults = {};
+          // ✅ Correct Grouping Logic (criticality empty → LOW)
+          Map<String, List<Result>> groupedResults = {
+            "high": [],
+            "medium": [],
+            "low": [],
+          };
 
           for (final result
               in (provider.parameters?.result ?? const <Result>[])) {
-            final impactType =
-                result.criticality?.impactType?.toString() ?? 'Unknown';
+            String bucket = "low"; // 👉 Default to LOW always
 
-            final list = groupedResults.putIfAbsent(impactType, () => []);
+            // If criticality exists and has entries
+            if (result.criticality != null && result.criticality!.isNotEmpty) {
+              final impact =
+                  result.criticality!.first.impactType?.toLowerCase().trim() ??
+                      "";
 
-            if (!list.any((r) => r.name == result.name)) {
-              list.add(result);
+              if (impact == "high") {
+                bucket = "high";
+              } else if (impact == "medium") {
+                bucket = "medium";
+              } else if (impact == "low") {
+                bucket = "low";
+              } else {
+                bucket = "low"; // 👉 Unknown impact → LOW
+              }
             }
+
+            // Always add item to the appropriate bucket
+            groupedResults[bucket]!.add(result);
           }
-          final uniqueResultList = uniqueResults.values.toList();
+
           return RefreshIndicator(
             onRefresh: () async {
               await Provider.of<SubaccountParameterProvider>(context,
@@ -628,142 +687,132 @@ class _DataTabState extends State<DataTab> {
                   ),
                   if (groupedResults.isNotEmpty) ...[
                     SizedBox(height: 10),
-                    provider.parameters!.completeness.toString() == "null"
-                        ? Container()
-                        : Container(
-                            width: MediaQuery.of(context).size.width,
-                            margin: const EdgeInsets.only(right: 12, left: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white10,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  offset: const Offset(0, 4),
-                                  blurRadius: 10,
+                    Consumer<SubaccountParameterProvider>(
+                        builder: (context, provider, child) {
+                      final resultList = provider.parameters?.result ?? [];
+                      return resultList.isEmpty
+                          ? Container(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: Text(
+                                    "No Data Found",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
-                            child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Data completeness Score",
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.only(left: 18),
+                                  child: Text("Data completeness Score",
                                       style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700)),
-                                  SizedBox(height: 5),
-                                  // DropdownButtonHideUnderline(
-                                  //   child: DropdownButton<String>(
-                                  //     value: selectedItem == 'data'
-                                  //         ? null
-                                  //         : selectedItem,
-                                  //     hint: Row(
-                                  //       children: const [
-                                  //         Text(
-                                  //           'data',
-                                  //           style: TextStyle(
-                                  //               color: Colors.blueAccent),
-                                  //         ),
-                                  //         SizedBox(height: 4),
-                                  //         Icon(Icons.arrow_drop_down_outlined,
-                                  //             color: Colors.white),
-                                  //       ],
-                                  //     ),
-                                  //     icon: const SizedBox.shrink(),
-                                  //     dropdownColor: Colors.black,
-                                  //     style:
-                                  //         const TextStyle(color: Colors.white),
-                                  //     items: items.map((String value) {
-                                  //       return DropdownMenuItem<String>(
-                                  //         value: value,
-                                  //         child: Text(
-                                  //           value,
-                                  //           style: const TextStyle(
-                                  //               color: Colors.blue),
-                                  //         ),
-                                  //       );
-                                  //     }).toList(),
-                                  //     onChanged: (String? newValue) {
-                                  //       setState(() {
-                                  //         selectedItem = newValue!;
-                                  //       });
-                                  //     },
-                                  //     selectedItemBuilder:
-                                  //         (BuildContext context) {
-                                  //       return items.map((String value) {
-                                  //         return Row(
-                                  //           children: [
-                                  //             Text(
-                                  //               value,
-                                  //               style: const TextStyle(
-                                  //                   fontSize: 14,
-                                  //                   fontWeight: FontWeight.bold,
-                                  //                   color: Colors.blueAccent),
-                                  //             ),
-                                  //             const SizedBox(height: 4),
-                                  //             const Icon(
-                                  //                 Icons
-                                  //                     .arrow_drop_down_outlined,
-                                  //                 color: Colors.blueAccent),
-                                  //           ],
-                                  //         );
-                                  //       }).toList();
-                                  //     },
-                                  //   ),
-                                  // ),
-                                  Consumer<SubaccountParameterProvider>(
-                                    builder: (context, provider, child) {
-                                      return SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: Row(
-                                          children: groupedResults.entries
-                                              .map((entry) {
-                                            final impactType = entry.key;
-                                            final resultsForImpactType =
-                                                entry.value;
+                                ),
+                                SizedBox(height: 5),
+                                Consumer<SubaccountParameterProvider>(
+                                  builder: (context, provider, child) {
+                                    final resultList =
+                                        provider.parameters?.result ?? [];
 
-                                            final dataElements =
-                                                resultsForImpactType
-                                                    .where((e) =>
-                                                        e.name != null &&
-                                                        e.name!.isNotEmpty &&
-                                                        e.parameterType !=
-                                                            null &&
-                                                        e.user != null)
-                                                    .toList();
+                                    // USE UPDATED GROUPING LOGIC
+                                    Map<String, List<Result>> groupedResults = {
+                                      "high": [],
+                                      "medium": [],
+                                      "low": [],
+                                    };
 
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 8.0),
-                                              child: DataCompletenessCard(
-                                                title: dataElements.isNotEmpty
-                                                    ? dataElements[0].name ??
-                                                        'Unknown'
-                                                    : 'Unknown',
-                                                weightage: provider
-                                                    .parameters!.completeness!,
-                                                parameterType: impactType,
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ]),
-                          ),
-                    SizedBox(height: 10),
+                                    for (var item in resultList) {
+                                      String? impact;
+
+                                      if (item.criticality == null ||
+                                          item.criticality!.isEmpty) {
+                                        impact = "low";
+                                      } else {
+                                        impact = item
+                                            .criticality!.first.impactType
+                                            ?.toLowerCase();
+                                        if (impact == null ||
+                                            impact.trim().isEmpty) {
+                                          impact = "low";
+                                        }
+                                      }
+
+                                      String bucket;
+                                      if (impact == "high")
+                                        bucket = "high";
+                                      else if (impact == "medium")
+                                        bucket = "medium";
+                                      else
+                                        bucket = "low";
+
+                                      groupedResults[bucket]!.add(item);
+                                    }
+
+                                    // Calculate %
+                                    int calculatePercent(List<Result> list) {
+                                      if (list.isEmpty) return 0;
+                                      final filled = list
+                                          .where((e) =>
+                                              e.parameterValue?.value != null &&
+                                              e.parameterValue!.value
+                                                  .toString()
+                                                  .trim()
+                                                  .isNotEmpty)
+                                          .length;
+                                      return ((filled / list.length) * 100)
+                                          .round();
+                                    }
+
+                                    final visibleCards = groupedResults.entries
+                                        .where((e) => e.value.isNotEmpty)
+                                        .map((e) => {
+                                              "impact": e.key,
+                                              "percent":
+                                                  calculatePercent(e.value),
+                                            })
+                                        .toList();
+
+                                    return SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: visibleCards.map((item) {
+                                          final impactType =
+                                              item["impact"] as String;
+                                          final percent =
+                                              item["percent"] as int;
+
+                                          return DataCompletenessCard(
+                                            title: impactType,
+                                            percent: percent,
+                                            impactType: impactType,
+                                          );
+                                        }).toList(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            );
+                    }),
+                    SizedBox(height: 16),
                     ListView.builder(
                       physics: NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
-                      scrollDirection: Axis.vertical,
                       itemCount: groupedResults.length,
                       itemBuilder: (context, index) {
                         final impactType = groupedResults.keys.elementAt(index);
                         final resultsForImpactType =
                             groupedResults[impactType]!;
+
                         final dataElements = resultsForImpactType
                             .where((e) =>
                                 e.name != null &&
@@ -774,31 +823,34 @@ class _DataTabState extends State<DataTab> {
                                   name: e.name!,
                                   user: e.user!,
                                   result: e,
-                                  parameterType:
-                                      e.parameterType!, // <-- Fix here
+                                  parameterType: e.parameterType!,
                                 ))
                             .toList();
+
+                        // ✅ HIDE THIS ITEM IF NO DATA
+                        if (dataElements.isEmpty) {
+                          return SizedBox.shrink(); // <- hides empty card
+                        }
+
                         return Container(
                           padding:
                               EdgeInsets.only(left: 10, right: 10, bottom: 10),
                           child: ImpactDataCard(
-                              subAccountId: widget.subaccountId,
-                              locationId: widget.locationId,
-                              sovId: widget.sovId,
-                              campusId: widget.campusId,
-                              title: impactType,
-                              titleColor: impactType == "high"
-                                  ? Color(0xFFEF5350)
-                                  : impactType == "low"
-                                      ? const Color(0xFF9C27B0)
-                                      : impactType == "medium"
-                                          ? const Color(0xFFEF6C00)
-                                          : impactType == "general"
-                                              ? const Color.fromARGB(
-                                                  255, 41, 182, 246)
-                                              : Colors.white,
-                              dataElements: dataElements,
-                              selectedParameterList: selectedParameterList!),
+                            subAccountId: widget.subaccountId,
+                            locationId: widget.locationId,
+                            sovId: widget.sovId,
+                            campusId: widget.campusId,
+                            title: impactType,
+                            titleColor: impactType == "high"
+                                ? Color(0xFFEF5350)
+                                : impactType == "medium"
+                                    ? Color(0xFFEF6C00)
+                                    : Color(0xFF9C27B0),
+                            // LOW
+                            dataElements: dataElements,
+                            selectedParameterList: selectedParameterList!,
+                            onRefresh: () => _getRefreshData(),
+                          ),
                         );
                       },
                     ),
@@ -1077,6 +1129,7 @@ class ImageUploadCard extends StatefulWidget {
   ParameterType? parametertype;
   final Function(List<ImageProvider>) onImagesUpdated;
   final String selectedParameterList;
+  final Future<void> Function()? onRefresh;
 
   ImageUploadCard({
     Key? key,
@@ -1090,6 +1143,7 @@ class ImageUploadCard extends StatefulWidget {
     required this.onImagesUpdated,
     required this.parametertype,
     required this.selectedParameterList,
+    this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -1428,7 +1482,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   height: 20,
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2))
-                              : Text("Submit2"),
+                              : Text("Submit"),
                         ),
                       ],
                     ),
@@ -1536,27 +1590,76 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
               ..._buildParameterFields(),
             ],
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildSubmitButton(),
-                SizedBox(width: 8),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: MediaQuery.of(context).size.width / 3,
-                      child: Text(
-                        "Edited by ${widget.user.name}",
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                SizedBox(width: 2),
+                GestureDetector(
+                  onTap: () {
+                    // Check if selectedImageData is not null before accessing its 'url' field
+                    if (selectedImageData != null &&
+                        selectedImageData!['url'] != null) {
+                      String existingImageUrl = selectedImageData!['url'] ?? '';
+
+                      if (existingImageUrl.isNotEmpty) {
+                        // Call the addImage method and pass the existing image URL
+                        addImage(existingImageUrl);
+                      } else {
+                        // Handle case where the URL is empty
+                        addImage(existingImageUrl);
+                        print("No image URL to send");
+                      }
+                    } else {
+                      // Handle case where selectedImageData is null or URL is not available
+                      print("No image data available");
+                      addImage(
+                          ''); // Send an empty string or appropriate fallback data
+                    }
+                  },
+
+                  // onTap: addImage,
+                  child: Container(
+                    padding: EdgeInsets.all(5),
+                    width: MediaQuery.of(context).size.width/4,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(width: 0.8, color: Colors.white38),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, color: Colors.blueAccent, size: 22),
+                          SizedBox(width: 6),
+                          Text("Upload",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14)),
+                        ],
                       ),
                     ),
-                    Text("03/03/2025 11:13:22")
-                  ],
-                )
+                  ),
+                ),
+                // Column(
+                //   mainAxisAlignment: MainAxisAlignment.start,
+                //   crossAxisAlignment: CrossAxisAlignment.start,
+                //   children: [
+                //     Container(
+                //       width: MediaQuery.of(context).size.width / 3,
+                //       child: Text(
+                //         "Edited by ${widget.user.name}",
+                //         maxLines: 2,
+                //         overflow: TextOverflow.ellipsis,
+                //       ),
+                //     ),
+                //     Text("03/03/2025 11:13:22")
+                //   ],
+                // )
               ],
             ),
-            SizedBox(height: 16),
+            // SizedBox(height: 16),
             // widget.result.parameterValue?.reference == null
 
             references == null || references!.isEmpty
@@ -1843,56 +1946,56 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                     },
                   ),
 
-            SizedBox(height: 10),
-            GestureDetector(
-              onTap: () {
-                // Check if selectedImageData is not null before accessing its 'url' field
-                if (selectedImageData != null &&
-                    selectedImageData!['url'] != null) {
-                  String existingImageUrl = selectedImageData!['url'] ?? '';
-
-                  if (existingImageUrl.isNotEmpty) {
-                    // Call the addImage method and pass the existing image URL
-                    addImage(existingImageUrl);
-                  } else {
-                    // Handle case where the URL is empty
-                    addImage(existingImageUrl);
-                    print("No image URL to send");
-                  }
-                } else {
-                  // Handle case where selectedImageData is null or URL is not available
-                  print("No image data available");
-                  addImage(
-                      ''); // Send an empty string or appropriate fallback data
-                }
-              },
-
-              // onTap: addImage,
-              child: Container(
-                padding: EdgeInsets.all(5),
-                width: 100,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(5),
-                  border: Border.all(width: 0.8, color: Colors.white38),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, color: Colors.blueAccent, size: 22),
-                      SizedBox(width: 6),
-                      Text("Upload",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
+            // SizedBox(height: 10),
+            // GestureDetector(
+            //   onTap: () {
+            //     // Check if selectedImageData is not null before accessing its 'url' field
+            //     if (selectedImageData != null &&
+            //         selectedImageData!['url'] != null) {
+            //       String existingImageUrl = selectedImageData!['url'] ?? '';
+            //
+            //       if (existingImageUrl.isNotEmpty) {
+            //         // Call the addImage method and pass the existing image URL
+            //         addImage(existingImageUrl);
+            //       } else {
+            //         // Handle case where the URL is empty
+            //         addImage(existingImageUrl);
+            //         print("No image URL to send");
+            //       }
+            //     } else {
+            //       // Handle case where selectedImageData is null or URL is not available
+            //       print("No image data available");
+            //       addImage(
+            //           ''); // Send an empty string or appropriate fallback data
+            //     }
+            //   },
+            //
+            //   // onTap: addImage,
+            //   child: Container(
+            //     padding: EdgeInsets.all(5),
+            //     width: 100,
+            //     decoration: BoxDecoration(
+            //       color: Colors.transparent,
+            //       borderRadius: BorderRadius.circular(5),
+            //       border: Border.all(width: 0.8, color: Colors.white38),
+            //     ),
+            //     child: Center(
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.center,
+            //         children: [
+            //           Icon(Icons.add, color: Colors.blueAccent, size: 22),
+            //           SizedBox(width: 6),
+            //           Text("Upload",
+            //               style: TextStyle(
+            //                   color: Colors.white,
+            //                   fontWeight: FontWeight.bold,
+            //                   fontSize: 14)),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // SizedBox(height: 16),
           ],
         ),
       ),
@@ -2021,22 +2124,25 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     var typography = CustomTypography(context);
     return Row(
       children: [
-        CustomButton(
-          onPressed: isLoading ? null : _handleSubmit,
-          child: isLoading
-              ? SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: AppColors.black,
-                    strokeWidth: 2.5,
+        SizedBox(
+          width: MediaQuery.of(context).size.width/2.3,
+          child: CustomButton(
+            onPressed: isLoading ? null : _handleSubmit,
+            child: isLoading
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.black,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Text(
+                    "Submit",
+                    style: typography.Body1.copyWith(color: AppColors.black),
                   ),
-                )
-              : Text(
-                  "Submit",
-                  style: typography.Body1.copyWith(color: AppColors.black),
-                ),
-          type: ButtonType.elevated,
+            type: ButtonType.elevated,
+          ),
         ),
       ],
     );
@@ -2175,6 +2281,9 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
         updatedFields: updatedFields,
         selectedParameterList: widget.selectedParameterList!,
       );
+      if (widget.onRefresh != null) {
+        await widget.onRefresh!();
+      }
     } catch (e) {
       _showError('Error: ${e.toString()}');
     } finally {
@@ -2313,25 +2422,28 @@ class ImpactDataElement {
       required this.parameterType});
 }
 
-class DataCompletenessCard extends StatelessWidget {
+class DataCompletenessCard extends StatefulWidget {
   final String title;
-  final Completeness weightage;
-  final String parameterType;
-  final IconData icon;
+  final int percent;
+  final String impactType;
 
   const DataCompletenessCard({
     super.key,
     required this.title,
-    required this.weightage,
-    required this.parameterType,
-    this.icon = Icons.percent,
+    required this.percent,
+    required this.impactType,
   });
 
   @override
+  State<DataCompletenessCard> createState() => _DataCompletenessCardState();
+}
+
+class _DataCompletenessCardState extends State<DataCompletenessCard> {
+  @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12, left: 12),
+      width: 115,
+      margin: const EdgeInsets.only(right: 2, left: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -2347,47 +2459,24 @@ class DataCompletenessCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.rectangle,
-              borderRadius:
-                  BorderRadius.circular(8), // or 0 for a perfect square
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                'assets/images/Layer_1.svg',
-                width: 24,
-                height: 24,
-              ),
-            ),
+          /// ICON BOX (same as original)
+          SizedBox(
+            height: 55,
+            width: 55,
+            child: SegmentedProgress(percent: widget.percent),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Completed %',
-            style: TextStyle(color: Colors.white60, fontSize: 13),
-          ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 10),
+
           Text(
-            parameterType.toLowerCase() == 'high'
-                ? (weightage?.high ?? 0).toString()
-                : (weightage?.low ?? 0).toString(),
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            'Completed ${widget.percent}%',
+            style: TextStyle(color: Colors.white, fontSize: 12),
           ),
-          const SizedBox(height: 12),
-          Container(
-            height: 2,
-            color: Colors.blueGrey,
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+
           Text(
-            '${parameterType[0].toUpperCase()}${parameterType.substring(1).toLowerCase()}',
+            widget.impactType[0].toUpperCase() +
+                widget.impactType.substring(1).toLowerCase(),
             style: const TextStyle(
               fontSize: 14,
               color: Colors.purpleAccent,
@@ -2395,6 +2484,69 @@ class DataCompletenessCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SegmentedProgressPainter extends CustomPainter {
+  final int percent;
+
+  SegmentedProgressPainter(this.percent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = 12.0;
+    final totalSegments = 12;
+    final anglePerSegment = (360 / totalSegments) * 0.9; // segment thickness
+    final gap = (360 / totalSegments) * 0.1; // small gap between segments
+
+    final rect = Offset.zero & size;
+    final radius = size.width / 2;
+
+    final completedSegments = ((percent / 100) * totalSegments).floor();
+
+    for (int i = 0; i < totalSegments; i++) {
+      final paint = Paint()
+        ..color = i < completedSegments ? Colors.green : Colors.green.shade900
+        ..strokeWidth = strokeWidth
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.butt;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(radius, radius), radius: radius - 5),
+        radians((360 / totalSegments) * i),
+        radians(anglePerSegment),
+        false,
+        paint,
+      );
+    }
+  }
+
+  double radians(double deg) => deg * (3.141592653589793 / 180);
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class SegmentedProgress extends StatelessWidget {
+  final int percent; // 0 to 100
+
+  const SegmentedProgress({super.key, required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: SegmentedProgressPainter(percent),
+      child: Center(
+        child: Text(
+          "$percent%",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

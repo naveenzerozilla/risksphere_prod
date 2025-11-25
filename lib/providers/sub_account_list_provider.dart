@@ -25,6 +25,24 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+  bool isDeleting = false;
+
+  void setDeleting(bool value) {
+    isDeleting = value;
+    notifyListeners();
+  }
+
+
+
+  bool isDuplicating = false;
+
+
+  void setDuplicating(bool value) {
+    isDuplicating = value;
+    notifyListeners();
+  }
+
+
 
   bool _isNextPageLoading = false;
 
@@ -444,7 +462,7 @@ class SubAccountListProvider extends ChangeNotifier {
       // Prepend the duplicated sub-account to the beginning of the list
       subAccountList = [duplicatedSubAccount, ...subAccountList];
 
-      isDuplicateLoading = false;
+      // isDuplicateLoading = false;
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

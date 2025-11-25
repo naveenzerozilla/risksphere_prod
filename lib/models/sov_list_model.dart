@@ -87,6 +87,8 @@ class Result {
   Owner? owner;
   String? companyId;
   String? subAccountId;
+  String? accountName;
+  String? subAccountName;
   String? accountId;
   String? name;
   CreatedAt? createdAt;
@@ -104,13 +106,15 @@ class Result {
   int? geocodeAvg;
   int? overallAvg;
   SovGraphData? sovGraphData;
-  TotalDataCompleteness? totalDataCompleteness;
+  int? dataCompleteness;
 
   Result(
       {this.sovId,
       this.owner,
       this.companyId,
       this.subAccountId,
+        this.accountName,
+        this.subAccountName,
       this.accountId,
       this.name,
       this.createdAt,
@@ -126,13 +130,15 @@ class Result {
         this.geocodeAvg,
         this.overallAvg,
       this.sovGraphData,
-      this.totalDataCompleteness});
+      this.dataCompleteness});
 
   Result.fromJson(Map<String, dynamic> json) {
     sovId = json['sov_id'];
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     companyId = json['company_id'];
     subAccountId = json['sub_account_id'];
+    accountName= json['account_name'];
+    subAccountName=json['sub_account_name'];
     accountId = json['account_id'];
     name = json['name'];
     createdAt = json['created_at'] != null
@@ -171,9 +177,7 @@ class Result {
     sovGraphData = json['sov_graph_data'] != null
         ? new SovGraphData.fromJson(json['sov_graph_data'])
         : null;
-    totalDataCompleteness = json['total_data_completeness'] != null
-        ? new TotalDataCompleteness.fromJson(json['total_data_completeness'])
-        : null;
+    dataCompleteness = json['total_data_completeness'];
   }
 
   Map<String, dynamic> toJson() {
@@ -184,6 +188,8 @@ class Result {
     }
     data['company_id'] = this.companyId;
     data['sub_account_id'] = this.subAccountId;
+    data['account_name']=this.accountName;
+    data['sub_account_name']=this.subAccountName;
     data['account_id'] = this.accountId;
     data['name'] = this.name;
     if (this.createdAt != null) {
@@ -215,9 +221,7 @@ class Result {
     if (this.sovGraphData != null) {
       data['sov_graph_data'] = this.sovGraphData!.toJson();
     }
-    if (this.totalDataCompleteness != null) {
-      data['total_data_completeness'] = this.totalDataCompleteness!.toJson();
-    }
+    data['total_data_completeness'] = this.dataCompleteness;
     return data;
   }
 }
@@ -418,10 +422,10 @@ class GlobalPerilCounts {
 class Roles {
   Null? isApplicableForTrial;
   Null? id;
-  dynamic? role;
+  dynamic role;
   String? name;
-  Null? isMultipleRoleEnabled;
-  Null? isForIndividual;
+  dynamic isMultipleRoleEnabled;
+  dynamic isForIndividual;
 
   Roles(
       {this.isApplicableForTrial,

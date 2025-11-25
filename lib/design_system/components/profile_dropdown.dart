@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:provider/provider.dart';
-
-import '../../providers/user_profile_provider.dart';
 import '../../screens/userManagement/user_profile.dart';
 import 'profile_image_widget.dart';
 import 'roles_dropdown.dart';

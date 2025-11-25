@@ -1,4 +1,3 @@
-
 import 'package:RiskSphere/utils/global_imports.dart';
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
@@ -183,9 +182,9 @@ class _LocationTableState extends State<LocationTable> {
           ),
         ),
         Container(
-          height: MediaQuery.of(context).size.height / 1.8,
+          height: MediaQuery.of(context).size.height / 1.9,
           width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 15),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -218,7 +217,7 @@ class _LocationTableState extends State<LocationTable> {
                     horizontalMargin: 12,
                     bottomMargin: 20,
                     dividerThickness: 1,
-                    dataRowHeight: !showRiskScore ? 160 : null,
+                    dataRowHeight: !showRiskScore ? 200 : null,
                     border: TableBorder.all(
                       color: Theme.of(context).colorScheme.surface,
                       width: 1,
@@ -317,7 +316,7 @@ class _LocationTableState extends State<LocationTable> {
                               location.geocodedAddress ?? '',
                               style: CustomTypography(context).Body2,
                               overflow: TextOverflow.ellipsis,
-                              maxLines: showRiskScore ? 4 : 7,
+                              maxLines: showRiskScore ? 2 : 7,
                             ),
                           ),
                           DataCell(_renderRiskScore(int.tryParse(

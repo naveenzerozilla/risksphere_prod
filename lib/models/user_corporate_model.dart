@@ -1,12 +1,12 @@
 import 'package:RiskSphere/models/role_model.dart';
 
-class User_Corporate_Model {
+class UserCorporateModel {
   String? data;
   UsersCorporate? user;
 
-  User_Corporate_Model({this.data, this.user});
+  UserCorporateModel({this.data, this.user});
 
-  User_Corporate_Model.fromJson(Map<String, dynamic> json) {
+  UserCorporateModel.fromJson(Map<String, dynamic> json) {
     data = json['data'];
     user = json['user'] != null ? new UsersCorporate.fromJson(json['user']) : null;
   }
@@ -40,7 +40,7 @@ class UsersCorporate {
   String? name;
   bool? status;
   String? username;
-  List<AcceptedRole>? acceptedRole;
+  // List<AcceptedRole>? acceptedRole;
 
   UsersCorporate(
       {this.role,
@@ -61,7 +61,7 @@ class UsersCorporate {
         this.name,
         this.status,
         this.username,
-        this.acceptedRole});
+        });
 
   UsersCorporate.fromJson(Map<String, dynamic> json) {
     role = json['role'] is List
@@ -86,9 +86,9 @@ class UsersCorporate {
     name = json['name'] ?? '';
     status = json['status'] ?? false;
     username = json['username'] ?? '';
-    acceptedRole = json['accepted_role'] is List
-        ? (json['accepted_role'] as List).map((v) => AcceptedRole.fromJson(v as Map<String, dynamic>)).toList()
-        : [];
+    // acceptedRole = json['accepted_role'] is List
+    //     ? (json['accepted_role'] as List).map((v) => AcceptedRole.fromJson(v as Map<String, dynamic>)).toList()
+    //     : [];
   }
 
 
@@ -120,10 +120,10 @@ class UsersCorporate {
     data['name'] = this.name;
     data['status'] = this.status;
     data['username'] = this.username;
-    if (this.acceptedRole != null) {
-      data['accepted_role'] =
-          this.acceptedRole!.map((v) => v.toJson()).toList();
-    }
+    // if (this.acceptedRole != null) {
+    //   data['accepted_role'] =
+    //       this.acceptedRole!.map((v) => v.toJson()).toList();
+    // }
     return data;
   }
 }
@@ -148,55 +148,3 @@ class CreatedAt {
   }
 }
 
-class AcceptedRole {
-  String? id;
-  bool? isForIndividual;
-  String? role;
-  bool? isApplicableForTrial;
-  String? name;
-  String? description;
-  bool? isMultipleRoleEnabled;
-  bool? status;
-  bool? isApplicableForInternal;
-  bool? isSelectable;
-
-  AcceptedRole(
-      {this.id,
-        this.isForIndividual,
-        this.role,
-        this.isApplicableForTrial,
-        this.name,
-        this.description,
-        this.isMultipleRoleEnabled,
-        this.status,
-        this.isApplicableForInternal,
-        this.isSelectable});
-
-  AcceptedRole.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    isForIndividual = json['is_for_individual'];
-    role = json['role'];
-    isApplicableForTrial = json['is_applicable_for_trial'];
-    name = json['name'];
-    description = json['description'];
-    isMultipleRoleEnabled = json['is_multiple_role_enabled'];
-    status = json['status'];
-    isApplicableForInternal = json['is_applicable_for_internal'];
-    isSelectable = json['is_selectable'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['is_for_individual'] = this.isForIndividual;
-    data['role'] = this.role;
-    data['is_applicable_for_trial'] = this.isApplicableForTrial;
-    data['name'] = this.name;
-    data['description'] = this.description;
-    data['is_multiple_role_enabled'] = this.isMultipleRoleEnabled;
-    data['status'] = this.status;
-    data['is_applicable_for_internal'] = this.isApplicableForInternal;
-    data['is_selectable'] = this.isSelectable;
-    return data;
-  }
-}

@@ -1,5 +1,7 @@
+import 'package:RiskSphere/models/user_corporate_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../models/user_profile_model.dart';
 import '../../utils/global_imports.dart';
 import 'package:RiskSphere/models/networking_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,12 +27,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   TabController? _tabController;
   Screens _selectedScreen = Screens.connectionList;
   List<Categories> _selectedRoles = [];
+  List<AcceptedRole> _selectedAcceptRole = [];
+
   TextEditingController _textEditingController = TextEditingController();
   SignUpOptions? _selectedOption;
   String _selectedCountryCode = '+1';
   TextEditingController mobileController = TextEditingController();
-  PhoneController phoneController =
-      PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
+  final TextEditingController phoneController = TextEditingController();
+
+  // PhoneController phoneController =
+  //     PhoneController(PhoneNumber(isoCode: IsoCode.US, nsn: ''));
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -218,10 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           // remove '+' from country code
           _selectedCountryCode = value.countryCode?.replaceAll('+', '') ?? "1";
           print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
-          phoneController.value = PhoneNumber(
-              isoCode: countryCodeToIsoCode[_selectedCountryCode]?.first ??
-                  IsoCode.US,
-              nsn: phoneLabelText ?? "");
+          phoneController.text = value.phone ?? "";
           // Set roles and assign from List<Roles> to List<Categories>
           _selectedRoles = (value.role ?? [])
               .map((role) => Categories(
@@ -233,6 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     isApplicableForTrial: role.isApplicableForTrial ?? false,
                   ))
               .toList();
+          _selectedAcceptRole = value.acceptedRole!;
           _selectedCountryCode = value.countryCode ?? "+1";
         });
       }
@@ -507,34 +511,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         color: Colors.white.withOpacity(0.5)),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2.0),
                                   child: Center(
                                     child: Container(),
-                                    // CountryListPicker(
-                                    //   initialCountry: Countries.United_States,
-                                    //   border: InputBorder.none,
-                                    //   flagSize: Size(35, 30),
-                                    //   onChanged: (code) {
-                                    //     setState(() {
-                                    //       _selectedCountryCode = code;
-                                    //     });
-                                    //   },
-                                    //   diallingCodeStyle: typography.Body1,
-                                    //   isShowInputField: false,
-                                    //   // dialogTheme: DialogThemeData(
-                                    //   //   style: typography.Body1,
-                                    //   //   isShowFloatButton: false,
-                                    //   // ),
-                                    //   countryNameStyle: typography.Body1,
-                                    //   isShowCountryName: false,
-                                    //   onCountryChanged: (country) {
-                                    //     print('This is the country code: $country');
-                                    //     setState(() {
-                                    //       _selectedCountryCode = country.dialing_code;
-                                    //     });
-                                    //   },
-                                    // ),
                                   ),
                                 ),
                               ),
@@ -598,8 +578,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     builder: (BuildContext context) {
                                       return RolesBottomSheet(
                                         showCorporateSwitch: true,
-                                        isUserProfile: true,
-                                        options: roles,
+                                        // isUserProfile: true,
+                                        // options: roles,
+                                        options:
+                                            context.read<AuthNotifier>().roles,
                                         selectedRoles: _selectedRoles,
                                         addChip: _addChip,
                                         removeChip: _removeChip,
@@ -637,8 +619,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         builder: (BuildContext context) {
                                           return RolesBottomSheet(
                                             showCorporateSwitch: false,
-                                            isUserProfile: true,
-                                            options: roles,
+                                            // isUserProfile: true,
+                                            options: context
+                                                .read<AuthNotifier>()
+                                                .roles,
+                                            // options: roles,
                                             selectedRoles: _selectedRoles,
                                             addChip: _addChip,
                                             removeChip: _removeChip,
@@ -687,6 +672,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                             ],
                           ),
+
                           SizedBox(height: CustomSpacing.two),
                           // Status
                           DropdownButtonFormField<String>(
@@ -776,6 +762,84 @@ class _ProfileScreenState extends State<ProfileScreen>
     Scaffold.of(context).openEndDrawer();
   }
 
+  final ImagePicker _picker = ImagePicker();
+  File? _pickedImage;
+
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              const Text(
+                "Profile Image",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Divider(color: Colors.white24, height: 20),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text("Choose from library",
+                    style: TextStyle(color: Colors.white)),
+                onTap: _pickFromGallery,
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.white),
+                title: const Text("Take a picture",
+                    style: TextStyle(color: Colors.white)),
+                onTap: _takePicture,
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text("Delete photo",
+                    style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  setState(() {
+                    _pickedImage = null;
+                    userImageUrl = '';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel",
+                    style: TextStyle(color: Colors.white70)),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickFromGallery() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _pickedImage = File(picked.path));
+    }
+    Navigator.pop(context);
+  }
+
+  Future<void> _takePicture() async {
+    final picked = await _picker.pickImage(source: ImageSource.camera);
+    if (picked != null) {
+      setState(() => _pickedImage = File(picked.path));
+    }
+    Navigator.pop(context);
+  }
+
   _getGeneralInfoUI() {
     var typography = CustomTypography(context);
     return Consumer<UserProfileProvider>(
@@ -799,74 +863,175 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: EdgeInsets.all(8),
+                                  padding: EdgeInsets.all(20),
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? AppColors.paperElavation25
                                       : AppColors.paperElavation25Light,
                                   child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       // If company image is not uploaded, show default image
-                                      userImageUrl == ''
-                                          ? CircleAvatar(
-                                              foregroundImage: AssetImage(
-                                                  'assets/images/loginImage.png'),
-                                              backgroundColor:
-                                                  AppColors.avatarBackground,
-                                              radius: 40,
-                                            )
-                                          : CircleAvatar(
-                                              backgroundColor:
-                                                  AppColors.avatarBackground,
-                                              radius: 40,
-                                              child: ClipOval(
-                                                child: Image.network(
-                                                  userImageUrl,
-                                                  fit: BoxFit.cover,
-                                                  width: 80,
-                                                  // Adjust to match the CircleAvatar's size
-                                                  height: 80,
-                                                  // Adjust to match the CircleAvatar's size
-                                                  loadingBuilder:
-                                                      (BuildContext context,
-                                                          Widget child,
-                                                          ImageChunkEvent?
-                                                              loadingProgress) {
-                                                    if (loadingProgress ==
-                                                        null) {
-                                                      return child; // Image loaded
-                                                    } else {
-                                                      return Center(
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          value: loadingProgress
-                                                                      .expectedTotalBytes !=
-                                                                  null
-                                                              ? loadingProgress
-                                                                      .cumulativeBytesLoaded /
-                                                                  (loadingProgress
-                                                                          .expectedTotalBytes ??
-                                                                      1)
-                                                              : null,
-                                                          color: AppColors
-                                                              .primaryMain,
-                                                        ),
-                                                      );
-                                                    }
-                                                  },
-                                                  errorBuilder: (BuildContext
-                                                          context,
-                                                      Object error,
-                                                      StackTrace? stackTrace) {
-                                                    return Icon(
-                                                      Icons.error,
-                                                      size: 40,
-                                                      color: Colors.red,
-                                                    ); // Display error icon if image fails to load
-                                                  },
-                                                ),
-                                              ),
-                                            ),
+                                      // Row(
+                                      //   children: [
+                                      //     // Stack(
+                                      //     //   alignment: Alignment.bottomRight,
+                                      //     //   children: [
+                                      //     //     userImageUrl == '' &&
+                                      //     //             _pickedImage == null
+                                      //     //         ? CircleAvatar(
+                                      //     //             foregroundImage:
+                                      //     //                 const AssetImage(
+                                      //     //                     'assets/images/loginImage.png'),
+                                      //     //             backgroundColor: AppColors
+                                      //     //                 .avatarBackground,
+                                      //     //             radius: 40,
+                                      //     //           )
+                                      //     //         : CircleAvatar(
+                                      //     //             backgroundColor: AppColors
+                                      //     //                 .avatarBackground,
+                                      //     //             radius: 40,
+                                      //     //             child: ClipOval(
+                                      //     //               child:
+                                      //     //                   _pickedImage != null
+                                      //     //                       ? Image.file(
+                                      //     //                           _pickedImage!,
+                                      //     //                           fit: BoxFit
+                                      //     //                               .cover,
+                                      //     //                           width: 80,
+                                      //     //                           height: 80,
+                                      //     //                         )
+                                      //     //                       : Image.network(
+                                      //     //                           userImageUrl,
+                                      //     //                           fit: BoxFit
+                                      //     //                               .cover,
+                                      //     //                           width: 80,
+                                      //     //                           height: 80,
+                                      //     //                           loadingBuilder:
+                                      //     //                               (context,
+                                      //     //                                   child,
+                                      //     //                                   progress) {
+                                      //     //                             if (progress ==
+                                      //     //                                 null)
+                                      //     //                               return child;
+                                      //     //                             return Center(
+                                      //     //                               child:
+                                      //     //                                   CircularProgressIndicator(
+                                      //     //                                 value: progress.expectedTotalBytes != null
+                                      //     //                                     ? progress.cumulativeBytesLoaded / (progress.expectedTotalBytes ?? 1)
+                                      //     //                                     : null,
+                                      //     //                                 color:
+                                      //     //                                     AppColors.primaryMain,
+                                      //     //                               ),
+                                      //     //                             );
+                                      //     //                           },
+                                      //     //                           errorBuilder:
+                                      //     //                               (context,
+                                      //     //                                   error,
+                                      //     //                                   stack) {
+                                      //     //                             return const Icon(
+                                      //     //                                 Icons
+                                      //     //                                     .error,
+                                      //     //                                 size:
+                                      //     //                                     40,
+                                      //     //                                 color:
+                                      //     //                                     Colors.red);
+                                      //     //                           },
+                                      //     //                         ),
+                                      //     //             ),
+                                      //     //           ),
+                                      //     //
+                                      //     //     // ------------------ Edit Icon ------------------
+                                      //     //     Positioned(
+                                      //     //       bottom: 4,
+                                      //     //       right: 4,
+                                      //     //       child: GestureDetector(
+                                      //     //         onTap: _showImageOptions,
+                                      //     //         child: Container(
+                                      //     //           padding:
+                                      //     //               const EdgeInsets.all(6),
+                                      //     //           decoration:
+                                      //     //               const BoxDecoration(
+                                      //     //             color: Colors.black54,
+                                      //     //             shape: BoxShape.circle,
+                                      //     //           ),
+                                      //     //           child: const Icon(
+                                      //     //               Icons.edit,
+                                      //     //               color: Colors.white,
+                                      //     //               size: 18),
+                                      //     //         ),
+                                      //     //       ),
+                                      //     //     ),
+                                      //     //   ],
+                                      //     // ),
+                                      //     // userImageUrl == ''
+                                      //     //     ? CircleAvatar(
+                                      //     //   foregroundImage: AssetImage(
+                                      //     //       'assets/images/loginImage.png'),
+                                      //     //   backgroundColor:
+                                      //     //   AppColors.avatarBackground,
+                                      //     //   radius: 40,
+                                      //     // )
+                                      //     //     : CircleAvatar(
+                                      //     //   backgroundColor:
+                                      //     //   AppColors.avatarBackground,
+                                      //     //   radius: 40,
+                                      //     //   child: ClipOval(
+                                      //     //     child: Image.network(
+                                      //     //       userImageUrl,
+                                      //     //       fit: BoxFit.cover,
+                                      //     //       width: 80,
+                                      //     //       // Adjust to match the CircleAvatar's size
+                                      //     //       height: 80,
+                                      //     //       // Adjust to match the CircleAvatar's size
+                                      //     //       loadingBuilder:
+                                      //     //           (BuildContext context,
+                                      //     //           Widget child,
+                                      //     //           ImageChunkEvent?
+                                      //     //           loadingProgress) {
+                                      //     //         if (loadingProgress ==
+                                      //     //             null) {
+                                      //     //           return child; // Image loaded
+                                      //     //         } else {
+                                      //     //           return Center(
+                                      //     //             child:
+                                      //     //             CircularProgressIndicator(
+                                      //     //               value: loadingProgress
+                                      //     //                   .expectedTotalBytes !=
+                                      //     //                   null
+                                      //     //                   ? loadingProgress
+                                      //     //                   .cumulativeBytesLoaded /
+                                      //     //                   (loadingProgress
+                                      //     //                       .expectedTotalBytes ??
+                                      //     //                       1)
+                                      //     //                   : null,
+                                      //     //               color: AppColors
+                                      //     //                   .primaryMain,
+                                      //     //             ),
+                                      //     //           );
+                                      //     //         }
+                                      //     //       },
+                                      //     //       errorBuilder: (BuildContext
+                                      //     //       context,
+                                      //     //           Object error,
+                                      //     //           StackTrace? stackTrace) {
+                                      //     //         return Icon(
+                                      //     //           Icons.error,
+                                      //     //           size: 40,
+                                      //     //           color: Colors.red,
+                                      //     //         ); // Display error icon if image fails to load
+                                      //     //       },
+                                      //     //     ),
+                                      //     //   ),
+                                      //     // ),
+                                      //     SizedBox(
+                                      //       width: 10,
+                                      //     ),
+                                      //
+                                      //   ],
+                                      // ),
 
                                       SizedBox(
                                         width: CustomSpacing.four,
@@ -875,406 +1040,251 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         mainAxisAlignment:
                                             MainAxisAlignment.start,
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.center,
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-                                          Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "user_profile_user_managemt_uploadimage_text"),
-                                            style: typography.Body1,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-                                          Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "usermanagement_app_image_size"),
-                                            style: typography
-                                                .BottomNavigationActiveLabel,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-
                                           // Add button
                                           Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.start,
                                             children: [
-                                              Consumer<UserProfileProvider>(
-                                                  builder: (_,
-                                                      userProfileProvider,
-                                                      child) {
-                                                return userProfileProvider
-                                                        .isImageUploadLoading
-                                                    ? Center(
-                                                        child:
-                                                            CircularProgressIndicator(),
-                                                      )
-                                                    : CustomButton(
-                                                        type: ButtonType.filled,
-                                                        onPressed: !isEdit
-                                                            ? null
-                                                            : () async {
-                                                                try {
-                                                                  // Pick image from gallery
-                                                                  final pickedFile =
-                                                                      await ImagePicker().pickImage(
-                                                                          source:
-                                                                              ImageSource.gallery);
-
-                                                                  if (pickedFile ==
-                                                                      null)
-                                                                    return;
-
-                                                                  final file = File(
-                                                                      pickedFile
-                                                                          .path);
-
-                                                                  // Decode image to validate dimensions
-                                                                  final img
-                                                                      .Image?
-                                                                      image =
-                                                                      img.decodeImage(
-                                                                          file.readAsBytesSync());
-
-                                                                  if (image ==
-                                                                      null) {
-                                                                    ScaffoldMessenger.of(
-                                                                            context)
-                                                                        .showSnackBar(
-                                                                      SnackBar(
-                                                                          content:
-                                                                              Text('Could not load the image. Please try again.')),
-                                                                    );
-                                                                    return;
-                                                                  }
-
-                                                                  final isValidSize = image
-                                                                              .width >=
-                                                                          400 &&
-                                                                      image.height >=
-                                                                          400;
-                                                                  final isValidFormat = pickedFile.path.toLowerCase().endsWith('.png') ||
-                                                                      pickedFile
-                                                                          .path
-                                                                          .toLowerCase()
-                                                                          .endsWith(
-                                                                              '.jpg') ||
-                                                                      pickedFile
-                                                                          .path
-                                                                          .toLowerCase()
-                                                                          .endsWith(
-                                                                              '.jpeg');
-
-                                                                  if (!isValidSize ||
-                                                                      !isValidFormat) {
-                                                                    ScaffoldMessenger.of(
-                                                                            context)
-                                                                        .showSnackBar(
-                                                                      SnackBar(
-                                                                        content:
-                                                                            Text('Image must be at least 400x400 pixels and in PNG or JPEG format.'),
-                                                                      ),
-                                                                    );
-                                                                    return;
-                                                                  }
-                                                                  // Valid image - Upload
-                                                                  final imageUrl =
-                                                                      await userProfileProvider.uploadImage(
-                                                                          context,
-                                                                          file);
-
-                                                                  if (imageUrl
-                                                                          .isNotEmpty &&
-                                                                      mounted) {
-                                                                    setState(
-                                                                        () {
-                                                                      userImageUrl =
-                                                                          imageUrl;
-                                                                    });
-                                                                  }
-                                                                } catch (e) {
-                                                                  // General error handling
-                                                                  ScaffoldMessenger.of(
-                                                                          context)
-                                                                      .showSnackBar(
-                                                                    SnackBar(
-                                                                        content:
-                                                                            Text('Something went wrong: $e')),
-                                                                  );
-                                                                }
-                                                              },
-                                                        // onPressed: !isEdit ? null : () async {
-                                                        //   // Show image picker
-                                                        //   final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-                                                        //   if (pickedFile != null) {
-                                                        //     File file = File(pickedFile.path);
-                                                        //
-                                                        //     // Load image to check its dimensions and format
-                                                        //     final img.Image? image = img.decodeImage(file.readAsBytesSync());
-                                                        //     if (image != null) {
-                                                        //       if ((image.width >= 400 && image.height >= 400) &&
-                                                        //           (pickedFile.path.endsWith('.png') || pickedFile.path.endsWith('.jpg') || pickedFile.path.endsWith('.jpeg'))) {
-                                                        //
-                                                        //         // Valid image, proceed with the upload
-                                                        //         userProfileProvider.uploadImage(context, file).then((value) {
-                                                        //           if (value != '') {
-                                                        //             setState(() {
-                                                        //               userImageUrl = value;
-                                                        //             });
-                                                        //           }
-                                                        //         });
-                                                        //       } else {
-                                                        //         // Show an error if the image does not meet the requirements
-                                                        //         ScaffoldMessenger.of(context).showSnackBar(
-                                                        //           SnackBar(
-                                                        //             content: Text('Image must be at least 400x400 pixels and in PNG or JPEG format.'),
-                                                        //           ),
-                                                        //         );
-                                                        //       }
-                                                        //     } else {
-                                                        //       // Show an error if the image could not be loaded
-                                                        //       ScaffoldMessenger.of(context).showSnackBar(
-                                                        //         SnackBar(
-                                                        //           content: Text('Could not load the image. Please try again.'),
-                                                        //         ),
-                                                        //       );
-                                                        //     }
-                                                        //   }
-                                                        // },
-                                                        child: Text(
-                                                          LanguageService
-                                                              .getTranslated(
-                                                                  context,
-                                                                  "user_profile_user_management_upload_imamge_btn"),
-                                                          // style: typography
-                                                          //     .ButtonLarge,
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                        ),
-                                                      );
-                                              }),
-                                              // or upload avatar
-                                              SizedBox(
-                                                height: CustomSpacing.three,
-                                              ),
-                                              Text(
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "user_profile_user_management_upload_or"),
-                                                style: typography.Body1,
-                                                textAlign: TextAlign.center,
-                                              ),
-
-                                              CustomButton(
-                                                type: ButtonType.text,
-                                                onPressed: !isEdit
-                                                    ? null
-                                                    : () {
-                                                        // Show Bottom Sheet with a main avatar in top center (it will have a background) and a grid of avatars from avatars, on avatar click update the selected avatar from grid to central avatar.
-                                                        showModalBottomSheet(
-                                                          context: context,
-                                                          isScrollControlled:
-                                                              true,
-                                                          useSafeArea: true,
-                                                          builder: (BuildContext
-                                                              context) {
-                                                            return SingleChildScrollView(
-                                                              physics:
-                                                                  ClampingScrollPhysics(),
-                                                              child: Column(
-                                                                children: [
-                                                                  Row(
-                                                                    children: [
-                                                                      Expanded(
-                                                                        child:
-                                                                            Container(
-                                                                          padding:
-                                                                              EdgeInsets.all(16),
-                                                                          color: Theme.of(context).brightness == Brightness.dark
-                                                                              ? AppColors.paperElavation25
-                                                                              : AppColors.paperElavation25Light,
-                                                                          child:
-                                                                              Column(
-                                                                            children: [
-                                                                              SizedBox(
-                                                                                width: CustomSpacing.four,
-                                                                              ),
-                                                                              Row(
-                                                                                children: [
-                                                                                  Row(
-                                                                                    children: [
-                                                                                      Text(
-                                                                                        LanguageService.getTranslated(context, "user_profile_user_management_select_avatar_btn"),
-                                                                                        style: typography.H6.copyWith(color: Colors.white),
-                                                                                        textAlign: TextAlign.center,
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Consumer<
+                                                          UserProfileProvider>(
+                                                        builder: (_,
+                                                            userProfileProvider,
+                                                            child) {
+                                                          return userProfileProvider
+                                                                  .isImageUploadLoading
+                                                              ? const Center(
+                                                                  child:
+                                                                      CircularProgressIndicator(),
+                                                                )
+                                                              : GestureDetector(
+                                                                  onTap: !isEdit
+                                                                      ? null
+                                                                      : () {
+                                                                          // 🔽 Unified bottom sheet: choose between Image or Avatar
+                                                                          showModalBottomSheet(
+                                                                            context:
+                                                                                context,
+                                                                            backgroundColor:
+                                                                                Colors.black87,
+                                                                            shape:
+                                                                                const RoundedRectangleBorder(
+                                                                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                                                            ),
+                                                                            builder:
+                                                                                (context) {
+                                                                              return SafeArea(
+                                                                                child: Wrap(
+                                                                                  children: [
+                                                                                    const SizedBox(height: 12),
+                                                                                    Center(
+                                                                                      child: Container(
+                                                                                        height: 4,
+                                                                                        width: 40,
+                                                                                        decoration: BoxDecoration(
+                                                                                          color: Colors.grey[700],
+                                                                                          borderRadius: BorderRadius.circular(2),
+                                                                                        ),
                                                                                       ),
-                                                                                    ],
+                                                                                    ),
+                                                                                    ListTile(
+                                                                                      leading: const Icon(Icons.image, color: Colors.white),
+                                                                                      title: const Text(
+                                                                                        "Upload Image",
+                                                                                        style: TextStyle(color: Colors.white),
+                                                                                      ),
+                                                                                      onTap: () {
+                                                                                        Navigator.pop(context);
+                                                                                        _pickAndUploadImage(context, userProfileProvider);
+                                                                                      },
+                                                                                    ),
+                                                                                    ListTile(
+                                                                                      leading: const Icon(Icons.person, color: Colors.white),
+                                                                                      title: const Text(
+                                                                                        "Choose Avatar",
+                                                                                        style: TextStyle(color: Colors.white),
+                                                                                      ),
+                                                                                      onTap: () {
+                                                                                        Navigator.pop(context);
+                                                                                        _showAvatarBottomSheet(context, userProfileProvider);
+                                                                                      },
+                                                                                    ),
+                                                                                    ListTile(
+                                                                                      leading: const Icon(Icons.delete, color: Colors.red),
+                                                                                      title: const Text(
+                                                                                        "Delete Photo",
+                                                                                        style: TextStyle(color: Colors.red),
+                                                                                      ),
+                                                                                      onTap: () {
+                                                                                        setState(() {
+                                                                                          userImageUrl = '';
+                                                                                        });
+                                                                                        Navigator.pop(context);
+                                                                                      },
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                              );
+                                                                            },
+                                                                          );
+                                                                        },
+                                                                  child: Stack(
+                                                                    alignment:
+                                                                        Alignment
+                                                                            .bottomRight,
+                                                                    children: [
+                                                                      userImageUrl ==
+                                                                              ''
+                                                                          ? CircleAvatar(
+                                                                              foregroundImage: const AssetImage('assets/images/loginImage.png'),
+                                                                              backgroundColor: AppColors.avatarBackground,
+                                                                              radius: 40,
+                                                                            )
+                                                                          : CircleAvatar(
+                                                                              backgroundColor: AppColors.avatarBackground,
+                                                                              radius: 40,
+                                                                              child: ClipOval(
+                                                                                child: Image.network(
+                                                                                  userImageUrl,
+                                                                                  fit: BoxFit.cover,
+                                                                                  width: 80,
+                                                                                  height: 80,
+                                                                                  loadingBuilder: (context, child, progress) {
+                                                                                    if (progress == null) return child;
+                                                                                    return Center(
+                                                                                      child: CircularProgressIndicator(
+                                                                                        value: progress.expectedTotalBytes != null ? progress.cumulativeBytesLoaded / (progress.expectedTotalBytes ?? 1) : null,
+                                                                                        color: AppColors.primaryMain,
+                                                                                      ),
+                                                                                    );
+                                                                                  },
+                                                                                  errorBuilder: (context, error, stack) => const Icon(
+                                                                                    Icons.error,
+                                                                                    size: 40,
+                                                                                    color: Colors.red,
                                                                                   ),
-                                                                                  Spacer(),
-                                                                                  IconButton(
-                                                                                    icon: Icon(Icons.close),
-                                                                                    onPressed: () {
-                                                                                      Navigator.pop(context);
-                                                                                    },
-                                                                                  ),
-                                                                                ],
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                  Container(
-                                                                    padding:
-                                                                        EdgeInsets.all(
-                                                                            16),
-                                                                    child:
-                                                                        Column(
-                                                                      children: [
-                                                                        GridView
-                                                                            .builder(
-                                                                          scrollDirection:
-                                                                              Axis.vertical,
-                                                                          shrinkWrap:
-                                                                              true,
-                                                                          itemCount: userProfileProvider
-                                                                              .avatars
-                                                                              .length,
-                                                                          physics:
-                                                                              NeverScrollableScrollPhysics(),
-                                                                          gridDelegate:
-                                                                              SliverGridDelegateWithFixedCrossAxisCount(
-                                                                            crossAxisCount:
-                                                                                5,
-                                                                            crossAxisSpacing:
-                                                                                16,
-                                                                            mainAxisSpacing:
-                                                                                16,
-                                                                          ),
-                                                                          itemBuilder:
-                                                                              (context, index) {
-                                                                            return GestureDetector(
-                                                                              onTap: () {
-                                                                                // Update selected avatar
-                                                                                setState(() {
-                                                                                  userImageUrl = userProfileProvider.avatars[index]?.url ?? "";
-                                                                                });
-                                                                                Navigator.pop(context);
-                                                                              },
-                                                                              child: SizedBox(
-                                                                                width: 40,
-                                                                                height: 40,
-                                                                                child: CircleAvatar(
-                                                                                  backgroundImage: NetworkImage(
-                                                                                    userProfileProvider.avatars[index]?.url ?? "",
-                                                                                  ),
-                                                                                  backgroundColor: AppColors.avatarBackground,
                                                                                 ),
                                                                               ),
-                                                                            );
-                                                                          },
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height:
-                                                                        CustomSpacing
-                                                                            .two,
-                                                                  ),
-                                                                  Row(
-                                                                    children: [
-                                                                      Expanded(
-                                                                        child:
-                                                                            CustomButton(
-                                                                          type:
-                                                                              ButtonType.text,
-                                                                          onPressed:
-                                                                              () {
-                                                                            Navigator.pop(context);
-                                                                          },
-                                                                          child:
-                                                                              Text(
-                                                                            LanguageService.getTranslated(context,
-                                                                                "user_profile_user_management_ cancel_btn"),
-                                                                            style:
-                                                                                typography.ButtonLarge,
-                                                                            textAlign:
-                                                                                TextAlign.center,
-                                                                          ),
-                                                                        ),
+                                                                            ),
+                                                                      Positioned(
+                                                                        bottom:
+                                                                            4,
+                                                                        right:
+                                                                            4,
+                                                                        child: isEdit
+                                                                            ? Container(
+                                                                                decoration: const BoxDecoration(
+                                                                                  color: Colors.black54,
+                                                                                  shape: BoxShape.circle,
+                                                                                ),
+                                                                                padding: const EdgeInsets.all(5),
+                                                                                child: const Icon(Icons.edit, color: Colors.white, size: 18),
+                                                                              )
+                                                                            : Container(),
                                                                       ),
                                                                     ],
                                                                   ),
-                                                                ],
-                                                              ),
-                                                            );
-                                                          },
-                                                        );
-                                                      },
-                                                child: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "user_profile_app_user_management_upload_avatar_button"),
-                                                  style: typography.ButtonLarge,
-                                                  textAlign: TextAlign.center,
-                                                ),
+                                                                );
+                                                        },
+                                                      ),
+                                                      SizedBox(width: 10),
+                                                      Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          SizedBox(
+                                                            height:
+                                                                CustomSpacing
+                                                                    .two,
+                                                          ),
+                                                          Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "user_profile_user_managemt_uploadimage_text"),
+                                                            style: typography
+                                                                .Body1,
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          SizedBox(
+                                                            height:
+                                                                CustomSpacing
+                                                                    .two,
+                                                          ),
+                                                          Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "usermanagement_app_image_size"),
+                                                            style: typography
+                                                                .BottomNavigationActiveLabel,
+                                                            textAlign:
+                                                                TextAlign.start,
+                                                          ),
+                                                          SizedBox(
+                                                            height:
+                                                                CustomSpacing
+                                                                    .two,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  CustomButton(
+                                                    type: ButtonType.text,
+                                                    onPressed: () {
+                                                      switchEdit();
+                                                    },
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.edit,
+                                                          size: 30,
+                                                        ),
+                                                        // SizedBox(
+                                                        //     width:
+                                                        //     CustomSpacing.two),
+                                                        // Text(
+                                                        //   isEdit
+                                                        //       ? LanguageService
+                                                        //       .getTranslated(
+                                                        //       context,
+                                                        //       "user_profile_app_user_management_profile_save_text")
+                                                        //       : LanguageService
+                                                        //       .getTranslated(
+                                                        //       context,
+                                                        //       "user_profile_app_user_management_edit_profile_text"),
+                                                        //   style: typography
+                                                        //       .ButtonLarge,
+                                                        // ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
-                                          ),
-
-                                          SizedBox(
-                                            height: CustomSpacing.two,
                                           ),
 
                                           // If edit is enables user can edit else its disabled fields: Name, Display Name, Roles with bottom sheet selection, Email and phone with country code
                                           // Edit button
                                           // !showEditUser?SizedBox():!isEdit
                                           //     ?
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              CustomButton(
-                                                type: ButtonType.text,
-                                                onPressed: () {
-                                                  switchEdit();
-                                                },
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.edit),
-                                                    SizedBox(
-                                                        width:
-                                                            CustomSpacing.two),
-                                                    Text(
-                                                      isEdit
-                                                          ? LanguageService
-                                                              .getTranslated(
-                                                                  context,
-                                                                  "user_profile_app_user_management_profile_save_text")
-                                                          : LanguageService
-                                                              .getTranslated(
-                                                                  context,
-                                                                  "user_profile_app_user_management_edit_profile_text"),
-                                                      style: typography
-                                                          .ButtonLarge,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          )
+
                                           // : SizedBox(),
                                           // !isEdit
                                           //     ? SizedBox(
@@ -1294,102 +1304,195 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     Form(
                       key: _formKey,
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Name
-                            TextFormField(
-                              enabled: isEdit,
-                              style: typography.Body1,
-                              controller: _nameGeneralInfoController,
-                              initialValue: null,
-                              // Remove initialValue since we'll use controller
-                              readOnly: !isEdit,
-                              // Add readOnly instead of disabled for better value visibility
-                              //controller: nameGeneralInfoController, // Always use the controller
-                              decoration: InputDecoration(
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
-                                labelText: LanguageService.getTranslated(
-                                    context,
-                                    "user_profile_user_management_name_filed_label"),
-                                labelStyle: typography.Body1,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                disabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium!
-                                        .color!,
+                      child: Container(
+                        padding: EdgeInsets.only(right: 20, left: 20),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Name
+                              TextFormField(
+                                enabled: isEdit,
+                                style: typography.Body1,
+                                controller: _nameGeneralInfoController,
+                                initialValue: null,
+                                // Remove initialValue since we'll use controller
+                                readOnly: !isEdit,
+                                // Add readOnly instead of disabled for better value visibility
+                                //controller: nameGeneralInfoController, // Always use the controller
+                                decoration: InputDecoration(
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  labelText: LanguageService.getTranslated(
+                                      context,
+                                      "user_profile_user_management_name_filed_label"),
+                                  labelStyle: typography.Body1,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium!
+                                          .color!,
+                                    ),
                                   ),
                                 ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return LanguageService.getTranslated(
+                                        context,
+                                        "user_profile_user_management_name_field_error");
+                                  }
+                                  return null;
+                                },
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return LanguageService.getTranslated(context,
-                                      "user_profile_user_management_name_field_error");
-                                }
-                                return null;
-                              },
-                            ),
 
-                            SizedBox(height: CustomSpacing.four),
-                            // Display Name
-                            TextFormField(
-                              readOnly: !isEdit,
-                              style: typography.Body1,
-                              controller: _displayNameGeneralInfoController,
-                              decoration: InputDecoration(
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
-                                labelText:
-                                    isEdit ? 'Display Name' : 'Display Name',
-                                //displayNameLabelText,
-                                labelStyle: isEdit
-                                    ? typography.Body1
-                                    : typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.color),
-                                disabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium!
-                                        .color!,
+                              SizedBox(height: CustomSpacing.four),
+                              // Display Name
+                              TextFormField(
+                                readOnly: !isEdit,
+                                style: typography.Body1,
+                                controller: _displayNameGeneralInfoController,
+                                decoration: InputDecoration(
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  labelText:
+                                      isEdit ? 'Display Name' : 'Display Name',
+                                  //displayNameLabelText,
+                                  labelStyle: isEdit
+                                      ? typography.Body1
+                                      : typography.Body1.copyWith(
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.color),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium!
+                                          .color!,
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Display Name is required';
+                                  }
+                                  return null;
+                                },
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Display Name is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            SizedBox(height: CustomSpacing.four),
-                            // Role Dropdown
-                            Stack(
-                              children: [
-                                TextField(
-                                  readOnly: true,
-                                  enabled: !isEdit &&
-                                      !isSuperAdmin &&
-                                      !isPgAdmin &&
-                                      !isAdmin,
-                                  onTap: !isEdit &&
-                                          !isSuperAdmin &&
-                                          !isPgAdmin &&
-                                          !isAdmin
-                                      ? () {
+                              SizedBox(height: CustomSpacing.four),
+                              // Text(_selectedAcceptRole.length.toString()),
+                              // Role Dropdown
+
+
+                              Stack(
+                                children: [
+                                  TextField(
+                                    readOnly: true,
+                                    enabled: !(userProfileProvider.userData.role![0].name.toString() == "Admin" &&
+                                        (isSuperAdmin || isPgAdmin || isAdmin)),
+                                    // enabled: !isEdit &&
+                                    //     !isSuperAdmin &&
+                                    //     !isPgAdmin &&
+                                    //     !isAdmin,
+                                    onTap: !isEdit &&
+                                            !isSuperAdmin &&
+                                            !isPgAdmin &&
+                                            !isAdmin
+                                        ? () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              useSafeArea: true,
+                                              isScrollControlled: true,
+                                              builder: (BuildContext context) {
+                                                List<Map<String, dynamic>>
+                                                    acceptedRoles =
+                                                    userProfileProvider.userData
+                                                            .acceptedRole
+                                                            ?.map((role) =>
+                                                                role.toJson())
+                                                            ?.toList() ??
+                                                        [];
+                                                print(
+                                                    "Accepted Roles: $acceptedRoles");
+                                                print(
+                                                    "useCheckboxes: ${(userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false)}");
+
+                                                return CustomFlexibleRolesBottomSheet(
+                                                  showCorporateSwitch: true,
+                                                  options: _selectedAcceptRole,
+                                                  selectedRoles: _selectedRoles,
+                                                  addChip: _addChip,
+                                                  removeChip: _removeChip,
+                                                  removeAllChips:
+                                                      _removeAllChips,
+                                                  useCheckboxes:
+                                                      (userProfileProvider
+                                                                  .userData
+                                                                  .isIndividual ??
+                                                              false) &&
+                                                          (userProfileProvider
+                                                                  .userData
+                                                                  .isExternal ??
+                                                              false),
+                                                  // Assuming you want to use checkboxes for selection
+                                                );
+                                              },
+                                            );
+                                          }
+                                        : null,
+                                    controller: _textEditingController,
+                                    onChanged: (value) {
+                                      // Handle input changes
+                                    },
+                                    decoration: InputDecoration(
+                                      labelText: isEdit &&
+                                              !isSuperAdmin &&
+                                              !isPgAdmin &&
+                                              !isAdmin
+                                          ? ''
+                                          : '',
+                                      labelStyle: isEdit &&
+                                              !isSuperAdmin &&
+                                              !isPgAdmin &&
+                                              !isAdmin
+                                          ? typography.Body1
+                                          : typography.Body1.copyWith(
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.color),
+                                      hintText: _selectedRoles.isEmpty &&
+                                              _textEditingController
+                                                  .text.isEmpty
+                                          ? 'Select Roles'
+                                          : '',
+                                      border: OutlineInputBorder(),
+                                      disabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium!
+                                              .color!,
+                                        ),
+                                      ),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(Icons.arrow_drop_down),
+                                        onPressed:
+
+                                        isEdit
+
+                                            ?
+                                            () {
                                           showModalBottomSheet(
                                             context: context,
                                             useSafeArea: true,
@@ -1403,14 +1506,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                               role.toJson())
                                                           ?.toList() ??
                                                       [];
-                                              print(
-                                                  "Accepted Roles: $acceptedRoles");
-                                              print(
-                                                  "useCheckboxes: ${(userProfileProvider.userData.isIndividual ?? false) && (userProfileProvider.userData.isExternal ?? false)}");
-
                                               return CustomFlexibleRolesBottomSheet(
                                                 showCorporateSwitch: true,
-                                                options: acceptedRoles,
+                                                options: _selectedAcceptRole,
                                                 selectedRoles: _selectedRoles,
                                                 addChip: _addChip,
                                                 removeChip: _removeChip,
@@ -1424,292 +1522,228 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                 .userData
                                                                 .isExternal ??
                                                             false),
-                                                // Assuming you want to use checkboxes for selection
                                               );
                                             },
                                           );
                                         }
-                                      : null,
-                                  controller: _textEditingController,
-                                  onChanged: (value) {
-                                    // Handle input changes
-                                  },
-                                  decoration: InputDecoration(
-                                    labelText: isEdit &&
-                                            !isSuperAdmin &&
-                                            !isPgAdmin &&
-                                            !isAdmin
-                                        ? ''
-                                        : '',
-                                    labelStyle: isEdit &&
-                                            !isSuperAdmin &&
-                                            !isPgAdmin &&
-                                            !isAdmin
-                                        ? typography.Body1
-                                        : typography.Body1.copyWith(
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium
-                                                ?.color),
-                                    hintText: _selectedRoles.isEmpty &&
-                                            _textEditingController.text.isEmpty
-                                        ? 'Select Roles'
-                                        : '',
-                                    border: OutlineInputBorder(),
-                                    disabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium!
-                                            .color!,
+                                            : null,
                                       ),
                                     ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(Icons.arrow_drop_down),
-                                      onPressed: () {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          useSafeArea: true,
-                                          isScrollControlled: true,
-                                          builder: (BuildContext context) {
-                                            List<Map<String, dynamic>>
-                                                acceptedRoles =
-                                                userProfileProvider
-                                                        .userData.acceptedRole
-                                                        ?.map((role) =>
-                                                            role.toJson())
-                                                        ?.toList() ??
-                                                    [];
-                                            return CustomFlexibleRolesBottomSheet(
-                                              showCorporateSwitch: true,
-                                              options: acceptedRoles,
-                                              selectedRoles: _selectedRoles,
-                                              addChip: _addChip,
-                                              removeChip: _removeChip,
-                                              removeAllChips: _removeAllChips,
-                                              useCheckboxes:
-                                                  (userProfileProvider.userData
-                                                              .isIndividual ??
-                                                          false) &&
-                                                      (userProfileProvider
-                                                              .userData
-                                                              .isExternal ??
-                                                          false),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
                                   ),
-                                ),
 
-                                Positioned(
-                                  top: 4.0,
-                                  left: 10.0,
-                                  right: 10.0,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 32.0),
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children: _selectedRoles.map((value) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 8.0),
-                                            child: Row(
-                                              children: [
-                                                Chip(
-                                                  label: Text(value.name!),
-                                                ),
-                                                if (isEdit &&
-                                                        !isSuperAdmin &&
-                                                        !isPgAdmin ||
-                                                    (isEdit &&
-                                                        bool.parse(
-                                                            userProfileProvider
-                                                                .userData
-                                                                .isIndividual
-                                                                .toString())))
-                                                  IconButton(
-                                                    icon: Icon(Icons.cancel,
-                                                        size: 20,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _selectedRoles
-                                                            .remove(value);
-                                                      });
-                                                    },
+                                  Positioned(
+                                    top: 4.0,
+                                    left: 10.0,
+                                    right: 10.0,
+                                    child: Container(
+                                      margin:
+                                          const EdgeInsets.only(right: 32.0),
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: Row(
+                                          children: _selectedRoles.map((value) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0),
+                                              child: Row(
+                                                children: [
+                                                  Chip(
+                                                    label: Text(value.name!),
+                                                    deleteIcon: (isEdit &&
+                                                                !isSuperAdmin &&
+                                                                !isPgAdmin) ||
+                                                            (isEdit &&
+                                                                bool.parse(userProfileProvider
+                                                                    .userData
+                                                                    .isIndividual
+                                                                    .toString()))
+                                                        ? Icon(Icons.cancel)
+                                                        : null,
+                                                    onDeleted: (isEdit &&
+                                                                !isSuperAdmin &&
+                                                                !isPgAdmin) ||
+                                                            (isEdit &&
+                                                                bool.parse(userProfileProvider
+                                                                    .userData
+                                                                    .isIndividual
+                                                                    .toString()))
+                                                        ? () =>
+                                                            _removeChip(value)
+                                                        : null,
                                                   ),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Positioned(
-                                //   top: 4.0,
-                                //   left: 10.0,
-                                //   right: 10.0,
-                                //   child: Container(
-                                //     margin: const EdgeInsets.only(right: 32.0),
-                                //     child: SingleChildScrollView(
-                                //       scrollDirection: Axis.horizontal,
-                                //       child: Row(
-                                //         children: _selectedRoles
-                                //             .map(
-                                //               (value) => Padding(
-                                //             padding: const EdgeInsets.only(right: 8.0),
-                                //             child: Chip(
-                                //               label: Text(value.name!),
-                                //               deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
-                                //               onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
-                                //             ),
-                                //           ),
-                                //         )
-                                //             .toList(),
-                                //       ),
-                                //     ),
-                                //   ),
-                                // ),
-                              ],
-                            ),
-                            SizedBox(height: CustomSpacing.four),
-                            // Email
-                            TextFormField(
-                              readOnly: true,
-                              style: typography.Body1,
-                              controller: _emailGeneralInfoController,
-                              decoration: InputDecoration(
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
-                                labelText: isEdit
-                                    ? LanguageService.getTranslated(context,
-                                        "user_profile_user_management_email_field_label")
-                                    //: emailLabelText,
-                                    : LanguageService.getTranslated(context,
-                                        "user_profile_user_management_email_field_label"),
-                                labelStyle: isEdit
-                                    ? typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.color)
-                                    : typography.Body1.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.color),
-                                disabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium!
-                                        .color!,
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: CustomSpacing.four),
-                            // Phone
-                            FormField(
-                                enabled: isEdit,
-                                builder: (FormFieldState<dynamic> state) {
-                                  return Row(
-                                    children: [
-                                      Expanded(
-                                        child: PhoneInput(
-                                          style: typography.Body1,
-
-                                          enabled: isEdit,
-                                          key: const Key('phone-field'),
-                                          controller: phoneController,
-                                          shouldFormat: true,
-                                          // set _selectedCountryCode to your country code if not null
-                                          defaultCountry: IsoCode.US,
-                                          decoration: InputDecoration(
-                                            floatingLabelBehavior:
-                                                FloatingLabelBehavior.always,
-                                            labelText: !isEdit
-                                                ? LanguageService.getTranslated(
-                                                    context,
-                                                    "user_profile_user_management_mobile_field")
-                                                //: phoneLabelText,
-                                                : LanguageService.getTranslated(
-                                                    context,
-                                                    "user_profile_user_management_mobile_field"),
-                                            labelStyle: isEdit
-                                                ? typography.Body1
-                                                : typography.Body1.copyWith(
-                                                    color: Theme.of(context)
-                                                        .textTheme
-                                                        .labelMedium
-                                                        ?.color),
-                                            disabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide(
-                                                color: Theme.of(context)
-                                                    .textTheme
-                                                    .labelMedium!
-                                                    .color!,
+                                                  // Chip(
+                                                  //   label: Text(value.name!),
+                                                  //   deleteIcon: Icon(Icons.cancel),
+                                                  //   onDeleted: () =>
+                                                  //       _removeChip(value),
+                                                  // ),
+                                                  // if (isEdit &&
+                                                  //         !isSuperAdmin &&
+                                                  //         !isPgAdmin ||
+                                                  //     (isEdit &&
+                                                  //         bool.parse(
+                                                  //             userProfileProvider
+                                                  //                 .userData
+                                                  //                 .isIndividual
+                                                  //                 .toString())))
+                                                  //   IconButton(
+                                                  //     icon: Icon(Icons.cancel,
+                                                  //         size: 20,
+                                                  //         color: Colors.red),
+                                                  //     onPressed: () {
+                                                  //       setState(() {
+                                                  //         _selectedRoles
+                                                  //             .remove(value);
+                                                  //       });
+                                                  //     },
+                                                  //   ),
+                                                ],
                                               ),
-                                            ),
-                                            hintText: LanguageService.getTranslated(
-                                                context,
-                                                "user_profile_user_management_mobile_placeholder"),
-                                            /* hintStyle: isEdit
-                                  ? typography.Body1
-                                      : typography.Body1.copyWith(
-                                      color: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
-                                      ?.color),*/
-                                            border: const OutlineInputBorder(),
-                                            counterText: '',
-                                          ),
-                                          countrySelectorNavigator:
-                                              CountrySelectorNavigator.dialog(
-                                            showSearchInput: true,
-                                            searchInputDecoration:
-                                                InputDecoration(
-                                              hintText: 'Search Country',
-                                            ),
-                                          ),
-                                          showFlagInInput: true,
-                                          flagShape: BoxShape.circle,
-                                          flagSize: 35,
-                                          onChanged: (PhoneNumber? p) {
-                                            if (p == null) return;
-                                            setState(() {
-                                              _selectedCountryCode =
-                                                  p.countryCode;
-                                            });
-                                            print('changed ${p.countryCode}');
-                                          },
-                                          onSaved: (PhoneNumber? p) {
-                                            if (p == null) return;
-                                            setState(() {
-                                              _selectedCountryCode =
-                                                  p.countryCode;
-                                            });
-                                            print('changed ${p.countryCode}');
-                                          },
+                                            );
+                                          }).toList(),
                                         ),
                                       ),
-                                    ],
+                                    ),
+                                  ),
+
+                                  // Positioned(
+                                  //   top: 4.0,
+                                  //   left: 10.0,
+                                  //   right: 10.0,
+                                  //   child: Container(
+                                  //     margin: const EdgeInsets.only(right: 32.0),
+                                  //     child: SingleChildScrollView(
+                                  //       scrollDirection: Axis.horizontal,
+                                  //       child: Row(
+                                  //         children: _selectedRoles
+                                  //             .map(
+                                  //               (value) => Padding(
+                                  //             padding: const EdgeInsets.only(right: 8.0),
+                                  //             child: Chip(
+                                  //               label: Text(value.name!),
+                                  //               deleteIcon: isEdit&&!isSuperAdmin&&!isPgAdmin ? Icon(Icons.cancel) : null,
+                                  //               onDeleted: isEdit&&!isSuperAdmin&&!isPgAdmin ? () => _removeChip(value) : null,
+                                  //             ),
+                                  //           ),
+                                  //         )
+                                  //             .toList(),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                ],
+                              ),
+                              SizedBox(height: CustomSpacing.four),
+                              // Email
+                              TextFormField(
+                                readOnly: true,
+                                style: typography.Body1,
+                                controller: _emailGeneralInfoController,
+                                decoration: InputDecoration(
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.always,
+                                  labelText: isEdit
+                                      ? LanguageService.getTranslated(context,
+                                          "user_profile_user_management_email_field_label")
+                                      //: emailLabelText,
+                                      : LanguageService.getTranslated(context,
+                                          "user_profile_user_management_email_field_label"),
+                                  labelStyle: isEdit
+                                      ? typography.Body1.copyWith(
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.color)
+                                      : typography.Body1.copyWith(
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.color),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium!
+                                          .color!,
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: CustomSpacing.four),
+                              // Phone
+                              FormField<String>(
+                                validator: (value) {
+                                  if (phoneController.text.isEmpty) {
+                                    print("object");
+                                    return 'Mobile number is required.';
+                                  }
+                                  if (phoneController.text.length < 10) {
+                                    print("object");
+                                    return 'Enter a valid mobile number.';
+                                  }
+                                  return null;
+                                },
+                                builder: (FormFieldState<String> fieldState) {
+                                  return TextFormField(
+                                    controller: phoneController,
+                                    enabled: isEdit,
+                                    keyboardType: TextInputType.phone,
+                                    maxLength: 10,
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      // Hides the maxLength counter
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.always,
+                                      labelText: LanguageService.getTranslated(
+                                        context,
+                                        "user_profile_user_management_mobile_field",
+                                      ),
+                                      labelStyle: isEdit
+                                          ? typography.Body1
+                                          : typography.Body1.copyWith(
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.color,
+                                            ),
+                                      hintText: LanguageService.getTranslated(
+                                        context,
+                                        "user_profile_user_management_mobile_placeholder",
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context).dividerColor,
+                                        ),
+                                      ),
+                                      disabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium!
+                                              .color!,
+                                        ),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 18, horizontal: 12),
+                                      errorText: fieldState.errorText,
+                                    ),
+                                    onChanged: (value) {
+                                      fieldState.didChange(value);
+                                    },
                                   );
-                                }),
-                            SizedBox(height: CustomSpacing.four),
-                          ]),
+                                },
+                              ),
+
+                              SizedBox(height: CustomSpacing.four),
+                            ]),
+                      ),
                     ),
 
                     // Cancel and Submit Buttons
@@ -1718,12 +1752,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               Row(
                                 children: [
+                                  SizedBox(width: CustomSpacing.five),
                                   Expanded(
                                     child: CustomButton(
                                       onPressed: () {
                                         // validate
                                         if (!_formKey.currentState!
                                             .validate()) {
+                                          print("object");
                                           return;
                                         }
                                         // Atleat one selected role:
@@ -1733,7 +1769,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             SnackBar(
                                               content: Text(
                                                   'Please select at least one role.',
-                                                  style: typography.Body1),
+                                                  style:
+                                                      typography.Body1.copyWith(
+                                                          color: Colors.black)),
                                             ),
                                           );
                                           return;
@@ -1774,9 +1812,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             "displayName":
                                                 _displayNameGeneralInfoController
                                                     .text,
-                                            "phone":
-                                                phoneController.value?.nsn ??
-                                                    "",
+                                            "phone": phoneController.text ?? "",
                                             "my_assignee": [""],
                                             "roles": _selectedRoles
                                                 .map((role) => role.toJson())
@@ -1810,8 +1846,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   _emailGeneralInfoController
                                                       .text;
                                               phoneLabelText =
-                                                  phoneController.value?.nsn ??
-                                                      "";
+                                                  phoneController.text ?? "";
                                               isEdit = false;
                                             });
                                           }
@@ -1825,11 +1860,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                     ),
                                   ),
+                                  SizedBox(width: CustomSpacing.five),
                                 ],
                               ),
                               SizedBox(height: CustomSpacing.two),
                               Row(
                                 children: [
+                                  SizedBox(width: CustomSpacing.five),
                                   Expanded(
                                     child: OutlinedButton(
                                       onPressed: () {
@@ -1851,6 +1888,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                     ),
                                   ),
+                                  SizedBox(width: CustomSpacing.five),
                                 ],
                               ),
                             ],
@@ -1874,6 +1912,133 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             );
     });
+  }
+
+  Future<void> _pickAndUploadImage(
+      BuildContext context, UserProfileProvider provider) async {
+    try {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile == null) return;
+
+      final file = File(pickedFile.path);
+      final img.Image? image = img.decodeImage(file.readAsBytesSync());
+
+      if (image == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not load the image. Please try again.')),
+        );
+        return;
+      }
+
+      final isValidSize = image.width >= 400 && image.height >= 400;
+      final isValidFormat = pickedFile.path.toLowerCase().endsWith('.png') ||
+          pickedFile.path.toLowerCase().endsWith('.jpg') ||
+          pickedFile.path.toLowerCase().endsWith('.jpeg');
+
+      if (!isValidSize || !isValidFormat) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Image must be at least 400x400 pixels and in PNG or JPEG format.'),
+          ),
+        );
+        return;
+      }
+
+      final imageUrl = await provider.uploadImage(context, file);
+
+      if (imageUrl.isNotEmpty && mounted) {
+        setState(() => userImageUrl = imageUrl);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Something went wrong: $e')),
+      );
+    }
+  }
+
+  void _showAvatarBottomSheet(
+      BuildContext context, UserProfileProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          "Select Avatar",
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    shrinkWrap: true,
+                    itemCount: provider.avatars.length,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemBuilder: (context, index) {
+                      final avatarUrl = provider.avatars[index]?.url ?? "";
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            userImageUrl = avatarUrl;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: CircleAvatar(
+                          backgroundImage: NetworkImage(avatarUrl),
+                          backgroundColor: AppColors.avatarBackground,
+                          radius: 25,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancel",
+                        style: TextStyle(color: Colors.white70)),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void switchEdit() {

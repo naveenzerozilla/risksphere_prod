@@ -40,7 +40,7 @@ class UserData {
   String? name;
   List<Roles>? role;
   LastSelectedRole? lastSelectedRole;
-  List<Roles>? acceptedRole;
+  List<AcceptedRole>? acceptedRole;
   bool? isExternal;
 
   UserData(
@@ -88,9 +88,9 @@ class UserData {
       });
     }
     if (json['accepted_role'] != null) {
-      acceptedRole = <Roles>[];
+      acceptedRole = <AcceptedRole>[];
       json['accepted_role'].forEach((v) {
-        acceptedRole!.add(new Roles.fromJson(v));
+        acceptedRole!.add(new AcceptedRole.fromJson(v));
       });
     }
     print('userid: ${json['user_id']}');
@@ -135,7 +135,66 @@ class UserData {
     return data;
   }
 }
+class AcceptedRole {
+  bool? isForIndividual;
+  bool? isMultipleRoleEnabled;
+  bool? isApplicableForTrial;
+  String? name;
+  String? role;
+  bool? isApplicableForInternal;
+  bool? status;
+  String? id;
+  Null? updatedAt;
+  Null? createdAt;
+  String? description;
+  bool? isSelectable;
 
+  AcceptedRole(
+      {this.isForIndividual,
+        this.isMultipleRoleEnabled,
+        this.isApplicableForTrial,
+        this.name,
+        this.role,
+        this.isApplicableForInternal,
+        this.status,
+        this.id,
+        this.updatedAt,
+        this.createdAt,
+        this.description,
+        this.isSelectable});
+
+  AcceptedRole.fromJson(Map<String, dynamic> json) {
+    isForIndividual = json['is_for_individual'];
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'];
+    isApplicableForTrial = json['is_applicable_for_trial'];
+    name = json['name'];
+    role = json['role'];
+    isApplicableForInternal = json['is_applicable_for_internal'];
+    status = json['status'];
+    id = json['id'];
+    updatedAt = json['updated_at'];
+    createdAt = json['created_at'];
+    description = json['description'];
+    isSelectable = json['is_selectable'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['is_for_individual'] = this.isForIndividual;
+    data['is_multiple_role_enabled'] = this.isMultipleRoleEnabled;
+    data['is_applicable_for_trial'] = this.isApplicableForTrial;
+    data['name'] = this.name;
+    data['role'] = this.role;
+    data['is_applicable_for_internal'] = this.isApplicableForInternal;
+    data['status'] = this.status;
+    data['id'] = this.id;
+    data['updated_at'] = this.updatedAt;
+    data['created_at'] = this.createdAt;
+    data['description'] = this.description;
+    data['is_selectable'] = this.isSelectable;
+    return data;
+  }
+}
 class LastSelectedRole {
   String? role;
   String? name;

@@ -6,7 +6,37 @@ class SharedPreferenceService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
   }
+  static const String _kSovUploadState = 'sov_upload_state';
+  static const String _kSovUploadTempId = 'sov_upload_temp_id';
+  static const String _kSovAccountId = 'sov_account_id';
+  static const String _kSovSubAccountId = 'sov_sub_account_id';
+  static const String _kSovUploadProcessId = 'sov_upload_process_id';
 
+// --- NEW: clear helpers
+  static Future<void> clearSovUploadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSovUploadState);
+  }
+
+  static Future<void> clearSovUploadTempId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSovUploadTempId);
+  }
+
+  static Future<void> clearSovAccountId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSovAccountId);
+  }
+
+  static Future<void> clearSovSubAccountId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSovSubAccountId);
+  }
+
+  static Future<void> clearSovUploadProcessId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSovUploadProcessId);
+  }
   static const String CAMCL = 'CAMCL'; // Corporate-List
   static const String CAMUL = 'CAMUL'; // User-List
   static const String CAMCC = 'CAMCC'; // Create-Corporate

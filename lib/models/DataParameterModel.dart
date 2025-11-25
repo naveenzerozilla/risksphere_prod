@@ -35,7 +35,6 @@ class DataParametersModel {
     return data;
   }
 }
-
 class Result {
   String? id;
   String? hazardName;
@@ -46,7 +45,7 @@ class Result {
   String? dataCategoryId;
   ParamConfig? paramConfig;
   HelpDocumantion? helpDocumantion;
-  dynamic? criticality;
+  dynamic criticality;
   String? parameterNameA;
   String? parameterNameB;
   ParameterType? parameterType;
@@ -75,71 +74,108 @@ class Result {
   String? currency;
   List<History>? history;
 
-  Result(
-      {this.id,
-      this.hazardName,
-      this.name,
-      this.parentId,
-      this.parameterState,
-      this.private,
-      this.dataCategoryId,
-      this.paramConfig,
-      this.helpDocumantion,
-      this.criticality,
-      this.parameterNameA,
-      this.parameterNameB,
-      this.parameterType,
-      this.selectedParameterType,
-      this.unitName,
-      this.tooltip,
-      this.status,
-      this.ratingStyle,
-      this.fileType,
-      this.isList,
-      this.isMultiSelectionList,
-      this.isMultiFiles,
-      this.isDisplayListing,
-      this.isItRangeParameter,
-      this.moduleName,
-      this.categoryType,
-      this.pdElement,
-      this.date,
-      this.startDate,
-      this.endDate,
-      this.dataGroupRef,
-      this.version,
-      this.stateManager,
-      this.user,
-      this.parameterValue,
-      this.currency,
-      this.history});
+  Result({
+    this.id,
+    this.hazardName,
+    this.name,
+    this.parentId,
+    this.parameterState,
+    this.private,
+    this.dataCategoryId,
+    this.paramConfig,
+    this.helpDocumantion,
+    this.criticality,
+    this.parameterNameA,
+    this.parameterNameB,
+    this.parameterType,
+    this.selectedParameterType,
+    this.unitName,
+    this.tooltip,
+    this.status,
+    this.ratingStyle,
+    this.fileType,
+    this.isList,
+    this.isMultiSelectionList,
+    this.isMultiFiles,
+    this.isDisplayListing,
+    this.isItRangeParameter,
+    this.moduleName,
+    this.categoryType,
+    this.pdElement,
+    this.date,
+    this.startDate,
+    this.endDate,
+    this.dataGroupRef,
+    this.version,
+    this.stateManager,
+    this.user,
+    this.parameterValue,
+    this.currency,
+    this.history,
+  });
 
   Result.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     hazardName = json['hazard_name'];
     name = json['name'];
     parentId = json['parent_id'];
-    parameterState = json['parameter_state'] != null
-        ? ParameterState.fromJson(json['parameter_state'])
-        : null;
-    private =
-        json['private'] != null ? Private.fromJson(json['private']) : null;
-    dataCategoryId = json['data_category_id'];
-    paramConfig = json['param_config'] != null
-        ? ParamConfig.fromJson(json['param_config'])
-        : null;
-    helpDocumantion = json['help_documantion'] != null
-        ? new HelpDocumantion.fromJson(json['help_documantion'])
+
+    parameterState = json['parameter_state'] is Map
+        ? ParameterState.fromJson(Map<String, dynamic>.from(json['parameter_state']))
         : null;
 
-    // criticality = json['criticality'] != null
-    //     ? Criticality.fromJson(json['criticality'])
-    //     : null;
+    private = json['private'] is Map
+        ? Private.fromJson(Map<String, dynamic>.from(json['private']))
+        : null;
+
+    dataCategoryId = json['data_category_id'];
+
+    paramConfig = json['param_config'] is Map
+        ? ParamConfig.fromJson(Map<String, dynamic>.from(json['param_config']))
+        : null;
+
+    helpDocumantion = json['help_documantion'] is Map
+        ? HelpDocumantion.fromJson(Map<String, dynamic>.from(json['help_documantion']))
+        : null;
+
+    // ------------------------------------------------------------------
+    // 🔥 UNIVERSAL CRITICALITY HANDLER
+    // ------------------------------------------------------------------
+    var crit = json['criticality'];
+
+    if (crit == null) {
+      // null → empty list
+      criticality = [];
+    }
+    else if (crit is List) {
+      // list → parse each
+      criticality = crit
+          .where((e) => e is Map)
+          .map((e) => Criticality.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    else if (crit is Map) {
+      // map → convert to list
+      if (crit.isEmpty) {
+        criticality = [];
+      } else {
+        criticality = [
+          Criticality.fromJson(Map<String, dynamic>.from(crit))
+        ];
+      }
+    }
+    else {
+      // unknown → empty
+      criticality = [];
+    }
+
     parameterNameA = json['parameter_name_a'];
     parameterNameB = json['parameter_name_b'];
-    parameterType = json['parameter_type'] != null
-        ? ParameterType.fromJson(json['parameter_type'])
+
+    parameterType = json['parameter_type'] is Map
+        ? ParameterType.fromJson(Map<String, dynamic>.from(json['parameter_type']))
         : null;
+
     selectedParameterType = json['selected_parameter_type'];
     unitName = json['unit_name'];
     tooltip = json['tooltip'];
@@ -158,89 +194,425 @@ class Result {
     startDate = json['startDate'];
     endDate = json['endDate'];
     dataGroupRef = json['data_group_ref'];
-    version =
-        json['version'] != null ? Version.fromJson(json['version']) : null;
-    stateManager = json['state_manager'] != null
-        ? StateManager.fromJson(json['state_manager'])
-        : null;
-    user = json['user'] != null ? User.fromJson(json['user']) : null;
 
-    parameterValue = json['parameter_value'] != null
-        ? new ParameterValue.fromJson(json['parameter_value'])
+    version = json['version'] is Map
+        ? Version.fromJson(Map<String, dynamic>.from(json['version']))
         : null;
+
+    stateManager = json['state_manager'] is Map
+        ? StateManager.fromJson(Map<String, dynamic>.from(json['state_manager']))
+        : null;
+
+    user = json['user'] is Map
+        ? User.fromJson(Map<String, dynamic>.from(json['user']))
+        : null;
+
+    parameterValue = json['parameter_value'] is Map
+        ? ParameterValue.fromJson(Map<String, dynamic>.from(json['parameter_value']))
+        : null;
+
     currency = json['currency'];
-    if (json['history'] != null) {
-      history = <History>[];
-      json['history'].forEach((v) {
-        history!.add(new History.fromJson(v));
-      });
+
+    // ------------------------------------------------------------------
+    // 🔥 SAFE HISTORY
+    // ------------------------------------------------------------------
+    history = [];
+    if (json['history'] is List) {
+      for (var h in json['history']) {
+        if (h is Map) {
+          history!.add(History.fromJson(Map<String, dynamic>.from(h)));
+        }
+      }
     }
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
-    data['id'] = this.id;
-    data['hazard_name'] = this.hazardName;
-    data['name'] = this.name;
-    data['parent_id'] = this.parentId;
-    if (this.parameterState != null) {
-      data['parameter_state'] = this.parameterState!.toJson();
+
+    data['id'] = id;
+    data['hazard_name'] = hazardName;
+    data['name'] = name;
+    data['parent_id'] = parentId;
+
+    if (parameterState != null) data['parameter_state'] = parameterState!.toJson();
+    if (private != null) data['private'] = private!.toJson();
+    data['data_category_id'] = dataCategoryId;
+
+    if (paramConfig != null) data['param_config'] = paramConfig!.toJson();
+    if (helpDocumantion != null) data['help_documantion'] = helpDocumantion!.toJson();
+
+    if (criticality != null) {
+      data['criticality'] = criticality!.map((e) => e.toJson()).toList();
     }
-    if (this.private != null) {
-      data['private'] = this.private!.toJson();
+
+    data['parameter_name_a'] = parameterNameA;
+    data['parameter_name_b'] = parameterNameB;
+
+    if (parameterType != null) data['parameter_type'] = parameterType!.toJson();
+
+    data['selected_parameter_type'] = selectedParameterType;
+    data['unit_name'] = unitName;
+    data['tooltip'] = tooltip;
+    data['status'] = status;
+    data['rating_style'] = ratingStyle;
+    data['file_type'] = fileType;
+    data['is_list'] = isList;
+    data['is_multi_selection_list'] = isMultiSelectionList;
+    data['is_multi_files'] = isMultiFiles;
+    data['is_display_listing'] = isDisplayListing;
+    data['is_it_range_parameter'] = isItRangeParameter;
+    data['module_name'] = moduleName;
+    data['category_type'] = categoryType;
+    data['pd_element'] = pdElement;
+    data['date'] = date;
+    data['startDate'] = startDate;
+    data['endDate'] = endDate;
+    data['data_group_ref'] = dataGroupRef;
+
+    if (version != null) data['version'] = version!.toJson();
+    if (stateManager != null) data['state_manager'] = stateManager!.toJson();
+    if (user != null) data['user'] = user!.toJson();
+    if (parameterValue != null) data['parameter_value'] = parameterValue!.toJson();
+
+    data['currency'] = currency;
+
+    if (history != null) {
+      data['history'] = history!.map((h) => h.toJson()).toList();
     }
-    data['data_category_id'] = this.dataCategoryId;
-    if (this.paramConfig != null) {
-      data['param_config'] = this.paramConfig!.toJson();
-    }
-    if (this.helpDocumantion != null) {
-      data['help_documantion'] = this.helpDocumantion!.toJson();
-    }
-    // if (this.criticality != null) {
-    //   data['criticality'] = this.criticality!.toJson();
-    // }
-    data['parameter_name_a'] = this.parameterNameA;
-    data['parameter_name_b'] = this.parameterNameB;
-    if (this.parameterType != null) {
-      data['parameter_type'] = this.parameterType!.toJson();
-    }
-    data['selected_parameter_type'] = this.selectedParameterType;
-    data['unit_name'] = this.unitName;
-    data['tooltip'] = this.tooltip;
-    data['status'] = this.status;
-    data['rating_style'] = this.ratingStyle;
-    data['file_type'] = this.fileType;
-    data['is_list'] = this.isList;
-    data['is_multi_selection_list'] = this.isMultiSelectionList;
-    data['is_multi_files'] = this.isMultiFiles;
-    data['is_display_listing'] = this.isDisplayListing;
-    data['is_it_range_parameter'] = this.isItRangeParameter;
-    data['module_name'] = this.moduleName;
-    data['category_type'] = this.categoryType;
-    data['pd_element'] = this.pdElement;
-    data['date'] = this.date;
-    data['startDate'] = this.startDate;
-    data['endDate'] = this.endDate;
-    data['data_group_ref'] = this.dataGroupRef;
-    if (this.version != null) {
-      data['version'] = this.version!.toJson();
-    }
-    if (this.stateManager != null) {
-      data['state_manager'] = this.stateManager!.toJson();
-    }
-    if (this.user != null) {
-      data['user'] = this.user!.toJson();
-    }
-    if (this.parameterValue != null) {
-      data['parameter_value'] = this.parameterValue!.toJson();
-    }
-    data['currency'] = this.currency;
-    if (this.history != null) {
-      data['history'] = this.history!.map((v) => v.toJson()).toList();
-    }
+
     return data;
   }
 }
+
+// class Result {
+//   String? id;
+//   String? hazardName;
+//   String? name;
+//   String? parentId;
+//   ParameterState? parameterState;
+//   Private? private;
+//   String? dataCategoryId;
+//   ParamConfig? paramConfig;
+//   HelpDocumantion? helpDocumantion;
+//   List<Criticality>? criticality;
+//   String? parameterNameA;
+//   String? parameterNameB;
+//   ParameterType? parameterType;
+//   int? selectedParameterType;
+//   String? unitName;
+//   String? tooltip;
+//   bool? status;
+//   String? ratingStyle;
+//   String? fileType;
+//   bool? isList;
+//   bool? isMultiSelectionList;
+//   bool? isMultiFiles;
+//   bool? isDisplayListing;
+//   bool? isItRangeParameter;
+//   String? moduleName;
+//   String? categoryType;
+//   String? pdElement;
+//   String? date;
+//   String? startDate;
+//   String? endDate;
+//   String? dataGroupRef;
+//   Version? version;
+//   StateManager? stateManager;
+//   User? user;
+//   ParameterValue? parameterValue;
+//   String? currency;
+//   List<History>? history;
+//
+//   Result(
+//       {this.id,
+//       this.hazardName,
+//       this.name,
+//       this.parentId,
+//       this.parameterState,
+//       this.private,
+//       this.dataCategoryId,
+//       this.paramConfig,
+//       this.helpDocumantion,
+//       this.criticality,
+//       this.parameterNameA,
+//       this.parameterNameB,
+//       this.parameterType,
+//       this.selectedParameterType,
+//       this.unitName,
+//       this.tooltip,
+//       this.status,
+//       this.ratingStyle,
+//       this.fileType,
+//       this.isList,
+//       this.isMultiSelectionList,
+//       this.isMultiFiles,
+//       this.isDisplayListing,
+//       this.isItRangeParameter,
+//       this.moduleName,
+//       this.categoryType,
+//       this.pdElement,
+//       this.date,
+//       this.startDate,
+//       this.endDate,
+//       this.dataGroupRef,
+//       this.version,
+//       this.stateManager,
+//       this.user,
+//       this.parameterValue,
+//       this.currency,
+//       this.history});
+//   Result.fromJson(Map<String, dynamic> json) {
+//     id = json['id'];
+//     hazardName = json['hazard_name'];
+//     name = json['name'];
+//     parentId = json['parent_id'];
+//
+//     parameterState = json['parameter_state'] is Map
+//         ? ParameterState.fromJson(Map<String, dynamic>.from(json['parameter_state']))
+//         : null;
+//
+//     private = json['private'] is Map
+//         ? Private.fromJson(Map<String, dynamic>.from(json['private']))
+//         : null;
+//
+//     dataCategoryId = json['data_category_id'];
+//
+//     paramConfig = json['param_config'] is Map
+//         ? ParamConfig.fromJson(Map<String, dynamic>.from(json['param_config']))
+//         : null;
+//
+//     helpDocumantion = json['help_documantion'] is Map
+//         ? HelpDocumantion.fromJson(Map<String, dynamic>.from(json['help_documantion']))
+//         : null;
+//
+//     // --------------------------------------------------------------------------
+//     // 🔥 UNIVERSAL CRITICALITY PARSER (handles list, map, empty map, null)
+//     // --------------------------------------------------------------------------
+//     var crit = json['criticality'];
+//
+//     if (crit == null) {
+//       criticality = [];
+//     }
+//     else if (crit is List) {
+//       criticality = crit
+//           .map((e) => Criticality.fromJson(Map<String, dynamic>.from(e)))
+//           .toList();
+//     }
+//     else if (crit is Map) {
+//       if (crit.isEmpty) {
+//         criticality = [];
+//       } else {
+//         criticality = [Criticality.fromJson(Map<String, dynamic>.from(crit))];
+//       }
+//     }
+//     else {
+//       criticality = [];
+//     }
+//
+//     parameterNameA = json['parameter_name_a'];
+//     parameterNameB = json['parameter_name_b'];
+//
+//     parameterType = json['parameter_type'] is Map
+//         ? ParameterType.fromJson(Map<String, dynamic>.from(json['parameter_type']))
+//         : null;
+//
+//     selectedParameterType = json['selected_parameter_type'];
+//     unitName = json['unit_name'];
+//     tooltip = json['tooltip'];
+//     status = json['status'];
+//     ratingStyle = json['rating_style'];
+//     fileType = json['file_type'];
+//     isList = json['is_list'];
+//     isMultiSelectionList = json['is_multi_selection_list'];
+//     isMultiFiles = json['is_multi_files'];
+//     isDisplayListing = json['is_display_listing'];
+//     isItRangeParameter = json['is_it_range_parameter'];
+//     moduleName = json['module_name'];
+//     categoryType = json['category_type'];
+//     pdElement = json['pd_element'];
+//     date = json['date'];
+//     startDate = json['startDate'];
+//     endDate = json['endDate'];
+//     dataGroupRef = json['data_group_ref'];
+//
+//     version = json['version'] is Map
+//         ? Version.fromJson(Map<String, dynamic>.from(json['version']))
+//         : null;
+//
+//     stateManager = json['state_manager'] is Map
+//         ? StateManager.fromJson(Map<String, dynamic>.from(json['state_manager']))
+//         : null;
+//
+//     user = json['user'] is Map
+//         ? User.fromJson(Map<String, dynamic>.from(json['user']))
+//         : null;
+//
+//     parameterValue = json['parameter_value'] is Map
+//         ? ParameterValue.fromJson(Map<String, dynamic>.from(json['parameter_value']))
+//         : null;
+//
+//     currency = json['currency'];
+//
+//     // --------------------------------------------------------------------------
+//     // 🔥 SAFE HISTORY PARSER
+//     // --------------------------------------------------------------------------
+//     history = [];
+//     if (json['history'] is List) {
+//       for (var v in json['history']) {
+//         if (v is Map) {
+//           history!.add(History.fromJson(Map<String, dynamic>.from(v)));
+//         }
+//       }
+//     }
+//   }
+//
+//   // Result.fromJson(Map<String, dynamic> json) {
+//   //   id = json['id'];
+//   //   hazardName = json['hazard_name'];
+//   //   name = json['name'];
+//   //   parentId = json['parent_id'];
+//   //   parameterState = json['parameter_state'] != null
+//   //       ? ParameterState.fromJson(json['parameter_state'])
+//   //       : null;
+//   //   private =
+//   //       json['private'] != null ? Private.fromJson(json['private']) : null;
+//   //   dataCategoryId = json['data_category_id'];
+//   //   paramConfig = json['param_config'] != null
+//   //       ? ParamConfig.fromJson(json['param_config'])
+//   //       : null;
+//   //   helpDocumantion = json['help_documantion'] != null
+//   //       ? new HelpDocumantion.fromJson(json['help_documantion'])
+//   //       : null;
+//   //   // --- FIX: universal criticality parser ---
+//   //   if (json['criticality'] == null) {
+//   //     criticality = [];
+//   //   }
+//   //   else if (json['criticality'] is List) {
+//   //     // Case 1: List
+//   //     criticality = (json['criticality'] as List)
+//   //         .map((e) => Criticality.fromJson(e))
+//   //         .toList();
+//   //   }
+//   //   else if (json['criticality'] is Map) {
+//   //     // Case 2: Single object
+//   //     final map = json['criticality'] as Map;
+//   //
+//   //     if (map.isEmpty) {
+//   //       criticality = [];
+//   //     } else {
+//   //       criticality = [Criticality.fromJson(map)];
+//   //     }
+//   //   }
+//   //   else {
+//   //     criticality = [];
+//   //   }
+//   //
+//   //   parameterNameA = json['parameter_name_a'];
+//   //   parameterNameB = json['parameter_name_b'];
+//   //   parameterType = json['parameter_type'] != null
+//   //       ? ParameterType.fromJson(json['parameter_type'])
+//   //       : null;
+//   //   selectedParameterType = json['selected_parameter_type'];
+//   //   unitName = json['unit_name'];
+//   //   tooltip = json['tooltip'];
+//   //   status = json['status'];
+//   //   ratingStyle = json['rating_style'];
+//   //   fileType = json['file_type'];
+//   //   isList = json['is_list'];
+//   //   isMultiSelectionList = json['is_multi_selection_list'];
+//   //   isMultiFiles = json['is_multi_files'];
+//   //   isDisplayListing = json['is_display_listing'];
+//   //   isItRangeParameter = json['is_it_range_parameter'];
+//   //   moduleName = json['module_name'];
+//   //   categoryType = json['category_type'];
+//   //   pdElement = json['pd_element'];
+//   //   date = json['date'];
+//   //   startDate = json['startDate'];
+//   //   endDate = json['endDate'];
+//   //   dataGroupRef = json['data_group_ref'];
+//   //   version =
+//   //       json['version'] != null ? Version.fromJson(json['version']) : null;
+//   //   stateManager = json['state_manager'] != null
+//   //       ? StateManager.fromJson(json['state_manager'])
+//   //       : null;
+//   //   user = json['user'] != null ? User.fromJson(json['user']) : null;
+//   //
+//   //   parameterValue = json['parameter_value'] != null
+//   //       ? new ParameterValue.fromJson(json['parameter_value'])
+//   //       : null;
+//   //   currency = json['currency'];
+//   //   if (json['history'] != null) {
+//   //     history = <History>[];
+//   //     json['history'].forEach((v) {
+//   //       history!.add(new History.fromJson(v));
+//   //     });
+//   //   }
+//   // }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = {};
+//     data['id'] = this.id;
+//     data['hazard_name'] = this.hazardName;
+//     data['name'] = this.name;
+//     data['parent_id'] = this.parentId;
+//     if (this.parameterState != null) {
+//       data['parameter_state'] = this.parameterState!.toJson();
+//     }
+//     if (this.private != null) {
+//       data['private'] = this.private!.toJson();
+//     }
+//     data['data_category_id'] = this.dataCategoryId;
+//     if (this.paramConfig != null) {
+//       data['param_config'] = this.paramConfig!.toJson();
+//     }
+//     if (this.helpDocumantion != null) {
+//       data['help_documantion'] = this.helpDocumantion!.toJson();
+//     }
+//     if (this.criticality != null) {
+//       data['criticality'] = this.criticality!.map((v) => v.toJson()).toList();
+//     }
+//     data['parameter_name_a'] = this.parameterNameA;
+//     data['parameter_name_b'] = this.parameterNameB;
+//     if (this.parameterType != null) {
+//       data['parameter_type'] = this.parameterType!.toJson();
+//     }
+//     data['selected_parameter_type'] = this.selectedParameterType;
+//     data['unit_name'] = this.unitName;
+//     data['tooltip'] = this.tooltip;
+//     data['status'] = this.status;
+//     data['rating_style'] = this.ratingStyle;
+//     data['file_type'] = this.fileType;
+//     data['is_list'] = this.isList;
+//     data['is_multi_selection_list'] = this.isMultiSelectionList;
+//     data['is_multi_files'] = this.isMultiFiles;
+//     data['is_display_listing'] = this.isDisplayListing;
+//     data['is_it_range_parameter'] = this.isItRangeParameter;
+//     data['module_name'] = this.moduleName;
+//     data['category_type'] = this.categoryType;
+//     data['pd_element'] = this.pdElement;
+//     data['date'] = this.date;
+//     data['startDate'] = this.startDate;
+//     data['endDate'] = this.endDate;
+//     data['data_group_ref'] = this.dataGroupRef;
+//     if (this.version != null) {
+//       data['version'] = this.version!.toJson();
+//     }
+//     if (this.stateManager != null) {
+//       data['state_manager'] = this.stateManager!.toJson();
+//     }
+//     if (this.user != null) {
+//       data['user'] = this.user!.toJson();
+//     }
+//     if (this.parameterValue != null) {
+//       data['parameter_value'] = this.parameterValue!.toJson();
+//     }
+//     data['currency'] = this.currency;
+//     if (this.history != null) {
+//       data['history'] = this.history!.map((v) => v.toJson()).toList();
+//     }
+//     return data;
+//   }
+// }
 
 class History {
   dynamic? value;
@@ -328,211 +700,6 @@ class HelpDocumantion {
   }
 }
 
-// class Result {
-//   // List<Null>? valueList;
-//   // List<Null>? parameterTypeFields;
-//   String? name;
-//   String? parentId;
-//   ParameterState? parameterState;
-//   Private? private;
-//   String? dataCategoryId;
-//   ParamConfig? paramConfig;
-//
-//   // HelpDocumantion? helpDocumantion;
-//   Criticality? criticality;
-//   String? parameterNameA;
-//   String? parameterNameB;
-//   ParameterType? parameterType;
-//   int? selectedParameterType;
-//   String? unitName;
-//   String? tooltip;
-//   bool? status;
-//   String? ratingStyle;
-//   String? fileType;
-//   bool? isList;
-//   bool? isMultiSelectionList;
-//   bool? isMultiFiles;
-//   bool? isDisplayListing;
-//   bool? isItRangeParameter;
-//
-//   // String? parameterType;
-//   String? moduleName;
-//   String? categoryType;
-//   String? pdElement;
-//   String? date;
-//   Null? startDate;
-//   Null? endDate;
-//   String? dataGroupRef;
-//   Version? version;
-//   StateManager? stateManager;
-//   User? user;
-//
-//   // ParameterValue? parameterValue;
-//   String? currency;
-//
-//   Result(
-//       {
-//       // this.valueList, this.parameterTypeFields,
-//       this.name,
-//       this.parentId,
-//       this.parameterState,
-//       this.private,
-//       this.dataCategoryId,
-//       this.paramConfig,
-//       // this.helpDocumantion,
-//       this.criticality,
-//       this.parameterNameA,
-//       this.parameterNameB,
-//       this.parameterType,
-//       this.selectedParameterType,
-//       this.unitName,
-//       this.tooltip,
-//       this.status,
-//       this.ratingStyle,
-//       this.fileType,
-//       this.isList,
-//       this.isMultiSelectionList,
-//       this.isMultiFiles,
-//       this.isDisplayListing,
-//       this.isItRangeParameter,
-//       // this.parameterType,
-//       this.moduleName,
-//       this.categoryType,
-//       this.pdElement,
-//       this.date,
-//       this.startDate,
-//       this.endDate,
-//       this.dataGroupRef,
-//       this.version,
-//       this.stateManager,
-//       this.user,
-//       // this.parameterValue,
-//       this.currency});
-//
-//   Result.fromJson(Map<String, dynamic> json) {
-//     // if (json['value_list'] != null) {
-//     //   valueList = <Null>[];
-//     //   json['value_list'].forEach((v) { valueList!.add(new Null.fromJson(v)); });
-//     // }
-//     // if (json['parameter_type_fields'] != null) {
-//     //   parameterTypeFields = <Null>[];
-//     //   json['parameter_type_fields'].forEach((v) { parameterTypeFields!.add(new Null.fromJson(v)); });
-//     // }
-//     name = json['name'];
-//     parentId = json['parent_id'];
-//     parameterState = json['parameter_state'] != null
-//         ? new ParameterState.fromJson(json['parameter_state'])
-//         : null;
-//     private =
-//         json['private'] != null ? new Private.fromJson(json['private']) : null;
-//     dataCategoryId = json['data_category_id'];
-//     paramConfig = json['param_config'] != null
-//         ? new ParamConfig.fromJson(json['param_config'])
-//         : null;
-//     // helpDocumantion = json['help_documantion'] != null ? new HelpDocumantion.fromJson(json['help_documantion']) : null;
-//     criticality = json['criticality'] != null
-//         ? new Criticality.fromJson(json['criticality'])
-//         : null;
-//     parameterNameA = json['parameter_name_a'];
-//     parameterNameB = json['parameter_name_b'];
-//
-//     parameterType = json['parameterType'];
-//
-//     selectedParameterType = json['selected_parameter_type'];
-//     unitName = json['unit_name'];
-//     tooltip = json['tooltip'];
-//     status = json['status'];
-//     ratingStyle = json['rating_style'];
-//     fileType = json['file_type'];
-//     isList = json['is_list'];
-//     isMultiSelectionList = json['is_multi_selection_list'];
-//     isMultiFiles = json['is_multi_files'];
-//     isDisplayListing = json['is_display_listing'];
-//     isItRangeParameter = json['is_it_range_parameter'];
-//     parameterType = json['parameterType'];
-//     moduleName = json['module_name'];
-//     categoryType = json['category_type'];
-//     pdElement = json['pd_element'];
-//     date = json['date'];
-//     startDate = json['startDate'];
-//     endDate = json['endDate'];
-//     dataGroupRef = json['data_group_ref'];
-//     version =
-//         json['version'] != null ? new Version.fromJson(json['version']) : null;
-//     stateManager = json['state_manager'] != null
-//         ? new StateManager.fromJson(json['state_manager'])
-//         : null;
-//     user = json['user'] != null ? new User.fromJson(json['user']) : null;
-//     // parameterValue = json['parameter_value'] != null ? new ParameterValue.fromJson(json['parameter_value']) : null;
-//     currency = json['currency'];
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     final Map<String, dynamic> data = new Map<String, dynamic>();
-//     // if (this.valueList != null) {
-//     //   data['value_list'] = this.valueList!.map((v) => v.toJson()).toList();
-//     // }
-//     // if (this.parameterTypeFields != null) {
-//     //   data['parameter_type_fields'] = this.parameterTypeFields!.map((v) => v.toJson()).toList();
-//     // }
-//     data['name'] = this.name;
-//     data['parent_id'] = this.parentId;
-//     if (this.parameterState != null) {
-//       data['parameter_state'] = this.parameterState!.toJson();
-//     }
-//     if (this.private != null) {
-//       data['private'] = this.private!.toJson();
-//     }
-//     data['data_category_id'] = this.dataCategoryId;
-//     if (this.paramConfig != null) {
-//       data['param_config'] = this.paramConfig!.toJson();
-//     }
-//     // if (this.helpDocumantion != null) {
-//     //   data['help_documantion'] = this.helpDocumantion!.toJson();
-//     // }
-//     if (this.criticality != null) {
-//       data['criticality'] = this.criticality!.toJson();
-//     }
-//     data['parameter_name_a'] = this.parameterNameA;
-//     data['parameter_name_b'] = this.parameterNameB;
-//     if (this.parameterType != null) {
-//       data['parameter_type'] = this.parameterType!.toJson();
-//     }
-//     data['selected_parameter_type'] = this.selectedParameterType;
-//     data['unit_name'] = this.unitName;
-//     data['tooltip'] = this.tooltip;
-//     data['status'] = this.status;
-//     data['rating_style'] = this.ratingStyle;
-//     data['file_type'] = this.fileType;
-//     data['is_list'] = this.isList;
-//     data['is_multi_selection_list'] = this.isMultiSelectionList;
-//     data['is_multi_files'] = this.isMultiFiles;
-//     data['is_display_listing'] = this.isDisplayListing;
-//     data['is_it_range_parameter'] = this.isItRangeParameter;
-//     data['parameterType'] = this.parameterType;
-//     data['module_name'] = this.moduleName;
-//     data['category_type'] = this.categoryType;
-//     data['pd_element'] = this.pdElement;
-//     data['date'] = this.date;
-//     data['startDate'] = this.startDate;
-//     data['endDate'] = this.endDate;
-//     data['data_group_ref'] = this.dataGroupRef;
-//     if (this.version != null) {
-//       data['version'] = this.version!.toJson();
-//     }
-//     if (this.stateManager != null) {
-//       data['state_manager'] = this.stateManager!.toJson();
-//     }
-//     if (this.user != null) {
-//       data['user'] = this.user!.toJson();
-//     }
-//     // if (this.parameterValue != null) {
-//     //   data['parameter_value'] = this.parameterValue!.toJson();
-//     // }
-//     data['currency'] = this.currency;
-//     return data;
-//   }
-// }
 class ParameterValue {
   dynamic value;
   String? paramType;
@@ -759,68 +926,220 @@ class ParamConfig {
     return data;
   }
 }
-
-// class HelpDocumantion {
-//   List<dynamic>? images;
-//   List<dynamic>? docs;
-//
-//   HelpDocumantion({this.images, this.docs});
-//
-//   HelpDocumantion.fromJson(Map<String, dynamic> json) {
-//     if (json['images'] != null) {
-//       images = <Null>[];
-//       json['images'].forEach((v) { images!.add(new Null.fromJson(v)); });
-//     }
-//     if (json['docs'] != null) {
-//       docs = <Null>[];
-//       json['docs'].forEach((v) { docs!.add(new Null.fromJson(v)); });
-//     }
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     final Map<String, dynamic> data = new Map<String, dynamic>();
-//     if (this.images != null) {
-//       data['images'] = this.images!.map((v) => v.toJson()).toList();
-//     }
-//     if (this.docs != null) {
-//       data['docs'] = this.docs!.map((v) => v.toJson()).toList();
-//     }
-//     return data;
-//   }
-// }
-
 class Criticality {
-  String? impactType;
+  // String? perils;
   int? avgPdCriticality;
   int? avgTeCriticality;
-
-  // Advisory? advisory;
+  String? impactType;
+  String? comments;
+  dynamic vendors;  // can be null
+  List<Advisory>? advisory; // always list
 
   Criticality({
-    this.impactType,
+    // this.perils,
     this.avgPdCriticality,
     this.avgTeCriticality,
-    // this.advisory
+    this.comments,
+    this.impactType,
+    this.vendors,
+    this.advisory,
   });
 
   Criticality.fromJson(Map<String, dynamic> json) {
-    impactType = json['impact_type'];
+    // perils = json['perils'];
     avgPdCriticality = json['avg_pd_criticality'];
     avgTeCriticality = json['avg_te_criticality'];
-    // advisory = json['advisory'] != null ? new Advisory.fromJson(json['advisory']) : null;
+    comments = json['comments'];
+    impactType = json['impact_type'];
+    vendors = json['vendors'];
+
+    // 🔥 handle advisory safely
+    if (json['advisory'] == null) {
+      advisory = []; // no advisory
+    }
+    else if (json['advisory'] is List) {
+      advisory =
+          (json['advisory'] as List).map((e) => Advisory.fromJson(e)).toList();
+    }
+    else if (json['advisory'] is Map) {
+      // sometimes advisory comes as {}
+      if ((json['advisory'] as Map).isEmpty) {
+        advisory = [];
+      } else {
+        advisory = [Advisory.fromJson(json['advisory'])];
+      }
+    }
+    else {
+      advisory = [];
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    // data['perils'] = perils;
+    data['avg_pd_criticality'] = avgPdCriticality;
+    data['avg_te_criticality'] = avgTeCriticality;
+    data['comments'] = comments;
+    data['impact_type'] = impactType;
+    data['vendors'] = vendors;
+
+    // always output list
+    data['advisory'] = advisory?.map((e) => e.toJson()).toList() ?? [];
+
+    return data;
+  }
+}
+
+class Advisory {
+  String? name;
+  String? email;
+  String? userId;
+  String? date;
+  int? pdCriticality;
+  int? teCriticality;
+  bool? isRsAdmin;
+  String? comments;
+  // List<Null>? history;
+
+  Advisory({this.name, this.email, this.userId, this.date, this.pdCriticality, this.teCriticality, this.isRsAdmin, this.comments});
+
+  Advisory.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    email = json['email'];
+    userId = json['user_id'];
+    date = json['date'];
+    pdCriticality = json['pd_criticality'];
+    teCriticality = json['te_criticality'];
+    isRsAdmin = json['is_rs_admin'];
+    comments = json['comments'];
+    // if (json['history'] != null) {
+    //   history = <Null>[];
+    //   json['history'].forEach((v) { history!.add(new Null.fromJson(v)); });
+    // }
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['impact_type'] = this.impactType;
-    data['avg_pd_criticality'] = this.avgPdCriticality;
-    data['avg_te_criticality'] = this.avgTeCriticality;
-    // if (this.advisory != null) {
-    //   data['advisory'] = this.advisory!.toJson();
+    data['name'] = this.name;
+    data['email'] = this.email;
+    data['user_id'] = this.userId;
+    data['date'] = this.date;
+    data['pd_criticality'] = this.pdCriticality;
+    data['te_criticality'] = this.teCriticality;
+    data['is_rs_admin'] = this.isRsAdmin;
+    data['comments'] = this.comments;
+    // if (this.history != null) {
+    //   data['history'] = this.history!.map((v) => v.toJson()).toList();
     // }
     return data;
   }
 }
+
+
+// class Criticality {
+//   String? impactType;
+//   String? perils;
+//   List<Advisory>? advisory;
+//   int? avgPdCriticality;
+//   String? comments;
+//   Null? vendors;
+//   int? avgTeCriticality;
+//
+//   Criticality(
+//       {this.impactType,
+//       this.perils,
+//       this.advisory,
+//       this.avgPdCriticality,
+//       this.comments,
+//       this.vendors,
+//       this.avgTeCriticality});
+//
+//   Criticality.fromJson(Map<String, dynamic> json) {
+//     impactType = json['impact_type'];
+//     perils = json['perils'];
+//     if (json['advisory'] != null) {
+//       advisory = <Advisory>[];
+//       json['advisory'].forEach((v) {
+//         advisory!.add(new Advisory.fromJson(v));
+//       });
+//     }
+//     avgPdCriticality = json['avg_pd_criticality'];
+//     comments = json['comments'];
+//     vendors = json['vendors'];
+//     avgTeCriticality = json['avg_te_criticality'];
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     data['impact_type'] = this.impactType;
+//     data['perils'] = this.perils;
+//     if (this.advisory != null) {
+//       data['advisory'] = this.advisory!.map((v) => v.toJson()).toList();
+//     }
+//     data['avg_pd_criticality'] = this.avgPdCriticality;
+//     data['comments'] = this.comments;
+//     data['vendors'] = this.vendors;
+//     data['avg_te_criticality'] = this.avgTeCriticality;
+//     return data;
+//   }
+// }
+
+// class Advisory {
+//   // List<dynamic>? history;
+//   int? pdCriticality;
+//   int? teCriticality;
+//   String? name;
+//   String? date;
+//   String? email;
+//   bool? isRsAdmin;
+//   String? comments;
+//   String? userId;
+//
+//   Advisory(
+//       {
+//       // this.history,
+//       this.pdCriticality,
+//       this.teCriticality,
+//       this.name,
+//       this.date,
+//       this.email,
+//       this.isRsAdmin,
+//       this.comments,
+//       this.userId});
+//
+//   Advisory.fromJson(Map<String, dynamic> json) {
+//     // if (json['history'] != null) {
+//     //   history = <Null>[];
+//     //   json['history'].forEach((v) {
+//     //     history!.add(new Null!.fromJson(v));
+//     //   });
+//     // }
+//     pdCriticality = json['pd_criticality'];
+//     teCriticality = json['te_criticality'];
+//     name = json['name'];
+//     date = json['date'];
+//     email = json['email'];
+//     isRsAdmin = json['is_rs_admin'];
+//     comments = json['comments'];
+//     userId = json['user_id'];
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = new Map<String, dynamic>();
+//     // if (this.history != null) {
+//     //   data['history'] = this.history!.map((v) => v.toJson()).toList();
+//     // }
+//     data['pd_criticality'] = this.pdCriticality;
+//     data['te_criticality'] = this.teCriticality;
+//     data['name'] = this.name;
+//     data['date'] = this.date;
+//     data['email'] = this.email;
+//     data['is_rs_admin'] = this.isRsAdmin;
+//     data['comments'] = this.comments;
+//     data['user_id'] = this.userId;
+//     return data;
+//   }
+// }
 
 class HasUpgraded {
   bool? dI1o77IZ5M62Ke5wOLui;
@@ -856,69 +1175,6 @@ class Completeness {
     return data;
   }
 }
-
-// class Advisory {
-//   8WiDjXICWSQ9APEgMAn7wWk8NEj2? 88WiDjXICWSQ9APEgMAn7wWk8NEj2;
-//
-//   Advisory({this.88WiDjXICWSQ9APEgMAn7wWk8NEj2});
-//
-//   Advisory.fromJson(Map<String, dynamic> json) {
-//   88WiDjXICWSQ9APEgMAn7wWk8NEj2 = json['8WiDjXICWSQ9APEgMAn7wWk8NEj2'] != null ? new 8WiDjXICWSQ9APEgMAn7wWk8NEj2.fromJson(json['8WiDjXICWSQ9APEgMAn7wWk8NEj2']) : null;
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//   final Map<String, dynamic> data = new Map<String, dynamic>();
-//   if (this.88WiDjXICWSQ9APEgMAn7wWk8NEj2 != null) {
-//   data['8WiDjXICWSQ9APEgMAn7wWk8NEj2'] = this.88WiDjXICWSQ9APEgMAn7wWk8NEj2!.toJson();
-//   }
-//   return data;
-//   }
-// }
-
-// class 8WiDjXICWSQ9APEgMAn7wWk8NEj2 {
-// List<Null>? history;
-// String? name;
-// String? email;
-// String? userId;
-// String? date;
-// int? pdCriticality;
-// int? teCriticality;
-// bool? isRsAdmin;
-// String? comments;
-//
-// 8WiDjXICWSQ9APEgMAn7wWk8NEj2({this.history, this.name, this.email, this.userId, this.date, this.pdCriticality, this.teCriticality, this.isRsAdmin, this.comments});
-//
-// 8WiDjXICWSQ9APEgMAn7wWk8NEj2.fromJson(Map<String, dynamic> json) {
-// if (json['history'] != null) {
-// history = <Null>[];
-// json['history'].forEach((v) { history!.add(new Null.fromJson(v)); });
-// }
-// name = json['name'];
-// email = json['email'];
-// userId = json['user_id'];
-// date = json['date'];
-// pdCriticality = json['pd_criticality'];
-// teCriticality = json['te_criticality'];
-// isRsAdmin = json['is_rs_admin'];
-// comments = json['comments'];
-// }
-//
-// Map<String, dynamic> toJson() {
-// final Map<String, dynamic> data = new Map<String, dynamic>();
-// if (this.history != null) {
-// data['history'] = this.history!.map((v) => v.toJson()).toList();
-// }
-// data['name'] = this.name;
-// data['email'] = this.email;
-// data['user_id'] = this.userId;
-// data['date'] = this.date;
-// data['pd_criticality'] = this.pdCriticality;
-// data['te_criticality'] = this.teCriticality;
-// data['is_rs_admin'] = this.isRsAdmin;
-// data['comments'] = this.comments;
-// return data;
-// }
-// }
 
 class ParameterType {
   String? name;

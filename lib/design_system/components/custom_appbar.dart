@@ -1,18 +1,10 @@
-import 'dart:developer';
 
-import 'package:country_pickers/country.dart';
-import 'package:country_pickers/country_picker_dropdown.dart';
-import 'package:country_pickers/utils/utils.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:RiskSphere/design_system/components/profile_image_widget.dart';
-import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 import 'package:RiskSphere/providers/auth_provider.dart';
-import 'package:RiskSphere/screens/onboarding/splash_screen.dart';
-import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:RiskSphere/screens/userManagement/connections_screen.dart';
 import 'package:RiskSphere/screens/userManagement/user_profile.dart';
 import 'package:provider/provider.dart';
@@ -21,11 +13,9 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/news_feed_provider.dart';
 import '../../providers/user_profile_provider.dart';
-import '../../screens/listings/hazard_proto.dart';
 import '../../screens/listings/news_feed_screen.dart';
 import '../../service/shared_preference_service.dart';
 import '../primitives/custom_typography.dart';
-import '../primitives/utilities/custom_spacing.dart';
 import 'profile_dropdown.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {

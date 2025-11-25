@@ -215,81 +215,81 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         level,
                       ),
 
-                    SizedBox(height: CustomSpacing.four),
-                    Text(
-                      'Get hazard event notifications by subscribing to live catastrophic event monitoring',
-                      style: typography.Body1.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-
-                    // Dynamic Subscription Cards
-                    // Dynamic Subscription Cards
-                    ...subscriptions.keys.map((key) {
-                      final parts = key.split('_');
-                      if (parts.length != 2) {
-                        debugPrint('Invalid subscription key format: $key');
-                        return SizedBox.shrink();
-                      }
-
-                      final vendorId = parts[0];
-                      final hazardName = parts[1];
-
-                      // Find the vendor by vendor_id
-                      final vendor = vendorList.firstWhere(
-                        (vendor) => vendor['vendor_id'] == vendorId,
-                        orElse: () {
-                          debugPrint('Vendor not found for ID: $vendorId');
-                          return null;
-                        },
-                      );
-
-                      if (vendor == null) return SizedBox.shrink();
-
-                      // Find the hazard in the vendor's hazard_commercials by hazard_name
-                      final hazardCommercials =
-                          vendor['hazard_commercials'] as List?;
-                      final hazard = hazardCommercials?.firstWhere(
-                        (commercial) => commercial['hazard_name'] == hazardName,
-                        orElse: () {
-                          debugPrint(
-                              'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
-                          return null;
-                        },
-                      );
-
-                      if (hazard == null) return SizedBox.shrink();
-
-                      // Extract subscription and hazard details
-                      final subscription = subscriptions[key];
-                      final vendorName = vendor['vendor_name_label'] ?? '';
-                      final vendorImage = vendor['display_image_url'] ??
-                          'assets/images/default_vendor.png';
-                      final hazardLabel =
-                          hazard['hazard_name_label'] ?? 'Unknown Hazard';
-                      final description = subscription['description'] ?? '';
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildSubscriptionCard(
-                            key,
-                            vendorImage,
-                            '$hazardLabel ($vendorName)',
-                            description.isNotEmpty ? description : vendorName,
-                            '$vendorName',
-                            subscription['is_subscribed'] == true ||
-                                subscription['is_subscribed'] == 'true',
-                            mainId,
-                            level,
-                            typography,
-                          ),
-                          SizedBox(height: CustomSpacing.one),
-                        ],
-                      );
-                    }).toList(),
+                    // SizedBox(height: CustomSpacing.four),
+                    // Text(
+                    //   'Get hazard event notifications by subscribing to live catastrophic event monitoring',
+                    //   style: typography.Body1.copyWith(
+                    //     fontWeight: FontWeight.w600,
+                    //     fontSize: 18,
+                    //   ),
+                    // ),
+                    // SizedBox(height: CustomSpacing.two),
+                    //
+                    // // Dynamic Subscription Cards
+                    // // Dynamic Subscription Cards
+                    // ...subscriptions.keys.map((key) {
+                    //   final parts = key.split('_');
+                    //   if (parts.length != 2) {
+                    //     debugPrint('Invalid subscription key format: $key');
+                    //     return SizedBox.shrink();
+                    //   }
+                    //
+                    //   final vendorId = parts[0];
+                    //   final hazardName = parts[1];
+                    //
+                    //   // Find the vendor by vendor_id
+                    //   final vendor = vendorList.firstWhere(
+                    //     (vendor) => vendor['vendor_id'] == vendorId,
+                    //     orElse: () {
+                    //       debugPrint('Vendor not found for ID: $vendorId');
+                    //       return null;
+                    //     },
+                    //   );
+                    //
+                    //   if (vendor == null) return SizedBox.shrink();
+                    //
+                    //   // Find the hazard in the vendor's hazard_commercials by hazard_name
+                    //   final hazardCommercials =
+                    //       vendor['hazard_commercials'] as List?;
+                    //   final hazard = hazardCommercials?.firstWhere(
+                    //     (commercial) => commercial['hazard_name'] == hazardName,
+                    //     orElse: () {
+                    //       debugPrint(
+                    //           'Hazard not found for name: $hazardName in Vendor ID: $vendorId');
+                    //       return null;
+                    //     },
+                    //   );
+                    //
+                    //   if (hazard == null) return SizedBox.shrink();
+                    //
+                    //   // Extract subscription and hazard details
+                    //   final subscription = subscriptions[key];
+                    //   final vendorName = vendor['vendor_name_label'] ?? '';
+                    //   final vendorImage = vendor['display_image_url'] ??
+                    //       'assets/images/default_vendor.png';
+                    //   final hazardLabel =
+                    //       hazard['hazard_name_label'] ?? 'Unknown Hazard';
+                    //   final description = subscription['description'] ?? '';
+                    //
+                    //   return Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.stretch,
+                    //     children: [
+                    //       _buildSubscriptionCard(
+                    //         key,
+                    //         vendorImage,
+                    //         '$hazardLabel ($vendorName)',
+                    //         description.isNotEmpty ? description : vendorName,
+                    //         '$vendorName',
+                    //         subscription['is_subscribed'] == true ||
+                    //             subscription['is_subscribed'] == 'true',
+                    //         mainId,
+                    //         level,
+                    //         typography,
+                    //       ),
+                    //       SizedBox(height: CustomSpacing.one),
+                    //     ],
+                    //   );
+                    // }).toList(),
                   ],
                 ),
               );

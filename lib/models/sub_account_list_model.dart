@@ -42,6 +42,7 @@ class SubAccounts {
   String? subAccountId;
   int? lastModified;
   String? objectID;
+  int? locationCount;
   bool isChecked = false; // Local variable, not part of JSON serialization
   bool disabled = false;
 
@@ -54,6 +55,7 @@ class SubAccounts {
     this.subAccountId,
     this.lastModified,
     this.objectID,
+    this.locationCount,
     this.disabled = false,
   });
 
@@ -67,6 +69,7 @@ class SubAccounts {
     subAccountId = json['sub_account_id'];
 
     objectID = json['objectID'];
+    locationCount = json['location_count'];
     disabled = json['is_disabled'] ?? false;
   }
 
@@ -81,6 +84,7 @@ class SubAccounts {
     data['account_id'] = accountId;
     data['sub_account_id'] = subAccountId;
     data['objectID'] = objectID;
+    data['location_count'] = this.locationCount;
     return data;
   }
 

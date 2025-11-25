@@ -53,6 +53,7 @@ class MyLocationCard extends StatefulWidget {
   final VoidCallback? onNavigateBack;
   List<Conflicts>? conflict;
   bool? isHazardCanStart;
+  String? role;
 
   MyLocationCard({
     super.key,
@@ -92,6 +93,7 @@ class MyLocationCard extends StatefulWidget {
     this.onNavigateBack,
     this.conflict,
     this.isHazardCanStart,
+    this.role,
   });
 
   @override
@@ -172,7 +174,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             long: widget.long,
                             geocodingAddress: widget.address,
                             conflict: widget.conflict,
-                            sovId: widget.sovId!,
+                            sovId: "",
                           )))
                   .then((result) {
                   if (result == true) {
@@ -311,70 +313,72 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 8),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Company : ",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                  // RichText(
+                  //   text: TextSpan(
+                  //     children: [
+                  //       TextSpan(
+                  //         text: "Company : ",
+                  //         style: typography.Body2.copyWith(
+                  //           color:
+                  //               Theme.of(context).brightness == Brightness.dark
+                  //                   ? AppColors.white
+                  //                   : AppColors.black,
+                  //           fontSize: 14,
+                  //           fontWeight: FontWeight.w500,
+                  //         ),
+                  //       ),
+                  //       TextSpan(
+                  //         text: widget.companyName ?? "",
+                  //         style: typography.Body2.copyWith(
+                  //           color:
+                  //               Theme.of(context).brightness == Brightness.dark
+                  //                   ? AppColors.white
+                  //                   : AppColors.black,
+                  //           fontSize: 14,
+                  //           // Different font size for owner name
+                  //           fontWeight: FontWeight.bold,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
+                  // SizedBox(height: 8),
+                  if (widget.role != null && widget.role.toString() !="null"&&
+                      widget.role!.trim().isNotEmpty) ...[
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: "Role : ",
+                            style: typography.Body2.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.white
+                                  : AppColors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text: widget.companyName ?? "",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontSize: 14,
-                            // Different font size for owner name
-                            fontWeight: FontWeight.bold,
+                          TextSpan(
+                            text: widget.role!,
+                            style: typography.Body2.copyWith(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.white
+                                  : AppColors.blue50,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 8),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Role : ",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        TextSpan(
-                          text: "Admin"?? "",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.blue50,
-                            fontSize: 14,
-                            // Different font size for owner name
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 8),
+                    SizedBox(height: 8),
+                  ]
                 ],
-                SizedBox(height: 16),
+                SizedBox(height: 8),
                 _buildScrollableScores(context),
               ],
             ),
@@ -643,7 +647,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             },
             child: _buildScoreCard(
                 context,
-                'Risk Score',
+                'Hazard Score',
                 widget.address,
                 widget.riskScore, // == 0 ? 5 : widget.riskScore,
                 widget.accountId!,
@@ -742,7 +746,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   ),
                 ),
                 SizedBox(width: 8),
-                if (title == 'Risk Score' || title == 'Geocoding') ...[
+                if (title == 'Hazard Score' || title == 'Geocoding') ...[
                   InkWell(
                     onTap: () {
                       showDialog(
@@ -768,7 +772,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 if (widget.hazardProcess == true ||
                     title == 'Geocoding' ||
                     title == 'Completeness') ...[
-                  title == 'Risk Score'
+                  title == 'Hazard Score'
                       ? SvgPicture.asset('assets/images/hazard_icon.svg',
                           width: 24, height: 24)
                       : title == 'Completeness'
@@ -807,7 +811,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             widget.rented);
                       }
                     },
-                    child: VerticalBarIndicator(score: score),
+                    child: VerticalBarIndicator(score: score == 0 ? 1 : score),
                   ),
                   SizedBox(width: 1),
                   isCertified
@@ -821,7 +825,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                 scoreColors[score].withOpacity(0.6),
                             child: Center(
                               child: Text(
-                                score.toString(),
+                                score == 0 ? '1' : score.toString(),
                                 style: typography.Body1.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,

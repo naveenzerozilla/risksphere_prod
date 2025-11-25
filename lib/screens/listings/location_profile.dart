@@ -937,6 +937,25 @@ class _LocationProfileState extends State<LocationProfile>
                                                                 bottom: 6),
                                                         child: Row(
                                                           children: [
+                                                            if(widget.sovId.isNotEmpty || widget.sovId.toString()=="null")...[
+                                                            // Text(widget.sovName),
+                                                            InkWell(
+                                                              onTap: () {
+                                                                if (!bottomsheetopened) {
+                                                                Navigator.pop(context);
+                                                                }
+                                                              },
+                                                              child: Text(
+                                                                widget
+                                                                    .sovName,
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                    14,
+                                                                    color: Colors
+                                                                        .white60),
+                                                              ),
+                                                            ),
+                                                            ] else ...[
                                                             InkWell(
                                                               onTap: () {
                                                                 if (!bottomsheetopened) {
@@ -1001,6 +1020,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                         .white70),
                                                               ),
                                                             ),
+                                                            ],
                                                             Text(' > ',
                                                                 style: TextStyle(
                                                                     fontSize:
@@ -1152,8 +1172,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                 locationProfileProvider
                                                         .locationProfile
                                                         ?.dataCompleteness
-                                                        ?.scorePd
-                                                        ?.toString() ??
+                                                        .toString() ??
                                                     '0';
                                             final parsedScore =
                                                 int.tryParse(scorePdStr) ?? 0;
@@ -1257,7 +1276,7 @@ class _LocationProfileState extends State<LocationProfile>
                                           },
                                           tabs: [
                                             Tab(text: 'Geocoding'),
-                                            Tab(text: 'Risk Score'),
+                                            Tab(text: 'Hazard Score'),
                                             Tab(text: 'Data Completeness'),
                                             // Tab(text: 'Recommended'),
                                           ],
@@ -1349,12 +1368,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                             ?.finalAddress
                                                             ?.locationId,
                                                     sovId: widget.sovId,
-                                                    campusId:
-                                                        locationProfileProvider
-                                                            .locationProfile!
-                                                            .finalAddress!
-                                                            .campusId
-                                                            .toString(),
+                                                    campusId: locationProfileProvider.locationProfile?.finalAddress?.campusId?.toString() ?? "",
+
                                                     campusStatus: (locationProfileProvider
                                                                 .locationProfile
                                                                 ?.finalAddress
@@ -4353,9 +4368,11 @@ class _LocationProfileState extends State<LocationProfile>
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.overallScore ?? 5,
-          dataCompleteness: (location.dataCompleteness!.scorePd == 0
-              ? '1'
-              : location.dataCompleteness!.scorePd.toString()),
+        dataCompleteness: (location.dataCompleteness == null
+            ? ''
+            : (location.dataCompleteness! == 0
+                ? '1'
+                : location.dataCompleteness!.toString())),
           // scoreToStar(
           //     location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
           hazards: location.hazard ?? {},
@@ -5460,84 +5477,7 @@ class _LocationProfileState extends State<LocationProfile>
     }
   }
 
-  Widget _riskScore() {
-    var typography = CustomTypography(context);
 
-    return Consumer<MyLocationListProvider>(
-      builder: (context, locationProfileProvider, child) {
-        double latitude =
-            locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
-        double longitude =
-            locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
-
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.5,
-          child: Stack(
-            children: [
-              // ✅ Let the map fill the stack naturally
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Screenshot(
-                  controller: _riskScoreScreenshotController,
-                  child: GoogleMap(
-                    mapType: MapType.normal,
-                    zoomControlsEnabled: false,
-                    markers: Set<Marker>.of(markers.values),
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(latitude, longitude),
-                      zoom: 13,
-                    ),
-                    onMapCreated: (GoogleMapController controller) {
-                      if (!_controller.isCompleted) {
-                        _controller.complete(controller);
-                      }
-                    },
-                    gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                      Factory<OneSequenceGestureRecognizer>(
-                        () => EagerGestureRecognizer(),
-                      ),
-                    },
-                    onTap: _isAddingMarker ? _handleMapTap : null,
-                    tileOverlays: _getTileOverlays(),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                top: 40,
-                bottom: 50,
-                left: 0,
-                child: _buildHazardControls(),
-              ),
-
-              // if ((int.tryParse(widget.page) ?? 1) > 1)
-              //   Positioned(
-              //     left: 16,
-              //     child: _buildNavigationButton(
-              //       alignment: Alignment.centerLeft,
-              //       icon: Icons.chevron_left,
-              //       onPressed: _navigateLeft,
-              //     ),
-              //   ),
-              //
-              // if ((int.tryParse(widget.page) ?? 1) <
-              //     (widget.locationId.isNotEmpty
-              //         ? locationProfileProvider.resetTotalPage! - 1
-              //         : (int.tryParse(widget.totalPages!) ?? 1)))
-              //   Positioned(
-              //     right: 16,
-              //     child: _buildNavigationButton(
-              //       alignment: Alignment.centerRight,
-              //       icon: Icons.chevron_right,
-              //       onPressed: _navigateRight,
-              //     ),
-              //   ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   /// Returns tile overlays with safe null checks
   Set<TileOverlay> _getTileOverlays() {

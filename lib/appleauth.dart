@@ -15,7 +15,6 @@ class AppleSignInButton extends StatelessWidget {
     this.onError,
   });
 
-  /// 🔒 Generate a secure random nonce
   String _generateNonce([int length = 32]) {
     const charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
@@ -69,13 +68,13 @@ class AppleSignInButton extends StatelessWidget {
 
       onSuccess?.call();
     } on SignInWithAppleAuthorizationException catch (e) {
-      debugPrint("❌ Apple Auth Error: ${e.code} - ${e.message}");
+      debugPrint(" Apple Auth Error: ${e.code} - ${e.message}");
       onError?.call(Exception(e.message ?? e.code));
     } on FirebaseAuthException catch (e) {
-      debugPrint("❌ FirebaseAuth Error: ${e.code} - ${e.message}");
+      debugPrint(" FirebaseAuth Error: ${e.code} - ${e.message}");
       onError?.call(e);
     } catch (e) {
-      debugPrint("❌ Unknown Error: $e");
+      debugPrint(" Unknown Error: $e");
       onError?.call(Exception(e.toString()));
     }
   }

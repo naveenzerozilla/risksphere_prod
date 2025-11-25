@@ -117,7 +117,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   TextEditingController adminPasswordController = TextEditingController();
   TextEditingController adminConfirmPasswordController =
       TextEditingController();
-  CompanyType? selectedCompanyType;
+  dynamic? selectedCompanyType;
+  String? selectedCompanyType1 = "";
   Roles? selectedCompanyRole;
   bool _showRoles = true;
   bool _showCompanyType = true;
@@ -150,30 +151,37 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   @override
   void initState() {
     super.initState();
+
     _selectedOption = SignUpOptions.individual;
-    /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
-      setState(() {
-        isNewUser = true;
-      });
-    }*/
+
+    // Call APIs as soon as possible with a single Provider instance
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+
+      // Run both API calls in parallel to reduce total time
+      Future.wait([
+        authNotifier.fetchIndividualRoles(),
+        authNotifier.fetchCompanies(""),
+      ]);
+    });
+
     _updateHintText();
   }
 
   // @override
   // void initState() {
   //   super.initState();
+  //
   //   _selectedOption = SignUpOptions.individual;
-  //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-  //   authNotifier.companyOptionsNotifier.addListener(() {
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (mounted) setState(() {}); // Force rebuild when data changes
-  //     });
+  //
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+  //     authNotifier.fetchCompanies("");
   //   });
-  //   /* if(widget.userCredential!=null&&widget.userCredential?.user!=null && widget.userCredential!.additionalUserInfo!=null && widget.userCredential!.additionalUserInfo!.isNewUser) {
-  //     setState(() {
-  //       isNewUser = true;
-  //     });
-  //   }*/
+  //   Future.microtask(() {
+  //     Provider.of<AuthNotifier>(context, listen: false).fetchIndividualRoles();
+  //   });
+  //
   //   _updateHintText();
   // }
 
@@ -197,7 +205,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     adminConfirmPasswordController.dispose();
     recaptchaV2Controller.dispose();
     Provider.of<AuthNotifier>(context, listen: false).isNewUser = false;
-    Provider.of<AuthNotifier>(context, listen: false).signOut();
+    // Provider.of<AuthNotifier>(context, listen: false).signOut();
     super.dispose();
   }
 
@@ -763,7 +771,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Social Media Buttons
-        // if (Platform.isAndroid)
+        // if (Platform.isIOS)
         // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
         //   return SocialMediaButton(
         //     onPressed: () async {
@@ -867,7 +875,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
 
-        // if (Platform.isAndroid)
+        // if (Platform.isIOS)
         // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
         //   return authNotifier.isRemindLoading
         //       ? Center(
@@ -1361,366 +1369,521 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.two),
+        // Text(context.read<AuthNotifier>().roles.length.toString()),
         Stack(
           children: [
-            FormField<String>(
-              validator: (value) {
-                if (_selectedRoles.isEmpty) {
-                  return 'Please select at least one role.';
-                }
-                return null;
-              },
-              builder: (FormFieldState<String> fieldState) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      readOnly: true,
-                      controller: TextEditingController(text: ""),
-                      onTap: () {
-                        setState(() => _rolesBottomSheetOpen = true);
-                        showModalBottomSheet(
-                          context: context,
-                          useSafeArea: true,
-                          isScrollControlled: true,
-                          builder: (BuildContext context) {
-                            return RolesBottomSheet(
-                              showCorporateSwitch: true,
-                              options: roles,
-                              selectedRoles: _selectedRoles,
-                              addChip: (role) {
-                                setState(() {
-                                  _selectedRoles.add(role);
-                                  _textEditingController.text = _selectedRoles
-                                      .map((e) => e.name!)
-                                      .join(', ');
-                                  fieldState.didChange(role.name);
-                                });
-                              },
-                              removeChip: (role) {
-                                setState(() {
-                                  _selectedRoles.remove(role);
-                                  _textEditingController.text =
-                                      _selectedRoles.isEmpty
-                                          ? ''
-                                          : _selectedRoles
-                                              .map((e) => e.name!)
-                                              .join(', ');
-                                  fieldState.didChange(_selectedRoles.isEmpty
-                                      ? null
-                                      : role.name);
-                                });
-                              },
-                              removeAllChips: () {
-                                setState(() {
-                                  _selectedRoles.clear();
-                                  _textEditingController.clear();
-                                  fieldState.didChange(null);
-                                });
-                              },
-                              selectedOption:
-                                  _selectedOption ?? SignUpOptions.individual,
-                              onOptionChanged: (SignUpOptions option) {
-                                setState(() {
-                                  _selectedOption = option;
-                                });
-                              },
-                            );
-                          },
-                        );
-                        setState(() => _rolesBottomSheetOpen = false);
+            TextField(
+              readOnly: true,
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  useSafeArea: true,
+                  isScrollControlled: true,
+                  builder: (BuildContext context) {
+                    return RolesBottomSheet(
+                      showCorporateSwitch: false,
+                      // options: roles,
+                      options: context.read<AuthNotifier>().roles,
+                      selectedRoles: _selectedRoles,
+                      addChip: _addChip,
+                      removeChip: _removeChip,
+                      removeAllChips: _removeAllChips,
+                      selectedOption:
+                          _selectedOption ?? SignUpOptions.individual,
+                      onOptionChanged: (SignUpOptions option) {
+                        setState(() {
+                          _selectedOption = option;
+                        });
                       },
-                      decoration: InputDecoration(
-                        label: _selectedRoles.isEmpty && !_rolesBottomSheetOpen
-                            ? RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: LanguageService.getTranslated(
-                                          context,
-                                          "register_non_corporate_role_field_label"),
-                                    ),
-                                    TextSpan(
-                                      text: " *",
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : RichText(
-                                text: TextSpan(
-                                  text: '',
-                                ),
-                              ),
-                        hintText:
-                            _selectedRoles.isEmpty && !_rolesBottomSheetOpen
-                                ? 'Select Roles'
-                                : "",
-                        border: const OutlineInputBorder(),
-                        errorText: fieldState.errorText,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.arrow_drop_down),
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              useSafeArea: true,
-                              isScrollControlled: true,
-                              builder: (BuildContext context) {
-                                return RolesBottomSheet(
-                                  showCorporateSwitch: true,
-                                  options: roles,
-                                  selectedRoles: _selectedRoles,
-                                  addChip: (role) {
-                                    setState(() {
-                                      _selectedRoles.add(role);
-                                      _textEditingController.text =
-                                          _selectedRoles
-                                              .map((e) => e.name!)
-                                              .join(', ');
-                                      fieldState.didChange(role.name);
-                                    });
-                                  },
-                                  removeChip: (role) {
-                                    setState(() {
-                                      _selectedRoles.remove(role);
-                                      _textEditingController.text =
-                                          _selectedRoles.isEmpty
-                                              ? ''
-                                              : _selectedRoles
-                                                  .map((e) => e.name!)
-                                                  .join(', ');
-                                      fieldState.didChange(
-                                          _selectedRoles.isEmpty
-                                              ? null
-                                              : role.name);
-                                    });
-                                  },
-                                  removeAllChips: () {
-                                    setState(() {
-                                      _selectedRoles.clear();
-                                      _textEditingController.clear();
-                                      fieldState.didChange(null);
-                                    });
-                                  },
-                                  selectedOption: _selectedOption ??
-                                      SignUpOptions.individual,
-                                  onOptionChanged:
-                                      (SignUpOptions signUpOptions) {
-                                    setState(() {
-                                      _selectedOption = signUpOptions;
-                                    });
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        prefixIcon: _selectedRoles.isNotEmpty
-                            ? Container(
-                                padding: EdgeInsets.only(right: 28, left: 5),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: _selectedRoles.map((role) {
-                                      return Container(
-                                        margin: EdgeInsets.only(right: 5.0),
-                                        padding: const EdgeInsets.only(
-                                            right: 2.0, left: 2),
-                                        child: Chip(
-                                          label: Text(role.name!),
-                                          deleteIcon: const Icon(Icons.cancel),
-                                          onDeleted: () {
-                                            setState(() {
-                                              _selectedRoles.remove(role);
-                                              _textEditingController.text =
-                                                  _selectedRoles.isEmpty
-                                                      ? ''
-                                                      : _selectedRoles
-                                                          .map((e) => e.name!)
-                                                          .join(', ');
-                                              fieldState.didChange(
-                                                  _selectedRoles.isEmpty
-                                                      ? null
-                                                      : role.name);
-                                            });
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-
-                    // TextField(
-                    //   readOnly: true,
-                    //   onTap: () {
-                    //     showModalBottomSheet(
-                    //       context: context,
-                    //       useSafeArea: true,
-                    //       isScrollControlled: true,
-                    //       builder: (BuildContext context) {
-                    //         return RolesBottomSheet(
-                    //           showCorporateSwitch: true,
-                    //           options: roles,
-                    //           selectedRoles: _selectedRoles,
-                    //           addChip: (role) {
-                    //             setState(() {
-                    //               _selectedRoles.add(role);
-                    //               _textEditingController.text =
-                    //                   _selectedRoles.map((e) => e.name!).join(', ');
-                    //               fieldState.didChange(role.name);
-                    //             });
-                    //           },
-                    //           removeChip: (role) {
-                    //             setState(() {
-                    //               _selectedRoles.remove(role);
-                    //               _textEditingController.text =
-                    //               _selectedRoles.isEmpty
-                    //                   ? ''
-                    //                   : _selectedRoles.map((e) => e.name!).join(', ');
-                    //               fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
-                    //             });
-                    //           },
-                    //           removeAllChips: () {
-                    //             setState(() {
-                    //               _selectedRoles.clear();
-                    //               _textEditingController.clear();
-                    //               fieldState.didChange(null);
-                    //             });
-                    //           },
-                    //           selectedOption: _selectedOption ?? SignUpOptions.individual,
-                    //           onOptionChanged: (SignUpOptions option) {
-                    //             setState(() {
-                    //               _selectedOption = option;
-                    //             });
-                    //           },
-                    //         );
-                    //       },
-                    //     );
-                    //   },
-                    //   controller: _textEditingController,
-                    //   decoration: InputDecoration(
-                    //     label: RichText(
-                    //       text: TextSpan(
-                    //         children: [
-                    //           TextSpan(
-                    //             text: LanguageService.getTranslated(
-                    //                 context, "register_non_corporate_role_field_label"),
-                    //           ),
-                    //           TextSpan(
-                    //             text: " *",
-                    //             style: const TextStyle(
-                    //               color: Colors.red,
-                    //               fontSize: 16,
-                    //               fontWeight: FontWeight.bold,
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //     ),
-                    //     hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
-                    //     border: const OutlineInputBorder(),
-                    //     errorText: fieldState.errorText,
-                    //     suffixIcon: IconButton(
-                    //       icon: const Icon(Icons.arrow_drop_down),
-                    //       onPressed: () {
-                    //         showModalBottomSheet(
-                    //           context: context,
-                    //           useSafeArea: true,
-                    //           isScrollControlled: true,
-                    //           builder: (BuildContext context) {
-                    //             return RolesBottomSheet(
-                    //               showCorporateSwitch: true,
-                    //               options: roles,
-                    //               selectedRoles: _selectedRoles,
-                    //               addChip: (role) {
-                    //                 setState(() {
-                    //                   _selectedRoles.add(role);
-                    //                   _textEditingController.text =
-                    //                       _selectedRoles.map((e) => e.name!).join(', ');
-                    //                   fieldState.didChange(role.name);
-                    //                 });
-                    //               },
-                    //               removeChip: (role) {
-                    //                 setState(() {
-                    //                   _selectedRoles.remove(role);
-                    //                   _textEditingController.text =
-                    //                   _selectedRoles.isEmpty
-                    //                       ? ''
-                    //                       : _selectedRoles.map((e) => e.name!).join(', ');
-                    //                   fieldState.didChange(
-                    //                       _selectedRoles.isEmpty ? null : role.name);
-                    //                 });
-                    //               },
-                    //               removeAllChips: () {
-                    //                 setState(() {
-                    //                   _selectedRoles.clear();
-                    //                   _textEditingController.clear();
-                    //                   fieldState.didChange(null);
-                    //                 });
-                    //               },
-                    //               selectedOption: _selectedOption ?? SignUpOptions.individual,
-                    //               onOptionChanged: (SignUpOptions signUpOptions) {
-                    //                 setState(() {
-                    //                   _selectedOption = signUpOptions;
-                    //                 });
-                    //               },
-                    //             );
-                    //           },
-                    //         );
-                    //       },
-                    //     ),
-                    //   ),
-                    // ),
-                    // Positioned(
-                    //   top: 12.0,
-                    //   left: 10.0,
-                    //   right: 50.0,
-                    //   child: Container(
-                    //     margin: const EdgeInsets.only(right: 8.0),
-                    //     child: SingleChildScrollView(
-                    //       scrollDirection: Axis.horizontal,
-                    //       child: Row(
-                    //         children: _selectedRoles
-                    //             .map(
-                    //               (value) => Padding(
-                    //             padding: const EdgeInsets.only(right: 8.0),
-                    //             child: Chip(
-                    //               label: Text(value.name!),
-                    //               deleteIcon: const Icon(Icons.cancel),
-                    //               onDeleted: () {
-                    //                 setState(() {
-                    //                   _selectedRoles.remove(value);
-                    //                   _textEditingController.text =
-                    //                   _selectedRoles.isEmpty
-                    //                       ? ''
-                    //                       : _selectedRoles.map((e) => e.name!).join(', ');
-                    //                   fieldState.didChange(
-                    //                       _selectedRoles.isEmpty ? null : value.name);
-                    //                 });
-                    //               },
-                    //             ),
-                    //           ),
-                    //         )
-                    //             .toList(),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                  ],
+                    );
+                  },
                 );
               },
+              controller: _textEditingController,
+              onChanged: (value) {
+                // Handle input changes
+              },
+              decoration: InputDecoration(
+                labelText: LanguageService.getTranslated(
+                    context, "usermanagement_roles_label"),
+                hintText: _selectedRoles.isEmpty
+                    ? LanguageService.getTranslated(
+                        context, "usermanagement_cuser_roles_placeholder")
+                    : "",
+                border: OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.arrow_drop_down),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      builder: (BuildContext context) {
+                        return RolesBottomSheet(
+                          showCorporateSwitch: false,
+                          // options: roles,
+                          options: context.read<AuthNotifier>().roles,
+                          selectedRoles: _selectedRoles,
+                          addChip: _addChip,
+                          removeChip: _removeChip,
+                          removeAllChips: _removeAllChips,
+                          selectedOption:
+                              _selectedOption ?? SignUpOptions.individual,
+                          onOptionChanged: (SignUpOptions signUpOptions) {
+                            setState(() {
+                              _selectedOption = signUpOptions;
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 4.0,
+              left: 10.0,
+              right: 10.0,
+              child: Container(
+                margin: const EdgeInsets.only(right: 32.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _selectedRoles
+                        .map(
+                          (value) => Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Chip(
+                              label: Text(value.name!),
+                              deleteIcon: Icon(Icons.cancel),
+                              onDeleted: () => _removeChip(value),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
+        // Stack(
+        //   children: [
+        //     FormField<String>(
+        //       validator: (value) {
+        //         if (_selectedRoles.isEmpty) {
+        //           return 'Please select at least one role.';
+        //         }
+        //         return null;
+        //       },
+        //       builder: (FormFieldState<String> fieldState) {
+        //         return Column(
+        //           crossAxisAlignment: CrossAxisAlignment.start,
+        //           children: [
+        //             TextField(
+        //               readOnly: true,
+        //               controller: TextEditingController(text: ""),
+        //               onTap: () {
+        //                 setState(() => _rolesBottomSheetOpen = true);
+        //                 showModalBottomSheet(
+        //                   context: context,
+        //                   useSafeArea: true,
+        //                   isScrollControlled: true,
+        //                   builder: (BuildContext context) {
+        //                     return RolesBottomSheet(
+        //                       showCorporateSwitch: true,
+        //                       options: context.read<AuthNotifier>().roles,
+        //
+        //                       // options: roles,
+        //                       selectedRoles: _selectedRoles,
+        //                       addChip: (role) {
+        //                         setState(() {
+        //                           _selectedRoles.add(role);
+        //                           _textEditingController.text = _selectedRoles
+        //                               .map((e) => e.name!)
+        //                               .join(', ');
+        //                           fieldState.didChange(role.name);
+        //                         });
+        //                       },
+        //                       removeChip: (role) {
+        //                         setState(() {
+        //                           _selectedRoles.remove(role);
+        //                           _textEditingController.text =
+        //                               _selectedRoles.isEmpty
+        //                                   ? ''
+        //                                   : _selectedRoles
+        //                                       .map((e) => e.name!)
+        //                                       .join(', ');
+        //                           fieldState.didChange(_selectedRoles.isEmpty
+        //                               ? null
+        //                               : role.name);
+        //                         });
+        //                       },
+        //                       removeAllChips: () {
+        //                         setState(() {
+        //                           _selectedRoles.clear();
+        //                           _textEditingController.clear();
+        //                           fieldState.didChange(null);
+        //                         });
+        //                       },
+        //                       selectedOption:
+        //                           _selectedOption ?? SignUpOptions.individual,
+        //                       onOptionChanged: (SignUpOptions option) {
+        //                         setState(() {
+        //                           _selectedOption = option;
+        //                         });
+        //                       },
+        //                     );
+        //                   },
+        //                 );
+        //                 setState(() => _rolesBottomSheetOpen = false);
+        //               },
+        //               decoration: InputDecoration(
+        //                 label: _selectedRoles.isEmpty && !_rolesBottomSheetOpen
+        //                     ? RichText(
+        //                         text: TextSpan(
+        //                           children: [
+        //                             TextSpan(
+        //                               text: LanguageService.getTranslated(
+        //                                   context,
+        //                                   "register_non_corporate_role_field_label"),
+        //                             ),
+        //                             TextSpan(
+        //                               text: " *",
+        //                               style: const TextStyle(
+        //                                 color: Colors.red,
+        //                                 fontSize: 16,
+        //                                 fontWeight: FontWeight.bold,
+        //                               ),
+        //                             ),
+        //                           ],
+        //                         ),
+        //                       )
+        //                     : RichText(
+        //                         text: TextSpan(
+        //                           text: '',
+        //                         ),
+        //                       ),
+        //                 hintText:
+        //                     _selectedRoles.isEmpty && !_rolesBottomSheetOpen
+        //                         ? 'Select Roles'
+        //                         : "",
+        //                 border: const OutlineInputBorder(),
+        //                 errorText: fieldState.errorText,
+        //                 suffixIcon: IconButton(
+        //                   icon: const Icon(Icons.arrow_drop_down),
+        //                   onPressed: () {
+        //                     showModalBottomSheet(
+        //                       context: context,
+        //                       useSafeArea: true,
+        //                       isScrollControlled: true,
+        //                       builder: (BuildContext context) {
+        //                         final auth = context.read<AuthNotifier>();
+        //
+        //                         return RolesBottomSheet(
+        //                           showCorporateSwitch: true,
+        //                           options: auth.roles,     // ✅ CORRECT
+        //                           selectedRoles: _selectedRoles,
+        //                                 addChip: (role) {
+        //                                   setState(() {
+        //                                     _selectedRoles.add(role);
+        //                                     _textEditingController.text =
+        //                                         _selectedRoles
+        //                                             .map((e) => e.name!)
+        //                                             .join(', ');
+        //                                     fieldState.didChange(role.name);
+        //                                   });
+        //                                 },
+        //                                 removeChip: (role) {
+        //                                   setState(() {
+        //                                     _selectedRoles.remove(role);
+        //                                     _textEditingController.text =
+        //                                         _selectedRoles.isEmpty
+        //                                             ? ''
+        //                                             : _selectedRoles
+        //                                                 .map((e) => e.name!)
+        //                                                 .join(', ');
+        //                                     fieldState.didChange(
+        //                                         _selectedRoles.isEmpty
+        //                                             ? null
+        //                                             : role.name);
+        //                                   });
+        //                                 },
+        //                                 removeAllChips: () {
+        //                                   setState(() {
+        //                                     _selectedRoles.clear();
+        //                                     _textEditingController.clear();
+        //                                     fieldState.didChange(null);
+        //                                   });
+        //                                 },
+        //                           selectedOption: _selectedOption ?? SignUpOptions.individual,
+        //                                 onOptionChanged:
+        //                                     (SignUpOptions signUpOptions) {
+        //                                   setState(() {
+        //                                     _selectedOption = signUpOptions;
+        //                                   });
+        //                                 },
+        //                         );
+        //                       },
+        //                     );
+        //
+        //                     // showModalBottomSheet(
+        //                     //   context: context,
+        //                     //   useSafeArea: true,
+        //                     //   isScrollControlled: true,
+        //                     //   builder: (BuildContext context) {
+        //                     //     return RolesBottomSheet(
+        //                     //       showCorporateSwitch: true,
+        //                     //       options: roles,
+        //                     //       selectedRoles: _selectedRoles,
+        //                     //       addChip: (role) {
+        //                     //         setState(() {
+        //                     //           _selectedRoles.add(role);
+        //                     //           _textEditingController.text =
+        //                     //               _selectedRoles
+        //                     //                   .map((e) => e.name!)
+        //                     //                   .join(', ');
+        //                     //           fieldState.didChange(role.name);
+        //                     //         });
+        //                     //       },
+        //                     //       removeChip: (role) {
+        //                     //         setState(() {
+        //                     //           _selectedRoles.remove(role);
+        //                     //           _textEditingController.text =
+        //                     //               _selectedRoles.isEmpty
+        //                     //                   ? ''
+        //                     //                   : _selectedRoles
+        //                     //                       .map((e) => e.name!)
+        //                     //                       .join(', ');
+        //                     //           fieldState.didChange(
+        //                     //               _selectedRoles.isEmpty
+        //                     //                   ? null
+        //                     //                   : role.name);
+        //                     //         });
+        //                     //       },
+        //                     //       removeAllChips: () {
+        //                     //         setState(() {
+        //                     //           _selectedRoles.clear();
+        //                     //           _textEditingController.clear();
+        //                     //           fieldState.didChange(null);
+        //                     //         });
+        //                     //       },
+        //                     //       selectedOption: _selectedOption ??
+        //                     //           SignUpOptions.individual,
+        //                     //       onOptionChanged:
+        //                     //           (SignUpOptions signUpOptions) {
+        //                     //         setState(() {
+        //                     //           _selectedOption = signUpOptions;
+        //                     //         });
+        //                     //       },
+        //                     //     );
+        //                     //   },
+        //                     // );
+        //                   },
+        //                 ),
+        //                 prefixIcon: _selectedRoles.isNotEmpty
+        //                     ? Container(
+        //                         padding: EdgeInsets.only(right: 28, left: 5),
+        //                         child: SingleChildScrollView(
+        //                           scrollDirection: Axis.horizontal,
+        //                           child: Row(
+        //                             mainAxisSize: MainAxisSize.min,
+        //                             children: _selectedRoles.map((role) {
+        //                               return Container(
+        //                                 margin: EdgeInsets.only(right: 5.0),
+        //                                 padding: const EdgeInsets.only(
+        //                                     right: 2.0, left: 2),
+        //                                 child: Chip(
+        //                                   label: Text(role.name!),
+        //                                   deleteIcon: const Icon(Icons.cancel),
+        //                                   onDeleted: () {
+        //                                     setState(() {
+        //                                       _selectedRoles.remove(role);
+        //                                       _textEditingController.text =
+        //                                           _selectedRoles.isEmpty
+        //                                               ? ''
+        //                                               : _selectedRoles
+        //                                                   .map((e) => e.name!)
+        //                                                   .join(', ');
+        //                                       fieldState.didChange(
+        //                                           _selectedRoles.isEmpty
+        //                                               ? null
+        //                                               : role.name);
+        //                                     });
+        //                                   },
+        //                                 ),
+        //                               );
+        //                             }).toList(),
+        //                           ),
+        //                         ),
+        //                       )
+        //                     : null,
+        //               ),
+        //             ),
+        //
+        //             // TextField(
+        //             //   readOnly: true,
+        //             //   onTap: () {
+        //             //     showModalBottomSheet(
+        //             //       context: context,
+        //             //       useSafeArea: true,
+        //             //       isScrollControlled: true,
+        //             //       builder: (BuildContext context) {
+        //             //         return RolesBottomSheet(
+        //             //           showCorporateSwitch: true,
+        //             //           options: roles,
+        //             //           selectedRoles: _selectedRoles,
+        //             //           addChip: (role) {
+        //             //             setState(() {
+        //             //               _selectedRoles.add(role);
+        //             //               _textEditingController.text =
+        //             //                   _selectedRoles.map((e) => e.name!).join(', ');
+        //             //               fieldState.didChange(role.name);
+        //             //             });
+        //             //           },
+        //             //           removeChip: (role) {
+        //             //             setState(() {
+        //             //               _selectedRoles.remove(role);
+        //             //               _textEditingController.text =
+        //             //               _selectedRoles.isEmpty
+        //             //                   ? ''
+        //             //                   : _selectedRoles.map((e) => e.name!).join(', ');
+        //             //               fieldState.didChange(_selectedRoles.isEmpty ? null : role.name);
+        //             //             });
+        //             //           },
+        //             //           removeAllChips: () {
+        //             //             setState(() {
+        //             //               _selectedRoles.clear();
+        //             //               _textEditingController.clear();
+        //             //               fieldState.didChange(null);
+        //             //             });
+        //             //           },
+        //             //           selectedOption: _selectedOption ?? SignUpOptions.individual,
+        //             //           onOptionChanged: (SignUpOptions option) {
+        //             //             setState(() {
+        //             //               _selectedOption = option;
+        //             //             });
+        //             //           },
+        //             //         );
+        //             //       },
+        //             //     );
+        //             //   },
+        //             //   controller: _textEditingController,
+        //             //   decoration: InputDecoration(
+        //             //     label: RichText(
+        //             //       text: TextSpan(
+        //             //         children: [
+        //             //           TextSpan(
+        //             //             text: LanguageService.getTranslated(
+        //             //                 context, "register_non_corporate_role_field_label"),
+        //             //           ),
+        //             //           TextSpan(
+        //             //             text: " *",
+        //             //             style: const TextStyle(
+        //             //               color: Colors.red,
+        //             //               fontSize: 16,
+        //             //               fontWeight: FontWeight.bold,
+        //             //             ),
+        //             //           ),
+        //             //         ],
+        //             //       ),
+        //             //     ),
+        //             //     hintText: _selectedRoles.isEmpty ? 'Select Roles' : "",
+        //             //     border: const OutlineInputBorder(),
+        //             //     errorText: fieldState.errorText,
+        //             //     suffixIcon: IconButton(
+        //             //       icon: const Icon(Icons.arrow_drop_down),
+        //             //       onPressed: () {
+        //             //         showModalBottomSheet(
+        //             //           context: context,
+        //             //           useSafeArea: true,
+        //             //           isScrollControlled: true,
+        //             //           builder: (BuildContext context) {
+        //             //             return RolesBottomSheet(
+        //             //               showCorporateSwitch: true,
+        //             //               options: roles,
+        //             //               selectedRoles: _selectedRoles,
+        //             //               addChip: (role) {
+        //             //                 setState(() {
+        //             //                   _selectedRoles.add(role);
+        //             //                   _textEditingController.text =
+        //             //                       _selectedRoles.map((e) => e.name!).join(', ');
+        //             //                   fieldState.didChange(role.name);
+        //             //                 });
+        //             //               },
+        //             //               removeChip: (role) {
+        //             //                 setState(() {
+        //             //                   _selectedRoles.remove(role);
+        //             //                   _textEditingController.text =
+        //             //                   _selectedRoles.isEmpty
+        //             //                       ? ''
+        //             //                       : _selectedRoles.map((e) => e.name!).join(', ');
+        //             //                   fieldState.didChange(
+        //             //                       _selectedRoles.isEmpty ? null : role.name);
+        //             //                 });
+        //             //               },
+        //             //               removeAllChips: () {
+        //             //                 setState(() {
+        //             //                   _selectedRoles.clear();
+        //             //                   _textEditingController.clear();
+        //             //                   fieldState.didChange(null);
+        //             //                 });
+        //             //               },
+        //             //               selectedOption: _selectedOption ?? SignUpOptions.individual,
+        //             //               onOptionChanged: (SignUpOptions signUpOptions) {
+        //             //                 setState(() {
+        //             //                   _selectedOption = signUpOptions;
+        //             //                 });
+        //             //               },
+        //             //             );
+        //             //           },
+        //             //         );
+        //             //       },
+        //             //     ),
+        //             //   ),
+        //             // ),
+        //             // Positioned(
+        //             //   top: 12.0,
+        //             //   left: 10.0,
+        //             //   right: 50.0,
+        //             //   child: Container(
+        //             //     margin: const EdgeInsets.only(right: 8.0),
+        //             //     child: SingleChildScrollView(
+        //             //       scrollDirection: Axis.horizontal,
+        //             //       child: Row(
+        //             //         children: _selectedRoles
+        //             //             .map(
+        //             //               (value) => Padding(
+        //             //             padding: const EdgeInsets.only(right: 8.0),
+        //             //             child: Chip(
+        //             //               label: Text(value.name!),
+        //             //               deleteIcon: const Icon(Icons.cancel),
+        //             //               onDeleted: () {
+        //             //                 setState(() {
+        //             //                   _selectedRoles.remove(value);
+        //             //                   _textEditingController.text =
+        //             //                   _selectedRoles.isEmpty
+        //             //                       ? ''
+        //             //                       : _selectedRoles.map((e) => e.name!).join(', ');
+        //             //                   fieldState.didChange(
+        //             //                       _selectedRoles.isEmpty ? null : value.name);
+        //             //                 });
+        //             //               },
+        //             //             ),
+        //             //           ),
+        //             //         )
+        //             //             .toList(),
+        //             //       ),
+        //             //     ),
+        //             //   ),
+        //             // ),
+        //           ],
+        //         );
+        //       },
+        //     ),
+        //   ],
+        // ),
 
         // Stack(
         //   children: [
@@ -1930,6 +2093,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.two),
+        // Text(context.read<AuthNotifier>().roles.length.toString()),
         Stack(
           children: [
             TextField(
@@ -1942,7 +2106,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   builder: (BuildContext context) {
                     return RolesBottomSheet(
                       showCorporateSwitch: false,
-                      options: roles,
+                      // options: roles,
+                      options: context.read<AuthNotifier>().roles,
                       selectedRoles: _selectedRoles,
                       addChip: _addChip,
                       removeChip: _removeChip,
@@ -1980,7 +2145,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       builder: (BuildContext context) {
                         return RolesBottomSheet(
                           showCorporateSwitch: false,
-                          options: roles,
+                          // options: roles,
+                          options: context.read<AuthNotifier>().roles,
                           selectedRoles: _selectedRoles,
                           addChip: _addChip,
                           removeChip: _removeChip,
@@ -2069,206 +2235,224 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.eight),
-        // Company Legal Name
+
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Autocomplete<Companies>(
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      final input = textEditingValue.text.trim().toLowerCase();
-                      if (input.isEmpty) {
-                        return authNotifier.companyOptions;
-                      }
-                      return authNotifier.companyOptions.where(
-                        (company) => company.name.toLowerCase().contains(input),
-                      );
-                    },
-                    displayStringForOption: (Companies option) => option.name,
-                    onSelected: (Companies selection) {
-                      setState(() {
-                        companyDisplayNameController.text =
-                            selection.displayName;
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    final input = textEditingValue.text.trim().toLowerCase();
+                    if (input.isEmpty) {
+                      return authNotifier.companyOptions;
+                    }
+                    return authNotifier.companyOptions.where(
+                      (company) => company.name.toLowerCase().contains(input),
+                    );
+                  },
+                  displayStringForOption: (Companies option) => option.name,
+                  onSelected: (Companies selection) {
+                    setState(() {
+                      companyDisplayNameController.text =
+                          selection.displayName ?? "";
+                      selectedCompanyType1 = selection.companyTypeName;
+                      final types = authNotifier.companyTypeList ?? [];
 
-                        // Map the correct company type by matching selection.companyTypeName
-                        selectedCompanyType =
-                            authNotifier.companyTypeList?.firstWhere(
-                          (t) =>
-                              t.type.toLowerCase() ==
-                              selection.companyTypeName.toLowerCase(),
-                        );
-
-                        // Lock the dropdown after selection
+                      if (types.isEmpty) {
+                        // No available company types — reset selection
+                        selectedCompanyType = null;
                         _enableCompanyTypeDropdown = false;
+                        return;
+                      }
 
-                        debugPrint(
-                            'Matched type: ${selectedCompanyType?.type ?? "none"}');
-                      });
-                    },
-                    fieldViewBuilder: (context, textEditingController,
-                        focusNode, onFieldSubmitted) {
-                      _textEditingController = textEditingController;
-                      return TextFormField(
-                        controller: textEditingController,
-                        focusNode: focusNode,
-                        decoration: InputDecoration(
-                          labelText: "Company Name",
-                          hintText: "Enter company name...",
-                          border: OutlineInputBorder(),
-                          suffixIcon: isLoading
-                              ? Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  ),
-                                )
-                              : Icon(Icons.search),
-                        ),
-                        onChanged: (value) async {
-                          if (value.trim().isEmpty) {
-                            setState(() {
-                              _enableCompanyTypeDropdown = true;
-                              selectedCompanyType = null;
-                              companyDisplayNameController.clear();
-                            });
-                            authNotifier.filteredCompanyOptions = [];
-                          } else {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            await authNotifier.fetchCompanies(value);
-                            authNotifier.filterCompanies(
-                                value); // filter after fetching
-                            setState(() {
-                              isLoading = false;
-                            });
-                          }
+                      final selType = (selection.companyTypeName ?? "")
+                          .trim()
+                          .toLowerCase();
+
+                      // Try exact match on type or name; fallback to a 'contains' match; final fallback = first item
+                      selectedCompanyType = types.firstWhere(
+                        (t) {
+                          final type = (t.type ?? "").trim().toLowerCase();
+                          final name = (t.name ?? "").trim().toLowerCase();
+                          return type == selType || name == selType;
+                        },
+                        orElse: () {
+                          // attempt a contains match (helps with formatting differences)
+                          final containsMatch = types.firstWhere(
+                            (t) {
+                              final type = (t.type ?? "").trim().toLowerCase();
+                              final name = (t.name ?? "").trim().toLowerCase();
+                              return selType.isNotEmpty &&
+                                  (type.contains(selType) ||
+                                      name.contains(selType));
+                            },
+                            orElse: () => types
+                                .first, // guaranteed because types.isEmpty handled above
+                          );
+                          return containsMatch;
                         },
                       );
-                    },
-                    optionsViewBuilder: (context, onSelected, options) {
-                      if (options.isEmpty) {
-                        return SizedBox
-                            .shrink(); // Don't show anything if no options
-                      }
 
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4.0,
-                          child: Container(
-                            color: Colors.white,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            constraints: BoxConstraints(maxHeight: 180),
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final option = options.elementAt(index);
-                                return ListTile(
-                                  title: Text(
-                                    option.name,
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  onTap: () {
-                                    onSelected(option);
-                                  },
-                                );
-                              },
-                            ),
+                      _enableCompanyTypeDropdown = false;
+                    });
+                  },
+                  fieldViewBuilder: (context, textEditingController, focusNode,
+                      onFieldSubmitted) {
+                    _textEditingController = textEditingController;
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        labelText: "Company Name",
+                        hintText: "Enter company name...",
+                        border: OutlineInputBorder(),
+                        suffixIcon: isLoading
+                            ? Padding(
+                                padding: EdgeInsets.all(10),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : Icon(Icons.search),
+                      ),
+                      onChanged: (value) async {
+                        if (value.trim().isEmpty) {
+                          setState(() {
+                            _enableCompanyTypeDropdown = true;
+                            selectedCompanyType = null;
+                            companyDisplayNameController.clear();
+                          });
+                          authNotifier.filteredCompanyOptions = [];
+                        } else {
+                          setState(() {
+                            isLoading = true;
+                          });
+                          await authNotifier.fetchCompanies(value);
+                          authNotifier.filterCompanies(value);
+                          setState(() {
+                            isLoading = false;
+                          });
+                        }
+                      },
+                    );
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    if (options.isEmpty) {
+                      return SizedBox.shrink();
+                    }
+
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4.0,
+                        child: Container(
+                          color: Colors.white,
+                          width: MediaQuery.of(context).size.width * 0.9,
+                          constraints: BoxConstraints(maxHeight: 180),
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final option = options.elementAt(index);
+                              return ListTile(
+                                title: Text(option.name,
+                                    style: TextStyle(color: Colors.black)),
+                                onTap: () {
+                                  onSelected(option);
+                                },
+                              );
+                            },
                           ),
                         ),
-                      );
-                    }),
+                      ),
+                    );
+                  },
+                ),
               ],
             );
           },
         ),
 
         SizedBox(height: CustomSpacing.four),
-        // Text(selectedCompanyType!.type.toString()),
+        // Text(selectedCompanyType1.toString()),
         // Company Type
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
-            return FormField<String>(
-              builder: (FormFieldState<String> state) {
-                return _showCompanyType
-                    ? IgnorePointer(
-                        ignoring: !_enableCompanyTypeDropdown,
-                        child: DropdownButtonFormField<CompanyType>(
-                          value: selectedCompanyType,
-                          onChanged: _enableCompanyTypeDropdown
-                              ? (CompanyType? newValue) {
-                                  setState(() {
-                                    _showRoles = false;
-                                    selectedCompanyRole = null;
-                                    selectedCompanyType = newValue;
-                                  });
-                                  Future.delayed(Duration(milliseconds: 1), () {
-                                    setState(() {
-                                      _showRoles = true;
-                                    });
-                                  });
-                                }
-                              : null,
-                          items: authNotifier.companyTypeList
-                              ?.where((companyType) =>
-                                  companyType.type.toLowerCase() !=
-                                  'individual_account')
-                              .map((CompanyType companyType) {
-                            return DropdownMenuItem<CompanyType>(
-                              value: companyType,
-                              // Changed from companyType.name to companyType.type.toString()
-                              child: Text(companyType.type.toString()),
-                            );
-                          }).toList(),
-                          decoration: InputDecoration(
-                            enabled: _enableCompanyTypeDropdown,
-                            label: RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: LanguageService.getTranslated(context,
-                                        "register_corporate_company_type_field_label"),
-                                  ),
-                                  WidgetSpan(
-                                    child: Text(
-                                      " *",
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    alignment: PlaceholderAlignment.bottom,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            hintText: LanguageService.getTranslated(context,
-                                "register_corporate_company_type_field_placeholder"),
-                            border: const OutlineInputBorder(),
-                            errorText: state.errorText,
-                          ),
-                          validator: (value) {
-                            if (value == null) {
-                              return 'Company Type is required';
+            final hasMatch = selectedCompanyType != null;
+
+            return FormField<CompanyType>(
+              builder: (FormFieldState<CompanyType> state) {
+                // Case 1: MATCH FOUND → show Dropdown
+                if (hasMatch) {
+                  return IgnorePointer(
+                    ignoring: !_enableCompanyTypeDropdown,
+                    child: DropdownButtonFormField<CompanyType>(
+                      value: selectedCompanyType,
+                      onChanged: _enableCompanyTypeDropdown
+                          ? (CompanyType? newValue) {
+                              setState(() {
+                                selectedCompanyRole = null;
+                                selectedCompanyType = newValue;
+                              });
                             }
-                            return null;
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: CircularProgressIndicator(),
-                      );
+                          : null,
+                      items: authNotifier.companyTypeList
+                          ?.where((companyType) =>
+                              companyType.type.toLowerCase() !=
+                              'individual_account')
+                          .map((CompanyType companyType) {
+                        return DropdownMenuItem<CompanyType>(
+                          value: companyType,
+                          child: Text(companyType.type.toString()),
+                        );
+                      }).toList(),
+                      decoration: InputDecoration(
+                        enabled: _enableCompanyTypeDropdown,
+                        labelText: "Company Type",
+                        border: const OutlineInputBorder(),
+                        errorText: state.errorText,
+                      ),
+                      validator: (value) {
+                        if (value == null) {
+                          return "Company Type is required";
+                        }
+                        return null;
+                      },
+                    ),
+                  );
+                }
+
+                // Case 2: NO MATCH → Show text field
+                return TextFormField(
+                  enabled: _enableCompanyTypeDropdown,
+                  decoration: InputDecoration(
+                    labelText: "Company Type",
+                    hintText: "Enter company type manually",
+                    border: OutlineInputBorder(),
+                    errorText: state.errorText,
+                  ),
+                  controller: TextEditingController(
+                    text: (selectedCompanyType1 ?? "").toString(),
+                  ),
+                  onChanged: (val) {
+                    state.didChange(null); // keep validator consistent
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Company Type is required";
+                    }
+                    return null;
+                  },
+                );
               },
             );
           },
         ),
+
         // Consumer<AuthNotifier>(
         //   builder: (context, authNotifier, child) {
         //     return FormField<String>(
@@ -2276,28 +2460,31 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //         return _showCompanyType
         //             ? IgnorePointer(
         //                 ignoring: !_enableCompanyTypeDropdown,
-        //                 child:
-        //                 DropdownButtonFormField<CompanyType>(
-        //                   value: selectedCompanyType, // This must reference the updated state
-        //                   onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
-        //                     setState(() {
-        //                       _showRoles = false;
-        //                       selectedCompanyRole = null;
-        //                       selectedCompanyType = newValue;
-        //                     });
-        //                     Future.delayed(Duration(milliseconds: 1), () {
-        //                       setState(() {
-        //                         _showRoles = true;
-        //                       });
-        //                     });
-        //                   } : null, // disables interaction if editing is locked
+        //                 child: DropdownButtonFormField<CompanyType>(
+        //                   value: selectedCompanyType,
+        //                   onChanged: _enableCompanyTypeDropdown
+        //                       ? (CompanyType? newValue) {
+        //                           setState(() {
+        //                             _showRoles = false;
+        //                             selectedCompanyRole = null;
+        //                             selectedCompanyType = newValue;
+        //                           });
+        //                           Future.delayed(Duration(milliseconds: 1), () {
+        //                             setState(() {
+        //                               _showRoles = true;
+        //                             });
+        //                           });
+        //                         }
+        //                       : null,
         //                   items: authNotifier.companyTypeList
         //                       ?.where((companyType) =>
-        //                   companyType.type.toLowerCase() != 'individual_account')
+        //                           companyType.type.toLowerCase() !=
+        //                           'individual_account')
         //                       .map((CompanyType companyType) {
         //                     return DropdownMenuItem<CompanyType>(
         //                       value: companyType,
-        //                       child: Text(companyType.name),
+        //                       // Changed from companyType.name to companyType.type.toString()
+        //                       child: Text(companyType.type.toString()),
         //                     );
         //                   }).toList(),
         //                   decoration: InputDecoration(
@@ -2335,68 +2522,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //                     return null;
         //                   },
         //                 ),
-        //
-        //
-        //           // DropdownButtonFormField<CompanyType>(
-        //                 //   value: selectedCompanyType,
-        //                 //   onChanged: _enableCompanyTypeDropdown ? (CompanyType? newValue) {
-        //                 //     setState(() {
-        //                 //       _showRoles = false;
-        //                 //       selectedCompanyRole = null;
-        //                 //       selectedCompanyType = newValue;
-        //                 //     });
-        //                 //     Future.delayed(Duration(milliseconds: 1), () {
-        //                 //       setState(() {
-        //                 //         _showRoles = true;
-        //                 //       });
-        //                 //     });
-        //                 //   } : null, // disables interaction if editing is locked
-        //                 //   items: authNotifier.companyTypeList
-        //                 //       ?.where((companyType) =>
-        //                 //   companyType.type.toLowerCase() != 'individual_account')
-        //                 //       .map((CompanyType companyType) {
-        //                 //     return DropdownMenuItem<CompanyType>(
-        //                 //       value: companyType,
-        //                 //       child: Text(companyType.name),
-        //                 //     );
-        //                 //   }).toList(),
-        //                 //   decoration: InputDecoration(
-        //                 //     enabled: _enableCompanyTypeDropdown,
-        //                 //     label: RichText(
-        //                 //       text: TextSpan(
-        //                 //         children: [
-        //                 //           TextSpan(
-        //                 //             text: LanguageService.getTranslated(context,
-        //                 //                 "register_corporate_company_type_field_label"),
-        //                 //           ),
-        //                 //           WidgetSpan(
-        //                 //             child: Text(
-        //                 //               " *",
-        //                 //               style: TextStyle(
-        //                 //                 color: Colors.red,
-        //                 //                 fontSize: 16,
-        //                 //                 fontWeight: FontWeight.bold,
-        //                 //               ),
-        //                 //             ),
-        //                 //             alignment: PlaceholderAlignment.bottom,
-        //                 //           ),
-        //                 //         ],
-        //                 //       ),
-        //                 //     ),
-        //                 //     hintText: LanguageService.getTranslated(context,
-        //                 //         "register_corporate_company_type_field_placeholder"),
-        //                 //     border: const OutlineInputBorder(),
-        //                 //     errorText: state.errorText,
-        //                 //   ),
-        //                 //   validator: (value) {
-        //                 //     if (value == null) {
-        //                 //       return 'Company Type is required';
-        //                 //     }
-        //                 //     return null;
-        //                 //   },
-        //                 // ),
-        //
-        //         )
+        //               )
         //             : Center(
         //                 child: CircularProgressIndicator(),
         //               );
@@ -2472,6 +2598,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ],
         ),
+        Text(selectedCompanyRole.toString()),
         SizedBox(height: CustomSpacing.four),
         !_enableCompanyTypeDropdown
             ? Consumer<AuthNotifier>(

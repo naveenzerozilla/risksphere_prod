@@ -257,36 +257,36 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
             },
           ),
           drawer: CustomDrawer(),
-          floatingActionButton: _selectedScreen == Screens.connectionList ||
-                  _selectedScreen == Screens.corporateConnectionList ||
-                  _selectedScreen == Screens.nonCorporateConnectionList
-              ? Builder(builder: (contextLocal) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FloatingActionButton(
-                        onPressed: () {
-                          // Open bottom sheet of filters
-                          print(
-                              'Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
-                          _showFiltersBottomSheet(contextLocal);
-                        },
-                        child: Icon(Icons.filter_alt_outlined),
-                      ),
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                      FloatingActionButton(
-                        onPressed: () {
-                          _tabController?.animateTo(3);
-                          _selectedScreen = Screens.networkList;
-                        },
-                        child: Icon(Icons.add),
-                      ),
-                    ],
-                  );
-                })
-              : SizedBox(),
+          // floatingActionButton: _selectedScreen == Screens.connectionList ||
+          //         _selectedScreen == Screens.corporateConnectionList ||
+          //         _selectedScreen == Screens.nonCorporateConnectionList
+          //     ? Builder(builder: (contextLocal) {
+          //         return Column(
+          //           mainAxisSize: MainAxisSize.min,
+          //           children: [
+          //             FloatingActionButton(
+          //               onPressed: () {
+          //                 // Open bottom sheet of filters
+          //                 print(
+          //                     'Show Filters Bottom Sheet: $_selectedScreen, $context1, $buildContext, ${_scaffoldKey.currentContext}');
+          //                 _showFiltersBottomSheet(contextLocal);
+          //               },
+          //               child: Icon(Icons.filter_alt_outlined),
+          //             ),
+          //             SizedBox(
+          //               height: CustomSpacing.two,
+          //             ),
+          //             FloatingActionButton(
+          //               onPressed: () {
+          //                 _tabController?.animateTo(3);
+          //                 _selectedScreen = Screens.networkList;
+          //               },
+          //               child: Icon(Icons.add),
+          //             ),
+          //           ],
+          //         );
+          //       })
+          //     : SizedBox(),
           body: PopScope(
             canPop: _selectedScreen == Screens.connectionList ||
                 _selectedScreen == Screens.corporateConnectionList,

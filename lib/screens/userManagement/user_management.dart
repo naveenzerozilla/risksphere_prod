@@ -1265,11 +1265,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           return;
                         }
 
-                        filterRoleList = await Provider.of<CorporateProvider>(
-                                context,
-                                listen: false)
-                            .getRolesWithCompanyId(
-                                context, selectedCorporateId ?? "");
+                        // filterRoleList = await Provider.of<CorporateProvider>(
+                        //         context,
+                        //         listen: false)
+                        //     .getRolesWithCompanyId(
+                        //         context, selectedCorporateId ?? "");
                         setState(() {
                           _selectedScreen = Screens.corporateEmployeeAdd;
                           clearFilters();
@@ -3504,7 +3504,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   LanguageService.getTranslated(context,
                                       'usermanagement_upload_image_txt'),
                                   style: typography.Body1.copyWith(
-                                      color: Colors.white),
+                                      color: Colors.black),
                                   textAlign: TextAlign.center,
                                 ),
                                 SizedBox(
@@ -3556,7 +3556,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_upload_image_btn'),
-                                            style: typography.ButtonLarge,
+                                            style: typography.ButtonLargeBlack,
                                             textAlign: TextAlign.center,
                                           ),
                                         );
@@ -4200,7 +4200,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       'usermanagement_save_act_btn'),
-                                                  style: typography.ButtonLarge,
+                                                  style: typography.ButtonLargeBlack,
                                                 ),
                                               ),
                                       ),
@@ -4372,7 +4372,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 "Upload Image",
                                                 style:
                                                     typography.Body1.copyWith(
-                                                        color: Colors.white),
+                                                        color: Colors.black),
                                                 textAlign: TextAlign.center,
                                               ),
                                               SizedBox(
@@ -4434,7 +4434,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                         child: Text(
                                                           "Upload Image",
                                                           style: typography
-                                                              .ButtonLarge,
+                                                              .ButtonLargeBlack,
                                                           textAlign:
                                                               TextAlign.center,
                                                         ),
@@ -5187,7 +5187,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                                         context,
                                                                         'usermanagement_save_act_btn'),
                                                                     style: typography
-                                                                        .ButtonLarge,
+                                                                        .ButtonLargeBlack,
                                                                   ),
                                                                 ),
                                                     ),
@@ -6318,7 +6318,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_cuser_submit_btn'),
-                                          style: typography.ButtonLarge,
+                                          style: typography.ButtonLargeBlack,
                                         ),
                                       ),
                               );
@@ -6534,7 +6534,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         child: Text(
                                           LanguageService.getTranslated(context,
                                               'usermanagement_cuser_upload_image_btn'),
-                                          style: typography.ButtonLarge,
+                                          style: typography.ButtonLargeBlack,
                                           textAlign: TextAlign.center,
                                         ),
                                       );
@@ -6881,7 +6881,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 LanguageService.getTranslated(
                                                     context,
                                                     'usermanagement_cuser_submit_btn'),
-                                                style: typography.ButtonLarge,
+                                                style: typography.ButtonLargeBlack,
                                               ),
                                             ),
                                     );
@@ -9216,7 +9216,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         Text(
                           LanguageService.getTranslated(
                               context, 'usermanagement_upload_image_txt'),
-                          style: typography.Body1.copyWith(color: Colors.white),
+                          style: typography.Body1.copyWith(color: Colors.black),
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(

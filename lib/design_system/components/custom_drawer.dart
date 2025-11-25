@@ -10,18 +10,15 @@ import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:RiskSphere/design_system/components/theme_switcher.dart';
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
-import 'package:RiskSphere/screens/listings/account_list.dart';
 import 'package:RiskSphere/screens/userManagement/user_management.dart';
 import '../../constants/enums.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
-import '../../providers/sub_account_list_provider.dart';
+import '../../screens/listings/mysov_list.dart';
 import '../../screens/listings/news_feed_screen.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
@@ -49,6 +46,7 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   late final ScrollController _scrollController;
   bool showCorporateManagementTab = true;
+  String selectedSovMenu = "";
   bool showNonCorporateManagementTab = true;
   bool showEmployeeManagementTab = true;
   bool showCorporateList = true;
@@ -60,7 +58,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool isSuperAdmin = false;
   bool isIndivudual = false;
   bool isLoggingOut = false;
-
+  bool sovExpanded = false;
   bool showTotalCorporates = false;
   bool showAllUsers = false;
   bool showConnectionRequests = false;
@@ -262,36 +260,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   Column(
                     children: [
-                      // TextField(
-                      //   controller: searchController,
-                      //   onChanged: (value) {
-                      //     if (value.isNotEmpty && value.length > 2) {
-                      //       debouncer.run(() {
-                      //         Provider.of<MyLocationListProvider>(context,
-                      //                 listen: false)
-                      //             .performGlobalSearch(context, value);
-                      //       });
-                      //     } else {
-                      //       Provider.of<MyLocationListProvider>(context,
-                      //               listen: false)
-                      //           .searchLocationList = [];
-                      //     }
-                      //   },
-                      //   decoration: InputDecoration(
-                      //     prefixIcon: Icon(Icons.search, color: iconColor),
-                      //     hintText: 'Search Locations',
-                      //     hintStyle: typography.Body1,
-                      //     filled: true,
-                      //     fillColor:
-                      //         Theme.of(context).brightness == Brightness.dark
-                      //             ? Colors.grey[800]
-                      //             : Colors.grey[200],
-                      //     border: OutlineInputBorder(
-                      //       borderRadius: BorderRadius.circular(8),
-                      //       borderSide: BorderSide.none,
-                      //     ),
-                      //   ),
-                      // ),
+
                       Consumer<MyLocationListProvider>(
                         builder: (context, provider, child) {
                           return AutocompleteOptionsLocation(
@@ -351,6 +320,57 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         },
                         isSelected: provider.selectedItem == "accounts",
                       ),
+                      buildDrawerCategory(
+                        context: context,
+                        title: "SOV List",
+                        icon: Icons.ballot,
+                        isExpanded: !sovExpanded,
+                        onTap: () {
+                          provider.setSelectedItem("sov_list"); // FIX 🔥
+                          setState(() {
+                            sovExpanded = !sovExpanded;
+                          });
+                        },
+                      ),
+
+                      if (sovExpanded) ...[
+                        buildSubMenuItem(
+                          title: "My SOVs",
+                          isSelected: selectedSovMenu == "My SOVs",
+                          onTap: () {
+                            setState(() => selectedSovMenu = "My SOVs");
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => MySovList(status: "my")));
+                          },
+                        ),
+                        buildSubMenuItem(
+                          title: "Shared SOVs",
+                          isSelected: selectedSovMenu == "Shared SOVs",
+                          onTap: () {
+                            setState(() => selectedSovMenu = "Shared SOVs");
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        MySovList(status: "shared")));
+                          },
+                        ),
+                        buildSubMenuItem(
+                          title: "Received SOVs",
+                          isSelected: selectedSovMenu == "Received SOVs",
+                          onTap: () {
+                            setState(() => selectedSovMenu = "Received SOVs");
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        MySovList(status: "received")));
+                          },
+                        ),
+                      ],
+
                       _buildDrawerItem(
                         context,
                         provider,
@@ -773,7 +793,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   TextButton(
                                     style: TextButton.styleFrom(
                                       backgroundColor: Colors.red,
-                                      // 🔴 Red background
+
                                       foregroundColor: Colors.white,
                                       // ⚪ White text (also sets overlay ripple)
                                       padding: const EdgeInsets.symmetric(
@@ -784,7 +804,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                     ),
                                     onPressed: () async {
                                       try {
-                                        // Optional: Show loader here if using a loading state
+
                                         final GoogleSignIn _googleSignIn =
                                             GoogleSignIn(scopes: ['email']);
 
@@ -851,42 +871,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           ),
                                   ),
 
-                                  // TextButton(
-                                  //   onPressed: () async {
-                                  //     try {
-                                  //       final googleSignIn = GoogleSignIn();
-                                  //
-                                  //       // Sign out from Firebase Auth
-                                  //       await FirebaseAuth.instance.signOut();
-                                  //
-                                  //       // If signed in with Google, sign out and disconnect
-                                  //       if (await googleSignIn.isSignedIn()) {
-                                  //         await googleSignIn.disconnect();
-                                  //         await googleSignIn.signOut();
-                                  //       }
-                                  //
-                                  //       // Reset any state (like drawer)
-                                  //       Provider.of<DrawerSelectionProvider>(context, listen: false)
-                                  //           .setSelectedItem("dashboard");
-                                  //
-                                  //       // Navigate to SplashScreen
-                                  //       Navigator.pushAndRemoveUntil(
-                                  //         context,
-                                  //         MaterialPageRoute(builder: (_) => SplashScreen()),
-                                  //             (route) => false,
-                                  //       );
-                                  //     } catch (e) {
-                                  //       print("Logout error: $e");
-                                  //       ScaffoldMessenger.of(context).showSnackBar(
-                                  //         SnackBar(content: Text("Logout failed. Please try again.")),
-                                  //       );
-                                  //     }
-                                  //   },
-                                  //   child: Text(
-                                  //     LanguageService.getTranslated(context, "drawer_menu_logout"),
-                                  //     style: typography.Body1.copyWith(color: iconColor),
-                                  //   ),
-                                  // ),
                                 ],
                               );
                             },
@@ -896,103 +880,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     },
                   ),
 
-                  // Consumer<AuthNotifier>(
-                  //   builder: (context, authNotifier, child) {
-                  //     return IconButton(
-                  //       icon: Icon(Icons.logout_rounded, color: iconColor),
-                  //       onPressed: () {
-                  //         showDialog(
-                  //           context: context,
-                  //           builder: (context) {
-                  //             return AlertDialog(
-                  //               title: Text(
-                  //                   LanguageService.getTranslated(
-                  //                       context, "drawer_menu_logout"),
-                  //                   style: typography.Body1.copyWith(
-                  //                       color: iconColor)),
-                  //               content: Text(
-                  //                   LanguageService.getTranslated(context,
-                  //                       "drawer_menu_logout_confirmation"),
-                  //                   style: typography.Body1.copyWith(
-                  //                       color: iconColor)),
-                  //               actions: <Widget>[
-                  //                 TextButton(
-                  //                   onPressed: () {
-                  //                     Navigator.pop(context);
-                  //                   },
-                  //                   child: Text(
-                  //                       LanguageService.getTranslated(
-                  //                           context, "drawer_menu_cancel"),
-                  //                       style: typography.Body1.copyWith(
-                  //                           color: iconColor)),
-                  //                 ),
-                  //
-                  //                 TextButton(
-                  //                   onPressed: () async {
-                  //                     try {
-                  //                       final googleSignIn = GoogleSignIn();
-                  //
-                  //                       // Sign out from Firebase Auth
-                  //                       await FirebaseAuth.instance.signOut();
-                  //
-                  //                       // Revoke Google access and sign out
-                  //                       if (await googleSignIn.isSignedIn()) {
-                  //                         await googleSignIn.disconnect(); // Revokes access so next sign-in prompts account chooser
-                  //                         await googleSignIn.signOut();
-                  //                       }
-                  //
-                  //                       // Reset drawer state
-                  //                       Provider.of<DrawerSelectionProvider>(context, listen: false)
-                  //                           .setSelectedItem("dashboard");
-                  //
-                  //                       // Navigate to SplashScreen
-                  //                       Navigator.pushAndRemoveUntil(
-                  //                         context,
-                  //                         MaterialPageRoute(builder: (_) => SplashScreen()),
-                  //                             (route) => false,
-                  //                       );
-                  //                     } catch (e) {
-                  //                       print("Logout error: $e");
-                  //                       ScaffoldMessenger.of(context).showSnackBar(
-                  //                         SnackBar(content: Text("Logout failed. Please try again.")),
-                  //                       );
-                  //                     }
-                  //                   },
-                  //                   child: Text(
-                  //                     LanguageService.getTranslated(context, "drawer_menu_logout"),
-                  //                     style: typography.Body1.copyWith(color: iconColor),
-                  //                   ),
-                  //                 ),
-                  //
-                  //                 // TextButton(
-                  //                 //   onPressed: () async {
-                  //                 //     await authNotifier.signOut();
-                  //                 //
-                  //                 //
-                  //                 //     Provider.of<DrawerSelectionProvider>(
-                  //                 //             context,
-                  //                 //             listen: false)
-                  //                 //         .setSelectedItem("dashboard");
-                  //                 //     Navigator.pushAndRemoveUntil(
-                  //                 //         context,
-                  //                 //         MaterialPageRoute(
-                  //                 //             builder: (_) => SplashScreen()),
-                  //                 //         (route) => false);
-                  //                 //   },
-                  //                 //   child: Text(
-                  //                 //       LanguageService.getTranslated(
-                  //                 //           context, "drawer_menu_logout"),
-                  //                 //       style: typography.Body1.copyWith(
-                  //                 //           color: iconColor)),
-                  //                 // ),
-                  //               ],
-                  //             );
-                  //           },
-                  //         );
-                  //       },
-                  //     );
-                  //   },
-                  // ),
                   if (showCorporateManagementTab ||
                       showNonCorporateManagementTab ||
                       showEmployeeManagementTab)
@@ -1038,83 +925,45 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                       )
                                     : Container();
 
-                            //   bool.parse((!userProfileProvider.userData.isIndividual! ?? true).toString()) ?
-                            //   Container(
-                            //   decoration: BoxDecoration(
-                            //     borderRadius: BorderRadius.circular(66),
-                            //     color:
-                            //         provider.selectedItem == "user_management"
-                            //             ? AppColors.primaryMain.withOpacity(0.4)
-                            //             : Colors.transparent,
-                            //   ),
-                            //   child:
-                            //
-                            //   IconButton(
-                            //     icon:
-                            //     Icon(
-                            //       Icons.person,
-                            //       color:
-                            //           provider.selectedItem == "user_management"
-                            //               ? AppColors.primaryMain
-                            //               : iconColor,
-                            //     ),
-                            //     onPressed: () {
-                            //       provider.setSelectedItem("user_management");
-                            //       Navigator.of(context).push(
-                            //         MaterialPageRoute(
-                            //             builder: (_) => UserManagementScreen()),
-                            //       );
-                            //     },
-                            //   ),
-                            // ):Container();
                           },
                         );
                       },
                     )
-                  //               if (showCorporateManagementTab || showNonCorporateManagementTab || showEmployeeManagementTab)
-                  //                 Consumer<DrawerSelectionProvider>(
-                  //                   builder: (context, provider, child) {
-                  //                     return
-                  //
-                  //                       Consumer<UserProfileProvider>(
-                  //                         builder: (context, userProfileProvider, child) {
-                  //                           builder:
-                  //                               (context) {
-                  //                             return Container(
-                  //
-                  //                               decoration: BoxDecoration(
-                  //                                 borderRadius: BorderRadius.circular(66),
-                  //                                 color: provider.selectedItem ==
-                  //                                     "user_management"
-                  //                                     ? AppColors.primaryMain.withOpacity(0.4)
-                  //                                     : Colors.transparent,
-                  //
-                  //                               ),
-                  //                               child: IconButton(
-                  //                                 icon: Icon(Icons.person,
-                  //                                     color: provider.selectedItem ==
-                  //                                         "user_management"
-                  //                                         ? AppColors.primaryMain
-                  //                                         : iconColor),
-                  //                                 onPressed: () {
-                  //                                   provider.setSelectedItem(
-                  //                                       "user_management");
-                  //                                   Navigator.of(context).push(
-                  //                                       MaterialPageRoute(builder: (_) =>
-                  //                                           UserManagementScreen()));
-                  //                                 },
-                  //                               ),
-                  //                             );
-                  //                           };
-                  //                         }
-                  //                         );
-                  //                         },
-                  // ),
+
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildSubMenuItem({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected
+            ? AppColors.primaryMain.withOpacity(0.1) // SAME AS DASHBOARD
+            : Colors.transparent,
+      ),
+      margin: EdgeInsets.only(left: 48, right: 12, top: 1, bottom: 1),
+      child: ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            color: isSelected ? AppColors.primaryMain : Colors.white70,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: onTap,
       ),
     );
   }
@@ -1144,6 +993,54 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
         ),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget buildDrawerCategory({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required bool isExpanded,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                // color: const Color(0xFF223748),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon,
+                  size: 22,
+                  color: !isExpanded ? AppColors.primaryMain : AppColors.red50),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: !isExpanded ? AppColors.primaryMain : Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(
+              !isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: !isExpanded ? AppColors.primaryMain : null,
+            ),
+          ],
+        ),
       ),
     );
   }

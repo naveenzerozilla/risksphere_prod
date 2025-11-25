@@ -41,6 +41,9 @@ class SubaccountParameterProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      print("selectedParameterList");
+      print(selectedParameterList);
+      print(fetchSubaccountParameters);
       ApiService apiService =
           ApiService(selectedParameterList!.toLowerCase() == 'location'
               ? AppConstant.GET_LOCATION_PARAMETERS
@@ -92,14 +95,14 @@ class SubaccountParameterProvider with ChangeNotifier {
       final result = response['result'] as List<dynamic>;
       _hazardList = result.map((json) => Hazard.fromJson(json)).toList();
     } on BackendException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.message,
-            style: typography.Body1,
-          ),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(
+      //       e.message,
+      //       style: typography.Body1,
+      //     ),
+      //   ),
+      // );
     } catch (e, stackTrace) {
       debugPrint(stackTrace.toString());
     } finally {

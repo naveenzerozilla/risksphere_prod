@@ -20,7 +20,6 @@ import 'package:lottie/lottie.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
-
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
@@ -32,9 +31,8 @@ import '../../providers/theme_provider.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../../providers/upload_sov_provider.dart';
 import '../../service/language_service.dart';
-import '../../service/shared_preference_service.dart';
 import '../processMonitoringScreen/process_monitoring_system.dart';
-import 'widgets/maintenance_widget.dart';
+import 'missing_parameter.dart';
 
 class SovLocationList extends StatefulWidget {
   final String? accountID;
@@ -64,10 +62,12 @@ class SovLocationList extends StatefulWidget {
 
 class _SovLocationListState extends State<SovLocationList>
     with TickerProviderStateMixin {
+  ScrollController? _scrollController;
   bool _isExpanded = false;
+  String? userRoleName;
   bool _showNotificationDot = true;
   TabController? _tabController;
-  Screens _selectedScreen = Screens.connectionList;
+  Screens _selectedScreen = Screens.sovList;
   TextEditingController _locationSearchController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
 
@@ -78,7 +78,7 @@ class _SovLocationListState extends State<SovLocationList>
   int requestActionIndex = 0;
   String selectedMetric = 'PD Value';
   String selectedMetric_pie = 'PD Value';
-  String selectedView = "Overall Score";
+  String selectedView = "Geocoding";
   String selectedView1 = "Geocoding";
 
   PieColorData getPieColorsByPercent(dynamic pct) {
@@ -175,7 +175,7 @@ class _SovLocationListState extends State<SovLocationList>
         query,
         0,
         "forward",
-        40,
+        11,
         countries: [],
         // Add your filter parameters here
         state: "",
@@ -191,6 +191,8 @@ class _SovLocationListState extends State<SovLocationList>
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController!.addListener(_scrollListener);
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
       setState(() {
@@ -203,7 +205,7 @@ class _SovLocationListState extends State<SovLocationList>
         selectedTab = _tabController?.index ?? 0;
       });
       if (_tabController?.index == 0) {
-        _selectedScreen = Screens.locationList;
+        _selectedScreen = Screens.sovList;
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
         locationListProvider.page = 1;
@@ -239,58 +241,86 @@ class _SovLocationListState extends State<SovLocationList>
               widget.sovID,
             )
             .then((value) => setState(() {}));
-        /*Provider.of<LocationListProvider>(context, listen: false).page = 0;
-        Provider.of<LocationListProvider>(context, listen: false).fetchCertifiedLocationList(
-          context,
-          "widget.accountId",
-          "widget.subAccountId",
-          "widget.sovId",
-          locationQuery,
-          0,
-          40,
-        );*/
       }
       setState(() {});
     });
     _getData();
   }
 
-  // _getMaintainancePeriod() async {
-  //   isMaintenance =
-  //       await SharedPreferenceService.getScheduleInProgress() ?? false;
-  // }
+  void _scrollListener() {
+    final provider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
 
-  _getData() async {
-    print("Fetching location list for SOV ID: ${widget.sovID}");
-    // Fetch data from API
-    Provider.of<MyLocationListProvider>(context, listen: false)
-        .fetchLocationList(
+    if (_scrollController!.position.pixels >=
+        _scrollController!.position.maxScrollExtent - 300) {
+      // Handle pagination for regular location list (All tab)
+      if (_tabController?.index == 0 &&
+          !provider.isNextPageLoading &&
+          provider.page < provider.totalPages) {
+        provider.fetchLocationList(
           context,
-          "",
-          1,
-          40,
+          locationQuery,
+          provider.page + 1,
+          11,
           widget.accountID,
           widget.subAccountID,
           widget.initialProcessId,
           widget.initialSubProcessId,
           widget.sovID,
-        )
-        .then((value) => setState(() {}));
-    Provider.of<MyLocationListProvider>(context, listen: false)
-        .fetchCertifiedLocationList(
+        );
+      }
+      // Handle pagination for certified location list (Certified tab)
+      else if (_tabController?.index == 1 &&
+          !provider.isNextPageCertifiedLoading &&
+          provider.certifiedPage < provider.certifiedTotalPages) {
+        provider.fetchCertifiedLocationList(
           context,
-          "",
-          1,
-          40,
+          locationQuery,
+          provider.certifiedPage + 1,
+          11,
           widget.accountID,
           widget.subAccountID,
           widget.initialProcessId,
           widget.initialSubProcessId,
           widget.sovID,
-        )
-        .then((value) => setState(() {}));
-    //Provider.of<LocationListProvider>(context, listen: false).fetchCampusIds("widget.accountId", "widget.subAccountId", "widget.sovId");
-    // _getMaintainancePeriod();
+        );
+      }
+    }
+  }
+
+  Future<void> _getData() async {
+    final locationProvider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+
+    await Future.wait([
+      locationProvider.fetchUserManagement(),
+      locationProvider.fetchLocationList(
+        context,
+        "",
+        1,
+        11,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+        widget.sovID,
+      ),
+      locationProvider.fetchCertifiedLocationList(
+        context,
+        "",
+        1,
+        11,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+        widget.sovID,
+      ),
+    ]);
+
+    userRoleName = locationProvider.userManagement?.user.roles.first.name;
+
+    if (mounted) setState(() {});
   }
 
   void searchNetworks(String query) async => debounce(() async {
@@ -341,9 +371,11 @@ class _SovLocationListState extends State<SovLocationList>
                       SizedBox(height: CustomSpacing.two),
                       Container(
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
+                        padding: isSelectionMode
+                            ? const EdgeInsets.fromLTRB(8, 10, 0, 10)
+                            : const EdgeInsets.fromLTRB(8, 2, 0, 0),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: Theme.of(context)
                                 .colorScheme
@@ -351,13 +383,13 @@ class _SovLocationListState extends State<SovLocationList>
                             // Set your border color here
                             width: 1.0, // Set the width of the border
                           ),
-                          //color: Theme.of(context).colorScheme.surfaceContainerHigh,
                         ),
                         child: Consumer<MyLocationListProvider>(
                             builder: (context, locationListProvider, child) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              // Text(userRoleName.toString()),
                               if (isSelectionMode) ...[
                                 // Show selection count and select all button
                                 SizedBox(width: CustomSpacing.two),
@@ -377,11 +409,12 @@ class _SovLocationListState extends State<SovLocationList>
                                     ),
                                   ),
                                 ),
-                                SizedBox(width: 2),
-                                TextButton(
-                                  onPressed: () {
-                                    if (_selectedScreen ==
-                                        Screens.locationList) {
+                                SizedBox(width: 8),
+
+                                InkWell(
+                                  onTap: () {
+                                    if (_selectedScreen == Screens.sovList) {
+                                      print("Locationlist");
                                       if (locationListProvider
                                               .selectedLocations.length <
                                           locationListProvider
@@ -393,6 +426,7 @@ class _SovLocationListState extends State<SovLocationList>
                                       }
                                     } else if (_selectedScreen ==
                                         Screens.certifiedLocationList) {
+                                      print("certifiedLocationlist");
                                       if (locationListProvider
                                               .selectedLocations.length <
                                           locationListProvider
@@ -404,33 +438,8 @@ class _SovLocationListState extends State<SovLocationList>
                                       }
                                     }
                                   },
-                                  // onPressed: () {
-                                  //   if (_selectedScreen ==
-                                  //       Screens.locationList) {
-                                  //     if (locationListProvider
-                                  //             .selectedLocations.length <
-                                  //         locationListProvider
-                                  //             .myLocationList.length) {
-                                  //       locationListProvider
-                                  //           .selectAllLocations(false);
-                                  //     } else {
-                                  //       locationListProvider.clearSelection();
-                                  //     }
-                                  //   } else if (_selectedScreen ==
-                                  //       Screens.certifiedLocationList) {
-                                  //     if (locationListProvider
-                                  //             .selectedLocations.length <
-                                  //         locationListProvider
-                                  //             .certifiedLocationList.length) {
-                                  //       locationListProvider
-                                  //           .selectAllLocations(true);
-                                  //     } else {
-                                  //       locationListProvider.clearSelection();
-                                  //     }
-                                  //   }
-                                  // },
                                   child: Text(
-                                    _selectedScreen == Screens.locationList
+                                    _selectedScreen == Screens.sovList
                                         ? locationListProvider
                                                     .selectedLocations.length <
                                                 locationListProvider
@@ -445,15 +454,26 @@ class _SovLocationListState extends State<SovLocationList>
                                             ? 'Select All'
                                             : 'Deselect All',
                                     style: typography.Body1.copyWith(
+                                      fontSize: 16,
                                       color: AppColors.primaryMain,
                                     ),
                                   ),
                                 ),
                                 Spacer(),
-                                // Action buttons for selected items
-                                // export
-                                IconButton(
-                                  onPressed: () {
+                                SizedBox(width: 10),
+                                //next release
+                                // InkWell(
+                                //     onTap: () {
+                                //       Navigator.push(
+                                //           context,
+                                //           MaterialPageRoute(
+                                //               builder: (context) =>
+                                //                   MissingParameterScreen()));
+                                //     },
+                                //     child: Icon(Icons.edit_outlined)),
+                                // SizedBox(width: 10),
+                                InkWell(
+                                  onTap: () {
                                     // Implement bulk export
                                     showDialog(
                                       context: context,
@@ -563,22 +583,24 @@ class _SovLocationListState extends State<SovLocationList>
                                       ),
                                     );
                                   },
-                                  icon: Icon(Icons.download),
-                                  tooltip: 'Export Selected',
+                                  child: Icon(Icons.download),
+                                  // tooltip: 'Export Selected',
                                 ),
-                                IconButton(
-                                    onPressed: () {
-                                      // Implement bulk add to SOV
-                                      locationListProvider
-                                          .addTagsToSelectedLocations(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!);
-                                    },
-                                    icon: Icon(Symbols.note_stack_add),
-                                    tooltip: 'Add Tag'),
-                                IconButton(
-                                  onPressed: () async {
+                                SizedBox(width: 10),
+                                InkWell(
+                                  onTap: () {
+                                    // Implement bulk add to SOV
+                                    locationListProvider
+                                        .addTagsToSelectedLocations(
+                                            context,
+                                            widget.accountID!,
+                                            widget.subAccountID!);
+                                  },
+                                  child: Icon(Symbols.note_stack_add),
+                                ),
+                                SizedBox(width: 10),
+                                InkWell(
+                                  onTap: () async {
                                     setState(() {
                                       // Show loader
                                       locationListProvider.isLoading = true;
@@ -599,7 +621,7 @@ class _SovLocationListState extends State<SovLocationList>
                                       context,
                                       locationQuery,
                                       1,
-                                      40,
+                                      11,
                                       widget.accountID,
                                       widget.subAccountID,
                                       widget.initialProcessId,
@@ -607,15 +629,16 @@ class _SovLocationListState extends State<SovLocationList>
                                       widget.sovID,
                                     );
                                   },
-                                  icon: locationListProvider.isLoading
+                                  child: locationListProvider.isLoading
                                       ? CircularProgressIndicator()
                                       : Icon(Symbols.done_all_rounded,
                                           color: Colors.green),
-                                  tooltip: 'Mark as Complete',
+                                  // tooltip: 'Mark as Complete',
                                 ),
+                                SizedBox(width: 10),
 
-                                IconButton(
-                                  onPressed: () {
+                                InkWell(
+                                  onTap: () {
                                     // Show delete confirmation dialog
                                     showDialog(
                                       context: context,
@@ -646,9 +669,10 @@ class _SovLocationListState extends State<SovLocationList>
                                       ),
                                     );
                                   },
-                                  icon: Icon(Icons.delete_outline),
-                                  tooltip: 'Delete Selected',
+                                  child: Icon(Icons.delete_outline),
+                                  // tooltip: 'Delete Selected',
                                 ),
+                                SizedBox(width: 10),
                               ] else ...[
                                 SizedBox(
                                   width: 8,
@@ -658,7 +682,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     children: [
                                       //SizedBox(width: CustomSpacing.two),
                                       Text(
-                                        "Locations",
+                                        "SOV Locations",
                                         style: typography.Body1,
                                       ),
                                       /*
@@ -689,49 +713,6 @@ class _SovLocationListState extends State<SovLocationList>
                                             )
                                           : SizedBox(),
                                       SizedBox(width: CustomSpacing.two),
-                                      // TooltipTheme(
-                                      //   data: TooltipThemeData(
-                                      //     decoration: BoxDecoration(
-                                      //       color: Theme.of(context)
-                                      //           .colorScheme
-                                      //           .surface,
-                                      //       borderRadius:
-                                      //           BorderRadius.circular(8),
-                                      //     ),
-                                      //     textStyle: TextStyle(
-                                      //       color: Theme.of(context)
-                                      //           .colorScheme
-                                      //           .onSurface,
-                                      //       fontSize: 14,
-                                      //     ),
-                                      //     padding: EdgeInsets.all(8),
-                                      //     verticalOffset: 20,
-                                      //     preferBelow: false,
-                                      //   ),
-                                      //   child: Tooltip(
-                                      //     showDuration: Duration(seconds: 5),
-                                      //     triggerMode: TooltipTriggerMode.tap,
-                                      //     preferBelow: true,
-                                      //     richMessage: TextSpan(
-                                      //       children: [
-                                      //         for (int i = 0;
-                                      //             i <
-                                      //                 locationListProvider
-                                      //                     .summaryList.length;
-                                      //             i++)
-                                      //           TextSpan(
-                                      //             text:
-                                      //                 '• ${locationListProvider.summaryList[i]}\n',
-                                      //             style: typography.Subtitle1,
-                                      //           ),
-                                      //       ],
-                                      //       style: typography.Subtitle1,
-                                      //     ),
-                                      //     child: Icon(
-                                      //       Icons.info,
-                                      //     ),
-                                      //   ),
-                                      // ),
                                     ],
                                   ),
                                 ),
@@ -778,7 +759,6 @@ class _SovLocationListState extends State<SovLocationList>
                         }),
                       ),
                       SizedBox(height: CustomSpacing.two),
-
                       showSelectAll
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -809,46 +789,7 @@ class _SovLocationListState extends State<SovLocationList>
                                 ),
                               ],
                             )
-                          : /*Row(
-                                children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 50,
-                                      child: TextField(
-                                        controller: _locationSearchController,
-                                        onChanged: locationSearchClient,
-                                        decoration: InputDecoration(
-                                          hintText: LanguageService.getTranslated(
-                                              context, 'locationlist_search_field_hint_text'),
-                                          label: Text(
-                                              LanguageService.getTranslated(
-                                                  context, 'usermanagement_search_field_lable'),
-                                              style: typography.Body1),
-                                          hintStyle: typography.Body1,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: CustomSpacing.four),
-                                  Builder(builder: (context) {
-                                    return InkWell(
-                                      onTap: () {
-                                        // Show end drawer
-                                        Scaffold.of(context).openEndDrawer();
-                                      },
-                                      child: Icon(
-                                        Icons.filter_list,
-                                        size: 28,
-                                      ),
-                                    );
-                                  }),
-                                  SizedBox(width: CustomSpacing.four),
-                                ],
-                              )*/
-                          SizedBox(),
+                          : SizedBox(),
                       Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context)
@@ -903,7 +844,7 @@ class _SovLocationListState extends State<SovLocationList>
                                         icon: _buildTabIcon(
                                             context,
                                             'assets/images/overall_tab_icon.svg',
-                                            'Overall Score',
+                                            'Hazard Score',
                                             1,
                                             30),
                                       ),
@@ -1026,9 +967,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                         : locationListProvider
                                                             .certifiedLocationHits
                                                             .toString(),
-                                                    // locationListProvider
-                                                    //     .certifiedLocationHits
-                                                    //     .toString(),
                                                     style: typography
                                                             .BottomNavigationActiveLabel
                                                         .copyWith(height: -0.6),
@@ -1042,13 +980,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     );
                                   },
                                 ),
-                                SizedBox(height: CustomSpacing.four),
-                                // SingleChildScrollView(
-                                //   scrollDirection: Axis.horizontal,
-                                //   child:
-
-                                // ),
-                                SizedBox(height: CustomSpacing.four),
+                                SizedBox(height: CustomSpacing.two),
                                 Expanded(
                                   child: TabBarView(
                                     controller: _tabController,
@@ -1265,7 +1197,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -1290,7 +1222,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -1353,7 +1285,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                   context,
                                                   locationQuery,
                                                   1,
-                                                  40,
+                                                  11,
                                                   widget.accountID,
                                                   widget.subAccountID,
                                                   widget.initialProcessId,
@@ -1377,7 +1309,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -1402,7 +1334,7 @@ class _SovLocationListState extends State<SovLocationList>
                                   context,
                                   locationQuery,
                                   1,
-                                  40,
+                                  11,
                                   widget.accountID,
                                   widget.subAccountID,
                                   widget.initialProcessId,
@@ -1429,7 +1361,7 @@ class _SovLocationListState extends State<SovLocationList>
                             context,
                             locationQuery,
                             1,
-                            40,
+                            11,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -1438,6 +1370,7 @@ class _SovLocationListState extends State<SovLocationList>
                           );
                         },
                         child: CustomScrollView(
+                          controller: _scrollController,
                           slivers: [
                             // Charts section
                             SliverToBoxAdapter(
@@ -1454,70 +1387,80 @@ class _SovLocationListState extends State<SovLocationList>
                                           final pdValues = provider
                                               .grapDataProfile?.pdValues;
 
-                                          if (pdValues == null) {
-                                            return const Center(
-                                              child: Text(
-                                                "No data available",
-                                                style: TextStyle(
-                                                    color: Colors.white70),
-                                              ),
-                                            );
+                                          // 🔥 Correct mapping for all 3 tabs
+                                          Map<String, dynamic> sourceData = {};
+
+                                          if (pdValues != null) {
+                                            if (selectedView == "Hazard") {
+                                              sourceData =
+                                                  pdValues.byOverallScore ?? {};
+                                            } else if (selectedView ==
+                                                "Geocoding") {
+                                              sourceData =
+                                                  pdValues.byGeocodeScore ?? {};
+                                            } else if (selectedView ==
+                                                "Completeness") {
+                                              sourceData = pdValues
+                                                      .byDataCompletenessScore ??
+                                                  {}; // ✅ ADDED
+                                            }
                                           }
 
-                                          // ✅ Choose dataset based on dropdown selection
-                                          final sourceData = selectedView ==
-                                                  "Overall Score"
-                                              ? pdValues.byOverallScore ?? {}
-                                              : pdValues.byGeocodeScore ?? {};
-
-                                          if (sourceData.isEmpty) {
-                                            return const Center(
-                                              child: Text(
-                                                "No data available",
-                                                style: TextStyle(
-                                                    color: Colors.white70),
-                                              ),
-                                            );
-                                          }
-
+                                          // 🔥 FIX LABEL + DATA EXTRACTION (Unified for all views)
                                           final chartEntries =
                                               sourceData.entries.map((entry) {
                                             final data = entry.value;
-                                            final label = selectedView ==
-                                                    "By Overall Score"
-                                                ? "Score ${data.overallScore}"
-                                                : "Geocode ${entry.key}";
+
+                                            String label = "";
+                                            if (selectedView == "Hazard") {
+                                              label = "Score ${entry.key}";
+                                            } else if (selectedView ==
+                                                "Geocoding") {
+                                              label = "Geocode ${entry.key}";
+                                            } else {
+                                              label =
+                                                  "Completeness ${entry.key}";
+                                            }
+
                                             return {
                                               'label': label,
                                               'value': data.totalPdValue ?? 0.0,
                                               'pct': data.pctOfTotal ?? 0.0,
+                                              'rawKey': entry.key.toString(),
                                             };
                                           }).toList();
 
+                                          // 🔥 FIX TOTAL CALCULATION
                                           double total = chartEntries.fold(
-                                              0.0,
-                                              (a, e) =>
-                                                  a + (e['value'] as double));
+                                            0.0,
+                                            (sum, item) =>
+                                                sum + (item['value'] as double),
+                                          );
 
+                                          // 🔥 Chart sections
                                           final sections = chartEntries
                                               .asMap()
                                               .entries
                                               .map((entry) {
-                                            final index = entry.key;
+                                            final idx = entry.key;
                                             final value =
                                                 entry.value['value'] as double;
-                                            final percent = total > 0
+                                            final pct = total > 0
                                                 ? (value / total) * 100
                                                 : 0;
                                             final selected =
-                                                index == touchedIndex;
+                                                idx == touchedIndex;
 
                                             return PieChartSectionData(
-                                              color: _getPieColor(percent),
+                                              color: _getPieColorByKey(
+                                                entry.value['rawKey']
+                                                        ?.toString() ??
+                                                    "0",
+                                              ),
                                               value: value,
                                               radius: selected ? 120 : 100,
                                               title:
-                                                  "${percent.toStringAsFixed(1)}%",
+                                                  "${pct.toStringAsFixed(1)}%",
                                               titleStyle: TextStyle(
                                                 fontSize: selected ? 14 : 12,
                                                 fontWeight: FontWeight.bold,
@@ -1537,8 +1480,6 @@ class _SovLocationListState extends State<SovLocationList>
                                             ),
                                             padding: const EdgeInsets.all(16),
                                             child: Column(
-                                              // crossAxisAlignment:
-                                              //     CrossAxisAlignment.center,
                                               children: [
                                                 Row(
                                                   mainAxisAlignment:
@@ -1546,11 +1487,11 @@ class _SovLocationListState extends State<SovLocationList>
                                                           .spaceBetween,
                                                   children: [
                                                     const Text(
-                                                      "Weighted Distribution (TPV)",
+                                                      "Weighted Distribution (PD Value)",
                                                       style: TextStyle(
                                                         color:
                                                             Color(0xFF90CAF9),
-                                                        fontSize: 14,
+                                                        fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
@@ -1644,141 +1585,191 @@ class _SovLocationListState extends State<SovLocationList>
                                                     ),
                                                   ],
                                                 ),
-                                                const SizedBox(height: 8),
+                                                const SizedBox(height: 6),
                                                 Container(
                                                   height: 40,
-                                                  decoration: BoxDecoration(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  child: ToggleButtons(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            10),
-                                                    border: Border.all(
-                                                        color: Colors.white24),
-                                                    color: Colors.black87,
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.start,
-                                                    children: [
-                                                      ToggleButtons(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderColor:
-                                                            Colors.white24,
-                                                        selectedBorderColor:
-                                                            AppColors
-                                                                .primaryMain,
-                                                        fillColor: AppColors
-                                                            .primaryMain
-                                                            .withOpacity(0.16),
-                                                        selectedColor: AppColors
-                                                            .primaryMain,
-                                                        color: Colors.white,
-                                                        constraints:
-                                                            BoxConstraints(
-                                                                minHeight: 36,
-                                                                minWidth: 110),
-                                                        isSelected: [
-                                                          selectedView ==
-                                                              "Overall Score",
-                                                          selectedView ==
-                                                              "Geocoding",
-                                                        ],
-                                                        onPressed: (index) {
-                                                          setState(() {
-                                                            selectedView = index ==
-                                                                    0
-                                                                ? "Overall Score"
-                                                                : "Geocoding";
-                                                          });
-                                                        },
-                                                        children: const [
-                                                          Text("Overall Score"),
-                                                          Text("Geocoding"),
-                                                        ],
-                                                      ),
+                                                            8),
+                                                    borderColor: Colors.white24,
+                                                    selectedBorderColor:
+                                                        AppColors.primaryMain,
+                                                    fillColor: AppColors
+                                                        .primaryMain
+                                                        .withOpacity(0.16),
+                                                    selectedColor:
+                                                        AppColors.primaryMain,
+                                                    color: Colors.white,
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minHeight: 36,
+                                                            minWidth: 110),
+                                                    isSelected: [
+                                                      selectedView ==
+                                                          "Geocoding",
+                                                      selectedView == "Hazard",
+                                                      selectedView ==
+                                                          "Completeness",
+                                                    ],
+                                                    onPressed: (index) {
+                                                      setState(() {
+                                                        if (index == 0)
+                                                          selectedView =
+                                                              "Geocoding";
+                                                        if (index == 1)
+                                                          selectedView =
+                                                              "Hazard";
+
+                                                        if (index == 2)
+                                                          selectedView =
+                                                              "Completeness";
+                                                      });
+                                                    },
+                                                    children: const [
+                                                      Text("Geocode"),
+                                                      Text("Hazard"),
+                                                      Text("Completeness"),
                                                     ],
                                                   ),
                                                 ),
                                                 const SizedBox(height: 25),
-
-                                                // ===== Pie Chart =====
-                                                Center(
-                                                  child: Column(
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 170,
-                                                        height: 170,
-                                                        child: PieChart(
-                                                          PieChartData(
-                                                            centerSpaceRadius:
-                                                                0,
-                                                            sections: sections,
-                                                            pieTouchData:
-                                                                PieTouchData(
-                                                              touchCallback:
-                                                                  (event, res) {
-                                                                setState(() {
-                                                                  // ✅ Detect actual interaction
-                                                                  if (!event
-                                                                          .isInterestedForInteractions ||
-                                                                      res?.touchedSection ==
-                                                                          null) {
-                                                                    return;
-                                                                  }
-
-                                                                  final index = res!
-                                                                      .touchedSection!
-                                                                      .touchedSectionIndex;
-
-                                                                  // ✅ Toggle info card display on same slice click
-                                                                  if (touchedIndex ==
-                                                                      index) {
-                                                                    touchedIndex =
-                                                                        -1; // Hide
-                                                                  } else {
-                                                                    touchedIndex =
-                                                                        index; // Show
-                                                                  }
-                                                                });
-                                                              },
-                                                            ),
-                                                          ),
-                                                        ),
+                                                if (chartEntries.isEmpty ||
+                                                    total == 0) ...[
+                                                  Center(
+                                                    child: Container(
+                                                      height: 100,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      margin:
+                                                          const EdgeInsets.all(
+                                                              12),
+                                                      child: const Text(
+                                                        "No data found",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 16),
                                                       ),
-
-                                                      const SizedBox(
-                                                          height: 33),
-
-                                                      // ✅ Show info card below the pie when a slice is selected
-                                                      AnimatedSwitcher(
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    250),
-                                                        child: (touchedIndex !=
-                                                                    null &&
-                                                                touchedIndex! >=
-                                                                    0 &&
-                                                                touchedIndex! <
-                                                                    chartEntries
-                                                                        .length)
-                                                            ? _buildInfoCard(
-                                                                chartEntries[
-                                                                    touchedIndex!])
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ),
-                                                    ],
+                                                    ),
                                                   ),
-                                                ),
+                                                ] else ...[
+                                                  Center(
+                                                    child: Column(
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            SizedBox(
+                                                              width: 180,
+                                                              height: 200,
+                                                              child: PieChart(
+                                                                PieChartData(
+                                                                  centerSpaceRadius:
+                                                                      0,
+                                                                  sectionsSpace:
+                                                                      0.3,
+                                                                  sections:
+                                                                      sections,
+                                                                  pieTouchData:
+                                                                      PieTouchData(
+                                                                    touchCallback:
+                                                                        (event,
+                                                                            res) {
+                                                                      setState(
+                                                                          () {
+                                                                        if (!event.isInterestedForInteractions ||
+                                                                            res?.touchedSection ==
+                                                                                null)
+                                                                          return;
+
+                                                                        final idx = res!
+                                                                            .touchedSection!
+                                                                            .touchedSectionIndex;
+
+                                                                        touchedIndex = touchedIndex ==
+                                                                                idx
+                                                                            ? -1
+                                                                            : idx;
+                                                                      });
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+
+                                                            const SizedBox(
+                                                                width: 30),
+
+                                                            // Legends
+                                                            Column(
+                                                              children: [
+                                                                _buildLegendBox(
+                                                                    '1',
+                                                                    '0–20%',
+                                                                    Colors.red),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '2',
+                                                                    '21–40%',
+                                                                    Colors
+                                                                        .yellow),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '3',
+                                                                    '41–60%',
+                                                                    Colors
+                                                                        .blue),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '4',
+                                                                    '61–80%',
+                                                                    Colors
+                                                                        .greenAccent),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '5',
+                                                                    '81–100%',
+                                                                    Colors
+                                                                        .green),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 25),
+                                                        AnimatedSwitcher(
+                                                          duration:
+                                                              const Duration(
+                                                                  milliseconds:
+                                                                      250),
+                                                          child: (touchedIndex !=
+                                                                      null &&
+                                                                  touchedIndex! >=
+                                                                      0 &&
+                                                                  touchedIndex! <
+                                                                      chartEntries
+                                                                          .length)
+                                                              ? _buildInfoCard(
+                                                                  chartEntries[
+                                                                      touchedIndex!])
+                                                              : const SizedBox
+                                                                  .shrink(),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                               ],
                                             ),
                                           );
                                         },
                                       ),
-
-                                      // Bar chart - scrollable
                                       Container(
                                         width:
                                             MediaQuery.of(context).size.width *
@@ -1786,6 +1777,15 @@ class _SovLocationListState extends State<SovLocationList>
                                         child: Consumer<MyLocationListProvider>(
                                           builder: (context,
                                               locationListProvider, child) {
+                                            if (locationListProvider
+                                                        .grapDataProfile ==
+                                                    null ||
+                                                locationListProvider
+                                                        .grapDataProfile
+                                                        ?.pdValues ==
+                                                    null) {
+                                              return Container();
+                                            }
                                             if (selectedView == 'Geocoding') {
                                               final geocodingData =
                                                   locationListProvider
@@ -1810,8 +1810,11 @@ class _SovLocationListState extends State<SovLocationList>
                                                       .map((e) => {
                                                             'name':
                                                                 'Geocode ${e.key}',
-                                                            'count':
-                                                                (e.value as num)
+                                                            'count': e.value ==
+                                                                    null
+                                                                ? 0.0
+                                                                : (e.value
+                                                                        as num)
                                                                     .toDouble(),
                                                           })
                                                       .toList()
@@ -1825,8 +1828,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                     child:
                                                         Text('No data found'));
                                               }
-
-                                              // ✅ Get min, max, total
                                               final values = dataList
                                                   .map((e) =>
                                                       e['count'] as double)
@@ -2307,11 +2308,11 @@ class _SovLocationListState extends State<SovLocationList>
                                 ),
                               ),
                             ),
-
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {
-                                  if (locationListProvider.isLoading) {
+                                  if (locationListProvider.isLoading &&
+                                      index == 0) {
                                     return const Column(
                                       children: [
                                         SizedBox(height: 100),
@@ -2320,6 +2321,7 @@ class _SovLocationListState extends State<SovLocationList>
                                       ],
                                     );
                                   }
+
                                   if (locationListProvider
                                       .myLocationList.isEmpty) {
                                     return Center(
@@ -2331,20 +2333,16 @@ class _SovLocationListState extends State<SovLocationList>
                                     );
                                   }
 
-                                  if (index ==
+                                  // Check if this is the loading indicator item
+                                  if (index >=
                                       locationListProvider
                                           .myLocationList.length) {
-                                    if (locationListProvider
-                                        .isNextPageLoading) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Center(
-                                            child: CircularProgressIndicator()),
-                                      );
-                                    } else if (locationListProvider.page >=
-                                            locationListProvider.totalPages &&
-                                        locationListProvider
-                                            .myLocationList.isNotEmpty) {
+                                    // If we're at the end and no more pages, show end message
+                                    if (locationListProvider.page >=
+                                        locationListProvider.totalPages) {
+                                      // if (locationListProvider.certifiedPage >=
+                                      //     locationListProvider
+                                      //         .certifiedTotalPages) {
                                       return Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Center(
@@ -2356,173 +2354,51 @@ class _SovLocationListState extends State<SovLocationList>
                                           ),
                                         ),
                                       );
-                                    } else {
-                                      locationListProvider.page =
-                                          locationListProvider.page + 1;
-                                      locationListProvider.fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        locationListProvider.page,
-                                        1000,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                        '',
-                                      );
-                                      return const SizedBox();
                                     }
-                                  }
 
-                                  return MyLocationCard(
-                                    campusId: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.campusId ??
-                                        '',
-                                    imageUrl: locationListProvider
-                                                .myLocationList[index]
-                                                .screenshots
-                                                ?.isNotEmpty ==
-                                            true
-                                        ? locationListProvider
-                                                .myLocationList[index]
-                                                .screenshots![0]
-                                                .imageUrl ??
-                                            ''
-                                        : '',
-                                    index: index,
-                                    accountId: widget.accountID,
-                                    subAccountId: widget.subAccountID,
-                                    sovId: widget.sovID,
-                                    sovName: widget.sovName,
-                                    subAccountName: widget.subAccountName,
-                                    locationId: locationListProvider
-                                            .myLocationList[index].id ??
-                                        '',
-                                    accountName: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.accountName ??
-                                        '',
-                                    ownerName: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.ownerName ??
-                                        '',
-                                    companyName: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.companyName ??
-                                        '',
-                                    address: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.address ??
-                                        '',
-                                    percentage: double.parse(
-                                        locationListProvider
-                                                .myLocationList[index]
-                                                .finalAddress
-                                                ?.percent ??
-                                            '0'),
-                                    geocodingScore: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.score ??
-                                        0,
-                                    riskScore: int.parse(locationListProvider
-                                        .myLocationList[index].overallScore
-                                        .toString()),
-                                    dataCompletenessScore: locationListProvider
-                                            .myLocationList[index]
-                                            .dataCompleteness
-                                            ?.scorePd ??
-                                        1,
-                                    isAutoCertified: true,
-                                    tags: (locationListProvider
-                                            .myLocationList[index]?.tags ??
-                                        []),
-                                    onDelete: (locationId) {
-                                      showDeleteConfirmationDialog(
-                                        context,
-                                        () async {
-                                          await Provider.of<
-                                                      MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
-                                              .deleteLocations(
-                                                  context,
-                                                  widget.accountID!,
-                                                  widget.subAccountID!,
-                                                  widget.sovID!,
-                                                  [locationId]);
-                                          Provider.of<MyLocationListProvider>(
-                                                  context,
-                                                  listen: false)
-                                              .fetchLocationList(
-                                            context,
-                                            locationQuery,
-                                            1,
-                                            1000,
-                                            widget.accountID,
-                                            widget.subAccountID,
-                                            widget.initialProcessId,
-                                            widget.initialSubProcessId,
-                                            widget.sovID,
-                                          );
-                                          Navigator.of(context).pop();
-                                        },
-                                        [locationId],
+                                    // If currently loading next page, show loader
+                                    if (locationListProvider
+                                        .isNextPageLoading) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Center(
+                                            child: CircularProgressIndicator()),
                                       );
-                                    },
-                                    onAddToSOV: null,
-                                    onAddTag: (locationId) {
-                                      locationListProvider
-                                          .addTagsToSelectedLocations(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!,
-                                              locationId);
-                                    },
-                                    getData: () {
-                                      locationListProvider.fetchLocationList(
-                                        context,
-                                        locationQuery,
-                                        1,
-                                        1000,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                        widget.sovID,
-                                      );
-                                    },
-                                    lat: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.latitude
-                                            ?.toString() ??
-                                        "",
-                                    long: locationListProvider
-                                            .myLocationList[index]
-                                            .finalAddress
-                                            ?.longitude
-                                            ?.toString() ??
-                                        "",
-                                    overallScore: locationListProvider
-                                            .myLocationList[index].overallScore
-                                            ?.toString() ??
-                                        "0",
-                                    hazardProcess: true,
-                                  );
+                                    }
+
+                                    // If we need to load more and not currently loading, trigger load
+                                    if (!locationListProvider
+                                        .isNextPageLoading) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        locationListProvider.fetchLocationList(
+                                          context,
+                                          locationQuery,
+                                          locationListProvider.page + 1,
+                                          11,
+                                          widget.accountID,
+                                          widget.subAccountID,
+                                          widget.initialProcessId,
+                                          widget.initialSubProcessId,
+                                          widget.sovID,
+                                        );
+                                      });
+                                    }
+
+                                    return const SizedBox();
+                                  }
+                                  return myLocationlist(
+                                      locationListProvider, index, context);
                                 },
-                                childCount:
-                                    locationListProvider.myLocationList.isEmpty
-                                        ? 1
-                                        : locationListProvider
-                                                .myLocationList.length +
-                                            1,
+                                childCount: locationListProvider
+                                        .myLocationList.isEmpty
+                                    ? 1 // For empty state
+                                    : locationListProvider
+                                            .myLocationList.length +
+                                        (locationListProvider.page <
+                                                locationListProvider.totalPages
+                                            ? 1
+                                            : 0),
                               ),
                             ),
                           ],
@@ -2572,7 +2448,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -2597,7 +2473,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -2659,7 +2535,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                   context,
                                                   locationQuery,
                                                   1,
-                                                  40,
+                                                  11,
                                                   widget.accountID,
                                                   widget.subAccountID,
                                                   widget.initialProcessId,
@@ -2683,7 +2559,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           context,
                                           locationQuery,
                                           1,
-                                          40,
+                                          11,
                                           widget.accountID,
                                           widget.subAccountID,
                                           widget.initialProcessId,
@@ -2707,7 +2583,7 @@ class _SovLocationListState extends State<SovLocationList>
                                   context,
                                   locationQuery,
                                   1,
-                                  40,
+                                  11,
                                   widget.accountID,
                                   widget.subAccountID,
                                   widget.initialProcessId,
@@ -2731,7 +2607,7 @@ class _SovLocationListState extends State<SovLocationList>
                             context,
                             locationQuery,
                             1,
-                            40,
+                            11,
                             widget.accountID,
                             widget.subAccountID,
                             widget.initialProcessId,
@@ -2745,7 +2621,7 @@ class _SovLocationListState extends State<SovLocationList>
 
                             SliverToBoxAdapter(
                               child: Container(
-                                height: 420,
+                                height: 430,
                                 // Set a fixed height for the scrollable row
                                 child: SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
@@ -2758,70 +2634,78 @@ class _SovLocationListState extends State<SovLocationList>
                                           final pdValues = provider
                                               .grapDataProfile?.pdValues;
 
-                                          if (pdValues == null) {
-                                            return const Center(
-                                              child: Text(
-                                                "No data available",
-                                                style: TextStyle(
-                                                    color: Colors.white70),
-                                              ),
-                                            );
+                                          // 🔥 Correct mapping for all 3 tabs
+                                          Map<String, dynamic> sourceData = {};
+
+                                          if (pdValues != null) {
+                                            if (selectedView == "Hazard") {
+                                              sourceData =
+                                                  pdValues.byOverallScore ?? {};
+                                            } else if (selectedView ==
+                                                "Geocoding") {
+                                              sourceData =
+                                                  pdValues.byGeocodeScore ?? {};
+                                            } else if (selectedView ==
+                                                "Completeness") {
+                                              sourceData = pdValues
+                                                      .byDataCompletenessScore ??
+                                                  {}; // ✅ ADDED
+                                            }
                                           }
 
-                                          // ✅ Choose dataset based on dropdown selection
-                                          final sourceData = selectedView ==
-                                                  "Overall Score"
-                                              ? pdValues.byOverallScore ?? {}
-                                              : pdValues.byGeocodeScore ?? {};
-
-                                          if (sourceData.isEmpty) {
-                                            return const Center(
-                                              child: Text(
-                                                "No data available",
-                                                style: TextStyle(
-                                                    color: Colors.white70),
-                                              ),
-                                            );
-                                          }
-
+                                          // 🔥 FIX LABEL + DATA EXTRACTION (Unified for all views)
                                           final chartEntries =
                                               sourceData.entries.map((entry) {
                                             final data = entry.value;
-                                            final label = selectedView ==
-                                                    "By Overall Score"
-                                                ? "Score ${data.overallScore}"
-                                                : "Geocode ${entry.key}";
+
+                                            String label = "";
+                                            if (selectedView == "Hazard") {
+                                              label = "Score ${entry.key}";
+                                            } else if (selectedView ==
+                                                "Geocoding") {
+                                              label = "Geocode ${entry.key}";
+                                            } else {
+                                              label =
+                                                  "Completeness ${entry.key}";
+                                            }
+
                                             return {
                                               'label': label,
                                               'value': data.totalPdValue ?? 0.0,
                                               'pct': data.pctOfTotal ?? 0.0,
+                                              'rawKey': entry.key.toString(),
                                             };
                                           }).toList();
 
                                           double total = chartEntries.fold(
-                                              0.0,
-                                              (a, e) =>
-                                                  a + (e['value'] as double));
+                                            0.0,
+                                            (sum, item) =>
+                                                sum + (item['value'] as double),
+                                          );
 
                                           final sections = chartEntries
                                               .asMap()
                                               .entries
                                               .map((entry) {
-                                            final index = entry.key;
+                                            final idx = entry.key;
                                             final value =
                                                 entry.value['value'] as double;
-                                            final percent = total > 0
+                                            final pct = total > 0
                                                 ? (value / total) * 100
                                                 : 0;
                                             final selected =
-                                                index == touchedIndex;
+                                                idx == touchedIndex;
 
                                             return PieChartSectionData(
-                                              color: _getPieColor(percent),
+                                              color: _getPieColorByKey(
+                                                entry.value['rawKey']
+                                                        ?.toString() ??
+                                                    "0",
+                                              ),
                                               value: value,
                                               radius: selected ? 120 : 100,
                                               title:
-                                                  "${percent.toStringAsFixed(1)}%",
+                                                  "${pct.toStringAsFixed(1)}%",
                                               titleStyle: TextStyle(
                                                 fontSize: selected ? 14 : 12,
                                                 fontWeight: FontWeight.bold,
@@ -2841,20 +2725,21 @@ class _SovLocationListState extends State<SovLocationList>
                                             ),
                                             padding: const EdgeInsets.all(16),
                                             child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
+                                              // crossAxisAlignment:
+                                              //     CrossAxisAlignment.s,
                                               children: [
+                                                // ===== HEADER =====
                                                 Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment
                                                           .spaceBetween,
                                                   children: [
                                                     const Text(
-                                                      "Weighted Distribution (TPV)",
+                                                      "Weighted Distribution (PD Value)",
                                                       style: TextStyle(
                                                         color:
                                                             Color(0xFF90CAF9),
-                                                        fontSize: 14,
+                                                        fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
@@ -2948,134 +2833,196 @@ class _SovLocationListState extends State<SovLocationList>
                                                     ),
                                                   ],
                                                 ),
+
                                                 const SizedBox(height: 6),
+
+                                                // ===== Toggle Buttons (FIXED 3 ITEMS) =====
                                                 Container(
                                                   height: 40,
-                                                  decoration: BoxDecoration(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  child: ToggleButtons(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            10),
-                                                    border: Border.all(
-                                                        color: Colors.white24),
-                                                    color: Colors.black87,
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.start,
-                                                    children: [
-                                                      ToggleButtons(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderColor:
-                                                            Colors.white24,
-                                                        selectedBorderColor:
-                                                            AppColors
-                                                                .primaryMain,
-                                                        fillColor: AppColors
-                                                            .primaryMain
-                                                            .withOpacity(0.16),
-                                                        selectedColor: AppColors
-                                                            .primaryMain,
-                                                        color: Colors.white,
-                                                        constraints:
-                                                            BoxConstraints(
-                                                                minHeight: 36,
-                                                                minWidth: 110),
-                                                        isSelected: [
-                                                          selectedView ==
-                                                              "Overall Score",
-                                                          selectedView ==
-                                                              "Geocoding",
-                                                        ],
-                                                        onPressed: (index) {
-                                                          setState(() {
-                                                            selectedView = index ==
-                                                                    0
-                                                                ? "Overall Score"
-                                                                : "Geocoding";
-                                                          });
-                                                        },
-                                                        children: const [
-                                                          Text("Overall Score"),
-                                                          Text("Geocoding"),
-                                                        ],
-                                                      ),
+                                                            8),
+                                                    borderColor: Colors.white24,
+                                                    selectedBorderColor:
+                                                        AppColors.primaryMain,
+                                                    fillColor: AppColors
+                                                        .primaryMain
+                                                        .withOpacity(0.16),
+                                                    selectedColor:
+                                                        AppColors.primaryMain,
+                                                    color: Colors.white,
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minHeight: 36,
+                                                            minWidth: 110),
+
+                                                    // 🔥 MUST BE 3 ITEMS
+                                                    isSelected: [
+                                                      selectedView ==
+                                                          "Geocoding",
+                                                      selectedView == "Hazard",
+                                                      selectedView ==
+                                                          "Completeness",
+                                                    ],
+
+                                                    onPressed: (index) {
+                                                      setState(() {
+                                                        if (index == 0)
+                                                          selectedView =
+                                                              "Geocoding";
+                                                        if (index == 1)
+                                                          selectedView =
+                                                              "Hazard";
+
+                                                        if (index == 2)
+                                                          selectedView =
+                                                              "Completeness";
+                                                      });
+                                                    },
+
+                                                    children: const [
+                                                      Text("Geocode"),
+                                                      Text("Hazard"),
+                                                      Text("Completeness"),
                                                     ],
                                                   ),
                                                 ),
-                                                const SizedBox(height: 25),
+                                                if (chartEntries.isEmpty ||
+                                                    total == 0) ...[
+                                                  Center(
+                                                    child: Container(
+                                                      height: 100,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      margin:
+                                                          const EdgeInsets.all(
+                                                              12),
+                                                      child: const Text(
+                                                        "No data found",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 16),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ] else ...[
+                                                  const SizedBox(height: 25),
+                                                  Center(
+                                                    child: Column(
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            SizedBox(
+                                                              width: 180,
+                                                              height: 200,
+                                                              child: PieChart(
+                                                                PieChartData(
+                                                                  centerSpaceRadius:
+                                                                      0,
+                                                                  sectionsSpace:
+                                                                      0.3,
+                                                                  sections:
+                                                                      sections,
+                                                                  pieTouchData:
+                                                                      PieTouchData(
+                                                                    touchCallback:
+                                                                        (event,
+                                                                            res) {
+                                                                      setState(
+                                                                          () {
+                                                                        if (!event.isInterestedForInteractions ||
+                                                                            res?.touchedSection ==
+                                                                                null)
+                                                                          return;
 
-                                                // ===== Pie Chart =====
-                                                Center(
-                                                  child: Column(
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 180,
-                                                        height: 180,
-                                                        child: PieChart(
-                                                          PieChartData(
-                                                            centerSpaceRadius:
-                                                                0,
-                                                            sections: sections,
-                                                            pieTouchData:
-                                                                PieTouchData(
-                                                              touchCallback:
-                                                                  (event, res) {
-                                                                setState(() {
-                                                                  // ✅ Detect actual interaction
-                                                                  if (!event
-                                                                          .isInterestedForInteractions ||
-                                                                      res?.touchedSection ==
-                                                                          null) {
-                                                                    return;
-                                                                  }
+                                                                        final idx = res!
+                                                                            .touchedSection!
+                                                                            .touchedSectionIndex;
 
-                                                                  final index = res!
-                                                                      .touchedSection!
-                                                                      .touchedSectionIndex;
-
-                                                                  // ✅ Toggle info card display on same slice click
-                                                                  if (touchedIndex ==
-                                                                      index) {
-                                                                    touchedIndex =
-                                                                        -1; // Hide
-                                                                  } else {
-                                                                    touchedIndex =
-                                                                        index; // Show
-                                                                  }
-                                                                });
-                                                              },
+                                                                        touchedIndex = touchedIndex ==
+                                                                                idx
+                                                                            ? -1
+                                                                            : idx;
+                                                                      });
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                              ),
                                                             ),
-                                                          ),
+
+                                                            const SizedBox(
+                                                                width: 30),
+
+                                                            // Legends
+                                                            Column(
+                                                              children: [
+                                                                _buildLegendBox(
+                                                                    '1',
+                                                                    '0–20%',
+                                                                    Colors.red),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '2',
+                                                                    '21–40%',
+                                                                    Colors
+                                                                        .yellow),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '3',
+                                                                    '41–60%',
+                                                                    Colors
+                                                                        .blue),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '4',
+                                                                    '61–80%',
+                                                                    Colors
+                                                                        .greenAccent),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                _buildLegendBox(
+                                                                    '5',
+                                                                    '81–100%',
+                                                                    Colors
+                                                                        .green),
+                                                              ],
+                                                            ),
+                                                          ],
                                                         ),
-                                                      ),
 
-                                                      const SizedBox(
-                                                          height: 33),
+                                                        const SizedBox(
+                                                            height: 25),
 
-                                                      // ✅ Show info card below the pie when a slice is selected
-                                                      AnimatedSwitcher(
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    250),
-                                                        child: (touchedIndex !=
-                                                                    null &&
-                                                                touchedIndex! >=
-                                                                    0 &&
-                                                                touchedIndex! <
-                                                                    chartEntries
-                                                                        .length)
-                                                            ? _buildInfoCard(
-                                                                chartEntries[
-                                                                    touchedIndex!])
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ),
-                                                    ],
+                                                        // ===== Info Card =====
+                                                        AnimatedSwitcher(
+                                                          duration:
+                                                              const Duration(
+                                                                  milliseconds:
+                                                                      250),
+                                                          child: (touchedIndex !=
+                                                                      null &&
+                                                                  touchedIndex! >=
+                                                                      0 &&
+                                                                  touchedIndex! <
+                                                                      chartEntries
+                                                                          .length)
+                                                              ? _buildInfoCard(
+                                                                  chartEntries[
+                                                                      touchedIndex!])
+                                                              : const SizedBox
+                                                                  .shrink(),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                                ),
+                                                ]
                                               ],
                                             ),
                                           );
@@ -3112,8 +3059,11 @@ class _SovLocationListState extends State<SovLocationList>
                                                       .map((e) => {
                                                             'name':
                                                                 'Geocode ${e.key}',
-                                                            'count':
-                                                                (e.value as num)
+                                                            'count': e.value ==
+                                                                    null
+                                                                ? 0.0
+                                                                : (e.value
+                                                                        as num)
                                                                     .toDouble(),
                                                           })
                                                       .toList()
@@ -3121,12 +3071,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                             as double)
                                                         .compareTo(a['count']
                                                             as double));
-
-                                              // if (dataList.isEmpty) {
-                                              //   return const Center(
-                                              //       child:
-                                              //           Text('No data found'));
-                                              // }
 
                                               final values = dataList
                                                   .map((e) =>
@@ -3556,7 +3500,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                         ),
                                                       ],
                                                     ),
-                                                    const SizedBox(height: 10),
+                                                    const SizedBox(height: 3),
                                                     Expanded(
                                                       child: dataList.isEmpty
                                                           ? Container(
@@ -3623,7 +3567,8 @@ class _SovLocationListState extends State<SovLocationList>
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {
-                                  if (locationListProvider.isCertifiedLoading) {
+                                  if (locationListProvider.isCertifiedLoading &&
+                                      index == 0) {
                                     return const Column(
                                       children: [
                                         SizedBox(height: 100),
@@ -3632,6 +3577,7 @@ class _SovLocationListState extends State<SovLocationList>
                                       ],
                                     );
                                   }
+
                                   if (locationListProvider
                                       .certifiedLocationList.isEmpty) {
                                     return Center(
@@ -3643,7 +3589,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     );
                                   }
 
-                                  if (index ==
+                                  if (index >=
                                       locationListProvider
                                           .certifiedLocationList.length) {
                                     if (locationListProvider
@@ -3671,20 +3617,23 @@ class _SovLocationListState extends State<SovLocationList>
                                         ),
                                       );
                                     } else {
-                                      locationListProvider.certifiedPage =
+                                      // Trigger next page load
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        locationListProvider
+                                            .fetchCertifiedLocationList(
+                                          context,
+                                          locationQuery,
                                           locationListProvider.certifiedPage +
-                                              1;
-                                      locationListProvider
-                                          .fetchCertifiedLocationList(
-                                        context,
-                                        "",
-                                        locationListProvider.certifiedPage,
-                                        40,
-                                        widget.accountID,
-                                        widget.subAccountID,
-                                        widget.initialProcessId,
-                                        widget.initialSubProcessId,
-                                      );
+                                              1,
+                                          11,
+                                          widget.accountID,
+                                          widget.subAccountID,
+                                          widget.initialProcessId,
+                                          widget.initialSubProcessId,
+                                          widget.sovID,
+                                        );
+                                      });
                                       return const SizedBox();
                                     }
                                   }
@@ -3762,328 +3711,6 @@ class _SovLocationListState extends State<SovLocationList>
     );
   }
 
-  // Widget _buildInfoCard(Map<String, dynamic> data) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-  //     decoration: BoxDecoration(
-  //       color: const Color(0xFF1E1E1E),
-  //       borderRadius: BorderRadius.circular(8),
-  //       border: Border.all(color: Colors.white10),
-  //     ),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //       children: [
-  //         Text(
-  //           data['label'].toString(),
-  //           style: const TextStyle(color: Colors.white70, fontSize: 12),
-  //         ),
-  //         Text(
-  //           "${data['pct'].toStringAsFixed(2)}%",
-  //           style: const TextStyle(color: Colors.lightBlueAccent, fontSize: 12),
-  //         ),
-  //         Text(
-  //           "₹${(data['value'] as double).toStringAsFixed(0)}",
-  //           style: const TextStyle(color: Colors.white70, fontSize: 12),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-  Color _getPieColor(var percent) {
-    if (percent >= 80) return Colors.green;
-    if (percent >= 60) return Colors.lightGreen;
-    if (percent >= 40) return Colors.orange;
-    if (percent >= 20) return Colors.deepOrange;
-    return Colors.redAccent;
-  }
-
-  // _getLocationListCertifiedUI() {
-  //   var typography = CustomTypography(context);
-  //   return Consumer<MyLocationListProvider>(
-  //     builder: (context, locationListProvider, child) {
-  //       return Column(
-  //         children: [
-  //           Padding(
-  //             padding: const EdgeInsets.symmetric(horizontal: 12.0),
-  //             child: Row(
-  //               children: [
-  //                 // Horizontally scrollable row for all chips
-  //                 Expanded(
-  //                   child: SingleChildScrollView(
-  //                     scrollDirection: Axis.horizontal,
-  //                     child: Row(
-  //                       children: [
-  //                         // Show country options as chips
-  //                         if (locationListProvider.countries.isNotEmpty)
-  //                           Padding(
-  //                             padding:
-  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
-  //                             child: Chip(
-  //                               label: Text(
-  //                                   "Country: ${locationListProvider.countries.join(', ')}"),
-  //                               onDeleted: () {
-  //                                 locationListProvider.clearCountryFilter();
-  //                                 locationListProvider
-  //                                     .fetchCertifiedLocationList(
-  //                                   context,
-  //                                   locationQuery,
-  //                                   1,
-  //                                   40,
-  //                                   widget.accountID,
-  //                                   widget.subAccountID,
-  //                                   widget.initialProcessId,
-  //                                   widget.initialSubProcessId,
-  //                                 );
-  //                               },
-  //                             ),
-  //                           ),
-  //
-  //                         // Show certifications as chips
-  //                         if (locationListProvider.certifications.isNotEmpty)
-  //                           Padding(
-  //                             padding:
-  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
-  //                             child: Chip(
-  //                               label: Text(
-  //                                   "Certifications: ${locationListProvider.certifications.join(', ')}"),
-  //                               onDeleted: () {
-  //                                 locationListProvider
-  //                                     .clearCertificationsFilter();
-  //                                 locationListProvider
-  //                                     .fetchCertifiedLocationList(
-  //                                   context,
-  //                                   locationQuery,
-  //                                   1,
-  //                                   40,
-  //                                   widget.accountID,
-  //                                   widget.subAccountID,
-  //                                   widget.initialProcessId,
-  //                                   widget.initialSubProcessId,
-  //                                 );
-  //                               },
-  //                             ),
-  //                           ),
-  //
-  //                         // Show hazard ratings as chips with circles for selected ratings
-  //                         if (locationListProvider.hazardRatings.isNotEmpty)
-  //                           for (var hazard
-  //                               in locationListProvider.hazardRatings.keys)
-  //                             Padding(
-  //                               padding:
-  //                                   const EdgeInsets.symmetric(horizontal: 4.0),
-  //                               child: Chip(
-  //                                 label: Row(
-  //                                   children: [
-  //                                     Text(hazard),
-  //                                     // Hazard name
-  //                                     const SizedBox(width: 8),
-  //                                     // Space before ratings
-  //                                     if (locationListProvider
-  //                                         .hazardRatings[hazard]!.isEmpty)
-  //                                       Text(
-  //                                           'All') // If no ratings are selected
-  //                                     else
-  //                                       Row(
-  //                                         children: locationListProvider
-  //                                             .hazardRatings[hazard]!
-  //                                             .map((rating) {
-  //                                           return Padding(
-  //                                             padding: const EdgeInsets.only(
-  //                                                 right: 4.0),
-  //                                             child: CircleAvatar(
-  //                                               radius: 10,
-  //                                               backgroundColor:
-  //                                                   _getRatingColor(rating),
-  //                                               child: Text(
-  //                                                 '$rating',
-  //                                                 style: const TextStyle(
-  //                                                     color: Colors.white,
-  //                                                     fontSize: 12),
-  //                                               ),
-  //                                             ),
-  //                                           );
-  //                                         }).toList(),
-  //                                       ),
-  //                                   ],
-  //                                 ),
-  //                                 onDeleted: () {
-  //                                   locationListProvider
-  //                                       .clearHazardFilter(hazard);
-  //                                   locationListProvider
-  //                                       .fetchCertifiedLocationList(
-  //                                     context,
-  //                                     locationQuery,
-  //                                     1,
-  //                                     40,
-  //                                     widget.accountID,
-  //                                     widget.subAccountID,
-  //                                     widget.initialProcessId,
-  //                                     widget.initialSubProcessId,
-  //                                   );
-  //                                 },
-  //                               ),
-  //                             ),
-  //
-  //                         // Show ratings as chips
-  //                         if (locationListProvider.rating.isNotEmpty)
-  //                           Padding(
-  //                             padding:
-  //                                 const EdgeInsets.symmetric(horizontal: 4.0),
-  //                             child: Chip(
-  //                               label: Text(
-  //                                   "Ratings: ${locationListProvider.rating.join(', ')}"),
-  //                               onDeleted: () {
-  //                                 locationListProvider.clearRatingsFilter();
-  //                                 locationListProvider
-  //                                     .fetchCertifiedLocationList(
-  //                                   context,
-  //                                   locationQuery,
-  //                                   1,
-  //                                   40,
-  //                                   widget.accountID,
-  //                                   widget.subAccountID,
-  //                                   widget.initialProcessId,
-  //                                   widget.initialSubProcessId,
-  //                                 );
-  //                               },
-  //                             ),
-  //                           ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                 ),
-  //
-  //                 // Clear all filters button (text button at the end)
-  //                 if (locationListProvider
-  //                     .hasAnyFilterApplied()) // Check if any filter is applied
-  //                   Padding(
-  //                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-  //                     child: TextButton(
-  //                       onPressed: () {
-  //                         locationListProvider.clearAllFilters();
-  //                         locationListProvider.fetchLocationList(
-  //                             context,
-  //                             locationQuery,
-  //                             1,
-  //                             40,
-  //                             widget.accountID,
-  //                             widget.subAccountID,
-  //                             widget.initialProcessId,
-  //                             widget.initialSubProcessId,
-  //                             '');
-  //                       },
-  //                       child: const Text(
-  //                         'Clear All',
-  //                         style: TextStyle(
-  //                             color: Colors.red), // Color for emphasis
-  //                       ),
-  //                     ),
-  //                   ),
-  //               ],
-  //             ),
-  //           ),
-  //           Expanded(
-  //             child: Expanded(
-  //               child: RefreshIndicator(
-  //                 onRefresh: () async {
-  //                   await locationListProvider.fetchCertifiedLocationList(
-  //                     context,
-  //                     locationQuery,
-  //                     1,
-  //                     40,
-  //                     widget.accountID,
-  //                     widget.subAccountID,
-  //                     widget.initialProcessId,
-  //                     widget.initialSubProcessId,
-  //                   );
-  //                 },
-  //                 child: locationListProvider.isCertifiedLoading
-  //                     ? Column(
-  //                         children: [
-  //                           SizedBox(height: 100),
-  //                           Center(child: CircularProgressIndicator()),
-  //                         ],
-  //                       )
-  //                     : locationListProvider.certifiedLocationList.isEmpty
-  //                         ? Center(
-  //                             child: Text(
-  //                                 LanguageService.getTranslated(context,
-  //                                     "location_list_app_no_accounts_text"),
-  //                                 style: typography.Body1),
-  //                           )
-  //                         : ListView.builder(
-  //                             physics: ClampingScrollPhysics(),
-  //                             shrinkWrap: true,
-  //                             itemCount: locationListProvider
-  //                                 .certifiedLocationList.length,
-  //                             itemBuilder: (context, index) {
-  //                               if (index ==
-  //                                   locationListProvider
-  //                                           .certifiedLocationList.length -
-  //                                       1) {
-  //                                 if (locationListProvider
-  //                                     .isNextPageCertifiedLoading) {
-  //                                   return Padding(
-  //                                     padding: const EdgeInsets.all(8.0),
-  //                                     child: Center(
-  //                                         child: CircularProgressIndicator()),
-  //                                   );
-  //                                 } else if (locationListProvider
-  //                                             .certifiedPage >=
-  //                                         locationListProvider
-  //                                             .certifiedTotalPages &&
-  //                                     locationListProvider
-  //                                         .certifiedLocationList.isNotEmpty) {
-  //                                   return Column(
-  //                                     children: [
-  //                                       myLocationCertifiedCard(
-  //                                           locationListProvider,
-  //                                           index,
-  //                                           context),
-  //                                       Padding(
-  //                                         padding: const EdgeInsets.all(8.0),
-  //                                         child: Center(
-  //                                             child: Text(
-  //                                                 LanguageService.getTranslated(
-  //                                                     context,
-  //                                                     "location_list_end_of_list"),
-  //                                                 style: typography.Body1)),
-  //                                       ),
-  //                                     ],
-  //                                   );
-  //                                 } else {
-  //                                   locationListProvider.certifiedPage =
-  //                                       locationListProvider.certifiedPage + 1;
-  //                                   locationListProvider
-  //                                       .fetchCertifiedLocationList(
-  //                                     context,
-  //                                     "",
-  //                                     locationListProvider.certifiedPage,
-  //                                     40,
-  //                                     widget.accountID,
-  //                                     widget.subAccountID,
-  //                                     widget.initialProcessId,
-  //                                     widget.initialSubProcessId,
-  //                                   );
-  //                                   return SizedBox();
-  //                                 }
-  //                               }
-  //
-  //                               /*return locationListCard(index,
-  //                       locationListProvider.certifiedLocationList);*/
-  //                               return myLocationCertifiedCard(
-  //                                   locationListProvider, index, context);
-  //                             },
-  //                           ),
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
-
   Color _getRatingColor(int rating) {
     switch (rating) {
       case 1:
@@ -4120,6 +3747,14 @@ class _SovLocationListState extends State<SovLocationList>
       accountId: widget.accountID,
       subAccountId: widget.subAccountID,
       sovId: widget.sovID,
+      lat: locationListProvider
+              .certifiedLocationList[index].finalAddress?.latitude
+              .toString() ??
+          '',
+      long: locationListProvider
+              .certifiedLocationList[index].finalAddress?.longitude
+              .toString() ??
+          '',
       sovName: widget.sovName,
       subAccountName: widget.subAccountName,
       isCertified: true,
@@ -4146,9 +3781,9 @@ class _SovLocationListState extends State<SovLocationList>
                   ?.toString() ??
               '0') ??
           0,
-      dataCompletenessScore: locationListProvider
-              .certifiedLocationList[index].dataCompleteness?.scorePd ??
-          0,
+      dataCompletenessScore:
+          locationListProvider.certifiedLocationList[index].dataCompleteness ??
+              0,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -4168,7 +3803,7 @@ class _SovLocationListState extends State<SovLocationList>
               context,
               locationQuery,
               1,
-              40,
+              11,
               widget.accountID,
               widget.subAccountID,
               widget.initialProcessId,
@@ -4193,7 +3828,7 @@ class _SovLocationListState extends State<SovLocationList>
           context,
           locationQuery,
           1,
-          40,
+          11,
           widget.accountID,
           widget.subAccountID,
           widget.initialProcessId,
@@ -4202,6 +3837,109 @@ class _SovLocationListState extends State<SovLocationList>
         );
       },
       hazardProcess: true,
+      role: userRoleName.toString(),
+    );
+  }
+
+  MyLocationCard myLocationlist(MyLocationListProvider locationListProvider,
+      int index, BuildContext context) {
+    return MyLocationCard(
+      imageUrl:
+          locationListProvider.myLocationList[index].screenshots?.isNotEmpty ==
+                  true
+              ? locationListProvider
+                      .myLocationList[index].screenshots![0].imageUrl ??
+                  ''
+              : '',
+      campusId:
+          locationListProvider.myLocationList[index].finalAddress?.campusId ??
+              '',
+      index: index,
+      accountId: widget.accountID,
+      subAccountId: widget.subAccountID,
+      sovId: widget.sovID,
+      lat: locationListProvider.myLocationList[index].finalAddress?.latitude
+              .toString() ??
+          '',
+      long: locationListProvider.myLocationList[index].finalAddress?.longitude
+              .toString() ??
+          '',
+      sovName: widget.sovName,
+      subAccountName: widget.subAccountName,
+      isCertified: false,
+      locationId: locationListProvider.myLocationList[index].id ?? '',
+      accountName: locationListProvider
+              .myLocationList[index].finalAddress?.accountName ??
+          '',
+      ownerName:
+          locationListProvider.myLocationList[index].finalAddress?.ownerName ??
+              '',
+      companyName: locationListProvider
+              .myLocationList[index].finalAddress?.companyName ??
+          '',
+      address:
+          locationListProvider.myLocationList[index].finalAddress?.address ??
+              '',
+      percentage: double.parse(
+          locationListProvider.myLocationList[index].finalAddress?.percent ??
+              '0'),
+      geocodingScore:
+          locationListProvider.myLocationList[index].geocodingScore ?? 0,
+      riskScore: int.tryParse(locationListProvider
+                  .myLocationList[index].overallScore
+                  ?.toString() ??
+              '0') ??
+          0,
+      dataCompletenessScore:
+          locationListProvider.myLocationList[index].dataCompleteness ?? 0,
+      isAutoCertified: false,
+      tags: (locationListProvider.myLocationList[index]?.tags ?? []),
+      onDelete: (locationId) {
+        showDeleteConfirmationDialog(
+          context,
+          () async {
+            await Provider.of<MyLocationListProvider>(context, listen: false)
+                .deleteLocations(context, widget.accountID!,
+                    widget.subAccountID!, widget.sovID!, [locationId]);
+
+            Provider.of<MyLocationListProvider>(context, listen: false)
+                .fetchLocationList(
+              context,
+              locationQuery,
+              1,
+              11,
+              widget.accountID,
+              widget.subAccountID,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
+              widget.sovID,
+            );
+
+            Navigator.of(context).pop();
+          },
+          [locationId],
+        );
+      },
+      onAddToSOV: null,
+      onAddTag: (locationId) {
+        locationListProvider.addTagsToSelectedLocations(
+            context, widget.accountID!, widget.subAccountID!, locationId);
+      },
+      getData: () {
+        locationListProvider.fetchLocationList(
+          context,
+          locationQuery,
+          1,
+          11,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          widget.sovID,
+        );
+      },
+      hazardProcess: true,
+      role: userRoleName,
     );
   }
 
@@ -4798,4 +4536,49 @@ class PieColorData {
     required this.fill,
     required this.text,
   });
+}
+
+Widget _buildLegendBox(String label, String range, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        // const SizedBox(width: 4),
+        // Text(
+        //   range,
+        //   style: const TextStyle(color: Colors.white, fontSize: 13),
+        // ),
+      ],
+    ),
+  );
+}
+
+Color _getPieColorByKey(String key) {
+  int k = int.tryParse(key) ?? 0;
+
+  if (k == 0 || k == 1) return Colors.red; // 0–20%
+  if (k == 2) return Colors.yellow; // 20–40%
+  if (k == 3) return Colors.blue; // 40–60%
+  if (k == 4) return Colors.greenAccent; // 60–80%
+  if (k == 5) return Colors.green; // 80–100%
+
+  return Colors.grey;
 }

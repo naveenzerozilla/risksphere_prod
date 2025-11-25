@@ -44,6 +44,8 @@ class AppConstant {
 
   static String get GET_EMPLOYEES =>
       '$baseURL/user_management?employees_list=true';
+  static String get GET_CURRENT_ROLE =>
+      '$baseURL/user_management?current_role=true&current_user=true';
 
   static String get GET_EMPLOYEES_NEW =>
       '$baseURL/user_management_new/employee_list';

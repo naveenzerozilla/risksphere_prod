@@ -973,6 +973,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
               accountName: widget.accountName,
               subAccountName: widget.subAccountName,
               tempId: widget.tempId,
+
               processId: widget.processId,
               subAccountId: widget.subAccountId,
               selectedLocations: selectedLocations,

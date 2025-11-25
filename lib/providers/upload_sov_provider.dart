@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/upload_sov_model.dart';
-import 'package:RiskSphere/screens/listings/sub_account_list.dart';
 import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_system.dart';
 import 'package:RiskSphere/service/api_service.dart';
@@ -347,7 +347,7 @@ class UploadSovProvider extends ChangeNotifier {
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Submission failed")),
+        const SnackBar(content: Text("Submission failed2")),
       );
     } finally {
       isLoading = false;
@@ -418,15 +418,15 @@ class UploadSovProvider extends ChangeNotifier {
   //   }
   // }
   Future<void> submitSovHeadersSubAccounts(
-      BuildContext context,
-      String tempId,
-      String docUrl,
-      List<Map<String, dynamic>> fields,
-      String accountId,
-      String accountName,
-      String subAccountName,
-      String subAccountId,
-      ) async {
+    BuildContext context,
+    String tempId,
+    String docUrl,
+    List<Map<String, dynamic>> fields,
+    String accountId,
+    String accountName,
+    String subAccountName,
+    String subAccountId,
+  ) async {
     try {
       List<Map<String, dynamic>> targetHeaders = [];
       List<String> headersList = [];
@@ -434,18 +434,17 @@ class UploadSovProvider extends ChangeNotifier {
       for (var field in fields) {
         final String targetName = field['target'] ?? '';
         final String spreadsheetName = field['spreadsheet'] ?? '';
-        final String id = field['id'] ?? targetName;
-        final int percentage = field['percentage'] ?? 100;
+        final String id = field['id'] ?? '';
+        final int percentage = field['percentage'] ?? 0;
         final bool isDataParam = field['is_data_parameter'] == true;
 
-        // Build header entry, including 'is_data_parameter' only if true
         final Map<String, dynamic> headerEntry = {
           targetName: {
             "id": id,
             "name": spreadsheetName.isNotEmpty ? spreadsheetName : "Ignore",
             "percentage": percentage,
-            if (isDataParam) "is_data_parameter": true,
-          },
+            if (isDataParam) "is_data_parameter": true
+          }
         };
 
         targetHeaders.add(headerEntry);
@@ -461,37 +460,49 @@ class UploadSovProvider extends ChangeNotifier {
         }
       };
 
+      print(const JsonEncoder.withIndent('  ').convert(body));
+
       isLoading = true;
       ApiService apiService = ApiService(AppConstant.UPLOAD_SOV_ACCOUNT);
-      var response = await apiService.post(body);
-      log(response.toString());
 
-      if (response['message'] != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LocationDataScreen(
-              processId: response['process_id'] ?? "",
-              tempId: tempId,
-              accountId: accountId,
-              accountName: accountName,
-              subAccountName: subAccountName,
-              subAccountId: subAccountId,
-            ),
-          ),
-        );
-      } else {
-        throw Exception('Failed to submit data');
+      var response = await apiService.post(body);
+
+      print("========== API RESPONSE ==========");
+      print(response);
+
+      if (response == null) {
+        throw Exception("Response is NULL → Server not reachable");
       }
-    } catch (error) {
+
+      if (response['message'] == null) {
+        throw Exception("Server returned error → Missing 'message' key");
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationDataScreen(
+            processId: response['process_id'] ?? "",
+            tempId: tempId,
+            accountId: accountId,
+            accountName: accountName,
+            subAccountName: subAccountName,
+            subAccountId: subAccountId,
+          ),
+        ),
+      );
+    } catch (error, stacktrace) {
+      print("========== SUBMISSION ERROR ==========");
+      print("ERROR: $error");
+      print("STACKTRACE: $stacktrace");
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Submission failed")),
+        SnackBar(content: Text("Submission failed: $error")),
       );
     } finally {
       isLoading = false;
     }
   }
-
 
   // Future<void> submitSovHeadersSubAccounts(
   //     BuildContext context,
@@ -581,23 +592,7 @@ class UploadSovProvider extends ChangeNotifier {
       log(response.toString());
       List<dynamic> data = response['result'] ?? [];
       print("api locations length: ${data.length}");
-      geocodingList = data.map((item) {
-        return {
-          'isChecked': false,
-          ''
-                  'formatted_address':
-              item['formatted_address'] ?? 'No address available',
-          'line_no': item['line_no'] ?? '',
-          'city': item['property City'] ?? '',
-          'location_name': item['Location Name'] ?? '',
-          'state': item['State'] ?? '',
-          'country': item['Country'] ?? '',
-          'duplicates': item['duplicates'] ?? [],
-          'is_duplicate': item['is_duplicate'] ?? false,
-          'id': item['id'] ?? '',
-          'type': item['type'] ?? '',
-        };
-      }).toList();
+      geocodingList = List<Map<String, dynamic>>.from(data);
       // **Update counts in UploadSovProvider**
 
       // locationCount = geocodingList.length;
@@ -1066,29 +1061,16 @@ class UploadSovProvider extends ChangeNotifier {
       String subAccountName,
       String subAccountId,
       String tempProcessId,
-      String state) async {
+      String state, {
+        VoidCallback? onProcessCompleted,   // 🔥 Added callback
+      }) async {
     try {
+      // 🔥 CASE 1: Upload still in progress → Go to Mapping Screen
       if (state.toLowerCase() == 'upload') {
-        print(subAccountName);
-        print("subAccountName");
         Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => MappingScreen(
-                    tempId: tempProcessId,
-                    accountId: accountId,
-                    subAccountId: subAccountId,
-                    accountName: accountName,
-                    subAccountName: subAccountName)));
-      } else {
-        String processId =
-            await SharedPreferenceService.getSovUploadProcessId() ?? "";
-        print("Process ID: $processId");
-        Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => LocationDataScreen(
-              processId: processId,
+            builder: (_) => MappingScreen(
               tempId: tempProcessId,
               accountId: accountId,
               subAccountId: subAccountId,
@@ -1097,23 +1079,109 @@ class UploadSovProvider extends ChangeNotifier {
             ),
           ),
         );
+        return;
       }
-    } on BackendException catch (e, stackTrace) {
-      print(e);
+
+      // 🔥 CASE 2: Upload finished (duplication_check → processed)
+      String processId =
+          await SharedPreferenceService.getSovUploadProcessId() ?? "";
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LocationDataScreen(
+            processId: processId,
+            tempId: tempProcessId,
+            accountId: accountId,
+            subAccountId: subAccountId,
+            accountName: accountName,
+            subAccountName: subAccountName,
+          ),
+        ),
+      );
+
+      // 🔥 CLEAR UPLOAD STATE AFTER PROCESSING
+        await SharedPreferenceService.clearSovUploadState();
+      await SharedPreferenceService.clearSovUploadTempId();
+      await SharedPreferenceService.clearSovAccountId();
+      await SharedPreferenceService.clearSovSubAccountId();
+
+      // 🔥 Notify UI so the button switches to "Import Locations"
+      if (onProcessCompleted != null) {
+        onProcessCompleted();
+      }
+    }
+    on BackendException catch (e, stackTrace) {
       print(stackTrace);
-      isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
-      ));
-    } catch (e, stackTrace) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+    catch (e, stackTrace) {
       print(stackTrace);
-      print(e);
-      isLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
+
+
+//import logic update
+  // Future<void> fetchSovUploadData(
+  //     BuildContext context,
+  //     String accountId,
+  //     String accountName,
+  //     String subAccountName,
+  //     String subAccountId,
+  //     String tempProcessId,
+  //     String state) async {
+  //   try {
+  //     if (state.toLowerCase() == 'upload') {
+  //       print(subAccountName);
+  //       print("subAccountName");
+  //       Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(
+  //               builder: (_) => MappingScreen(
+  //                   tempId: tempProcessId,
+  //                   accountId: accountId,
+  //                   subAccountId: subAccountId,
+  //                   accountName: accountName,
+  //                   subAccountName: subAccountName)));
+  //     } else {
+  //       String processId =
+  //           await SharedPreferenceService.getSovUploadProcessId() ?? "";
+  //       print("Process ID: $processId");
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(
+  //           builder: (_) => LocationDataScreen(
+  //             processId: processId,
+  //             tempId: tempProcessId,
+  //             accountId: accountId,
+  //             subAccountId: subAccountId,
+  //             accountName: accountName,
+  //             subAccountName: subAccountName,
+  //           ),
+  //         ),
+  //       );
+  //     }
+  //   } on BackendException catch (e, stackTrace) {
+  //     print(e);
+  //     print(stackTrace);
+  //     isLoading = false;
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  //       content: Text(e.message),
+  //     ));
+  //   } catch (e, stackTrace) {
+  //     print(stackTrace);
+  //     print(e);
+  //     isLoading = false;
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  //       content: Text(e.toString()),
+  //     ));
+  //   }
+  // }
 
   // List<Map<String, dynamic>> _getSelectedLocations() {
   //   //if nothing is checked then return all locations else return only checked locations

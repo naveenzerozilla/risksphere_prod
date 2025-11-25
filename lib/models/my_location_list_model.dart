@@ -130,7 +130,7 @@ class MyLocation with ClusterItem {
   List<Subdestination>? subdestinations;
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
-  DataCompleteness? dataCompleteness;
+  int? dataCompleteness;
 
   MyLocation(
       {this.id,
@@ -227,9 +227,7 @@ class MyLocation with ClusterItem {
       });
     }
     isHazardProcess = json['is_hazard_processed'] ?? false;
-    dataCompleteness = json['data_completeness'] != null
-        ? new DataCompleteness.fromJson(json['data_completeness'])
-        : null;
+    dataCompleteness = json['data_completeness'];
   }
 
   Map<String, dynamic> toJson() {
@@ -272,9 +270,7 @@ class MyLocation with ClusterItem {
       data['screen_shots'] = screenshots!.map((v) => v.toJson()).toList();
     }
     data['is_hazard_processed'] = isHazardProcess;
-    if (this.dataCompleteness != null) {
-      data['data_completeness'] = this.dataCompleteness!.toJson();
-    }
+    data['data_completeness'] = this.dataCompleteness;
     return data;
   }
 
@@ -705,28 +701,128 @@ class ActivityLogs {
 }
 
 class User {
-  Null? imageUrl;
+  String? imageUrl;
   String? userId;
   String? email;
   String? name;
+  String? role;
+  List<Role> roles = []; // ⭐ Added this line
 
-  User({this.imageUrl, this.userId, this.email, this.name});
+  User({
+    this.imageUrl,
+    this.userId,
+    this.role,
+    this.email,
+    this.name,
+    this.roles = const [],
+  });
 
   User.fromJson(Map<String, dynamic> json) {
     imageUrl = json['image_url'];
     userId = json['user_id'];
     email = json['email'];
     name = json['name'];
+    role = json['role'];
+    // ⭐ parse role list safely
+    if (json["role"] != null && json["role"] is List) {
+      roles = (json["role"] as List).map((e) => Role.fromJson(e)).toList();
+    } else {
+      roles = [];
+    }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['image_url'] = this.imageUrl;
-    data['user_id'] = this.userId;
-    data['email'] = this.email;
-    data['name'] = this.name;
+    final Map<String, dynamic> data = {};
+    data['image_url'] = imageUrl;
+    data['user_id'] = userId;
+    data['email'] = email;
+    data['name'] = name;
+    data['role'] = this.role;
+    // ⭐ convert roles to json list
+    data["role"] = roles.map((e) => e.toJson()).toList();
+
     return data;
   }
+}
+
+class Role {
+  final String id;
+  final String name;
+  final String description;
+  final bool isApplicableForTrial;
+  final bool isSelectable;
+  final bool isForIndividual;
+  final int trialPeriodDays;
+  final bool isMultipleRoleEnabled;
+  final bool status;
+  final SovOperations sovOperations;
+
+  Role({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.isApplicableForTrial,
+    required this.isSelectable,
+    required this.isForIndividual,
+    required this.trialPeriodDays,
+    required this.isMultipleRoleEnabled,
+    required this.status,
+    required this.sovOperations,
+  });
+
+  factory Role.fromJson(Map<String, dynamic> json) {
+    return Role(
+      id: json["id"] ?? "",
+      name: json["name"] ?? "",
+      description: json["description"] ?? "",
+      isApplicableForTrial: json["is_applicable_for_trial"] ?? false,
+      isSelectable: json["is_selectable"] ?? false,
+      isForIndividual: json["is_for_individual"] ?? false,
+      trialPeriodDays: json["trial_period_days"] ?? 0,
+      isMultipleRoleEnabled: json["is_multiple_role_enabled"] ?? false,
+      status: json["status"] ?? false,
+      sovOperations: SovOperations.fromJson(json["sov_operations"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "name": name,
+        "description": description,
+        "is_applicable_for_trial": isApplicableForTrial,
+        "is_selectable": isSelectable,
+        "is_for_individual": isForIndividual,
+        "trial_period_days": trialPeriodDays,
+        "is_multiple_role_enabled": isMultipleRoleEnabled,
+        "status": status,
+        "sov_operations": sovOperations.toJson(),
+      };
+}
+
+class SovOperations {
+  final bool view;
+  final bool edit;
+  final bool comment;
+
+  SovOperations({
+    required this.view,
+    required this.edit,
+    required this.comment,
+  });
+
+  factory SovOperations.fromJson(Map<String, dynamic> json) {
+    return SovOperations(
+      view: json["view"] ?? false,
+      edit: json["edit"] ?? false,
+      comment: json["comment"] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        "view": view,
+        "edit": edit,
+        "comment": comment,
+      };
 }
 
 class Date {
@@ -1059,7 +1155,7 @@ class FinalAddress {
   String? companyId;
   int? lineNo;
   String? locationType;
-  String? sovId;
+  var sovId;
   String? locationName;
   String? accountId;
   String? countryIsoCode;
@@ -1298,13 +1394,25 @@ class GraphData {
 }
 
 class PdValues {
+  Map<String, PdScore>? byDataCompletenessScore;
   Map<String, PdScore>? byGeocodeScore;
   Map<String, PdScore>? byOverallScore;
 
-  PdValues({this.byGeocodeScore, this.byOverallScore});
+  PdValues({
+    this.byDataCompletenessScore,
+    this.byGeocodeScore,
+    this.byOverallScore,
+  });
 
   factory PdValues.fromJson(Map<String, dynamic> json) {
     return PdValues(
+      byDataCompletenessScore: json['by_data_completeness_score'] != null
+          ? Map<String, PdScore>.from(
+              json['by_data_completeness_score'].map(
+                (k, v) => MapEntry(k, PdScore.fromJson(v)),
+              ),
+            )
+          : {},
       byGeocodeScore: json['by_geocode_score'] != null
           ? Map<String, PdScore>.from(
               json['by_geocode_score'].map(
@@ -1324,6 +1432,10 @@ class PdValues {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
+    if (byDataCompletenessScore != null) {
+      data['by_data_completeness_score'] =
+          byDataCompletenessScore!.map((k, v) => MapEntry(k, v.toJson()));
+    }
     if (byGeocodeScore != null) {
       data['by_geocode_score'] =
           byGeocodeScore!.map((k, v) => MapEntry(k, v.toJson()));
@@ -1332,6 +1444,7 @@ class PdValues {
       data['by_overall_score'] =
           byOverallScore!.map((k, v) => MapEntry(k, v.toJson()));
     }
+
     return data;
   }
 }
@@ -1662,4 +1775,22 @@ class GeocodeCounts {
     data['5'] = this.i5;
     return data;
   }
+}
+
+class UserManagementResponse {
+  final User user;
+
+  UserManagementResponse({
+    required this.user,
+  });
+
+  factory UserManagementResponse.fromJson(Map<String, dynamic> json) {
+    return UserManagementResponse(
+      user: User.fromJson(json['user'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        "user": user.toJson(),
+      };
 }

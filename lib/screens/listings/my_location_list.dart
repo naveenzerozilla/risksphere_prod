@@ -70,7 +70,8 @@ class _MyLocationListState extends State<MyLocationList>
   bool isAdmin = false;
   bool isSuperAdmin = false;
   bool isIndivudual = false;
-
+  ScrollController _scrollController = ScrollController();
+  ScrollController _scrollController1 = ScrollController();
   Timer? deBouncer;
   List<MyLocation> selectedLocations = [];
   String? _uploadedFileName;
@@ -108,6 +109,7 @@ class _MyLocationListState extends State<MyLocationList>
   GlobalKey keyFeature2 = GlobalKey();
   GlobalKey keyFeature3 = GlobalKey();
   GlobalKey keyFeature4 = GlobalKey();
+  final ValueNotifier<String> fabStatusNotifier = ValueNotifier("idle");
 
   String selectedSovId = "";
   TextEditingController sovController = TextEditingController();
@@ -141,9 +143,52 @@ class _MyLocationListState extends State<MyLocationList>
 
     _mainTabController = TabController(length: 3, vsync: this);
     _mainTabController?.addListener(() {
-      setState(() {
-        selectedMainTab = _mainTabController?.index ?? 0;
-      });
+      if (!_mainTabController!.indexIsChanging) return;
+
+      setState(() => selectedMainTab = _mainTabController!.index);
+
+      final provider =
+          Provider.of<MyLocationListProvider>(context, listen: false);
+
+      if (selectedMainTab == 0) {
+        // My Locations tab
+        provider.page = 1;
+        provider.myLocationList.clear();
+        provider.fetchLocationList(
+          context,
+          "",
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          "",
+        );
+        provider
+            .fetchLocationConflictList(
+              context,
+              "",
+              1,
+              1,
+              widget.accountID,
+              widget.subAccountID,
+              widget.initialProcessId,
+              widget.initialSubProcessId,
+            )
+            .then((_) => setState(() {}));
+      } else if (selectedMainTab == 1) {
+        // List Table view - nothing to reload
+      } else if (selectedMainTab == 2) {
+        // Map view reload
+        provider.fetchAllLocationList(
+          context,
+          widget.accountID!,
+          widget.subAccountID!,
+          processId: widget.initialProcessId,
+          subProcessId: widget.initialSubProcessId,
+        );
+      }
     });
 
     var userProfileProvider =
@@ -220,7 +265,6 @@ class _MyLocationListState extends State<MyLocationList>
           });
         }
 
-        // 🔹 Always listen to process doc updates
         final processStream = FirebaseFirestore.instance
             .collection('processes')
             .where('process_id', isEqualTo: lastProcessId)
@@ -280,30 +324,34 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   void _onTabChanged() {
-    // setState(() {
-    //   selectedTab = _tabController?.index ?? 0;
-    // });
+    if (!_tabController.indexIsChanging) return;
 
-    final locationListProvider =
+    final provider =
         Provider.of<MyLocationListProvider>(context, listen: false);
-    locationListProvider.page = 1;
 
-    if (_tabController?.index == 0) {
-      _selectedScreen = Screens.locationList;
-      locationListProvider.fetchLocationList(
-          context,
-          "",
-          1,
-          10,
-          widget.accountID,
-          widget.subAccountID,
-          widget.initialProcessId,
-          widget.initialSubProcessId,
-          '');
+    provider.page = 1; // RESET PAGINATION
+    provider.certifiedPage = 1;
+    provider.isLoading = false;
+
+    if (_tabController.index == 0) {
+      // ALL LOCATIONS TAB
+      provider.myLocationList.clear();
+      provider.fetchLocationList(
+        context,
+        "",
+        1,
+        10,
+        widget.accountID,
+        widget.subAccountID,
+        widget.initialProcessId,
+        widget.initialSubProcessId,
+        "",
+      );
     } else {
-      _selectedScreen = Screens.certifiedLocationList;
-      locationListProvider.clearRatingsFilter();
-      locationListProvider.fetchCertifiedLocationList(
+      // CERTIFIED TAB
+      provider.certifiedLocationList.clear();
+      provider.clearRatingsFilter();
+      provider.fetchCertifiedLocationList(
         context,
         "",
         1,
@@ -390,13 +438,6 @@ class _MyLocationListState extends State<MyLocationList>
   bool _isDisposed = false;
   MyLocationListProvider? _myLocationProvider;
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   _myLocationProvider ??=
-  //       Provider.of<MyLocationListProvider>(context, listen: false);
-  // }
-
   @override
   void didUpdateWidget(covariant MyLocationList old) {
     super.didUpdateWidget(old);
@@ -441,88 +482,7 @@ class _MyLocationListState extends State<MyLocationList>
     super.dispose();
   }
 
-  // @override
-  // void dispose() {
-  //   _mainTabController?.dispose();
-  //   _masterTabController?.dispose();
-  //   _tabController?.dispose();
-  //   // _refreshTimer?.cancel();
-  //   _isDisposed = true;
-  //   _refreshTimer?.cancel();
-  //   _hasActiveTimer = false;
-  //   super.dispose();
-  //   deBouncer?.cancel();
-  //
-  //   final myLocationProvider =
-  //       Provider.of<MyLocationListProvider>(context, listen: false);
-  //   myLocationProvider.clearAllFilters();
-  //   myLocationProvider.clearSelection();
-  //   myLocationProvider.clearRatingsFilter();
-  //   myLocationProvider.myLocationList.clear();
-  //   myLocationProvider.certifiedLocationList.clear();
-  //   myLocationProvider.selectedLocations.clear();
-  //   myLocationProvider.summaryList.clear();
-  //
-  //   super.dispose();
-  // }
-
-  // void _startRefreshTimer() {
-  //   // Cancel any existing timer before starting a new one
-  //
-  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-  //     if (!mounted) {
-  //       timer.cancel();
-  //       return;
-  //     }
-  //
-  //     var provider = Provider.of<JobMonitoringProvider>(context, listen: false);
-  //
-  //     if (provider.isProcessing) {
-  //       _refreshData(); // Call refresh function only if processing is ongoing
-  //     } else {
-  //       timer.cancel(); // Stop the timer if processing is not happening
-  //     }
-  //   });
-  // }
   String? _activeAccountKey; // track which account/subaccount timer belongs to
-
-  // void _startRefreshTimer(String accountId, String subAccountId) {
-  //   final currentKey = "$accountId-$subAccountId";
-  //
-  //   // if already running for the same account/subaccount → skip
-  //   if (_activeAccountKey == currentKey && _refreshTimer?.isActive == true)
-  //     return;
-  //
-  //   // cancel any old timer
-  //   _refreshTimer?.cancel();
-  //   _hasActiveTimer = false;
-  //
-  //   _activeAccountKey = currentKey;
-  //   _hasActiveTimer = true;
-  //
-  //   // 👇 Immediately refresh once
-  //   final provider = Provider.of<JobMonitoringProvider>(context, listen: false);
-  //   if (mounted && provider.isProcessing) {
-  //     getdata(accountId, subAccountId);
-  //   }
-  //
-  //   // 👇 Schedule periodic refresh
-  //   _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-  //     final provider =
-  //         Provider.of<JobMonitoringProvider>(context, listen: false);
-  //
-  //     if (mounted && provider.isProcessing) {
-  //       setState(() {
-  //         isUploadInProgress = false;
-  //       });
-  //       getdata(accountId, subAccountId);
-  //     } else {
-  //       _refreshTimer?.cancel();
-  //       _activeAccountKey = null;
-  //       _hasActiveTimer = false;
-  //     }
-  //   });
-  // }
 
   Future<void> getdata(String accountId, String subAccountId) async {
     if (!mounted) return;
@@ -546,8 +506,7 @@ class _MyLocationListState extends State<MyLocationList>
       hasGeocodingStatus = geoCodingStatus ?? "1";
       hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
     });
-    final sovListProvider =
-        Provider.of<SOVListProvider>(context, listen: false);
+
     final locationListProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
 
@@ -555,45 +514,47 @@ class _MyLocationListState extends State<MyLocationList>
 
     await locationListProvider.fetchLocationList(context, "", 1, 8, accountId,
         subAccountId, widget.initialProcessId, widget.initialSubProcessId, '');
-    sovListProvider.fetchSovList(
-        context, widget.accountID!, widget.subAccountID!, "", 1, 3, 'my');
-    // sovListProvider.fe   // sovListProvider.fetchAutoCompleteSovListLocations(
-    //     //   context,
-    //     //   widget.accountID!,
-    //     //   widget.subAccountID!,
-    //     // );tchAutoCompleteSovListLocations(
+
+    // await locationListProvider.fetchAllLocationList(
     //   context,
-    //   widget.accountID!,
-    //   widget.subAccountID!,
+    //   accountId,
+    //   subAccountId,
+    //   processId: widget.initialProcessId,
+    //   subProcessId: widget.initialSubProcessId,
     // );
+    // await locationListProvider.fetchLocationList1(context, 1, 500, accountId,
+    //     subAccountId, widget.initialProcessId, widget.initialSubProcessId, "");
 
-    await locationListProvider.fetchAllLocationList(
-      context,
-      accountId,
-      subAccountId,
-      processId: widget.initialProcessId,
-      subProcessId: widget.initialSubProcessId,
-    );
-    await locationListProvider.fetchLocationList1(context, 1, 500, accountId,
-        subAccountId, widget.initialProcessId, widget.initialSubProcessId, "");
-
-    await locationListProvider.fetchCertifiedLocationList(
-      context,
-      "",
-      locationListProvider.certifiedPage,
-      8,
-      accountId,
-      subAccountId,
-      widget.initialProcessId,
-      widget.initialSubProcessId,
-    );
+    // await locationListProvider.fetchCertifiedLocationList(
+    //   context,
+    //   "",
+    //   locationListProvider.certifiedPage,
+    //   8,
+    //   accountId,
+    //   subAccountId,
+    //   widget.initialProcessId,
+    //   widget.initialSubProcessId,
+    // );
+    final provider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+    provider
+        .fetchLocationConflictList(
+          context,
+          "",
+          1,
+          1,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+        )
+        .then((_) => setState(() {}));
 
     if (mounted) {
       setState(() {});
     }
   }
 
-  ScrollController _scrollController = ScrollController();
   String selectedSov = 'My SOVs';
   final List<String> sovOptions = ['My SOVs', 'Shared SOVs', 'Received SOVs'];
 
@@ -614,27 +575,51 @@ class _MyLocationListState extends State<MyLocationList>
   }
 
   Future<void> _getSovUploadStatus() async {
-    // _getSovUploadStatus() async {
+    String? lastProcessState =
+        await SharedPreferenceService.getSovUploadState();
+    String? lastAccount = await SharedPreferenceService.getSovAccountId();
+    String? lastSubAccount = await SharedPreferenceService.getSovSubAccountId();
     String? tempProcessId = await SharedPreferenceService.getSovUploadTempId();
-    String? accountId = await SharedPreferenceService.getSovAccountId();
 
-    String? subAccountId =
-        await SharedPreferenceService.getSovSubAccountId() ?? "";
-
-    if (tempProcessId == null || accountId == null) {
-      print("Error: Missing values from Shared Preferences.");
+    // 1️⃣ No upload process stored → no continue button
+    if (tempProcessId == null || tempProcessId.isEmpty) {
+      setState(() => isUploadInProgress = false);
       return;
     }
 
-    setState(() {
-      isUploadInProgress = false;
-      // tempProcessId.isNotEmpty &&
-      // widget.accountID == accountId &&
-      // widget.subAccountID == subAccountId;
-    });
+    // 2️⃣ Replicate Web logic
+    bool showContinue = (lastProcessState == "upload" ||
+            lastProcessState == "duplication_check") &&
+        lastAccount == widget.accountID &&
+        lastSubAccount == widget.subAccountID;
 
-    print("Upload in Progress: $isUploadInProgress");
+    setState(() => isUploadInProgress = showContinue);
+
+    print("Upload Continue Available: $isUploadInProgress");
   }
+
+  // Future<void> _getSovUploadStatus() async {
+  //   // _getSovUploadStatus() async {
+  //   String? tempProcessId = await SharedPreferenceService.getSovUploadTempId();
+  //   String? accountId = await SharedPreferenceService.getSovAccountId();
+  //
+  //   String? subAccountId =
+  //       await SharedPreferenceService.getSovSubAccountId() ?? "";
+  //
+  //   if (tempProcessId == null || accountId == null) {
+  //     print("Error: Missing values from Shared Preferences.");
+  //     return;
+  //   }
+  //
+  //   setState(() {
+  //     isUploadInProgress = false;
+  //     // tempProcessId.isNotEmpty &&
+  //     // widget.accountID == accountId &&
+  //     // widget.subAccountID == subAccountId;
+  //   });
+  //
+  //   print("Upload in Progress: $isUploadInProgress");
+  // }
 
   @override
   Widget build(BuildContext context1) {
@@ -672,165 +657,195 @@ class _MyLocationListState extends State<MyLocationList>
                 ),
                 drawer: CustomDrawer(),
                 floatingActionButton: (selectedMainTab == 0)
-                    ? Builder(builder: (context) {
-                        return Container(
-                          key: keyFeature4,
-                          margin: EdgeInsets.only(bottom: 42.0),
-                          child: SpeedDial(
-                            animatedIcon: AnimatedIcons.menu_close,
-                            animatedIconTheme: IconThemeData(size: 22.0),
-                            backgroundColor: AppColors.primaryMain,
-                            foregroundColor:
-                                themeProvider.getTheme.colorScheme.onPrimary,
-                            children: [
-                              if ((selectedMasterTab) == 0)
-                                // Add this to your state
+                    ? ValueListenableBuilder<String>(
+                        valueListenable: fabStatusNotifier,
+                        builder: (context, fabState, child) {
+                          // fabState = "idle" | "processing" | "completed"
 
-                                SpeedDialChild(
-                                    child: _isLoading
-                                        ? SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                themeProvider.getTheme
-                                                    .colorScheme.onPrimary,
-                                              ),
-                                            ),
-                                          )
-                                        : Icon(Icons.add),
-                                    backgroundColor: AppColors.primaryMain,
-                                    foregroundColor: themeProvider
-                                        .getTheme.colorScheme.onPrimary,
-                                    label: 'Add Location',
-                                    labelStyle: typography.Body1,
-                                    onTap: () async {
-                                      setState(() {
-                                        _isLoading = true;
-                                      });
+                          String buttonLabel = fabState == "processing"
+                              ? "Continue"
+                              : "Import Locations";
 
-                                      await _setClaims();
-                                      await Future.delayed(
-                                          Duration(seconds: 1));
-
-                                      // Cancel timers and debounce before navigating
-                                      _isDisposed = true;
-                                      _refreshTimer?.isActive;
-                                      deBouncer?.cancel();
-
-                                      final result = await Navigator.of(context)
-                                          .push(MaterialPageRoute(
-                                              builder: (_) => AddLocationScreen(
-                                                    accountId:
-                                                        widget.accountID!,
-                                                    subAccountId:
-                                                        widget.subAccountID!,
-                                                    sovId: "",
-                                                    accountName:
-                                                        widget.accountName,
-                                                    subAccountName:
-                                                        widget.subAccountName,
-                                                  )));
-
-                                      _isDisposed = false;
-                                      _startRefreshTimer(
-                                          widget.accountID!,
-                                          widget
-                                              .subAccountID!); // recreate timer
-                                      // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
-                                      _getSovUploadStatus();
-                                      setState(() => _isLoading = false);
-
-                                      if (result == true) {
-                                        await getdata(widget.accountID!,
-                                            widget.subAccountID!);
-                                        _startRefreshTimer(widget.accountID!,
-                                            widget.subAccountID!);
-                                        await Provider.of<
-                                                    MyLocationListProvider>(
-                                                context,
-                                                listen: false)
-                                            .fetchLocationList(
-                                                context,
-                                                "",
-                                                1,
-                                                10,
-                                                widget.accountID,
-                                                widget.subAccountID,
-                                                widget.initialProcessId,
-                                                widget.initialSubProcessId,
-                                                '');
-                                        setState(() {});
-                                      }
-                                    }),
-                              SpeedDialChild(
-                                child: Icon(Icons.upload),
+                          return Builder(builder: (context) {
+                            return Container(
+                              key: keyFeature4,
+                              margin: EdgeInsets.only(bottom: 42.0),
+                              child: SpeedDial(
+                                animatedIcon: AnimatedIcons.menu_close,
+                                animatedIconTheme: IconThemeData(size: 22.0),
                                 backgroundColor: AppColors.primaryMain,
                                 foregroundColor: themeProvider
                                     .getTheme.colorScheme.onPrimary,
-                                label: isUploadInProgress
-                                    ? 'Continue'
-                                    : 'Import Locations',
-                                labelStyle: typography.Body1,
-                                onTap: () async {
-                                  tagController.text = "";
-                                  if (isMaintenance.toString() ==
-                                      'in_progress') {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              'SOV upload is disabled during maintenance period.')),
-                                    );
-                                  } else if (isUploadInProgress) {
-                                    print("TestA");
-                                    print(isUploadInProgress);
-                                    String tempProcessId =
-                                        await SharedPreferenceService
-                                                .getSovUploadTempId() ??
-                                            "";
-                                    String state = await SharedPreferenceService
-                                            .getSovUploadState() ??
-                                        "";
+                                children: [
+                                  if (selectedMasterTab == 0)
+                                    SpeedDialChild(
+                                      child: _isLoading
+                                          ? SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  themeProvider.getTheme
+                                                      .colorScheme.onPrimary,
+                                                ),
+                                              ),
+                                            )
+                                          : Icon(Icons.add),
+                                      backgroundColor: AppColors.primaryMain,
+                                      foregroundColor: themeProvider
+                                          .getTheme.colorScheme.onPrimary,
+                                      label: 'Add Location',
+                                      labelStyle: typography.Body1,
+                                      onTap: () async {
+                                        setState(() => _isLoading = true);
 
-                                    // Fetch API data when tapped
-                                    await Provider.of<UploadSovProvider>(
-                                            context,
-                                            listen: false)
-                                        .fetchSovUploadData(
-                                            context,
-                                            widget.accountID!,
-                                            widget.accountName,
-                                            widget.subAccountName,
-                                            widget.subAccountID!,
-                                            tempProcessId,
-                                            state);
-                                  } else {
-                                    _showUploadBottomSheet(widget.accountID!,
-                                        widget.subAccountID!, "");
-                                  }
-                                },
-                              ),
-                              if ((_masterTabController?.index ?? 0) == 0)
-                                SpeedDialChild(
-                                  child: Icon(Icons.download),
-                                  backgroundColor: trialStatus.isNotEmpty
-                                      ? Colors.grey
-                                      : AppColors.primaryMain,
-                                  foregroundColor: themeProvider
-                                      .getTheme.colorScheme.onPrimary,
-                                  label: 'Export Locations',
-                                  labelStyle: typography.Body1,
-                                  onTap: trialStatus.isNotEmpty
-                                      ? null
-                                      : () async {
-                                          await getdata(
-                                              widget.accountID!,
-                                              widget
-                                                  .subAccountID!); // API call only when tapped
-                                          setState(() {});
+                                        await _setClaims();
+                                        await Future.delayed(
+                                            Duration(seconds: 1));
 
+                                        _isDisposed = true;
+                                        _refreshTimer?.isActive;
+                                        deBouncer?.cancel();
+
+                                        final result =
+                                            await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => AddLocationScreen(
+                                              accountId: widget.accountID!,
+                                              subAccountId:
+                                                  widget.subAccountID!,
+                                              sovId: "",
+                                              accountName: widget.accountName,
+                                              subAccountName:
+                                                  widget.subAccountName,
+                                            ),
+                                          ),
+                                        );
+
+                                        _isDisposed = false;
+                                        _startRefreshTimer(widget.accountID!,
+                                            widget.subAccountID!);
+
+                                        _getSovUploadStatus();
+                                        setState(() => _isLoading = false);
+
+                                        if (result == true) {
+                                          await getdata(widget.accountID!,
+                                              widget.subAccountID!);
+
+                                          // 🔥 Only rebuild FAB
+                                          fabStatusNotifier.value =
+                                              fabStatusNotifier.value;
+                                        }
+                                      },
+                                    ),
+
+                                  // -------------------------------------------------
+                                  // 🔥 IMPORT / CONTINUE button
+                                  // -------------------------------------------------
+                                  SpeedDialChild(
+                                    child: Icon(Icons.upload),
+                                    backgroundColor: AppColors.primaryMain,
+                                    foregroundColor: themeProvider
+                                        .getTheme.colorScheme.onPrimary,
+                                    label: buttonLabel,
+                                    // << dynamic label
+                                    labelStyle: typography.Body1,
+                                    onTap: () async {
+                                      tagController.text = "";
+
+                                      if (fabState == "processing") {
+                                        // CONTINUE FLOW
+                                        String tempProcessId =
+                                            await SharedPreferenceService
+                                                    .getSovUploadTempId() ??
+                                                "";
+                                        String state =
+                                            await SharedPreferenceService
+                                                    .getSovUploadState() ??
+                                                "";
+
+                                        await Provider.of<UploadSovProvider>(
+                                                context,
+                                                listen: false)
+                                            .fetchSovUploadData(
+                                          context,
+                                          widget.accountID!,
+                                          widget.accountName,
+                                          widget.subAccountName,
+                                          widget.subAccountID!,
+                                          tempProcessId,
+                                          state,
+                                          onProcessCompleted: () {
+                                            _getSovUploadStatus();
+                                            fabStatusNotifier.value = "idle";
+                                          },
+                                        );
+                                      } else {
+                                        // IMPORT FLOW
+                                        _showUploadBottomSheet(
+                                          widget.accountID!,
+                                          widget.subAccountID!,
+                                          "",
+                                        );
+                                      }
+                                    },
+                                  ),
+
+                                  // -------------------------------------------------
+                                  // Export button (unchanged)
+                                  // -------------------------------------------------
+                                  if ((_masterTabController?.index ?? 0) == 0)
+                                    SpeedDialChild(
+                                      child: Icon(Icons.download),
+
+                                      // ---------- CORRECT COLOR LOGIC ----------
+                                      backgroundColor: (() {
+                                        final provider =
+                                            Provider.of<MyLocationListProvider>(
+                                                context,
+                                                listen: false);
+
+                                        if (selectedMainTab == 0) {
+                                          // My Locations Tab
+                                          return provider
+                                                  .myLocationList.isNotEmpty
+                                              ? AppColors.primaryMain
+                                              : Colors.grey;
+                                        } else {
+                                          // Certified Locations Tab
+                                          return provider.certifiedLocationList
+                                                  .isNotEmpty
+                                              ? AppColors.primaryMain
+                                              : Colors.grey;
+                                        }
+                                      })(),
+
+                                      // Adjust icon color
+                                      foregroundColor: themeProvider
+                                          .getTheme.colorScheme.onPrimary,
+
+                                      label: 'Export Locations',
+                                      labelStyle: typography.Body1,
+
+                                      // ---------- CORRECT TAP LOGIC ----------
+                                      onTap: (() {
+                                        final provider =
+                                            Provider.of<MyLocationListProvider>(
+                                                context,
+                                                listen: false);
+
+                                        bool canExport = selectedMainTab == 0
+                                            ? provider.myLocationList.isNotEmpty
+                                            : provider.certifiedLocationList
+                                                .isNotEmpty;
+
+                                        if (!canExport) return null; // disable
+
+                                        return () async {
                                           showDialog(
                                             context: context,
                                             builder: (BuildContext context) {
@@ -840,32 +855,417 @@ class _MyLocationListState extends State<MyLocationList>
                                                     widget.subAccountID!,
                                                 sovId: "",
                                                 locationId: selectedMainTab == 0
-                                                    ? Provider.of<
-                                                                MyLocationListProvider>(
-                                                            context,
-                                                            listen: false)
-                                                        .myLocationList
-                                                        .map((location) =>
-                                                            location.id ?? "")
+                                                    ? provider.myLocationList
+                                                        .map((loc) =>
+                                                            loc.id ?? "")
                                                         .toList()
-                                                    : Provider.of<
-                                                                MyLocationListProvider>(
-                                                            context,
-                                                            listen: false)
+                                                    : provider
                                                         .certifiedLocationList
-                                                        .map((location) =>
-                                                            location.id ?? "")
+                                                        .map((loc) =>
+                                                            loc.id ?? "")
                                                         .toList(),
                                               );
                                             },
                                           );
-                                        },
-                                ),
-                            ],
-                          ),
-                        );
-                      })
+                                        };
+                                      })(),
+                                    ),
+
+                                  // if ((_masterTabController?.index ?? 0) == 0)
+                                  //   SpeedDialChild(
+                                  //     child: Icon(Icons.download),
+                                  //     backgroundColor:
+                                  //     Provider.of<MyLocationListProvider>(context,
+                                  //         listen: false)
+                                  //         .myLocationList
+                                  //         .isNotEmpty &&
+                                  //         Provider.of<MyLocationListProvider>(context,
+                                  //             listen: false)
+                                  //             .certifiedLocationList
+                                  //             .isNotEmpty
+                                  //         ? AppColors.primaryMain
+                                  //         : Colors.grey,
+                                  //     foregroundColor:
+                                  //     themeProvider.getTheme.colorScheme.onPrimary,
+                                  //     label: 'Export Locations',
+                                  //     labelStyle: typography.Body1,
+                                  //     onTap:
+                                  //     Provider.of<MyLocationListProvider>(context,
+                                  //         listen: false)
+                                  //         .myLocationList
+                                  //         .isNotEmpty &&
+                                  //         Provider.of<MyLocationListProvider>(context,
+                                  //             listen: false)
+                                  //             .certifiedLocationList
+                                  //             .isNotEmpty
+                                  //         ? () async {
+                                  //       showDialog(
+                                  //         context: context,
+                                  //         builder: (BuildContext context) {
+                                  //           return ExportDialog(
+                                  //             accountId: widget.accountID!,
+                                  //             subAccountId: widget.subAccountID!,
+                                  //             sovId: "",
+                                  //             locationId: selectedMainTab == 0
+                                  //                 ? Provider.of<MyLocationListProvider>(
+                                  //                 context,
+                                  //                 listen: false)
+                                  //                 .myLocationList
+                                  //                 .map((loc) => loc.id ?? "")
+                                  //                 .toList()
+                                  //                 : Provider.of<MyLocationListProvider>(
+                                  //                 context,
+                                  //                 listen: false)
+                                  //                 .certifiedLocationList
+                                  //                 .map((loc) => loc.id ?? "")
+                                  //                 .toList(),
+                                  //           );
+                                  //         },
+                                  //       );
+                                  //     }
+                                  //         : null,
+                                  //   ),
+                                ],
+                              ),
+                            );
+                          });
+                        },
+                      )
                     : null,
+
+                // floatingActionButton: (selectedMainTab == 0)
+                //     ? Builder(builder: (context) {
+                //         return Container(
+                //           key: keyFeature4,
+                //           margin: EdgeInsets.only(bottom: 42.0),
+                //           child: SpeedDial(
+                //             animatedIcon: AnimatedIcons.menu_close,
+                //             animatedIconTheme: IconThemeData(size: 22.0),
+                //             backgroundColor: AppColors.primaryMain,
+                //             foregroundColor:
+                //                 themeProvider.getTheme.colorScheme.onPrimary,
+                //             children: [
+                //               if ((selectedMasterTab) == 0)
+                //                 // Add this to your state
+                //
+                //                 SpeedDialChild(
+                //                     child: _isLoading
+                //                         ? SizedBox(
+                //                             width: 24,
+                //                             height: 24,
+                //                             child: CircularProgressIndicator(
+                //                               strokeWidth: 2,
+                //                               valueColor:
+                //                                   AlwaysStoppedAnimation<Color>(
+                //                                 themeProvider.getTheme
+                //                                     .colorScheme.onPrimary,
+                //                               ),
+                //                             ),
+                //                           )
+                //                         : Icon(Icons.add),
+                //                     backgroundColor: AppColors.primaryMain,
+                //                     foregroundColor: themeProvider
+                //                         .getTheme.colorScheme.onPrimary,
+                //                     label: 'Add Location',
+                //                     labelStyle: typography.Body1,
+                //                     onTap: () async {
+                //                       setState(() {
+                //                         _isLoading = true;
+                //                       });
+                //
+                //                       await _setClaims();
+                //                       await Future.delayed(
+                //                           Duration(seconds: 1));
+                //
+                //                       // Cancel timers and debounce before navigating
+                //                       _isDisposed = true;
+                //                       _refreshTimer?.isActive;
+                //                       deBouncer?.cancel();
+                //
+                //                       final result = await Navigator.of(context)
+                //                           .push(MaterialPageRoute(
+                //                               builder: (_) => AddLocationScreen(
+                //                                     accountId:
+                //                                         widget.accountID!,
+                //                                     subAccountId:
+                //                                         widget.subAccountID!,
+                //                                     sovId: "",
+                //                                     accountName:
+                //                                         widget.accountName,
+                //                                     subAccountName:
+                //                                         widget.subAccountName,
+                //                                   )));
+                //
+                //                       _isDisposed = false;
+                //                       _startRefreshTimer(
+                //                           widget.accountID!,
+                //                           widget
+                //                               .subAccountID!); // recreate timer
+                //                       // deBouncer = Debouncer(milliseconds: 500);// ✅ Re-create debounce instance
+                //                       _getSovUploadStatus();
+                //                       setState(() => _isLoading = false);
+                //
+                //                       if (result == true) {
+                //                         await getdata(widget.accountID!,
+                //                             widget.subAccountID!);
+                //                         _startRefreshTimer(widget.accountID!,
+                //                             widget.subAccountID!);
+                //                         await Provider.of<
+                //                                     MyLocationListProvider>(
+                //                                 context,
+                //                                 listen: false)
+                //                             .fetchLocationList(
+                //                                 context,
+                //                                 "",
+                //                                 1,
+                //                                 10,
+                //                                 widget.accountID,
+                //                                 widget.subAccountID,
+                //                                 widget.initialProcessId,
+                //                                 widget.initialSubProcessId,
+                //                                 '');
+                //                         setState(() {});
+                //                       }
+                //                     }),
+                //               SpeedDialChild(
+                //                 child: Icon(Icons.upload),
+                //                 backgroundColor: AppColors.primaryMain,
+                //                 foregroundColor: themeProvider
+                //                     .getTheme.colorScheme.onPrimary,
+                //                 label: _lastProcessStatus.toString() ==
+                //                         'processing'
+                //                     ? 'Continue'
+                //                     : 'Import Locations',
+                //                 labelStyle: typography.Body1,
+                //                 onTap: () async {
+                //                   tagController.text = "";
+                //
+                //                   if ( _lastProcessStatus.toString() !=
+                //                       'processing') {
+                //                     ScaffoldMessenger.of(context).showSnackBar(
+                //                       SnackBar(
+                //                           content: Text(
+                //                               'SOV upload is disabled during maintenance period.')),
+                //                     );
+                //                   } else if (_lastProcessStatus.toString() ==
+                //                       'processing' || isUploadInProgress) {
+                //                     print(isUploadInProgress);
+                //
+                //                     String tempProcessId =
+                //                         await SharedPreferenceService
+                //                                 .getSovUploadTempId() ??
+                //                             "";
+                //                     String state = await SharedPreferenceService
+                //                             .getSovUploadState() ??
+                //                         "";
+                //
+                //                     await Provider.of<UploadSovProvider>(
+                //                             context,
+                //                             listen: false)
+                //                         .fetchSovUploadData(
+                //                       context,
+                //                       widget.accountID!,
+                //                       widget.accountName,
+                //                       widget.subAccountName,
+                //                       widget.subAccountID!,
+                //                       tempProcessId,
+                //                       state,
+                //                       onProcessCompleted: () {
+                //                         _getSovUploadStatus(); // ✔ instantly refresh button
+                //                         setState(
+                //                             () {}); // ✔ UI updates immediately
+                //                       },
+                //                     );
+                //                   } else {
+                //                     _showUploadBottomSheet(
+                //                       widget.accountID!,
+                //                       widget.subAccountID!,
+                //                       "",
+                //                     );
+                //                   }
+                //                 },
+                //               ),
+                //
+                //               if ((_masterTabController?.index ?? 0) == 0)
+                //                 SpeedDialChild(
+                //                   child: Icon(Icons.download),
+                //                   backgroundColor: (Provider.of<
+                //                                       MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .myLocationList
+                //                               .isNotEmpty &&
+                //                           Provider.of<MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .certifiedLocationList
+                //                               .isNotEmpty)
+                //                       ? AppColors.primaryMain
+                //                       : Colors.grey,
+                //                   foregroundColor: (Provider.of<
+                //                                       MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .myLocationList
+                //                               .isNotEmpty &&
+                //                           Provider.of<MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .certifiedLocationList
+                //                               .isNotEmpty)
+                //                       ? themeProvider
+                //                           .getTheme.colorScheme.onPrimary
+                //                       : Colors.grey.shade400,
+                //                   label: 'Export Locations',
+                //                   labelStyle: typography.Body1,
+                //                   onTap: (Provider.of<MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .myLocationList
+                //                               .isNotEmpty &&
+                //                           Provider.of<MyLocationListProvider>(
+                //                                   context,
+                //                                   listen: false)
+                //                               .certifiedLocationList
+                //                               .isNotEmpty)
+                //                       ? () async {
+                //                           setState(() {});
+                //                           showDialog(
+                //                             context: context,
+                //                             builder: (BuildContext context) {
+                //                               return ExportDialog(
+                //                                 accountId: widget.accountID!,
+                //                                 subAccountId:
+                //                                     widget.subAccountID!,
+                //                                 sovId: "",
+                //                                 locationId: selectedMainTab == 0
+                //                                     ? Provider.of<
+                //                                                 MyLocationListProvider>(
+                //                                             context,
+                //                                             listen: false)
+                //                                         .myLocationList
+                //                                         .map((location) =>
+                //                                             location.id ?? "")
+                //                                         .toList()
+                //                                     : Provider.of<
+                //                                                 MyLocationListProvider>(
+                //                                             context,
+                //                                             listen: false)
+                //                                         .certifiedLocationList
+                //                                         .map((location) =>
+                //                                             location.id ?? "")
+                //                                         .toList(),
+                //                               );
+                //                             },
+                //                           );
+                //                         }
+                //                       : null,
+                //                 ),
+                //               // SpeedDialChild(
+                //               //   child: Icon(Icons.download),
+                //               //   backgroundColor: (Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //       .myLocationList
+                //               //       .isNotEmpty &&
+                //               //       Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //           .certifiedLocationList
+                //               //           .isNotEmpty)
+                //               //       ? AppColors.primaryMain
+                //               //       : Colors.grey,
+                //               //   foregroundColor: (Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //       .myLocationList
+                //               //       .isNotEmpty &&
+                //               //       Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //           .certifiedLocationList
+                //               //           .isNotEmpty)
+                //               //       ? themeProvider.getTheme.colorScheme.onPrimary
+                //               //       : Colors.grey.shade400,
+                //               //   label: 'Export Locations',
+                //               //   labelStyle: typography.Body1,
+                //               //   onTap: (Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //       .myLocationList
+                //               //       .isNotEmpty &&
+                //               //       Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //           .certifiedLocationList
+                //               //           .isNotEmpty)
+                //               //       ? () async {
+                //               //     setState(() {});
+                //               //     showDialog(
+                //               //       context: context,
+                //               //       builder: (BuildContext context) {
+                //               //         return ExportDialog(
+                //               //           accountId: widget.accountID!,
+                //               //           subAccountId: widget.subAccountID!,
+                //               //           sovId: "",
+                //               //           locationId: selectedMainTab == 0
+                //               //               ? Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //               .myLocationList
+                //               //               .map((location) => location.id ?? "")
+                //               //               .toList()
+                //               //               : Provider.of<MyLocationListProvider>(context, listen: false)
+                //               //               .certifiedLocationList
+                //               //               .map((location) => location.id ?? "")
+                //               //               .toList(),
+                //               //         );
+                //               //       },
+                //               //     );
+                //               //   }
+                //               //       : null,
+                //               // ),
+                //               // SpeedDialChild(
+                //               //   child: Icon(Icons.download),
+                //               //   backgroundColor: trialStatus.isNotEmpty
+                //               //       ? Colors.grey
+                //               //       : AppColors.primaryMain,
+                //               //   foregroundColor: themeProvider
+                //               //       .getTheme.colorScheme.onPrimary,
+                //               //   label: 'Export Locations',
+                //               //   labelStyle: typography.Body1,
+                //               //   onTap:
+                //               //   // trialStatus.isNotEmpty
+                //               //   //     ? null
+                //               //   //     :
+                //               //       () async {
+                //               //           // await getdata(
+                //               //           //     widget.accountID!,
+                //               //           //     widget
+                //               //           //         .subAccountID!); // API call only when tapped
+                //               //           setState(() {});
+                //               //
+                //               //           showDialog(
+                //               //             context: context,
+                //               //             builder: (BuildContext context) {
+                //               //               return ExportDialog(
+                //               //                 accountId: widget.accountID!,
+                //               //                 subAccountId:
+                //               //                     widget.subAccountID!,
+                //               //                 sovId: "",
+                //               //                 locationId: selectedMainTab == 0
+                //               //                     ? Provider.of<
+                //               //                                 MyLocationListProvider>(
+                //               //                             context,
+                //               //                             listen: false)
+                //               //                         .myLocationList
+                //               //                         .map((location) =>
+                //               //                             location.id ?? "")
+                //               //                         .toList()
+                //               //                     : Provider.of<
+                //               //                                 MyLocationListProvider>(
+                //               //                             context,
+                //               //                             listen: false)
+                //               //                         .certifiedLocationList
+                //               //                         .map((location) =>
+                //               //                             location.id ?? "")
+                //               //                         .toList(),
+                //               //               );
+                //               //             },
+                //               //           );
+                //               //         },
+                //               // ),
+                //             ],
+                //           ),
+                //         );
+                //       })
+                //     : null,
                 body: Stack(
                   children: [
                     /*  Positioned.fill(
@@ -965,6 +1365,103 @@ class _MyLocationListState extends State<MyLocationList>
                                       //   },
                                       // ),
                                       _getLiveUI(),
+                                      // Consumer<MyLocationListProvider>(
+                                      //   builder: (context,
+                                      //       myLocationListProvider, child) {
+                                      //     if (myLocationListProvider
+                                      //         .myLocationList.isNotEmpty) {
+                                      //       return IconButton(
+                                      //         icon: isLoading
+                                      //             ? SizedBox(
+                                      //                 height: 30,
+                                      //                 width: 30,
+                                      //                 child:
+                                      //                     CircularProgressIndicator(
+                                      //                         strokeWidth: 2),
+                                      //               )
+                                      //             : SvgPicture.asset(
+                                      //                 'assets/images/contract.svg'),
+                                      //         onPressed: isLoading
+                                      //             ? null
+                                      //             : () async {
+                                      //                 setState(() =>
+                                      //                     isLoading = true);
+                                      //                 var provider = Provider
+                                      //                     .of<JobMonitoringProvider>(
+                                      //                         context,
+                                      //                         listen: false);
+                                      //
+                                      //                 try {
+                                      //                   Map<String, dynamic>?
+                                      //                       summaryData =
+                                      //                       await provider.fetchLocationSummary(
+                                      //                           widget
+                                      //                               .accountID!,
+                                      //                           widget
+                                      //                               .subAccountID!);
+                                      //
+                                      //                   if (summaryData !=
+                                      //                       null) {
+                                      //                     // Navigate to the new page instead of showing a dialog
+                                      //                     Navigator.push(
+                                      //                       context,
+                                      //                       MaterialPageRoute(
+                                      //                         builder: (context) =>
+                                      //                             ProcessSummaryPage(
+                                      //                                 summaryData:
+                                      //                                     summaryData),
+                                      //                       ),
+                                      //                     );
+                                      //                   } else {
+                                      //                     ScaffoldMessenger.of(
+                                      //                             context)
+                                      //                         .showSnackBar(
+                                      //                       SnackBar(
+                                      //                         content: Text(
+                                      //                           'Failed to fetch summary',
+                                      //                           style: Theme.of(
+                                      //                                   context)
+                                      //                               .textTheme
+                                      //                               .bodyMedium
+                                      //                               ?.copyWith(
+                                      //                                   color: Colors
+                                      //                                       .white),
+                                      //                         ),
+                                      //                         backgroundColor:
+                                      //                             Colors.red,
+                                      //                       ),
+                                      //                     );
+                                      //                   }
+                                      //                 } catch (e) {
+                                      //                   ScaffoldMessenger.of(
+                                      //                           context)
+                                      //                       .showSnackBar(
+                                      //                     SnackBar(
+                                      //                       content: Text(
+                                      //                         'Error: $e',
+                                      //                         style: Theme.of(
+                                      //                                 context)
+                                      //                             .textTheme
+                                      //                             .bodyMedium
+                                      //                             ?.copyWith(
+                                      //                                 color: Colors
+                                      //                                     .white),
+                                      //                       ),
+                                      //                       backgroundColor:
+                                      //                           Colors.red,
+                                      //                     ),
+                                      //                   );
+                                      //                 } finally {
+                                      //                   setState(() =>
+                                      //                       isLoading = false);
+                                      //                 }
+                                      //               },
+                                      //       );
+                                      //     } else {
+                                      //       return SizedBox.shrink();
+                                      //     }
+                                      //   },
+                                      // ),
                                       Consumer<MyLocationListProvider>(
                                         builder: (context,
                                             myLocationListProvider, child) {
@@ -1139,157 +1636,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                         text: 'Locations'),
 
                                                     // 🔽 Tab with dropdown
-                                                    Tab(
-                                                      child: Builder(
-                                                        builder: (context) {
-                                                          return GestureDetector(
-                                                            behavior:
-                                                                HitTestBehavior
-                                                                    .translucent,
-                                                            onTapDown:
-                                                                (TapDownDetails
-                                                                    details) async {
-                                                              final tabController =
-                                                                  _masterTabController;
-                                                              final tabIndex =
-                                                                  1; // index for this tab
-
-                                                              // 🟡 Don't switch tab immediately — first show dropdown
-                                                              final RenderBox
-                                                                  button =
-                                                                  context.findRenderObject()
-                                                                      as RenderBox;
-                                                              final RenderBox
-                                                                  overlay =
-                                                                  Overlay.of(context)
-                                                                          .context
-                                                                          .findRenderObject()
-                                                                      as RenderBox;
-
-                                                              // dropdown below the tab
-                                                              final position =
-                                                                  RelativeRect
-                                                                      .fromRect(
-                                                                Rect.fromPoints(
-                                                                  button.localToGlobal(
-                                                                      Offset(
-                                                                          0,
-                                                                          button
-                                                                              .size
-                                                                              .height),
-                                                                      ancestor:
-                                                                          overlay),
-                                                                  button.localToGlobal(
-                                                                      button
-                                                                          .size
-                                                                          .bottomRight(Offset
-                                                                              .zero),
-                                                                      ancestor:
-                                                                          overlay),
-                                                                ),
-                                                                Offset.zero &
-                                                                    overlay
-                                                                        .size,
-                                                              );
-
-                                                              // show dropdown
-                                                              final selected =
-                                                                  await showMenu<
-                                                                      String>(
-                                                                context:
-                                                                    context,
-                                                                position:
-                                                                    position,
-                                                                color: const Color(
-                                                                    0xFF1E1E1E),
-                                                                items: sovOptions
-                                                                    .map(
-                                                                      (item) =>
-                                                                          PopupMenuItem<
-                                                                              String>(
-                                                                        value:
-                                                                            item,
-                                                                        child:
-                                                                            Text(
-                                                                          item,
-                                                                          style:
-                                                                              const TextStyle(color: Colors.white),
-                                                                        ),
-                                                                      ),
-                                                                    )
-                                                                    .toList(),
-                                                              );
-
-                                                              // 🟢 Only when dropdown item is selected → go to tab
-                                                              if (selected !=
-                                                                  null) {
-                                                                setState(() =>
-                                                                    selectedSov =
-                                                                        selected);
-
-                                                                // Switch to tab after selection
-                                                                tabController!
-                                                                    .animateTo(
-                                                                        tabIndex);
-
-                                                                // Fetch data based on selection
-                                                                final sovListProvider =
-                                                                    Provider.of<
-                                                                            SOVListProvider>(
-                                                                        context,
-                                                                        listen:
-                                                                            false);
-
-                                                                sovListProvider
-                                                                    .fetchSovList(
-                                                                  context,
-                                                                  widget.accountID ??
-                                                                      '',
-                                                                  widget.subAccountID ??
-                                                                      '',
-                                                                  "",
-                                                                  1,
-                                                                  3,
-                                                                  selected ==
-                                                                          'Shared SOVs'
-                                                                      ? 'shared'
-                                                                      : selected ==
-                                                                              'My SOVs'
-                                                                          ? 'my'
-                                                                          : 'received',
-                                                                );
-                                                              }
-                                                            },
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Flexible(
-                                                                  child: Text(
-                                                                    selectedSov,
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                    style: const TextStyle(
-                                                                        color: Colors
-                                                                            .white),
-                                                                  ),
-                                                                ),
-                                                                const SizedBox(
-                                                                    width: 4),
-                                                                const Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                    size: 22),
-                                                              ],
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
 
                                                     const Tab(text: 'Shared'),
 
@@ -1369,11 +1715,6 @@ class _MyLocationListState extends State<MyLocationList>
                                               myLocationListProvider, ""),
                                         );
                                       },
-                                    ),
-                                    Container(
-                                      margin: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      child: sovBody(typography),
                                     ),
                                     _getSharedComingSoonUI("shared"),
                                     if (isSuperAdmin || isPgAdmin)
@@ -1857,79 +2198,7 @@ class _MyLocationListState extends State<MyLocationList>
                               },
                               icon: Icon(Symbols.note_stack_add),
                               tooltip: 'Add Tag'),
-                          // Consumer<SOVListProvider>(
-                          //   builder: (context, provider, child) {
-                          //     return provider.isLoading
-                          //         ? SizedBox(
-                          //             height: 24,
-                          //             width: 24,
-                          //             child:
-                          //                 CircularProgressIndicator(strokeWidth: 2),
-                          //           )
-                          //         : IconButton(
-                          //             onPressed: trialStatus.isNotEmpty
-                          //                 ? null
-                          //                 : () {
-                          //                     // provider.setLoading(true); // Start loading
-                          //
-                          //                     locationListProvider
-                          //                         .addSelectedToSOV(
-                          //                       context,
-                          //                       widget.accountID!,
-                          //                       widget.subAccountID!,
-                          //                       widget.accountName,
-                          //                       widget.subAccountName,
-                          //                       _masterTabController,
-                          //                     )
-                          //                         .then((value) {
-                          //                       provider.fetchSovList(
-                          //                           context,
-                          //                           widget.accountID!,
-                          //                           widget.subAccountID!,
-                          //                           "",
-                          //                           1,
-                          //                           10,
-                          //                           'all');
-                          //                     }).whenComplete(() {
-                          //                       // Stop loading after API call
-                          //                     });
-                          //                   },
-                          //             icon: Icon(Symbols.list_alt_add),
-                          //             tooltip: 'Add to SOV',
-                          //           );
-                          //   },
-                          // ),
-                          IconButton(
-                            onPressed:
-                                // trialStatus.isNotEmpty
-                                //     ? null
-                                () {
-                              var provider = Provider.of<SOVListProvider>(
-                                  context,
-                                  listen: false);
-                              // Implement bulk add to SOV
-                              locationListProvider
-                                  .addSelectedToSOV(
-                                      context,
-                                      widget.accountID!,
-                                      widget.subAccountID!,
-                                      widget.accountName,
-                                      widget.subAccountName,
-                                      _masterTabController)
-                                  .then((value) {
-                                provider.fetchSovList(
-                                    context,
-                                    widget.accountID!,
-                                    widget.subAccountID!,
-                                    "",
-                                    1,
-                                    3,
-                                    "");
-                              });
-                            },
-                            icon: Icon(Symbols.list_alt_add),
-                            tooltip: 'Add to SOV',
-                          ),
+
                           IconButton(
                             onPressed: () {
                               // Show delete confirmation dialog
@@ -2433,204 +2702,6 @@ class _MyLocationListState extends State<MyLocationList>
                   ),
                 ],
               ),
-
-              // Second Tab: Table View
-              // Consumer<MyLocationListProvider>(
-              //   builder: (context, locationListProvider, child) {
-              //     if (locationListProvider.isLoading && locationListProvider.page == 1) {
-              //       return const Center(child: CircularProgressIndicator());
-              //     }
-              //
-              //     final locations = locationListProvider.myLocationList;
-              //     if (locations.isEmpty) {
-              //       return const Center(child: Text("No Locations Found"));
-              //     }
-              //
-              //     List<String> hazardColumns = locations.first.hazard?.keys.toList() ?? [];
-              //     final Map<String, int> hazardOrder = {
-              //       'Hurricane': 1,
-              //       'Earthquake': 2,
-              //       'Wildfire': 3,
-              //       'CoastalFlood': 4,
-              //       'RiverineFlood': 5,
-              //       'Avalanche': 6,
-              //       'ColdWave': 7,
-              //       'Drought': 8,
-              //       'Hail': 9,
-              //       'HeatWave': 10,
-              //       'IceStorm': 11,
-              //       'Landslide': 12,
-              //       'Lightning': 13,
-              //       'StrongWind': 14,
-              //       'Tornado': 15,
-              //       'Tsunami': 16,
-              //       'VolcanicActivity': 17,
-              //       'WinterWeather': 18,
-              //     };
-              //
-              //     final sortedHazardColumns = hazardColumns
-              //         .where((hazard) => hazard != 'Overall')
-              //         .toList()
-              //       ..sort((a, b) => (hazardOrder[a] ?? 999)
-              //           .compareTo(hazardOrder[b] ?? 999));
-              //
-              //     final showRiskScoreNotifier = ValueNotifier<bool>(true);
-              //
-              //     ScrollController scrollController = ScrollController();
-              //     scrollController.addListener(() {
-              //       if (scrollController.position.pixels >=
-              //           scrollController.position.maxScrollExtent - 200 &&
-              //           !locationListProvider.isNextPageLoading &&
-              //           locationListProvider.page < locationListProvider.totalPages) {
-              //         // Fetch next page
-              //         locationListProvider.page += 1;
-              //         locationListProvider.fetchLocationList(
-              //           context,
-              //           locationQuery,
-              //           locationListProvider.page,
-              //           10, // page size
-              //           widget.accountID,
-              //           widget.subAccountID,
-              //           widget.initialProcessId,
-              //           widget.initialSubProcessId,
-              //           '',
-              //         );
-              //       }
-              //     });
-              //
-              //     return ValueListenableBuilder<bool>(
-              //       valueListenable: showRiskScoreNotifier,
-              //       builder: (context, showRiskScore, _) {
-              //         return Column(
-              //           children: [
-              //             Text("${locations.length} Locations"),
-              //             Expanded(
-              //               child: RefreshIndicator(
-              //                 onRefresh: () async {
-              //                   locationListProvider.page = 1;
-              //                   await locationListProvider.fetchLocationList(
-              //                     context,
-              //                     locationQuery,
-              //                     1,
-              //                     10,
-              //                     widget.accountID,
-              //                     widget.subAccountID,
-              //                     widget.initialProcessId,
-              //                     widget.initialSubProcessId,
-              //                     '',
-              //                   );
-              //                 },
-              //                 child: ListView.builder(
-              //                   controller: scrollController,
-              //                   physics: const ClampingScrollPhysics(),
-              //                   itemCount: locations.length + 1, // extra for loader
-              //                   itemBuilder: (context, index) {
-              //                     if (index == locations.length) {
-              //                       // show loader at bottom
-              //                       return locationListProvider.isNextPageLoading
-              //                           ? const Padding(
-              //                         padding: EdgeInsets.all(8.0),
-              //                         child: Center(
-              //                             child: CircularProgressIndicator()),
-              //                       )
-              //                           : const SizedBox.shrink();
-              //                     }
-              //
-              //                     final location = locations[index];
-              //
-              //                     return Container(
-              //                       margin: const EdgeInsets.symmetric(
-              //                           horizontal: 16, vertical: 4),
-              //                       decoration: BoxDecoration(
-              //                         color: Theme.of(context).colorScheme.surface,
-              //                         borderRadius: BorderRadius.circular(12),
-              //                         boxShadow: const [
-              //                           BoxShadow(
-              //                             color: Colors.black12,
-              //                             blurRadius: 8,
-              //                             spreadRadius: 2,
-              //                             offset: Offset(0, 2),
-              //                           ),
-              //                         ],
-              //                       ),
-              //                       child: DataTable2(
-              //                         minWidth: MediaQuery.of(context).size.width * 1.5,
-              //                         headingRowColor: WidgetStateProperty.all(
-              //                             Theme.of(context)
-              //                                 .colorScheme
-              //                                 .surfaceContainerLowest),
-              //                         columnSpacing: 0,
-              //                         fixedTopRows: 1,
-              //                         fixedLeftColumns: 1,
-              //                         columns: [
-              //                           DataColumn2(
-              //                             fixedWidth:
-              //                             MediaQuery.of(context).size.width * 0.3,
-              //                             label: Text('Location'),
-              //                           ),
-              //                           DataColumn2(
-              //                             fixedWidth:
-              //                             MediaQuery.of(context).size.width * 0.3,
-              //                             label: Text('Geocoding Score'),
-              //                           ),
-              //                           DataColumn2(
-              //                             fixedWidth:
-              //                             MediaQuery.of(context).size.width * 0.3,
-              //                             label: Text('Hazard Score'),
-              //                           ),
-              //                           ...sortedHazardColumns.map(
-              //                                 (hazard) => DataColumn2(
-              //                               label: Text(hazard),
-              //                             ),
-              //                           ),
-              //                         ],
-              //                         rows: [
-              //                           DataRow(
-              //                             cells: [
-              //                               DataCell(Text(location.geocodedAddress ?? '')),
-              //                               DataCell(_renderRiskScore(
-              //                                   int.tryParse(location.geocodingScore
-              //                                       ?.toString() ??
-              //                                       '') ??
-              //                                       0)),
-              //                               DataCell(_renderRiskScore(
-              //                                   int.tryParse(location.overallScore
-              //                                       ?.toString() ??
-              //                                       '') ??
-              //                                       0)),
-              //                               ...sortedHazardColumns.map(
-              //                                     (hazard) => DataCell(
-              //                                   _renderRiskScore(int.tryParse(location
-              //                                       .hazard?[hazard]?.rating
-              //                                       ?.toString() ??
-              //                                       '') ??
-              //                                       0),
-              //                                 ),
-              //                               ),
-              //                             ],
-              //                           ),
-              //                         ],
-              //                       ),
-              //                     );
-              //                   },
-              //                 ),
-              //               ),
-              //             ),
-              //           ],
-              //         );
-              //       },
-              //     );
-              //   },
-              // ),
-              // Consumer<MyLocationListProvider>(
-              //   builder: (context, locationListProvider, child) {
-              //     return locationListProvider.isLoading
-              //         ? Center(child: CircularProgressIndicator())
-              //         :
-              //     LocationTable(
-              //             locations: locationListProvider.overallLocationList);
-              //   },
-              // ),
               LocationTable(
                 // locations:
                 accountID: widget.accountID!,
@@ -3070,9 +3141,25 @@ class _MyLocationListState extends State<MyLocationList>
         if (newStatus != _lastProcessStatus) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _lastProcessStatus = newStatus;
+
+            // 🔥 Update FAB based on process status
+            if (newStatus == "processing") {
+              fabStatusNotifier.value = "processing";
+            } else if (newStatus == "completed") {
+              fabStatusNotifier.value = "completed";
+            } else {
+              fabStatusNotifier.value = "idle"; // normal
+            }
+
             _onProcessStatusChange(newStatus);
           });
         }
+        // if (newStatus != _lastProcessStatus) {
+        //   WidgetsBinding.instance.addPostFrameCallback((_) {
+        //     _lastProcessStatus = newStatus;
+        //     _onProcessStatusChange(newStatus);
+        //   });
+        // }
 
         if (heatmapStatus != _lastHeatmapStatusLocal) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3099,7 +3186,7 @@ class _MyLocationListState extends State<MyLocationList>
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: Builder(
-                key: ValueKey(newStatus), // 👈 ensures widget refreshes
+                key: ValueKey(newStatus),
                 builder: (_) {
                   if (isFailed) return const SizedBox.shrink();
                   if (isCompleted) return _CompletedRow(data);
@@ -3583,7 +3670,7 @@ class _MyLocationListState extends State<MyLocationList>
           context,
           locationQuery,
           1,
-          8,
+          10,
           accountId,
           subAccountId,
           widget.initialProcessId,
@@ -4677,64 +4764,6 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-  // Widget _buildProcessSummary(Map<String, dynamic>? summaryData) {
-  //   if (summaryData == null || summaryData.isEmpty) {
-  //     return Container(
-  //         decoration: BoxDecoration(
-  //           color: Theme.of(context).hoverColor,
-  //           borderRadius: BorderRadius.circular(10),
-  //         ),
-  //         height: 180,
-  //         child: Center(child: CircularProgressIndicator())); // Show loader
-  //   }
-  //
-  //   var typography = CustomTypography(context);
-  //   final hazardVendorData = summaryData['hazard_rating_summary'] ?? {};
-  //   return Container(
-  //     margin: EdgeInsets.all(0.0),
-  //     decoration: BoxDecoration(
-  //       color: Theme.of(context).hoverColor,
-  //       borderRadius: BorderRadius.circular(16),
-  //     ),
-  //     child: Container(
-  //       height: MediaQuery.of(context).size.height,
-  //       width: MediaQuery.of(context).size.width,
-  //       decoration: BoxDecoration(
-  //         color: Theme.of(context).hoverColor,
-  //         borderRadius: BorderRadius.circular(16),
-  //       ),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           // Summary Header
-  //           ListTile(
-  //             trailing: IconButton(
-  //               icon: Icon(Symbols.cancel, color: Colors.red),
-  //               onPressed: () {
-  //                 Navigator.pop(context);
-  //               },
-  //             ),
-  //           ),
-  //
-  //           Padding(
-  //             padding: const EdgeInsets.only(left: 16.0, bottom: 16),
-  //             child: Text(
-  //               "Geo Rating Summary",
-  //               style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
-  //             ),
-  //           ),
-  //           _buildDynamicGeoRatingSummary(summaryData),
-  //
-  //           Container(
-  //               height: MediaQuery.of(context).size.height / 2.8,
-  //               width: MediaQuery.of(context).size.width,
-  //               child: _buildHazardVendorSummary(hazardVendorData, typography)),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _buildHazardVendorSummary(
       Map<dynamic, dynamic> hazardVendorData, CustomTypography typography) {
     // if (hazardVendorData.isEmpty) {
@@ -5778,83 +5807,94 @@ class _MyLocationListState extends State<MyLocationList>
                                   TextSpan(
                                     text: "resolve the conflict",
                                     style: typography.Body2.copyWith(
-                                      color: AppColors.primaryMain,
+                                      color: (_lastProcessStatus.toString() ==
+                                              'processing')
+                                          ? Colors
+                                              .grey // Disabled color when processing
+                                          : AppColors.primaryMain,
                                       decoration: TextDecoration.underline,
                                     ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        for (int i = 0;
-                                            i < conflictLocations.length;
-                                            i++) {
-                                          print(
-                                              'Item $i - Geocoded Address: ${conflictLocations[i].geocodedAddress}');
-                                        }
+                                    recognizer: (_lastProcessStatus
+                                                .toString() ==
+                                            'processing')
+                                        ? null
+                                        : (TapGestureRecognizer()
+                                          ..onTap = () {
+                                            for (int i = 0;
+                                                i < conflictLocations.length;
+                                                i++) {
+                                              print(
+                                                  'Item $i - Geocoded Address: ${conflictLocations[i].geocodedAddress}');
+                                            }
 
-                                        Navigator.of(context)
-                                            .push(MaterialPageRoute(
-                                          builder: (_) => ConflictsTab(
-                                            processId: widget.accountID ?? "",
-                                            accountId: widget.accountID ?? "",
-                                            subAccountId:
-                                                widget.subAccountID ?? "",
-                                            sovId: "null",
-                                            accountName:
-                                                widget.accountName ?? "",
-                                            subAccountName:
-                                                widget.subAccountName ?? "",
-                                            tempId: "tempId",
-                                            lat: conflictLocations[0]
-                                                .location
-                                                .latitude
-                                                .toString(),
-
-                                            long: conflictLocations
-                                                .first.location.longitude
-                                                .toString(),
-                                            geocodingAddress: conflictLocations
-                                                    .first
-                                                    .finalAddress
-                                                    ?.address ??
-                                                "",
-                                            conflict: conflictLocations
-                                                .first.conflicts,
-                                            // Optional or just first one
-                                            location: conflictLocations,
-
-                                            startHazard: false,
-                                          ),
-                                        ))
-                                            .then((value) {
-                                          if (value == true) {
-                                            _StartHazardConflict(
-                                                conflictLocations:
-                                                    conflictLocations);
-                                            locationListProvider
-                                                .fetchLocationList(
-                                                    context,
-                                                    locationQuery,
-                                                    1,
-                                                    1,
-                                                    widget.accountID,
-                                                    widget.subAccountID,
-                                                    widget.initialProcessId,
-                                                    widget.initialSubProcessId,
-                                                    '');
-                                            locationListProvider
-                                                .fetchLocationConflictList(
-                                                  context,
-                                                  "",
-                                                  1,
-                                                  1,
-                                                  widget.accountID,
-                                                  widget.subAccountID,
-                                                  widget.initialProcessId,
-                                                  widget.initialSubProcessId,
-                                                )
-                                                .then((_) => setState(() {}));
-                                          }
-                                        });
-                                      },
+                                            Navigator.of(context)
+                                                .push(MaterialPageRoute(
+                                              builder: (_) => ConflictsTab(
+                                                processId:
+                                                    widget.accountID ?? "",
+                                                accountId:
+                                                    widget.accountID ?? "",
+                                                subAccountId:
+                                                    widget.subAccountID ?? "",
+                                                sovId: "null",
+                                                accountName:
+                                                    widget.accountName ?? "",
+                                                subAccountName:
+                                                    widget.subAccountName ?? "",
+                                                tempId: "tempId",
+                                                lat: conflictLocations[0]
+                                                    .location
+                                                    .latitude
+                                                    .toString(),
+                                                long: conflictLocations
+                                                    .first.location.longitude
+                                                    .toString(),
+                                                geocodingAddress:
+                                                    conflictLocations
+                                                            .first
+                                                            .finalAddress
+                                                            ?.address ??
+                                                        "",
+                                                conflict: conflictLocations
+                                                    .first.conflicts,
+                                                location: conflictLocations,
+                                                startHazard: false,
+                                              ),
+                                            ))
+                                                .then((value) {
+                                              if (value == true) {
+                                                _StartHazardConflict(
+                                                    conflictLocations:
+                                                        conflictLocations);
+                                                locationListProvider
+                                                    .fetchLocationList(
+                                                        context,
+                                                        locationQuery,
+                                                        1,
+                                                        1,
+                                                        widget.accountID,
+                                                        widget.subAccountID,
+                                                        widget.initialProcessId,
+                                                        widget
+                                                            .initialSubProcessId,
+                                                        '');
+                                                locationListProvider
+                                                    .fetchLocationConflictList(
+                                                      context,
+                                                      "",
+                                                      1,
+                                                      1,
+                                                      widget.accountID,
+                                                      widget.subAccountID,
+                                                      widget.initialProcessId,
+                                                      widget
+                                                          .initialSubProcessId,
+                                                    )
+                                                    .then(
+                                                        (_) => setState(() {}));
+                                              }
+                                            });
+                                          }),
                                   ),
                                 ],
                               )
@@ -6087,7 +6127,6 @@ class _MyLocationListState extends State<MyLocationList>
                                                 locationListProvider
                                                         .myLocationList[index]
                                                         .dataCompleteness
-                                                        ?.scorePd
                                                         ?.toString() ??
                                                     '1') ??
                                             0,
@@ -6287,7 +6326,7 @@ class _MyLocationListState extends State<MyLocationList>
                                         .finalAddress
                                         ?.ownerName ??
                                     '',
-                                // "123",
+
                                 address: locationListProvider
                                         .myLocationList[index]
                                         .geocodedAddress ??
@@ -6318,13 +6357,10 @@ class _MyLocationListState extends State<MyLocationList>
                                 //     0,
                                 dataCompletenessScore: locationListProvider
                                             .myLocationList[index]
-                                            .dataCompleteness
-                                            ?.scorePd !=
+                                            .dataCompleteness !=
                                         null
                                     ? int.parse(locationListProvider
-                                        .myLocationList[index]
-                                        .dataCompleteness!
-                                        .scorePd
+                                        .myLocationList[index].dataCompleteness!
                                         .toString())
                                     : 1,
 
@@ -6835,7 +6871,7 @@ class _MyLocationListState extends State<MyLocationList>
           .toString()),
 
       dataCompletenessScore: int.parse(locationListProvider
-              .certifiedLocationList[index].dataCompleteness?.scorePd
+              .certifiedLocationList[index].dataCompleteness
               ?.toString() ??
           '0'),
       isAutoCertified: true,
@@ -7607,39 +7643,6 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-// ✅ Search API call
-  void sovSearchClient(String query) async {
-    debounce(() async {
-      if (!mounted) return;
-
-      setState(() => _sovQuery = query.trim());
-
-      final provider = Provider.of<SOVListProvider>(context, listen: false);
-      provider.page = 0;
-
-      await provider.fetchSovList(
-        context,
-        widget.accountID!,
-        widget.subAccountID!,
-        _sovQuery,
-        provider.page,
-        3,
-        selectedSov,
-      );
-    });
-  }
-
-  // void sovSearchClient(String query) async {
-  //   debounce(() async {
-  //     if (!mounted) return;
-  //     _sovQuery = query;
-  //     var provider = Provider.of<SOVListProvider>(context, listen: false);
-  //     provider.page = 0;
-  //     await provider.fetchSovList(context, widget.accountID!,
-  //         widget.subAccountID!, _sovQuery, provider.page, 10, 'my');
-  //   });
-  // }
-
   String safeParseInt(dynamic value) {
     if (value == null) return "00";
     try {
@@ -7648,932 +7651,6 @@ class _MyLocationListState extends State<MyLocationList>
     } catch (e) {
       return "00";
     }
-  }
-
-  Widget sovBody(CustomTypography typography) {
-    return Consumer<SOVListProvider>(builder: (context, sovListProvider, _) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (selectedList.contains(true)) ...[
-            Container(
-              margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-              padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  // Set your border color here
-                  width: 1.0, // Set the width of the border
-                ),
-                //color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              ),
-              child: Consumer<UserProfileProvider>(
-                  builder: (context, userProfileProvider, child) {
-                final trialStatus =
-                    userProfileProvider.trialInfo['status'] ?? '';
-                return Consumer<MyLocationListProvider>(
-                    builder: (context, locationListProvider, child) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (selectedList.contains(true)) ...[
-                        // Show selection count and select all button
-                        SizedBox(width: CustomSpacing.two),
-                        Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            "${selectedList.where((s) => s).length}",
-                            style: typography.Body1.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 2),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              final bool selectAll =
-                                  selectedList.any((s) => s == false);
-
-                              // Apply the same toggle logic as Checkbox
-                              for (int i = 0; i < selectedList.length; i++) {
-                                selectedList[i] = selectAll;
-                              }
-                              if (!selectAll) {
-                                isSelectionMode = false;
-                              }
-                            });
-                          },
-                          child: Text(
-                            // Dynamically show "Select All" or "Deselect All"
-                            selectedList.any((s) => s == false)
-                                ? 'Select All'
-                                : 'Deselect All',
-                            style: typography.Body1.copyWith(
-                              color: AppColors.primaryMain,
-                            ),
-                          ),
-                        ),
-
-                        Spacer(),
-                        // Action buttons for selected items
-                        // export
-                        IconButton(
-                          onPressed: trialStatus.isNotEmpty
-                              ? null
-                              : () {
-                                  // Implement bulk export
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text('Export Selected Locations'),
-                                      content: Text(
-                                          'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            print(_selectedScreen);
-                                            if (_selectedScreen ==
-                                                Screens.locationList) {
-                                              print(
-                                                  'Selected ids: ${locationListProvider.selectedLocations.map((sov) => sov.id).toList()}');
-                                              // On export button click
-                                              List<
-                                                  String> selectedSovIds = Provider
-                                                      .of<MyLocationListProvider>(
-                                                          context,
-                                                          listen: false)
-                                                  .selectedLocations
-                                                  .map((sov) => sov.id!)
-                                                  .toList();
-                                              print(
-                                                  'Selected ids: $selectedSovIds');
-
-                                              if (selectedSovIds.isNotEmpty) {
-                                                Navigator.pop(context);
-                                                showDialog(
-                                                  context: context,
-                                                  builder:
-                                                      (BuildContext context) {
-                                                    return ExportDialog(
-                                                      accountId:
-                                                          widget.accountID!,
-                                                      subAccountId:
-                                                          widget.subAccountID!,
-                                                      locationId:
-                                                          selectedSovIds,
-                                                    );
-                                                  },
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(SnackBar(
-                                                  content: Text(
-                                                    LanguageService.getTranslated(
-                                                        context,
-                                                        "no_items_selected_error"),
-                                                    style: typography.Body1,
-                                                  ),
-                                                ));
-                                              }
-                                            } else if (_selectedScreen ==
-                                                Screens.certifiedLocationList) {
-                                              // On export button click
-                                              List<String> selectedLoactionIds =
-                                                  Provider.of<MyLocationListProvider>(
-                                                          context,
-                                                          listen: false)
-                                                      .certifiedLocationList
-                                                      .where((location) =>
-                                                          location.isSelected ??
-                                                          false)
-                                                      .map((sov) => sov.id!)
-                                                      .toList();
-
-                                              if (selectedLoactionIds
-                                                  .isNotEmpty) {
-                                                showDialog(
-                                                  context: context,
-                                                  builder:
-                                                      (BuildContext context) {
-                                                    return ExportDialog(
-                                                      accountId:
-                                                          widget.accountID!,
-                                                      subAccountId:
-                                                          widget.subAccountID!,
-                                                      locationId:
-                                                          selectedLoactionIds,
-                                                    );
-                                                  },
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(SnackBar(
-                                                  content: Text(
-                                                    LanguageService.getTranslated(
-                                                        context,
-                                                        "no_items_selected_error"),
-                                                    style: typography.Body1,
-                                                  ),
-                                                ));
-                                              }
-                                            }
-                                          },
-                                          child: Text('Export',
-                                              style: typography.Body1),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                          icon: Icon(Icons.download),
-                          tooltip: 'Export Selected',
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            if (selectedList.length !=
-                                sovListProvider.sovList.length) {
-                              selectedList = List.generate(
-                                sovListProvider.sovList.length,
-                                (_) => false,
-                              );
-                            }
-
-                            final selectedSovs = sovListProvider.sovList
-                                .asMap()
-                                .entries
-                                .where((entry) => selectedList[entry.key])
-                                .map((entry) => entry.value)
-                                .toList();
-
-                            if (selectedSovs.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        "Please select at least one SOV to share.")),
-                              );
-                              return;
-                            }
-
-                            _showTransferDialog(context, selectedSovs);
-                          },
-                          icon: const Icon(
-                            Symbols.share,
-                            color: Color(0xFF90CAF9),
-                          ),
-                          tooltip: 'Share Selected',
-                        ),
-                      ]
-                    ],
-                  );
-                });
-              }),
-            ),
-          ],
-          // Search
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            height: 50,
-            child: TextField(
-              controller: _textEditingController,
-              onChanged: (query) => sovSearchClient(query),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                hintText: "Search by SOV name",
-                hintStyle: typography.Body2,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _textEditingController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _textEditingController.clear();
-                          sovSearchClient('');
-                        },
-                      )
-                    : null,
-              ),
-            ),
-          ),
-          SizedBox(height: CustomSpacing.four),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Consumer<SOVListProvider>(
-                builder: (context, sovListProvider, _) {
-              // if (sovListProvider.isLoading) {
-              return Row(
-                children: [
-                  InfoCard(
-                    title: "Total SOVs",
-                    count: safeParseInt(
-                        sovListProvider.sovCounterList.all.toString()),
-                    icon: Icons.file_copy_outlined,
-                  ),
-                  InfoCard(
-                    title: "My SOVs",
-                    count: safeParseInt(sovListProvider.sovCounterList.my),
-                    icon: Icons.file_copy_outlined,
-                  ),
-                  InfoCard(
-                    title: "Shared SOVs",
-                    count: safeParseInt(sovListProvider.sovCounterList.shared),
-                    icon: Icons.ios_share_outlined,
-                  ),
-                  InfoCard(
-                    title: "Received SOVs",
-                    count:
-                        safeParseInt(sovListProvider.sovCounterList.received),
-                    icon: Icons.call_received,
-                  ),
-                  InfoCard(
-                    title: "Completed SOVs",
-                    count:
-                        safeParseInt(sovListProvider.sovCounterList.completed),
-                    icon: Icons.done_all,
-                  ),
-                ],
-              );
-            }),
-          ),
-
-          SizedBox(height: CustomSpacing.four),
-
-          // List of accounts
-          Expanded(
-            child: Consumer<SOVListProvider>(
-              builder: (context, sovListProvider, _) {
-                if (sovListProvider.isLoading) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 100),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-
-                if (sovListProvider.sovList.isEmpty) {
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      sovListProvider.page = 0;
-                      await sovListProvider.fetchSovList(
-                        context,
-                        widget.accountID!,
-                        widget.subAccountID!,
-                        _sovQuery,
-                        sovListProvider.page,
-                        3,
-                        'my',
-                      );
-                    },
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.5,
-                          child: Center(
-                            child: Text(
-                              "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
-                              style: typography.Body1,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await sovListProvider.fetchSovList(
-                      context,
-                      widget.accountID!,
-                      widget.subAccountID!,
-                      _sovQuery,
-                      1,
-                      6,
-                      "my",
-                    );
-                  },
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: sovListProvider.sovList.length,
-                          itemBuilder: (context, index) {
-                            return _buildSovCard(index, sovListProvider);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
-  Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
-    var typography = CustomTypography(context);
-    Offset _tapPosition = Offset.zero;
-    // bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
-    return Container(
-      margin: EdgeInsets.only(top: 0.0, bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          setState(() {
-            if (isSelectionMode) {
-              selectedList[index] = !selectedList[index];
-              if (!selectedList.contains(true)) {
-                isSelectionMode = false;
-              }
-              // Update selectedSovIds and selectedCount
-              selectedSovIds = sOVListProvider.sovList
-                  .asMap()
-                  .entries
-                  .where((entry) => selectedList[entry.key])
-                  .map((entry) => entry.value.sovId)
-                  .whereType<String>()
-                  .toSet();
-              final selectedCount = selectedSovIds.length;
-              print('Selected SOV IDs: $selectedSovIds');
-              print('Selected count: $selectedCount');
-            } else {
-              Navigator.push(context, MaterialPageRoute(builder: (context) {
-                return SovLocationList(
-                  accountID: widget.accountID!,
-                  subAccountID: widget.subAccountID!,
-                  accountName: widget.accountName,
-                  subAccountName: widget.subAccountName,
-                  sovID: sOVListProvider.sovList[index].sovId ?? "",
-                  sovName: sOVListProvider.sovList[index].name ?? "",
-                );
-              }));
-              _isDisposed = true;
-              _refreshTimer?.cancel();
-              deBouncer?.cancel();
-            }
-          });
-        },
-        onLongPress: () {
-          setState(() {
-            if (selectedList.length != sOVListProvider.sovList.length) {
-              selectedList = List.generate(
-                sOVListProvider.sovList.length,
-                (_) => false,
-              );
-            }
-
-            if (isSelectionMode) {
-              selectedList[index] = !selectedList[index];
-              if (!selectedList.contains(true)) {
-                isSelectionMode = false;
-              }
-            } else {
-              selectedList[index] = true;
-              isSelectionMode = true;
-            }
-
-            // Collect selected SOV IDs and count
-            selectedSovIds = sOVListProvider.sovList
-                .asMap()
-                .entries
-                .where((entry) => selectedList[entry.key])
-                .map((entry) => entry.value.sovId)
-                .whereType<String>()
-                .toSet();
-
-            final selectedCount = selectedSovIds.length;
-          });
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: 230,
-                    width: MediaQuery.of(context).size.width,
-                    child: Card(
-                      color: Colors.white12,
-                      margin: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
-                            bottomRight: Radius.circular(8)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // if (isSelectionMode)
-                              //   Checkbox(
-                              //     value: (index < selectedList.length)
-                              //         ? selectedList[index]
-                              //         : false,
-                              //     onChanged: (value) {
-                              //       setState(() {
-                              //         if (selectedList.length !=
-                              //             sOVListProvider.sovList.length) {
-                              //           selectedList = List.generate(
-                              //             sOVListProvider.sovList.length,
-                              //             (_) => false,
-                              //           );
-                              //         }
-                              //         selectedList[index] = value ?? false;
-                              //
-                              //         if (!selectedList.contains(true)) {
-                              //           isSelectionMode = false;
-                              //         }
-                              //       });
-                              //     },
-                              //   ),
-
-                              SizedBox(
-                                width: CustomSpacing.two,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Row(
-                                            children: [
-                                              if (isSelectionMode)
-                                                Checkbox(
-                                                  value: (index <
-                                                          selectedList.length)
-                                                      ? selectedList[index]
-                                                      : false,
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      if (selectedList.length !=
-                                                          sOVListProvider
-                                                              .sovList.length) {
-                                                        selectedList =
-                                                            List.generate(
-                                                          sOVListProvider
-                                                              .sovList.length,
-                                                          (_) => false,
-                                                        );
-                                                      }
-                                                      selectedList[index] =
-                                                          value ?? false;
-
-                                                      if (!selectedList
-                                                          .contains(true)) {
-                                                        isSelectionMode = false;
-                                                      }
-                                                    });
-                                                  },
-                                                ),
-                                              Chip(
-                                                label: Text(
-                                                  sOVListProvider
-                                                          .sovList[index].status
-                                                          ?.toString() ??
-                                                      'Pending',
-                                                  style:
-                                                      typography.Body2.copyWith(
-                                                    color: sOVListProvider
-                                                                .sovList[index]
-                                                                .status
-                                                                ?.toString() ==
-                                                            'completed'
-                                                        ? Colors.white
-                                                        : Color(0xFFFFA726),
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 0, vertical: 0),
-                                                backgroundColor: sOVListProvider
-                                                            .sovList[index]
-                                                            .status
-                                                            ?.toString() ==
-                                                        'completed'
-                                                    ? Colors.green
-                                                    : Color(0xFFFFA726)
-                                                        .withOpacity(0.2),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding:
-                                              const EdgeInsets.only(right: 10),
-                                          child: Consumer2<
-                                              SubAccountListProvider,
-                                              SOVListProvider>(
-                                            builder: (context,
-                                                subAccountListProvider,
-                                                sovprovider,
-                                                child) {
-                                              return PopupMenuButton<String>(
-                                                color: const Color(0xFF1E1E1E),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                icon: const Icon(
-                                                    Icons.more_vert,
-                                                    color: Colors.white),
-                                                onSelected: (value) async {
-                                                  if (value == 'delete') {
-                                                    bool sovDeleteStatus =
-                                                        false;
-
-                                                    showDialog(
-                                                      context: context,
-                                                      barrierDismissible: false,
-                                                      builder: (context) {
-                                                        return StatefulBuilder(
-                                                          builder: (context,
-                                                              setState) {
-                                                            return AlertDialog(
-                                                              backgroundColor:
-                                                                  const Color(
-                                                                      0xFF1E1E1E),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              title: const Text(
-                                                                'Confirm Deletion',
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold),
-                                                              ),
-                                                              content:
-                                                                  const Text(
-                                                                'This action will permanently delete the SOV and its data. Proceed?',
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .white70),
-                                                              ),
-                                                              actions: [
-                                                                TextButton(
-                                                                  onPressed: () =>
-                                                                      Navigator.pop(
-                                                                          context),
-                                                                  child: const Text(
-                                                                      'Cancel',
-                                                                      style: TextStyle(
-                                                                          color:
-                                                                              Colors.grey)),
-                                                                ),
-                                                                TextButton(
-                                                                  onPressed:
-                                                                      () async {
-                                                                    setState(
-                                                                        () {
-                                                                      sovDeleteStatus =
-                                                                          true;
-                                                                    });
-
-                                                                    bool
-                                                                        isSuccess =
-                                                                        false;
-                                                                    try {
-                                                                      isSuccess =
-                                                                          await subAccountListProvider
-                                                                              .deleteSOVAccount(
-                                                                        context,
-                                                                        subAccountListProvider
-                                                                            .subAccountList[index]
-                                                                            .accountId!,
-                                                                        subAccountListProvider
-                                                                            .subAccountList[index]
-                                                                            .subAccountId!,
-                                                                        sovprovider
-                                                                            .sovList[index]
-                                                                            .sovId!,
-                                                                      );
-                                                                    } catch (e) {
-                                                                      debugPrint(
-                                                                          "Error deleting account: $e");
-                                                                      ScaffoldMessenger.of(
-                                                                              context)
-                                                                          .showSnackBar(
-                                                                        const SnackBar(
-                                                                          content:
-                                                                              Text("Failed to delete SOV. Please try again."),
-                                                                        ),
-                                                                      );
-                                                                    }
-
-                                                                    if (isSuccess) {
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                      await sovprovider
-                                                                          .fetchSovList(
-                                                                        context,
-                                                                        widget
-                                                                            .accountID!,
-                                                                        widget
-                                                                            .subAccountID!,
-                                                                        _sovQuery,
-                                                                        1,
-                                                                        3,
-                                                                        selectedSov,
-                                                                      );
-                                                                      ScaffoldMessenger.of(
-                                                                              context)
-                                                                          .showSnackBar(
-                                                                        const SnackBar(
-                                                                          content:
-                                                                              Text("SOV deleted successfully."),
-                                                                        ),
-                                                                      );
-                                                                    }
-
-                                                                    setState(
-                                                                        () {
-                                                                      sovDeleteStatus =
-                                                                          false;
-                                                                    });
-                                                                  },
-                                                                  child: sovDeleteStatus
-                                                                      ? const SizedBox(
-                                                                          width:
-                                                                              24,
-                                                                          height:
-                                                                              24,
-                                                                          child:
-                                                                              CircularProgressIndicator(
-                                                                            strokeWidth:
-                                                                                2,
-                                                                            color:
-                                                                                Colors.red,
-                                                                          ),
-                                                                        )
-                                                                      : const Text(
-                                                                          'Delete',
-                                                                          style: TextStyle(
-                                                                              color: Colors.redAccent,
-                                                                              fontSize: 16),
-                                                                        ),
-                                                                ),
-                                                              ],
-                                                            );
-                                                          },
-                                                        );
-                                                      },
-                                                    );
-                                                  }
-                                                },
-                                                itemBuilder:
-                                                    (BuildContext context) => [
-                                                  PopupMenuItem<String>(
-                                                    value: 'delete',
-                                                    child: Row(
-                                                      children: const [
-                                                        Icon(Icons.delete,
-                                                            color: Colors
-                                                                .redAccent),
-                                                        SizedBox(width: 8),
-                                                        Text(
-                                                          'Delete',
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.white),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      sOVListProvider.sovList[index].name
-                                          .toString(),
-                                      style: typography.Body2.copyWith(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w400,
-                                        color: const Color(0xFF90CAF9),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 4),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        // Owner info
-                                        CircleAvatar(
-                                          radius: 16,
-                                          backgroundColor: Colors.grey[800],
-                                          child: Text(
-                                            (sOVListProvider.sovList[index]
-                                                            .owner?.name !=
-                                                        null &&
-                                                    sOVListProvider
-                                                        .sovList[index]
-                                                        .owner!
-                                                        .name!
-                                                        .isNotEmpty)
-                                                ? sOVListProvider
-                                                    .sovList[index].owner!.name!
-                                                    .substring(0, 2)
-                                                    .toUpperCase()
-                                                : "?",
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            sOVListProvider.sovList[index].owner
-                                                    ?.name ??
-                                                "Unknown",
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        // Location count
-                                        Text(
-                                          "Locations: ${sOVListProvider.sovList[index].locationCount?.toString() ?? ""}",
-                                          style: typography.Body2.copyWith(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? AppColors.white
-                                                    : AppColors.black,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(width: 10),
-                                      ],
-                                    ),
-
-                                    SizedBox(height: 8),
-                                    if (sOVListProvider
-                                                .sovList[index].companyName !=
-                                            null &&
-                                        sOVListProvider.sovList[index]
-                                            .companyName!.isNotEmpty) ...[
-                                      Text(
-                                        "Company: ${sOVListProvider.sovList[index].companyName}",
-                                        style: typography.Body2.copyWith(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? AppColors.white
-                                                    : AppColors.black,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500),
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    ],
-
-                                    SizedBox(height: 8),
-                                    _buildScrollableScores(
-                                      context,
-                                      sOVListProvider.sovList[index].geocodeAvg
-                                              .toString() ??
-                                          "0",
-                                      sOVListProvider.sovList[index].overallAvg
-                                              .toString() ??
-                                          "0",
-                                      sOVListProvider
-                                              .sovList[index]
-                                              .totalDataCompleteness
-                                              ?.averageScorePd
-                                              ?.toString() ??
-                                          "1",
-                                    ),
-                                    SizedBox(height: 4),
-                                    // Row(
-                                    //   children: [
-                                    //     Text(
-                                    //       "Role:  ",
-                                    //       style: typography.Body2.copyWith(
-                                    //         color: Theme.of(context)
-                                    //                     .brightness ==
-                                    //                 Brightness.dark
-                                    //             ? AppColors.white
-                                    //             : AppColors.black,
-                                    //       ),
-                                    //       overflow: TextOverflow.ellipsis,
-                                    //     ),
-                                    //     Text(
-                                    //       "${sOVListProvider}",
-                                    //       style: typography.Body2.copyWith(
-                                    //         color: const Color(0xFF90CAF9),
-                                    //       ),
-                                    //       overflow: TextOverflow.ellipsis,
-                                    //     ),
-                                    //   ],
-                                    // ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          // SizedBox(
-                          //   height: CustomSpacing.two,
-                          // ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildScrollableScores(BuildContext context, String geocoding,
@@ -8588,19 +7665,21 @@ class _MyLocationListState extends State<MyLocationList>
             child: _buildScoreCard(
               context,
               'Geocoding',
-              int.tryParse(geocoding) ?? 0,
+              int.tryParse(geocoding) ?? 1,
             ),
           ),
-          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
+          // if (MediaQuery.of(context).size.width > 400) SizedBox(width: 10),
+          SizedBox(width: 10),
           InkWell(
             onTap: () {},
             child: _buildScoreCard(
               context,
-              'Risk Score',
-              int.tryParse(riskScore) ?? 0,
+              'Hazard Score',
+              int.tryParse(riskScore) ?? 1,
             ),
           ),
-          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
+          // if (MediaQuery.of(context).size.width > 400)
+          SizedBox(width: 10),
           InkWell(
             onTap: () {},
             child: _buildScoreCard(
@@ -8635,7 +7714,7 @@ class _MyLocationListState extends State<MyLocationList>
     return Container(
       margin: EdgeInsets.fromLTRB(0, 3, 1, 2),
       padding: EdgeInsets.all(8),
-      width: MediaQuery.of(context).size.width < 400 ? 165 : 145,
+      width: MediaQuery.of(context).size.width < 400 ? 150 : 150,
       height: MediaQuery.of(context).size.height < 400 ? 80 : 75,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
@@ -8720,7 +7799,7 @@ class _MyLocationListState extends State<MyLocationList>
                   //     //       widget.rented);
                   //     // }
                   //   },
-                  child: VerticalBarIndicator(score: score),
+                  child: VerticalBarIndicator(score: score == 0 ? 1 : score),
                 ),
                 SizedBox(width: 1),
                 isCertified
@@ -8733,7 +7812,7 @@ class _MyLocationListState extends State<MyLocationList>
                           backgroundColor: scoreColors[score].withOpacity(0.6),
                           child: Center(
                             child: Text(
-                              score.toString(),
+                              score == 0 ? '1' : score.toString(),
                               style: typography.Body1.copyWith(
                                 color: Colors.white,
                                 fontSize: 10,
@@ -9261,9 +8340,10 @@ class _MyLocationListState extends State<MyLocationList>
                                                 selectedList.length, false);
                                             isSelectionMode = false;
                                           });
-                                          // setState(() {
-                                          //   isSelectionMode = false;
-                                          // });
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                      "SOV shared successfully")));
                                         } else {
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
@@ -9336,7 +8416,6 @@ Widget _buildButtonChild(BuildContext context) {
   }
 }
 
-//
 Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
     String query, String type) async {
   try {

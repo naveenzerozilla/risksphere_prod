@@ -90,7 +90,7 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("🔁 App lifecycle changed: $state");
+    print(" App lifecycle changed: $state");
 
     switch (state) {
       case AppLifecycleState.resumed:
@@ -159,7 +159,6 @@ class MyApp extends StatelessWidget {
             navigatorKey: navigatorKey,
             scaffoldMessengerKey: scaffoldMessengerKey,
             debugShowCheckedModeBanner: false,
-            // navigatorKey: navigatorKey,
             title: 'Risk Sphere',
             locale: context.locale,
             supportedLocales: context.supportedLocales,
@@ -269,17 +268,16 @@ Future<void> initFCM(String userId) async {
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
-      // if (!isSubscribed) {
-      //   print("Subscribenotification2");
+
       await _subscribeToNotifications(userId, token);
-      // }
+
     }
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
 
       print("📩 Foreground message received: ${notification?.title}");
 
-      // Show toast only at top (if this is what you want)
+
       Fluttertoast.showToast(
         msg: notification?.title ?? "Notification",
         toastLength: Toast.LENGTH_SHORT,

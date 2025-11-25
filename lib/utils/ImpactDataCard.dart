@@ -21,7 +21,7 @@ class ImpactDataCard extends StatefulWidget {
   final String title;
   final Color titleColor;
   final List<ImpactDataElement> dataElements;
-  final String? selectedParameterList;
+  final String? selectedParameterList;final Future<void> Function()? onRefresh;
 
   const ImpactDataCard({
     Key? key,
@@ -33,6 +33,7 @@ class ImpactDataCard extends StatefulWidget {
     required this.titleColor,
     required this.dataElements,
     required this.selectedParameterList,
+    this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -59,7 +60,8 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
             child: Row(
               children: [
                 Text(
-                  widget.title == "high"
+                  widget.title
+                      == "high"
                       ? "High Impact Data Elements"
                       : widget.title == "medium"
                           ? "Medium Impact Data Element"
@@ -289,6 +291,8 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             },
                             selectedParameterList:
                                 widget.selectedParameterList!,
+                            onRefresh: widget.onRefresh,
+
                           ),
                         ),
                     ],
@@ -319,7 +323,7 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
             children: [
               Row(
                 children: [
-                  Text("History1",
+                  Text("History",
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -492,117 +496,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                 ),
               ),
 
-              // Container(
-              //   height: MediaQuery.of(context).size.height / 2.5,
-              //   child: ListView.builder(
-              //     shrinkWrap: true,
-              //     physics: ScrollPhysics(),
-              //     itemCount: result.history?.length ?? 0,
-              //     itemBuilder: (context, index) {
-              //       final item = result.history![index];
-              //       String formattedDate = '--';
-              //       if (item.updatedAt?.iSeconds != null) {
-              //         final dateTime = DateTime.fromMillisecondsSinceEpoch(
-              //             item.updatedAt!.iSeconds! * 1000);
-              //         formattedDate =
-              //             DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
-              //       }
-              //
-              //       return
-              //         item.value == null ? Container():
-              //
-              //         TimelineTile(
-              //         alignment: TimelineAlign.manual,
-              //         lineXY: 0.1,
-              //         isFirst: index == 0,
-              //         isLast: index == result.history!.length - 1,
-              //         indicatorStyle: IndicatorStyle(
-              //           width: 14,
-              //           color: Colors.blue,
-              //           indicatorXY: 0.2,
-              //           padding: EdgeInsets.all(6),
-              //         ),
-              //         beforeLineStyle: LineStyle(
-              //           color: Colors.grey,
-              //           thickness: 0.3,
-              //         ),
-              //         afterLineStyle: LineStyle(
-              //           color: Colors.grey,
-              //           thickness: 0.3,
-              //         ),
-              //         endChild: Container(
-              //           margin: EdgeInsets.only(left: 16, bottom: 16),
-              //           padding: EdgeInsets.all(12),
-              //           decoration: BoxDecoration(
-              //             color: Color(0xFF2C2C2E),
-              //             borderRadius: BorderRadius.circular(10),
-              //           ),
-              //           child: Column(
-              //             crossAxisAlignment: CrossAxisAlignment.start,
-              //             children: [
-              //               Text(
-              //                 formattedDate,
-              //                 style: TextStyle(
-              //                     color: Colors.white70, fontSize: 12),
-              //               ),
-              //               SizedBox(height: 6),
-              //               if (item.value != null)
-              //                 Text("Added value: ",
-              //                     style: TextStyle(
-              //                         color: Colors.white, fontSize: 14)),
-              //               if (item.paramType != null)
-              //                 Padding(
-              //                   padding: const EdgeInsets.only(top: 4.0),
-              //                   child: Text(
-              //                     "Value Type: " + item.paramType!,
-              //                     style: TextStyle(
-              //                         color: Colors.grey.shade400,
-              //                         fontSize: 13),
-              //                   ),
-              //                 ),
-              //               SizedBox(height: 4),
-              //               Divider(),
-              //               SizedBox(height: 4),
-              //               Row(
-              //                 children: [
-              //                   CircleAvatar(
-              //                     radius: 12,
-              //                     backgroundColor: Colors.blueGrey,
-              //                     backgroundImage: (item.reference != null &&
-              //                             item.reference!.isNotEmpty &&
-              //                             item.reference![0].url.isNotEmpty &&
-              //                             item.reference![0].url[0].isNotEmpty)
-              //                         ? NetworkImage(item.reference![0].url[0])
-              //                         : null,
-              //                     child: (item.reference == null ||
-              //                             item.reference!.isEmpty ||
-              //                             item.reference![0].url.isEmpty ||
-              //                             item.reference![0].url[0].isEmpty)
-              //                         ? Text(
-              //                             (item.userName?.isNotEmpty ?? false)
-              //                                 ? item.userName![0].toUpperCase()
-              //                                 : "?",
-              //                             style: TextStyle(
-              //                                 color: Colors.white,
-              //                                 fontSize: 12),
-              //                           )
-              //                         : null,
-              //                   ),
-              //                   SizedBox(width: 8),
-              //                   Text(
-              //                     item.userName ?? "Unknown",
-              //                     style: TextStyle(
-              //                         color: Colors.white, fontSize: 13),
-              //                   )
-              //                 ],
-              //               ),
-              //             ],
-              //           ),
-              //         ),
-              //       );
-              //     },
-              //   ),
-              // ),
 
               SizedBox(height: 20),
             ],
@@ -804,8 +697,8 @@ class _FileRowState extends State<FileRow> {
         SnackBar(content: Text("Downloaded to $savePath")),
       );
     } catch (e, stackTrace) {
-      print("❌ Download Error: $e");
-      print("📌 StackTrace: $stackTrace");
+      print(" Download Error: $e");
+      print(" StackTrace: $stackTrace");
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Download failed: $e")),

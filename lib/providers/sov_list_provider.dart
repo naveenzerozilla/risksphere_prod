@@ -164,7 +164,7 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   // Pagination
-  int _page = 1;
+  int _page = 0;
 
   int get page => _page;
 
@@ -292,8 +292,9 @@ class SOVListProvider extends ChangeNotifier {
       showLocationCount = sovListModel.settings?.locationCount ?? true;
       showOverallScore = sovListModel.settings?.overAllScore ?? true;
       sovHits = sovListModel.totalRecords ?? 0;
-      totalPages = sovHits ~/ pageSize;
-      sovList = sovListModel.result ?? [];
+      totalPages = (sovHits / pageSize).ceil();
+
+      // sovList = sovListModel.result ?? [];
       sovCounterList = sovListModel.totalCountHeader!;
       if (page == 1) {
         sovList = sovListModel.result ?? [];
@@ -619,7 +620,133 @@ class SOVListProvider extends ChangeNotifier {
       ));
     }
   }
+  Future<void> exportData1(
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      List<Map<String, dynamic>> exportData,
+      List<String> sovIds) async { // Changed to accept list of SOV IDs
+    try {
+      _isExportLoading = true;
+      notifyListeners();
 
+      print('Starting export data process...');
+      print('Account ID: $accountId');
+      print('SubAccount ID: $subAccountId');
+      print('SOV IDs: $sovIds');
+
+      // CORRECTED: Use the proper API endpoint
+      final URL = 'https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/export_sov';
+      print('Request URL: $URL');
+
+      final dio = Dio();
+      dio.options.headers = await CommonHeaders.createDownloadHeaders();
+
+      log('Headers: ${dio.options.headers}');
+      dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+        print('REQUEST[${options.method}] => PATH: ${options.path}');
+        return handler.next(options);
+      }, onResponse: (response, handler) {
+        print(
+            'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
+        return handler.next(response);
+      }, onError: (DioError e, handler) {
+        print(
+            'ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
+        return handler.next(e);
+      }));
+
+      // CORRECTED: Prepare the proper payload according to API requirements
+      final payload = {
+        "fileType": "profile", // or "table" based on your needs
+        "format": "excel",     // matches your format dropdown
+        "includeImage": false, // or true based on your requirements
+        "sov_ids": sovIds      // CORRECTED: Use the SOV IDs directly
+      };
+
+      print('Request Payload: ${json.encode(payload)}');
+
+      final response = await dio.post(
+        URL,
+        data: payload, // CORRECTED: Send the proper payload, not wrapped in "data"
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: false,
+          validateStatus: (status) {
+            return status! < 500;
+          },
+        ),
+      );
+
+      print('Response received.');
+      print('Response headers: ${response.headers}');
+
+      if (response.statusCode != 200) {
+        print('Error: received status code ${response.statusCode}');
+        print('Response data: ${utf8.decode(response.data)}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Error during export data process: ${response.statusCode}')),
+        );
+        return;
+      }
+
+      final contentDisposition = response.headers.value('content-disposition');
+      var filename = 'exported_locations.xlsx';
+      if (contentDisposition != null) {
+        final filenameMatch =
+        RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
+        if (filenameMatch != null) {
+          filename = filenameMatch.group(1)!;
+        }
+      }
+
+      print('Filename extracted: $filename');
+
+      final bytes = response.data;
+      print('Bytes received: ${bytes.length}');
+
+      final tempDir = await getTemporaryDirectory();
+      print('Temporary directory path: ${tempDir.path}');
+
+      final filePath = path.join(tempDir.path, filename);
+      print('File path: $filePath');
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes);
+      print('File written to disk.');
+
+      await OpenFile.open(filePath);
+      print('File opened.');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                '$filePath ${LanguageService.getTranslated(context, "export_sov_modal_success_message")}')),
+      );
+    } catch (e) {
+      if (e is DioException) {
+        print('Dio error!');
+        print('STATUS: ${e.response?.statusCode}');
+        print('DATA: ${e.response?.data}');
+        print('HEADERS: ${e.response?.headers}');
+      } else {
+        print('Error: $e');
+      }
+      print('Error during export data process: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(LanguageService.getTranslated(
+                context, "export_sov_modal_failure_message"))),
+      );
+    } finally {
+      _isExportLoading = false;
+      notifyListeners();
+      print('Export data process completed.');
+      Navigator.pop(context);
+    }
+  }
   Future<void> exportData(
       BuildContext context,
       String accountId,
@@ -636,8 +763,7 @@ class SOVListProvider extends ChangeNotifier {
       print('SOV ID: $sovId');
       print('Export Data: $exportData');
 
-      final URL =
-          '${AppConstant.EXPORT}/$accountId/$subAccountId/${sovId.isEmpty ? null : sovId}';
+      final URL = '${AppConstant.EXPORT}/$accountId/$subAccountId/$sovId';
       print('Request URL: $URL');
 
       final dio = Dio();

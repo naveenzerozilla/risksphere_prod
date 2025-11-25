@@ -1,13 +1,13 @@
+import 'package:RiskSphere/models/user_profile_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 import '../../models/initial_data_model.dart';
 import '../../service/language_service.dart';
+import '../primitives/app_colors.dart';
 import '../primitives/custom_typography.dart';
-import '../primitives/utilities/custom_spacing.dart';
 
 class CustomFlexibleRolesBottomSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> options;
+  final List<AcceptedRole> options;
   final List<Categories> selectedRoles;
   final Function(Categories) addChip;
   final Function(Categories) removeChip;
@@ -27,10 +27,12 @@ class CustomFlexibleRolesBottomSheet extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<CustomFlexibleRolesBottomSheet> createState() => _CustomFlexibleRolesBottomSheetState();
+  State<CustomFlexibleRolesBottomSheet> createState() =>
+      _CustomFlexibleRolesBottomSheetState();
 }
 
-class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBottomSheet> {
+class _CustomFlexibleRolesBottomSheetState
+    extends State<CustomFlexibleRolesBottomSheet> {
   // List to store selected options
   List<Categories> _selectedOptions = [];
 
@@ -53,7 +55,8 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
             Container(
               margin: const EdgeInsets.only(left: 24, top: 24),
               child: Text(
-                LanguageService.getTranslated(context, 'usermanagement_app_employee_create_account_select_role_title'),
+                LanguageService.getTranslated(context,
+                    'usermanagement_app_employee_create_account_select_role_title'),
                 style: typography.H7.copyWith(
                   color: Theme.of(context).colorScheme.onBackground,
                   fontWeight: FontWeight.bold,
@@ -63,7 +66,7 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
             Container(
               margin: const EdgeInsets.only(right: 24, top: 24),
               child: IconButton(
-                icon: Icon(Icons.close),
+                icon: const Icon(Icons.close),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -76,63 +79,97 @@ class _CustomFlexibleRolesBottomSheetState extends State<CustomFlexibleRolesBott
             itemCount: widget.options.length,
             itemBuilder: (context, index) {
               final option = widget.options[index];
-              final accountType = option['name'];
-              final id = option['role'];
-              final isSelectable = option['is_selectable'] ?? true;
+              final accountType = option.name;
+              final id = option.id;
+              final isSelectable = option.isSelectable ?? true;
               final bool isSelected = _selectedOptions
                   .where((role) => role.name == accountType)
                   .isNotEmpty;
 
               return ListTile(
-                title: Text(accountType),
+                title: Text(accountType ?? ''),
                 leading: widget.useCheckboxes
                     ? Checkbox(
-                  value: isSelected,
-                  onChanged: isSelectable
-                      ? (bool? selected) {
-                    setState(() {
-                      if (selected!) {
-                        _selectedOptions.add(Categories.fromJson(option));
-                      } else {
-                        _selectedOptions.removeWhere((role) => role.name == accountType);
-                      }
-                    });
-                  }
-                      : null,
-                )
-
-                    : Radio<String>(
-                  value: id,
-                  groupValue: isSelected ? id : null,
-                  onChanged: isSelectable
-                      ? (value) {
-                    setState(() {
-                      _selectedOptions.clear();
-                      _selectedOptions.add(Categories.fromJson(option));
-                    });
-                  }
-                      : null,
-                ),
+                        value: isSelected,
+                        onChanged: isSelectable
+                            ? (bool? selected) {
+                                setState(() {
+                                  if (selected!) {
+                                    // Convert AcceptedRole to Categories or find corresponding Categories
+                                    final category =
+                                        _findCorrespondingCategory(option);
+                                    if (category != null) {
+                                      _selectedOptions.add(category);
+                                    }
+                                  } else {
+                                    _selectedOptions.removeWhere(
+                                        (role) => role.name == accountType);
+                                  }
+                                });
+                              }
+                            : null,
+                      )
+                    : Radio<bool>(
+                        value: true,
+                        groupValue: isSelected,
+                        onChanged: isSelectable
+                            ? (value) {
+                                setState(() {
+                                  _selectedOptions.clear();
+                                  // Convert AcceptedRole to Categories or find corresponding Categories
+                                  final category =
+                                      _findCorrespondingCategory(option);
+                                  if (category != null) {
+                                    _selectedOptions.add(category);
+                                  }
+                                });
+                              }
+                            : null,
+                      ),
               );
             },
           ),
         ),
-        TextButton(
-          onPressed: () {
-            // Remove all existing chips
-            widget.removeAllChips();
-            // Add new chips for the selected options
-            for (Categories selectedOption in _selectedOptions) {
-              widget.addChip(selectedOption);
-            }
-            // Close the bottom sheet
-            Navigator.pop(context);
-          },
-          child: Text(LanguageService.getTranslated(context, "usermanagement_app_employee_create_account_select_role_submit"), style: typography.Subtitle1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 16, 16, 30),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width / 1.1,
+            height: 50,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                // Remove all existing chips
+                widget.removeAllChips();
+                // Add new chips for the selected options
+                for (Categories selectedOption in _selectedOptions) {
+                  widget.addChip(selectedOption);
+                }
+                // Close the bottom sheet
+                Navigator.pop(context);
+              },
+              label: Text(
+                'SUBMIT',
+                style: typography.ButtonLarge.copyWith(color: Colors.black),
+              ),
+              backgroundColor: AppColors.primaryMain,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          // SizedBox(height: 20),
         ),
-
       ],
     );
   }
-}
 
+  Categories? _findCorrespondingCategory(AcceptedRole role) {
+    return Categories(
+        id: role.id,
+        name: role.name,
+        isApplicableForTrial: true,
+        isForIndividual: true,
+        isMultipleRoleEnabled: true,
+        role: ''
+
+        // Add other necessary properties
+        );
+  }
+}

@@ -997,7 +997,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
                         Tab(
                           text: 'Geocoding',
                         ),
-                        Tab(text: 'Risk Score'),
+                        Tab(text: 'Hazard Score'),
                         // Tab(text: 'Occupancy'),
                         // Tab(text: 'Construction'),
                       ],
@@ -1429,39 +1429,39 @@ class _LocationListMapViewState extends State<LocationListMapView>
                             )
                           : Container()),
 
-                  Positioned(
-                      bottom: 20,
-                      left: 80,
-                      right: 70,
-                      child: _selectedTabIndex == 0
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 11, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(20)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildScoreIndicator(1, Colors.red),
-                                  SizedBox(width: 8),
-                                  _buildScoreIndicator(2, Colors.orange),
-                                  SizedBox(width: 8),
-                                  _buildScoreIndicator(3, Colors.yellow),
-                                  SizedBox(width: 8),
-                                  _buildScoreIndicator(4, Colors.green),
-                                  SizedBox(width: 8),
-                                  _buildScoreIndicator(5, Colors.blue),
-                                ],
-                              ),
-                            )
-                          : Container()),
+                  // Positioned(
+                  //     bottom: 20,
+                  //     left: 80,
+                  //     right: 70,
+                  //     child: _selectedTabIndex == 0
+                  //         ? Container(
+                  //             padding: const EdgeInsets.symmetric(
+                  //                 horizontal: 11, vertical: 8),
+                  //             decoration: BoxDecoration(
+                  //               color: Theme.of(context)
+                  //                   .colorScheme
+                  //                   .surfaceContainerHighest,
+                  //               borderRadius:
+                  //                   BorderRadius.all(Radius.circular(20)),
+                  //             ),
+                  //             child: Row(
+                  //               mainAxisSize: MainAxisSize.min,
+                  //               mainAxisAlignment:
+                  //                   MainAxisAlignment.spaceEvenly,
+                  //               children: [
+                  //                 _buildScoreIndicator(1, Colors.red),
+                  //                 SizedBox(width: 8),
+                  //                 _buildScoreIndicator(2, Colors.orange),
+                  //                 SizedBox(width: 8),
+                  //                 _buildScoreIndicator(3, Colors.yellow),
+                  //                 SizedBox(width: 8),
+                  //                 _buildScoreIndicator(4, Colors.green),
+                  //                 SizedBox(width: 8),
+                  //                 _buildScoreIndicator(5, Colors.blue),
+                  //               ],
+                  //             ),
+                  //           )
+                  //         : Container()),
                 ],
               ),
             ),
@@ -1732,7 +1732,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.hazard?['Overall']?.rating ?? 0,
           dataCompleteness:
-              location.dataCompleteness?.scorePd?.toString() ?? '1',
+              location.dataCompleteness?.toString() ?? '1',
           //location.riskScore ?? 0,
           hazards: location.hazard ?? {},
           geocodedAt: [location.finalAddress?.locationType ?? ""],

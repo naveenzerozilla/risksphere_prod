@@ -96,7 +96,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           Provider.of<SubAccountListProvider>(context, listen: false);
       provider.page = 1;
       await provider.fetchSubAccountList(
-          context, widget.accountId, _subAccountQuery, provider.page, 8);
+          context, widget.accountId, _subAccountQuery, provider.page, 6);
     });
   }
 
@@ -175,7 +175,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
-          .fetchSubAccountList(context, widget.accountId, "", 1, 5);
+          .fetchSubAccountList(context, widget.accountId, "", 1, 6);
     });
     setState(() {
       isPgAdmin = isPgAdmin;
@@ -320,14 +320,17 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                         .surfaceContainerHigh,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 0, vertical: 0),
                                   child: DefaultTabController(
                                     length: _tabController!.length,
                                     child: Row(
                                       children: [
                                         IconButton(
-                                            icon: const Icon(Icons.arrow_left,
-                                                color: Colors.grey),
-                                            onPressed: _scrollLeft),
+                                          icon: const Icon(Icons.arrow_left,
+                                              color: Colors.grey),
+                                          onPressed: _scrollLeft,
+                                        ),
                                         Expanded(
                                           child: Selector<
                                               SubAccountListProvider,
@@ -349,6 +352,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                 child: TabBar(
                                                   controller: _tabController,
                                                   isScrollable: true,
+                                                  tabAlignment:
+                                                      TabAlignment.start,
                                                   labelStyle:
                                                       typography.Subtitle2,
                                                   indicatorColor:
@@ -410,9 +415,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           ),
                                         ),
                                         IconButton(
-                                            icon: const Icon(Icons.arrow_right,
-                                                color: Colors.grey),
-                                            onPressed: _scrollRight),
+                                          icon: const Icon(Icons.arrow_right,
+                                              color: Colors.grey),
+                                          onPressed: _scrollRight,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -453,242 +459,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               ),
             ),
           ),
-
-          // body: Consumer<UserProfileProvider>(
-          //     builder: (context, userProfileProvider, child) {
-          //   return PopScope(
-          //     canPop: /*_selectedScreen == Screens.connectionList ||
-          //               _selectedScreen == Screens.corporateConnectionList,*/
-          //         true,
-          //     onPopInvoked: (canPop) {
-          //       print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-          //       /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
-          //               setState(() {
-          //                 _selectedScreen = Screens.corporateConnectionList;
-          //               });
-          //             } else if (_selectedScreen == Screens.requestList) {
-          //               setState(() {
-          //                 _tabController?.animateTo(0);
-          //                 _selectedScreen = Screens.corporateConnectionList;
-          //               });
-          //             }*/
-          //     },
-          //     child: Stack(
-          //       children: [
-          //         // Background image
-          //         Positioned.fill(
-          //           child: Image.asset(
-          //             'assets/images/mesh.png',
-          //             fit: BoxFit.cover,
-          //           ),
-          //         ),
-          //         Column(
-          //           children: [
-          //             Expanded(
-          //               child: Container(
-          //                 margin:
-          //                     EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          //                 child: Column(
-          //                   crossAxisAlignment: CrossAxisAlignment.start,
-          //                   children: [
-          //                     SizedBox(height: CustomSpacing.one),
-          //                     Padding(
-          //                       padding: const EdgeInsets.symmetric(
-          //                           horizontal: 10.0),
-          //                       child: Row(
-          //                         children: [
-          //                           Padding(
-          //                             padding: const EdgeInsets.only(
-          //                                 top: 6.0, bottom: 6),
-          //                             child: Row(
-          //                               children: [
-          //                                 InkWell(
-          //                                   onTap: () {
-          //                                     Navigator.pushAndRemoveUntil(
-          //                                       context,
-          //                                       MaterialPageRoute(
-          //                                           builder: (context) =>
-          //                                               AccountListScreen()),
-          //                                       (route) =>
-          //                                           false, // This removes all previous routes
-          //                                     ).then((_) {
-          //                                       // Optional: Add any actions to perform after navigation
-          //                                     });
-          //                                   },
-          //                                   child: Text(
-          //                                       widget.accountName.toString(),
-          //                                       style: TextStyle(
-          //                                           fontSize: 14,
-          //                                           color: Colors.white70)),
-          //                                 ),
-          //                                 Text(' > ',
-          //                                     style: typography.InputLabel),
-          //                                 Text("Sub Accounts",
-          //                                     style: TextStyle(
-          //                                         fontSize: 14,
-          //                                         color: Colors.white)),
-          //                               ],
-          //                             ),
-          //                           ),
-          //                         ],
-          //                       ),
-          //                     ),
-          //                     SizedBox(height: CustomSpacing.two),
-          //                     Container(
-          //                       height: 50,
-          //                       decoration: BoxDecoration(
-          //                         color: Theme.of(context)
-          //                             .colorScheme
-          //                             .surfaceContainerHigh,
-          //                         borderRadius: BorderRadius.circular(
-          //                             16), // Rounded edges
-          //                       ),
-          //                       margin: EdgeInsets.symmetric(
-          //                           horizontal: 0, vertical: 0),
-          //                       child: DefaultTabController(
-          //                         length: _tabController!.length,
-          //                         child: Column(
-          //                           children: <Widget>[
-          //                             // Container for the TabBar with arrows
-          //                             Container(
-          //                               decoration: BoxDecoration(
-          //                                 borderRadius:
-          //                                     BorderRadius.circular(16),
-          //                                 color: Theme.of(context)
-          //                                     .colorScheme
-          //                                     .surfaceContainerHigh,
-          //                               ),
-          //                               height: 50,
-          //                               child: Row(
-          //                                 children: <Widget>[
-          //                                   // Left arrow button
-          //                                   IconButton(
-          //                                     icon: Icon(Icons.arrow_left,
-          //                                         color: Colors.grey),
-          //                                     onPressed: _scrollLeft,
-          //                                   ),
-          //                                   // Scrollable TabBar
-          //                                   Expanded(
-          //                                     child: Consumer<
-          //                                             SubAccountListProvider>(
-          //                                         builder: (context,
-          //                                             subAccountListProvider,
-          //                                             _) {
-          //                                       return SingleChildScrollView(
-          //                                         controller: _scrollController,
-          //                                         scrollDirection:
-          //                                             Axis.horizontal,
-          //                                         child: TabBar(
-          //                                           controller: _tabController,
-          //                                           tabAlignment:
-          //                                               TabAlignment.start,
-          //                                           labelStyle:
-          //                                               typography.Subtitle2,
-          //                                           isScrollable: true,
-          //                                           indicatorColor:
-          //                                               Colors.lightBlueAccent,
-          //                                           labelColor:
-          //                                               Colors.lightBlueAccent,
-          //                                           unselectedLabelColor:
-          //                                               Colors.white,
-          //                                           tabs: [
-          //                                             Tab(
-          //                                               child: Row(
-          //                                                 children: [
-          //                                                   Text(
-          //                                                     'My Sub Accounts',
-          //                                                   ),
-          //                                                   subAccountListProvider
-          //                                                               .isLoading ||
-          //                                                           subAccountListProvider
-          //                                                                   .totalRecords ==
-          //                                                               0
-          //                                                       ? SizedBox()
-          //                                                       : SizedBox(
-          //                                                           width:
-          //                                                               CustomSpacing
-          //                                                                   .two,
-          //                                                         ),
-          //                                                   subAccountListProvider
-          //                                                               .isLoading ||
-          //                                                           subAccountListProvider
-          //                                                                   .totalRecords ==
-          //                                                               0
-          //                                                       ? SizedBox()
-          //                                                       : SizedBox(
-          //                                                           height: 25,
-          //                                                           child: Chip(
-          //                                                             labelPadding:
-          //                                                                 EdgeInsets.all(
-          //                                                                     0),
-          //                                                             materialTapTargetSize:
-          //                                                                 MaterialTapTargetSize
-          //                                                                     .shrinkWrap,
-          //                                                             label:
-          //                                                                 Text(
-          //                                                               subAccountListProvider
-          //                                                                   .totalRecords
-          //                                                                   .toString(),
-          //                                                               style: typography.BottomNavigationActiveLabel.copyWith(
-          //                                                                   height:
-          //                                                                       -0.6),
-          //                                                             ),
-          //                                                           ),
-          //                                                         ),
-          //                                                 ],
-          //                                               ),
-          //                                             ),
-          //                                             Tab(text: 'Shared'),
-          //                                             if (isSuperAdmin ||
-          //                                                 isPgAdmin)
-          //                                               Tab(
-          //                                                   text:
-          //                                                       'Configuration'),
-          //                                             Tab(
-          //                                                 text:
-          //                                                     'Access Requested'),
-          //                                           ],
-          //                                         ),
-          //                                       );
-          //                                     }),
-          //                                   ),
-          //                                   // Right arrow button
-          //                                   IconButton(
-          //                                     icon: Icon(Icons.arrow_right,
-          //                                         color: Colors.grey),
-          //                                     onPressed: _scrollRight,
-          //                                   ),
-          //                                 ],
-          //                               ),
-          //                             ),
-          //                           ],
-          //                         ),
-          //                       ),
-          //                     ),
-          //                     Expanded(
-          //                       child: TabBarView(
-          //                         controller: _tabController,
-          //                         children: [
-          //                           _getSubAccountUI(),
-          //                           _getComingSoonUI("shared"),
-          //                           if (isSuperAdmin || isPgAdmin)
-          //                             ConfigurationTab(
-          //                                 accountId: widget.accountId),
-          //                           _getComingSoonUI("request"),
-          //                         ],
-          //                       ),
-          //                     ),
-          //                   ],
-          //                 ),
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //         if (_showOverlay_subaccount) _buildOverlay(),
-          //       ],
-          //     ),
-          //   );
-          // }),
         );
       }),
     );
@@ -967,6 +737,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     : "";
                                                 // Show edit dialog
                                                 showDialog(
+                                                  barrierDismissible: false,
                                                   context: context,
                                                   builder: (context) {
                                                     return AlertDialog(
@@ -1104,6 +875,24 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       ? SizedBox()
                                       : Row(
                                           children: [
+                                            Text("Location Count",
+                                                style: typography.Caption),
+                                            SizedBox(
+                                              width: CustomSpacing.two,
+                                            ),
+                                            Text(
+                                                subAccountListProvider
+                                                        .subAccountList[index]
+                                                        .locationCount
+                                                        ?.toString() ??
+                                                    "0",
+                                                style: typography.Caption),
+                                          ],
+                                        ),
+                                  !subAccountListProvider.showSovCount
+                                      ? SizedBox()
+                                      : Row(
+                                          children: [
                                             Text(
                                                 subAccountListProvider
                                                                 .subAccountList[
@@ -1227,6 +1016,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   // Show duplicate dialog
                                   showDialog(
                                     context: context,
+                                    barrierDismissible: false,
                                     builder: (context) {
                                       return AlertDialog(
                                         title: Text(
@@ -1264,42 +1054,79 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     type: ButtonType.text,
                                                   ),
                                                 ),
-                                                Expanded(child: Consumer<
-                                                        SubAccountListProvider>(
-                                                    builder:
-                                                        (context, sub, child) {
-                                                  return subAccountListProvider
-                                                          .isDuplicateLoading
-                                                      ? Center(
-                                                          child:
-                                                              CircularProgressIndicator())
-                                                      : Expanded(
-                                                          child: CustomButton(
-                                                            onPressed:
-                                                                () async {
-                                                              // Duplicate
-                                                              await subAccountListProvider.duplicateSubAccount(
-                                                                  context,
-                                                                  widget
-                                                                      .accountId,
-                                                                  subAccountListProvider
-                                                                      .subAccountList[
-                                                                          index]
-                                                                      .subAccountId!);
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: Text(
-                                                              LanguageService
-                                                                  .getTranslated(
-                                                                      context,
-                                                                      "sub_account_list_app_duplicate_duplicate"),
-                                                            ),
-                                                            type: ButtonType
-                                                                .elevated,
+                                                Expanded(
+                                                  child: Consumer<
+                                                      SubAccountListProvider>(
+                                                    builder: (context, provider,
+                                                        child) {
+                                                      if (provider
+                                                          .isDuplicateLoading) {
+                                                        return Center(
+                                                          child: SizedBox(
+                                                            height: 28,
+                                                            width: 28,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2),
                                                           ),
                                                         );
-                                                })),
+                                                      }
+
+                                                      return CustomButton(
+                                                        onPressed: () async {
+                                                          // 👉 START LOADER
+                                                          provider.isDuplicateLoading =
+                                                              true;
+                                                          provider
+                                                              .notifyListeners();
+
+                                                          try {
+                                                            // 1️⃣ Duplicate Sub Account
+                                                            await provider
+                                                                .duplicateSubAccount(
+                                                              context,
+                                                              widget.accountId,
+                                                              provider
+                                                                  .subAccountList[
+                                                                      index]
+                                                                  .subAccountId!,
+                                                            );
+
+                                                            // 2️⃣ Refresh Sub Account List
+                                                            await provider
+                                                                .fetchSubAccountList(
+                                                              context,
+                                                              widget.accountId,
+                                                              _subAccountQuery,
+                                                              1,
+                                                              3,
+                                                            );
+
+                                                            // 3️⃣ Close dialog after everything completes
+                                                            Navigator.pop(
+                                                                context);
+                                                          } finally {
+                                                            // 👉 STOP LOADER
+                                                            provider.isDuplicateLoading =
+                                                                false;
+                                                            provider
+                                                                .notifyListeners();
+                                                          }
+                                                        },
+                                                        child: Text(
+                                                          LanguageService
+                                                              .getTranslated(
+                                                            context,
+                                                            "sub_account_list_app_duplicate_duplicate",
+                                                          ),
+                                                        ),
+                                                        type:
+                                                            ButtonType.elevated,
+                                                      );
+                                                    },
+                                                  ),
+                                                )
                                               ],
                                             ),
                                           ],
@@ -1317,6 +1144,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 onPressed: () {
                                   // Show Delete Account dialog
                                   showDialog(
+                                    barrierDismissible: false,
                                     context: context,
                                     builder: (context) {
                                       return AlertDialog(
@@ -1370,98 +1198,79 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       )
                                                     : Expanded(
                                                         child: Consumer<
-                                                                SubAccountListProvider>(
-                                                            builder: (context,
-                                                                subAccountListProvider,
-                                                                child) {
-                                                          return subAccountListProvider
-                                                                  .isDeleteLocationLoading
-                                                              ? Center(
-                                                                  child:
-                                                                      CircularProgressIndicator())
-                                                              : CustomButton(
-                                                                  onPressed:
-                                                                      () async {
-                                                                    setState(
-                                                                        () {
-                                                                      subAccountListProvider
-                                                                              .isDeleteLocationLoading =
-                                                                          true; // Start loader
-                                                                    });
+                                                            SubAccountListProvider>(
+                                                          builder: (context,
+                                                              provider, child) {
+                                                            final isLoading =
+                                                                provider
+                                                                    .isDeleting; // ✅ use provider state
 
-                                                                    bool
+                                                            return CustomButton(
+                                                              type: ButtonType
+                                                                  .elevated,
+                                                              onPressed: isLoading
+                                                                  ? null // disable button during loading
+                                                                  : () async {
+                                                                      provider.setDeleting(
+                                                                          true); // START LOADER
+
+                                                                      bool
+                                                                          isSuccess =
+                                                                          false;
+
+                                                                      try {
                                                                         isSuccess =
-                                                                        false;
-                                                                    try {
-                                                                      isSuccess =
-                                                                          await subAccountListProvider
-                                                                              .deleteAccount(
-                                                                        context,
-                                                                        subAccountListProvider
-                                                                            .subAccountList[index]
-                                                                            .accountId!,
-                                                                        subAccountListProvider
-                                                                            .subAccountList[index]
-                                                                            .subAccountId!,
-                                                                      );
-                                                                    } catch (e) {
-                                                                      print(
-                                                                          "Error deleting account: $e"); // Handle error properly
-                                                                    }
+                                                                            await provider.deleteAccount(
+                                                                          context,
+                                                                          provider
+                                                                              .subAccountList[index]
+                                                                              .accountId!,
+                                                                          provider
+                                                                              .subAccountList[index]
+                                                                              .subAccountId!,
+                                                                        );
+                                                                      } catch (e) {
+                                                                        print(
+                                                                            "Delete error: $e");
+                                                                      }
 
-                                                                    if (isSuccess) {
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                      await subAccountListProvider
-                                                                          .fetchSubAccountList(
-                                                                        context,
-                                                                        widget
-                                                                            .accountId,
-                                                                        _subAccountQuery,
-                                                                        1,
-                                                                        // Reset to the first page
-                                                                        8, // Page size
-                                                                        // isRefresh: true, // Optional flag for refresh
-                                                                      );
-                                                                    }
-                                                                    setState(
-                                                                        () {
-                                                                      subAccountListProvider
-                                                                              .isDeleteLocationLoading =
-                                                                          false; // Stop loader
-                                                                    });
-                                                                  },
-                                                                  child: Text(
-                                                                    "Delete",
-                                                                  ),
-                                                                  type: ButtonType
-                                                                      .elevated,
-                                                                );
-                                                        }),
-                                                      ),
+                                                                      if (isSuccess) {
+                                                                        Navigator.pop(
+                                                                            context);
 
-                                                // Expanded(
-                                                //   child: CustomButton(
-                                                //     onPressed: () async {
-                                                //       bool isSuccess = await accountListProvider.deleteAccount(
-                                                //         context,
-                                                //         accountListProvider.accountList[index].accountId!,
-                                                //       );
-                                                //
-                                                //       if (isSuccess) {
-                                                //         Navigator.pop(context);
-                                                //         accountListProvider.fetchAccountList(
-                                                //             context, _accountQuery, 1, 20);
-                                                //       }
-                                                //     },
-                                                //     child: Text(
-                                                //       LanguageService.getTranslated(
-                                                //           context, "account_list_app_duplicate_duplicate"),
-                                                //       style: typography.ButtonLarge,
-                                                //     ),
-                                                //     type: ButtonType.elevated,
-                                                //   ),
-                                                // ),
+                                                                        await provider
+                                                                            .fetchSubAccountList(
+                                                                          context,
+                                                                          widget
+                                                                              .accountId,
+                                                                          _subAccountQuery,
+                                                                          1,
+                                                                          6,
+                                                                        );
+                                                                      }
+
+                                                                      provider.setDeleting(
+                                                                          false); // STOP LOADER
+                                                                    },
+                                                              child: isLoading
+                                                                  ? SizedBox(
+                                                                      height:
+                                                                          22,
+                                                                      width: 22,
+                                                                      child:
+                                                                          CircularProgressIndicator(
+                                                                        strokeWidth:
+                                                                            2,
+                                                                        color: Colors
+                                                                            .white,
+                                                                      ),
+                                                                    )
+                                                                  : Text(
+                                                                      "Delete"),
+                                                            );
+                                                          },
+                                                        ),
+                                                      )
                                               ],
                                             ),
                                           ],
@@ -1472,17 +1281,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 },
                                 tooltip: 'Delete',
                               ),
-                              /*IconButton(
-                          icon: Icon(
-                            Icons.settings,
-                            color: AppColors.primaryMain,
-                          ),
-                          onPressed: () {
-                            _showSettingsModal(context, index);
-                          },
-                          tooltip: LanguageService.getTranslated(
-                              context, "sub_account_list_app_settings_tooltip_text"),
-                        ),*/
                             ],
                           ),
                         ),
@@ -1495,126 +1293,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     );
   }
 
-  void _showSettingsModal(BuildContext context, int index) {
-    var typography = CustomTypography(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Consumer<SubAccountListProvider>(
-                builder: (context, subAccountListProvider, _) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                    leading: subAccountListProvider.isOwnerLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: subAccountListProvider.showOwner,
-                            onChanged: (value) async {
-                              bool result = await subAccountListProvider
-                                  .changeColumnVisibility(context,
-                                      accountId: widget.accountId,
-                                      showOwner: value ?? false,
-                                      showSOVCount:
-                                          subAccountListProvider.showSovCount,
-                                      showOverallScore: subAccountListProvider
-                                          .showOverallScore,
-                                      type: 'owner');
-
-                              if (result) {
-                                setModalState(() {
-                                  subAccountListProvider.showOwner =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  subAccountListProvider.showOwner =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                subAccountListProvider.fetchSubAccountList(
-                                    context,
-                                    widget.accountId,
-                                    _subAccountQuery,
-                                    subAccountListProvider.page,
-                                    8);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(
-                            context, "sub_account_list_app_column_owner_text"),
-                        style: typography.Body1),
-                  ),
-                  ListTile(
-                    leading: subAccountListProvider.showSOVCountLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(
-                                left: CustomSpacing.three,
-                                right: CustomSpacing.three),
-                            child: SizedBox(
-                                width: 25,
-                                height: 25,
-                                child: CircularProgressIndicator()),
-                          )
-                        : Checkbox(
-                            value: subAccountListProvider.showSovCount,
-                            onChanged: (value) async {
-                              bool result = await subAccountListProvider
-                                  .changeColumnVisibility(context,
-                                      accountId: widget.accountId,
-                                      showOwner: value ?? false,
-                                      showSOVCount:
-                                          subAccountListProvider.showSovCount,
-                                      showOverallScore: subAccountListProvider
-                                          .showOverallScore,
-                                      type: 'sov_count');
-
-                              if (result) {
-                                setModalState(() {
-                                  subAccountListProvider.showSovCount =
-                                      value ?? false;
-                                });
-                                setState(() {
-                                  subAccountListProvider.showSovCount =
-                                      value ?? false;
-                                });
-                                // Update account list
-                                subAccountListProvider.fetchSubAccountList(
-                                    context,
-                                    widget.accountId,
-                                    _subAccountQuery,
-                                    subAccountListProvider.page,
-                                    8);
-                              }
-                            },
-                          ),
-                    title: Text(
-                        LanguageService.getTranslated(context,
-                            "sub_account_list_app_column_sov_count_text"),
-                        style: typography.Body1),
-                  ),
-                ],
-              );
-            });
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _showAddSubAccountDialog(BuildContext context) async {
     var typography = CustomTypography(context);
     await showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -2029,6 +1711,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           print('Inside + success: $success');
                                           // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
                                           showDialog(
+                                              barrierDismissible: false,
                                               context: context,
                                               builder: (BuildContext context) {
                                                 return AlertDialog(
@@ -2204,6 +1887,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     }
 
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -2404,7 +2088,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                   widget.accountId,
                   _subAccountQuery,
                   1, // Reset to the first page
-                  8, // Page size
+                  6, // Page size
                   // isRefresh: true, // Optional flag for refresh
                 );
               },
@@ -2477,7 +2161,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   _subAccountQuery,
                                   // Pass the search query if any
                                   subAccountListProvider.page,
-                                  8, // Page size
+                                  6, // Page size
                                 );
                                 return SizedBox();
                               }

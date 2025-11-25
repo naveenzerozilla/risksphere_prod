@@ -740,6 +740,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         SizedBox(
                                           height: CustomSpacing.two,
                                         ),
+                                        widget.locationId.isEmpty ?
                                         Container(
                                           // color: Colors.black,
                                           padding: const EdgeInsets.all(8),
@@ -875,7 +876,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        ):Container(),
                                         SizedBox(height: CustomSpacing.four),
                                         // Location Address
                                         Padding(

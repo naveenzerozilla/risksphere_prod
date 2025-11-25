@@ -891,7 +891,7 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
                             Tab(
                               text: 'Geocoding',
                             ),
-                            Tab(text: 'Risk Score'),
+                            Tab(text: 'Hazard Score'),
                           ],
                         ),
                       ),

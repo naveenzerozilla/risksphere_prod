@@ -91,7 +91,7 @@ class _AccountListScreenState extends State<AccountListScreen>
       print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       provider.page = 1;
-      await provider.fetchAccountList(context, _accountQuery, provider.page, 5);
+      await provider.fetchAccountList(context, _accountQuery, provider.page, 4);
     });
   }
 
@@ -190,35 +190,9 @@ class _AccountListScreenState extends State<AccountListScreen>
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
 
-    await accountListProvider.fetchAccountList(context, "", 1, 4);
+    await accountListProvider.fetchAccountList(context, "", 1, 5);
     setState(() => _selectedScreen = Screens.accountList);
   }
-
-  // _getData() async {
-  //   bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
-  //   isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_PG_ADMIN) ??
-  //       false;
-  //   isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_ADMIN) ??
-  //       false;
-  //   isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_SUPER_ADMIN) ??
-  //       false;
-  //   isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.Is_Indivudual) ??
-  //       false;
-  //   final accountListProvider =
-  //       Provider.of<AccountListProvider>(context, listen: false);
-  //   accountListProvider.page = 1;
-  //   await accountListProvider.fetchAccountList(context, "", 1, 5);
-  //   setState(() {
-  //     hasAnyPlan = hasAnyPlans ?? false;
-  //     isPgAdmin = isPgAdmin;
-  //     isSuperAdmin = isSuperAdmin;
-  //     _selectedScreen = Screens.accountList;
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context1) {
@@ -797,6 +771,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     : "";
                                                 // Show edit dialog
                                                 showDialog(
+                                                  barrierDismissible: false,
                                                   context: context,
                                                   builder: (context) {
                                                     return AlertDialog(
@@ -1116,11 +1091,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 icon: const Icon(Icons.file_copy_rounded),
                                 color: AppColors.primaryMain,
                                 onPressed: () {
-                                  // Show duplicate dialog
                                   showDialog(
                                     context: context,
+                                    barrierDismissible: false,
                                     builder: (context) {
                                       return AlertDialog(
+
                                         title: Text(
                                           LanguageService.getTranslated(context,
                                               "account_list_app_duplicate_title"),
@@ -1135,17 +1111,16 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                   "account_list_app_duplicate_text"),
                                               style: typography.Body1,
                                             ),
-                                            SizedBox(
-                                              height: CustomSpacing.two,
-                                            ),
+                                            SizedBox(height: CustomSpacing.two),
+
+                                            /// BUTTON ROW
                                             Row(
                                               children: [
+                                                // CANCEL BUTTON
                                                 Expanded(
                                                   child: CustomButton(
-                                                    onPressed: () {
-                                                      // Cancel
-                                                      Navigator.pop(context);
-                                                    },
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
                                                     child: Text(
                                                       LanguageService.getTranslated(
                                                           context,
@@ -1156,40 +1131,69 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     type: ButtonType.text,
                                                   ),
                                                 ),
-                                                Expanded(child: Consumer<
-                                                        AccountListProvider>(
-                                                    builder: (context,
-                                                        accountListProvider,
+
+                                                SizedBox(width: 12),
+
+                                                Expanded(
+                                                  child: Consumer<
+                                                      AccountListProvider>(
+                                                    builder: (context, provider,
                                                         child) {
-                                                  return accountListProvider
-                                                          .isDuplicateLoading
-                                                      ? Center(
-                                                          child:
-                                                              CircularProgressIndicator())
-                                                      : Expanded(
-                                                          child: CustomButton(
-                                                          onPressed: () async {
-                                                            // Duplicate
-                                                            await accountListProvider
-                                                                .duplicateAccount(
-                                                                    context,
-                                                                    accountListProvider
-                                                                        .accountList[
-                                                                            index]
-                                                                        .accountId!);
-                                                            Navigator.pop(
-                                                                context);
-                                                          },
-                                                          child: Text(
-                                                            LanguageService
-                                                                .getTranslated(
-                                                                    context,
-                                                                    "account_list_app_duplicate_duplicate"),
-                                                          ),
-                                                          type: ButtonType
-                                                              .elevated,
-                                                        ));
-                                                }))
+                                                      return provider
+                                                              .isDuplicateLoading
+                                                          ? Center(
+                                                              child: SizedBox(
+                                                              height: 28,
+                                                              width: 28,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          2),
+                                                            ))
+                                                          : CustomButton(
+                                                        onPressed: () async {
+                                                          final provider = Provider.of<AccountListProvider>(context, listen: false);
+
+                                                          // 👉 START LOADER
+                                                          provider.isDuplicateLoading = true;
+                                                          provider.notifyListeners();
+
+                                                          try {
+                                                            // 1️⃣ Duplicate the Account
+                                                            await provider.duplicateAccount(
+                                                              context,
+                                                              provider.accountList[index].accountId!,
+                                                            );
+
+                                                            await provider.fetchAccountList(
+                                                              context,
+                                                              _accountQuery,
+                                                              1,
+                                                              3,
+                                                            );
+
+                                                          } finally {
+
+                                                            provider.isDuplicateLoading = false;
+                                                            provider.notifyListeners();
+                                                          }
+
+                                                          // 3️⃣ Close Dialog
+                                                          Navigator.pop(context);
+                                                        },
+
+                                                              child: Text(
+                                                                LanguageService
+                                                                    .getTranslated(
+                                                                        context,
+                                                                        "account_list_app_duplicate_duplicate"),
+                                                              ),
+                                                              type: ButtonType
+                                                                  .elevated,
+                                                            );
+                                                    },
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ],
@@ -1200,6 +1204,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 },
                                 tooltip: 'Duplicate',
                               ),
+
                               Consumer<AccountListProvider>(
                                 builder: (context, accountListProvider, _) {
                                   return IconButton(
@@ -1208,6 +1213,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     onPressed: () {
                                       // Show Delete Account dialog
                                       showDialog(
+                                        barrierDismissible: false,
                                         context: context,
                                         builder: (context) {
                                           return AlertDialog(
@@ -1249,70 +1255,58 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                           type:
                                                               ButtonType.text);
                                                     })),
-
-                                                    // Show Loader if Deleting, Otherwise Show Delete Button
                                                     Expanded(
-                                                      child: Consumer<
-                                                              AccountListProvider>(
-                                                          builder: (context,
-                                                              accountListProvider,
-                                                              child) {
-                                                        return accountListProvider
-                                                                .isDeleteLocationLoading
-                                                            ? Center(
-                                                                child:
-                                                                    CircularProgressIndicator())
-                                                            : CustomButton(
-                                                                onPressed:
-                                                                    () async {
-                                                                  setState(() {
-                                                                    accountListProvider
-                                                                            .isAddAccountLoading =
-                                                                        true; // Start loader
-                                                                  });
+                                                      child: Consumer<AccountListProvider>(
+                                                        builder: (context, provider, child) {
+                                                          return provider.isDeleteLocationLoading
+                                                              ? Center(
+                                                            child: SizedBox(
+                                                              height: 28,
+                                                              width: 28,
+                                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                                            ),
+                                                          )
+                                                              : CustomButton(
+                                                            onPressed: () async {
+                                                              // 👉 START LOADER
+                                                              provider.isDeleteLocationLoading = true;
+                                                              provider.notifyListeners();
 
-                                                                  bool
-                                                                      isSuccess =
-                                                                      false;
-                                                                  try {
-                                                                    isSuccess =
-                                                                        await accountListProvider
-                                                                            .deleteAccount(
-                                                                      context,
-                                                                      accountListProvider
-                                                                          .accountList[
-                                                                              index]
-                                                                          .accountId!,
-                                                                    );
-                                                                  } catch (e) {
-                                                                    print(
-                                                                        "Error deleting account: $e");
-                                                                  }
+                                                              bool isSuccess = false;
 
-                                                                  if (isSuccess) {
-                                                                    Navigator.pop(
-                                                                        context);
-                                                                    accountListProvider.fetchAccountList(
-                                                                        context,
-                                                                        _accountQuery,
-                                                                        1,
-                                                                        5);
-                                                                  }
+                                                              try {
 
-                                                                  setState(() {
-                                                                    accountListProvider
-                                                                            .isAddAccountLoading =
-                                                                        false; // Stop loader
-                                                                  });
-                                                                },
-                                                                child: Text(
-                                                                  "Delete",
-                                                                ),
-                                                                type: ButtonType
-                                                                    .elevated,
-                                                              );
-                                                      }),
-                                                    ),
+                                                                isSuccess = await provider.deleteAccount(
+                                                                  context,
+                                                                  provider.accountList[index].accountId!,
+                                                                );
+
+                                                                // 2️⃣ Refresh list ONLY if delete succeeded
+                                                                if (isSuccess) {
+                                                                  await provider.fetchAccountList(
+                                                                    context,
+                                                                    _accountQuery,
+                                                                    1, // reset first page
+                                                                    5, // page size
+                                                                  );
+
+                                                                  // 3️⃣ Close dialog after full success
+                                                                  Navigator.pop(context);
+                                                                }
+
+                                                              } finally {
+                                                                // 👉 STOP LOADER
+                                                                provider.isDeleteLocationLoading = false;
+                                                                provider.notifyListeners();
+                                                              }
+                                                            },
+                                                            child: Text("Delete"),
+                                                            type: ButtonType.elevated,
+                                                          );
+                                                        },
+                                                      ),
+                                                    )
+
                                                   ],
                                                 ),
                                               ],
@@ -1378,6 +1372,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     }
 
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext dialogContext) {
         // Use StatefulBuilder to manage internal dialog state
@@ -1527,6 +1522,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   Future<void> _showAddAccountDialog(BuildContext context) async {
     var typography = CustomTypography(context);
     await showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -1600,45 +1596,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   border: const OutlineInputBorder(),
                                 ),
                               ),
-                              // TextField(
-                              //   controller: _textEditingController,
-                              //   focusNode: FocusNode(),
-                              //   onChanged: (value) async {
-                              //     setState(() {
-                              //       _accountAlreadyExists = false;
-                              //       _selectedAccount = null;
-                              //       // Clear the autocomplete list when user starts typing
-                              //       accountListProvider.clearAutoCompleteList();
-                              //     });
-                              //     _autocompleteText = value;
-                              //     await autoCompleteAccountsSearchClient(
-                              //         _autocompleteText);
-                              //   },
-                              //   decoration: InputDecoration(
-                              //     suffixIcon:
-                              //         _textEditingController.text.isNotEmpty
-                              //             ? IconButton(
-                              //                 icon: Icon(Icons.clear),
-                              //                 onPressed: () {
-                              //                   setState(() {
-                              //                     _textEditingController.clear();
-                              //                     _accountAlreadyExists = false;
-                              //                     _selectedAccount = null;
-                              //                     // Clear the autocomplete list when user clears the text
-                              //                     accountListProvider
-                              //                         .clearAutoCompleteList();
-                              //                   });
-                              //                 },
-                              //               )
-                              //             : null,
-                              //     labelText: LanguageService.getTranslated(
-                              //         context,
-                              //         "account_list_app_add_account_title"),
-                              //     hintText: LanguageService.getTranslated(context,
-                              //         "account_list_app_add_account_title"),
-                              //     border: const OutlineInputBorder(),
-                              //   ),
-                              // ),
                               if (_textEditingController.text.isNotEmpty &&
                                   !_accountAlreadyExists)
                                 AutocompleteOptions(
@@ -1658,23 +1615,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   isLoading:
                                       accountListProvider.isAutoCompleteLoading,
                                 ),
-                              // if (_accountAlreadyExists)
-                              //   Padding(
-                              //     padding: const EdgeInsets.only(top: 16.0),
-                              //     child: TextField(
-                              //       controller: _messageController,
-                              //       decoration: InputDecoration(
-                              //         labelText: LanguageService.getTranslated(
-                              //             context,
-                              //             "account_list_app_comment_text"),
-                              //         hintText: LanguageService.getTranslated(
-                              //             context,
-                              //             "account_list_app_comment_placeholder"),
-                              //         border: const OutlineInputBorder(),
-                              //       ),
-                              //       maxLines: 3,
-                              //     ),
-                              //   ),
                             ],
                           );
                         },
@@ -1838,47 +1778,6 @@ class _AccountListScreenState extends State<AccountListScreen>
               '${LanguageService.getTranslated(context, "account_list_app_title")} ',
               style: typography.Body1,
             ),
-            /*ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryMain,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Container(
-                height: 40,
-                // Adjust this value to match your desired button height
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18),
-                      child: Text(
-                        'Upload',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.surface,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: double.infinity,
-                      color: AppColors.primaryDark,
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Icon(
-                        Icons.arrow_drop_down,
-                        color: Theme.of(context).colorScheme.surface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),*/
           ],
         ),
         SizedBox(height: CustomSpacing.four),
@@ -1957,10 +1856,23 @@ class _AccountListScreenState extends State<AccountListScreen>
                     if (!isNextPageLoading &&
                         scrollInfo.metrics.pixels >=
                             scrollInfo.metrics.maxScrollExtent - 200) {
-                      Provider.of<AccountListProvider>(context, listen: false)
-                          .fetchAccountList(
-                              context, _accountQuery, currentPage + 1, 5);
+                      final provider = Provider.of<AccountListProvider>(context,
+                          listen: false);
+
+                      // Only fetch next page if there are more records to load
+                      if (provider.accountList.length < provider.accountHits) {
+                        provider.fetchAccountList(
+                          context,
+                          _accountQuery,
+                          currentPage + 1,
+                          5,
+                        );
+                      } else {
+                        debugPrint(
+                            "✅ All data loaded (${provider.accountList.length} / ${provider.accountHits})");
+                      }
                     }
+
                     return false;
                   },
                   child: ListView.builder(
@@ -1989,98 +1901,6 @@ class _AccountListScreenState extends State<AccountListScreen>
             },
           ),
         )
-
-        // Expanded(
-        //   child: Consumer<AccountListProvider>(
-        //       builder: (context, accountListProvider, _) {
-        //     return accountListProvider.isLoading
-        //         ? Stack(
-        //             alignment: Alignment.center,
-        //             children: [
-        //               SizedBox(
-        //                 height: 100,
-        //               ),
-        //               Center(
-        //                 child: CircularProgressIndicator(),
-        //               ),
-        //             ],
-        //           )
-        //         : accountListProvider.accountList.isEmpty
-        //             ? Center(
-        //                 child: Text(
-        //                   "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
-        //                   style: typography.Body1,
-        //                 ),
-        //               )
-        //             : RefreshIndicator(
-        //                 onRefresh: () async {
-        //                   accountListProvider.fetchAccountList(
-        //                       context, _accountQuery, 1, 5);
-        //                 },
-        //                 child: ListView.builder(
-        //                     itemCount: accountListProvider.accountList.length,
-        //                     itemBuilder: (context, index) {
-        //                       print("Query1: $_accountQuery");
-        //                       if (index ==
-        //                           accountListProvider.accountList.length - 1) {
-        //                         // Check if it's the last item
-        //                         if (accountListProvider.isNextPageLoading) {
-        //                           // Display loading indicator
-        //                           return Padding(
-        //                             padding: const EdgeInsets.all(8.0),
-        //                             child: Center(
-        //                               child: CircularProgressIndicator(),
-        //                             ),
-        //                           );
-        //                         } else if (accountListProvider.page >=
-        //                                 accountListProvider.totalPages &&
-        //                             accountListProvider
-        //                                 .accountList.isNotEmpty) {
-        //                           // Display end of list message
-        //                           print(
-        //                               "account list: ${accountListProvider.accountList}");
-        //                           return Column(
-        //                             children: [
-        //                               _buildAccountCard(
-        //                                   index, accountListProvider),
-        //                               Padding(
-        //                                 padding: const EdgeInsets.all(8.0),
-        //                                 child: Center(
-        //                                   child: Text(
-        //                                     LanguageService.getTranslated(
-        //                                         context,
-        //                                         "account_list_app_end_of_list_text"),
-        //                                     style: typography.Body1,
-        //                                   ),
-        //                                 ),
-        //                               ),
-        //                             ],
-        //                           );
-        //                         } else {
-        //                           // Trigger fetching the next page
-        //                           accountListProvider.page =
-        //                               accountListProvider.page + 1;
-        //                           print(
-        //                               "Fetching page ${accountListProvider.page}");
-        //                           print(
-        //                               "Query: $_accountQuery, Page: ${accountListProvider.page}");
-        //                           accountListProvider.fetchAccountList(
-        //                             context,
-        //                             _accountQuery,
-        //                             // Pass the search query if any
-        //                             accountListProvider.page,
-        //                             5, // Page size
-        //                           );
-        //                           return SizedBox();
-        //                         }
-        //                       } else {
-        //                         return _buildAccountCard(
-        //                             index, accountListProvider);
-        //                       }
-        //                     }),
-        //               );
-        //   }),
-        // ),
       ],
     );
   }

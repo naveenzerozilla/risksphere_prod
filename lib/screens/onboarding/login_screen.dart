@@ -470,7 +470,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Expanded(
                     child: Container(
-                      height: 60,
+                      height: 55,
                       child: authNotifier.isSigningIn
                           ? Center(
                               child: CircularProgressIndicator(

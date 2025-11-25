@@ -31,10 +31,18 @@ class MyScrollableScoresWidget extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _buildScoreCard(context, 'Geocoding Score', geocodingScore,true),
-                _buildScoreCard(context, 'Risk Score', int.parse(riskScore.toString()),true),
-                _buildScoreCard(context, 'Data Completeness', dataCompleteness == 0 ? 1 : int.parse(dataCompleteness), true),
-                // _buildScoreCard(context, 'Construction', riskScore),
+                _buildScoreCard(
+                    context, 'Geocoding Score', geocodingScore, true),
+                _buildScoreCard(context, 'Hazard Score',
+                    int.parse(riskScore.toString()), true),
+                _buildScoreCard(
+                    context,
+                    'Data Completeness',
+                    (dataCompleteness == null ||
+                            int.tryParse(dataCompleteness.toString()) == null)
+                        ? 1
+                        : int.parse(dataCompleteness.toString()),
+                    true),
               ],
             ),
           ),
@@ -44,7 +52,8 @@ class MyScrollableScoresWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreCard(BuildContext context, String title, int score, bool? hazardProcess) {
+  Widget _buildScoreCard(
+      BuildContext context, String title, int score, bool? hazardProcess) {
     List<Color> scoreColors = [
       Colors.grey[300]!,
       Colors.red[900]!,
@@ -73,12 +82,10 @@ class MyScrollableScoresWidget extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-          if (hazardProcess == true ||
-          title == 'Geocoding' ||
-          title == 'Data Completeness') ...[
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (hazardProcess == true ||
+                title == 'Geocoding' ||
+                title == 'Data Completeness') ...[
               VerticalBarIndicator(score: score),
               SizedBox(width: 4),
               CircleAvatar(
@@ -86,7 +93,8 @@ class MyScrollableScoresWidget extends StatelessWidget {
                 backgroundColor: scoreColors[score].withOpacity(0.6),
                 child: Center(
                   child: Text(
-                    score.toString(),
+
+                    score == 0 ? '1' : score.toString(),
                     style: typography.Body1.copyWith(
                       color: Colors.white,
                       fontSize: 10,
@@ -95,14 +103,10 @@ class MyScrollableScoresWidget extends StatelessWidget {
                   ),
                 ),
               ),
-            ]  else ...[
-          Container(child: Text("Processing"))
-    ]
-
-                ]
-
-          ),
-
+            ] else ...[
+              Container(child: Text("Processing"))
+            ]
+          ]),
         ],
       ),
     );

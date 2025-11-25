@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_profile_provider.dart';
-import '../../screens/userManagement/user_profile.dart';
 
 class ProfileImageWidget extends StatelessWidget {
   @override
@@ -29,11 +28,11 @@ class ProfileImageWidget extends StatelessWidget {
                 );
               },
               errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-                return FallbackAvatar(name: userProfile.userData?.name ?? 'A');
+                return FallbackAvatar(name: userProfile.userData.name ?? 'A');
               },
             ),
           )
-              : FallbackAvatar(name: userProfile.userData?.name ?? 'A'),
+              : FallbackAvatar(name: userProfile.userData.name ?? 'A'),
         );
       },
     );

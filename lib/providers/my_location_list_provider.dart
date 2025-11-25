@@ -31,7 +31,10 @@ import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/language_service.dart';
-
+UserManagementResponse parseUserManagement(String body) {
+  final jsonMap = jsonDecode(body);
+  return UserManagementResponse.fromJson(jsonMap);
+}
 class MyLocationListProvider extends ChangeNotifier {
   bool _isLoading = false;
   int currentPage = 1;
@@ -1328,285 +1331,35 @@ class MyLocationListProvider extends ChangeNotifier {
     }
   }
 
-  //old
-  /// Fetch sov list with pagination, search query, and filters
-  // Future<void> fetchLocationList(
-  //     BuildContext context,
-  //     String searchQuery,
-  //     int page,
-  //     int pageSize,
-  //     String? accountID,
-  //     String? subAccountID,
-  //     String? processId,
-  //     String? subProcessId,
-  //     [String? sovID]) async {
-  //   var typography = CustomTypography(context);
-  //   try {
-  //     // print('Api called page and total page are $page and $totalPages');
-  //     // Check if api is already working
-  //     // if (isLoading || isNextPageLoading) return;
-  //     // dont call api is next page does not exist
-  //     print(totalPages.toString());
-  //     if (page - 1 > totalPages) return;
-  //     if (page == 1) {
-  //       myLocationList = [];
-  //       isLoading = true;
-  //     } else {
-  //       isNextPageLoading = true;
-  //     }
-  //
-  //     var headers = await CommonHeaders.createHeaders();
-  //
-  //     log(headers.toString());
-  //
-  //     var url;
-  //     if (sovID != null && sovID.isNotEmpty) {
-  //       print("Aa");
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
-  //     } else if (processId != null && processId.isNotEmpty) {
-  //       print("Bb");
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-  //     } else {
-  //       print("Cb");
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID";
-  //               // "&process_id=$processId";
-  //     }
-  //
-  //     // if (sovID != null) {
-  //     //   url = AppConstant.MY_LOCATION +
-  //     //       "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
-  //     // } else {
-  //     //   url = AppConstant.MY_LOCATION +
-  //     //       "?page=$page&pageSize=$pageSize&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
-  //     // }
-  //     if (countries.isNotEmpty) {
-  //       url += "&country=${countries.join(",")}";
-  //     }
-  //     if (zipcode.isNotEmpty) {
-  //       url += "&zip=$state";
-  //     }
-  //     if (sortBy.isNotEmpty) {
-  //       url += "&sort=$sortBy";
-  //     }
-  //
-  //     if (certifications.isNotEmpty) {
-  //       for (var cert in certifications) {
-  //         if (cert == "Manual Certified") {
-  //           url += "&manual_certified=true";
-  //         } else if (cert == "Auto Certified") {
-  //           url += "&auto_certified=true";
-  //         }
-  //       }
-  //     }
-  //     if (hazardRatings.isNotEmpty) {
-  //       /*for (var hazard in hazardRatings.keys) {
-  //         url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-  //       }*/
-  //       // we pass it in as json
-  //       url += "&hazard=${jsonEncode(hazardRatings)}";
-  //     }
-  //     if (rating.isNotEmpty) {
-  //       url += "&score=${rating.join(",")}";
-  //     }
-  //
-  //     if (_selectedCampusIds.isNotEmpty) {
-  //       url += "&campus_id=${_selectedCampusIds.join(",")}";
-  //     }
-  //
-  //     if (processId != null) {
-  //       url += "&process_id=$processId";
-  //     }
-  //
-  //     if (subProcessId != null) {
-  //       url += "&sub_process_id=$subProcessId";
-  //     }
-  //
-  //     print(url);
-  //     var uri = Uri.parse(url);
-  //
-  //     var response = await http.get(
-  //       uri,
-  //       headers: headers,
-  //       //body: body,
-  //     );
-  //     log(response.body);
-  //     print(response.statusCode);
-  //
-  //     if (response.statusCode == 200) {
-  //       var jsonResponse = json.decode(response.body);
-  //       MyLocationModel locationListModel =
-  //           MyLocationModel.fromJson(jsonResponse);
-  //       locationHits = locationListModel.totalRecords ?? 0;
-  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
-  //       isConflict = locationListModel.isConflict!;
-  //       isHazardCanStart = locationListModel.isHazardCanStart!;
-  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
-  //
-  //       totalPages = locationHits ~/ pageSize;
-  //       //summaryList = locationListModel.summaryList ?? [];
-  //       //mainSovRating = locationListModel. ?? 0.0;
-  //       if (page == 1) {
-  //         locationcount=locationListModel.totalRecords??1;
-  //         myLocationList = locationListModel.results ?? [];
-  //       } else {
-  //         addToMyLocationList(locationListModel.results ?? []);
-  //       }
-  //       log(myLocationList.toString());
-  //       print("totalPages: $totalPages");
-  //       log(page.toString());
-  //     } else {
-  //       print(json.decode(response.body)["error"]);
-  //       throw Exception('Failed to load data');
-  //     }
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //   } on BackendException catch (e, stackTrace) {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     print(stackTrace);
-  //     print(e.message);
-  //
-  //   } catch (e, stackTrace) {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     print(stackTrace);
-  //
-  //   }
-  // }
-  //
-  // Future<void> fetchLocationConflictList(
-  //     BuildContext context,
-  //     String searchQuery,
-  //     int page,
-  //     int pageSize,
-  //     String? accountID,
-  //     String? subAccountID,
-  //     String? processId,
-  //     String? subProcessId,
-  //     [String? sovID]) async {
-  //   var typography = CustomTypography(context);
-  //   try {
-  //     // print('Api called page and total page are $page and $totalPages');
-  //     // Check if api is already working
-  //     // if (isLoading || isNextPageLoading) return;
-  //     // dont call api is next page does not exist
-  //     print(totalPages.toString());
-  //     if (page - 1 > totalPages) return;
-  //     if (page == 1) {
-  //       myLocationList = [];
-  //       isLoading = true;
-  //     } else {
-  //       isNextPageLoading = true;
-  //     }
-  //
-  //     var headers = await CommonHeaders.createHeaders();
-  //
-  //     log(headers.toString());
-  //
-  //     var url;
-  //     if (sovID != null) {
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID&sov_id=$sovID";
-  //     } else {
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&account_id=$accountID&show_full_list=true&conflicts=true&sub_account_id=$subAccountID";
-  //     }
-  //     if (countries.isNotEmpty) {
-  //       url += "&country=${countries.join(",")}";
-  //     }
-  //     if (zipcode.isNotEmpty) {
-  //       url += "&zip=$state";
-  //     }
-  //     if (sortBy.isNotEmpty) {
-  //       url += "&sort=$sortBy";
-  //     }
-  //
-  //     if (certifications.isNotEmpty) {
-  //       for (var cert in certifications) {
-  //         if (cert == "Manual Certified") {
-  //           url += "&manual_certified=true";
-  //         } else if (cert == "Auto Certified") {
-  //           url += "&auto_certified=true";
-  //         }
-  //       }
-  //     }
-  //     if (hazardRatings.isNotEmpty) {
-  //       /*for (var hazard in hazardRatings.keys) {
-  //         url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-  //       }*/
-  //       // we pass it in as json
-  //       url += "&hazard=${jsonEncode(hazardRatings)}";
-  //     }
-  //     if (rating.isNotEmpty) {
-  //       url += "&score=${rating.join(",")}";
-  //     }
-  //
-  //     if (_selectedCampusIds.isNotEmpty) {
-  //       url += "&campus_id=${_selectedCampusIds.join(",")}";
-  //     }
-  //
-  //     if (processId != null) {
-  //       url += "&process_id=$processId";
-  //     }
-  //
-  //     if (subProcessId != null) {
-  //       url += "&sub_process_id=$subProcessId";
-  //     }
-  //
-  //     print(url);
-  //     var uri = Uri.parse(url);
-  //
-  //     var response = await http.get(
-  //       uri,
-  //       headers: headers,
-  //       //body: body,
-  //     );
-  //     log(response.body);
-  //     print(response.statusCode);
-  //
-  //     if (response.statusCode == 200) {
-  //       var jsonResponse = json.decode(response.body);
-  //       MyLocationModel locationListModel =
-  //       MyLocationModel.fromJson(jsonResponse);
-  //       locationHits = locationListModel.totalRecords ?? 0;
-  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
-  //       isConflict = locationListModel.isConflict!;
-  //       isHazardCanStart = locationListModel.isHazardCanStart!;
-  //       isAnyLocationSelected = locationListModel.isAnyHazardProcessing!;
-  //
-  //       totalPages = locationHits ~/ pageSize;
-  //       //summaryList = locationListModel.summaryList ?? [];
-  //       //mainSovRating = locationListModel. ?? 0.0;
-  //       if (page == 1) {
-  //         myLocationConflictList = locationListModel.results ?? [];
-  //       } else {
-  //         addToMyLocationList(locationListModel.results ?? []);
-  //       }
-  //       log(myLocationConflictList.toString());
-  //       print("totalPages: $totalPages");
-  //       log(page.toString());
-  //     } else {
-  //       print(json.decode(response.body)["error"]);
-  //       throw Exception('Failed to load data');
-  //     }
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //   } on BackendException catch (e, stackTrace) {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     print(stackTrace);
-  //     print(e.message);
-  //
-  //   } catch (e, stackTrace) {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     print(stackTrace);
-  //
-  //   }
-  // }
+  UserManagementResponse? userManagement;
+
+  Future<void> fetchUserManagement() async {
+    final url = Uri.parse(
+      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/user_management?current_role=true&current_user=true",
+    );
+
+    try {
+      final headers = await CommonHeaders.createHeaders();
+      final response = await http.get(url, headers: headers);
+
+      print("RAW API RESPONSE: ${response.body}");
+
+      if (response.statusCode == 200) {
+
+        userManagement = await compute(parseUserManagement, response.body);
+
+        print("User Name: ${userManagement?.user.roles.first.name}");
+        print("Can Edit SOV: ${userManagement?.user.roles.first.sovOperations.edit}");
+
+      } else {
+        print("Failed to load user roles");
+        throw Exception("Failed to load user management data");
+      }
+    } catch (e, stacktrace) {
+      print("Error fetching User Management: $e");
+      print(stacktrace);
+    }
+  }
 
   /// Fetch sov list with pagination, search query, and filters
   Future<void> fetchCertifiedLocationList(
