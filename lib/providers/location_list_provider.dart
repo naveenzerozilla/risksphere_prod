@@ -541,45 +541,98 @@ class LocationListProvider extends ChangeNotifier {
 
   // Add Location
   Future<bool> addLocation(
-    BuildContext context,
-    String accountId,
-    String subAccountId,
-    String sovId,
-    String accountName,
-    String subAccountName,
-    Map<String, dynamic> body,
-  ) async {
+      BuildContext context,
+      String accountId,
+      String subAccountId,
+      String sovId,
+      String accountName,
+      String subAccountName,
+      Map<String, dynamic> body,
+      ) async {
     try {
       isAddLocationLoading = true;
-      ApiService apiService = ApiService(
-          "${AppConstant.GET_LOCATION_PROFILE_NEW + "/addlocation"}");
-      var response = await apiService.post(body);
-      // print("object");
-      // log(response.toString());
-      // Navigator.pop(context);
-      Navigator.pushAndRemoveUntil(
+      notifyListeners(); // 👉 Immediately show loader
+
+      // Use a global or singleton ApiService (optimised)
+      final apiService = ApiService("${AppConstant.GET_LOCATION_PROFILE_NEW}/addlocation");
+
+      final response = await apiService.post(body);
+
+      isAddLocationLoading = false;
+      notifyListeners(); // 👉 Remove loader IMMEDIATELY
+
+      // 👉 Navigate without blocking UI
+      Future.microtask(() {
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) => MyLocationList(
-                    accountID: accountId,
-                    subAccountID: subAccountId,
-                    accountName: accountName,
-                    subAccountName: subAccountName,
-                  )),
-          (route) => false);
-      CustomToast.success(context, response['message']);
-      isAddLocationLoading = false;
+            builder: (_) => MyLocationList(
+              accountID: accountId,
+              subAccountID: subAccountId,
+              accountName: accountName,
+              subAccountName: subAccountName,
+            ),
+          ),
+        );
+        CustomToast.success(context, response['message']);
+      });
+
       return true;
+
     } on BackendException catch (e) {
       isAddLocationLoading = false;
+      notifyListeners();
       CustomToast.error(context, e.message);
       return false;
+
     } catch (e) {
       isAddLocationLoading = false;
+      notifyListeners();
       CustomToast.error(context, e.toString());
       return false;
     }
   }
+
+  // Future<bool> addLocation(
+  //   BuildContext context,
+  //   String accountId,
+  //   String subAccountId,
+  //   String sovId,
+  //   String accountName,
+  //   String subAccountName,
+  //   Map<String, dynamic> body,
+  // ) async {
+  //   try {
+  //     isAddLocationLoading = true;
+  //     ApiService apiService = ApiService(
+  //         "${AppConstant.GET_LOCATION_PROFILE_NEW + "/addlocation"}");
+  //     var response = await apiService.post(body);
+  //     // print("object");
+  //     // log(response.toString());
+  //     // Navigator.pop(context);
+  //     Navigator.pushAndRemoveUntil(
+  //         context,
+  //         MaterialPageRoute(
+  //             builder: (context) => MyLocationList(
+  //                   accountID: accountId,
+  //                   subAccountID: subAccountId,
+  //                   accountName: accountName,
+  //                   subAccountName: subAccountName,
+  //                 )),
+  //         (route) => false);
+  //     CustomToast.success(context, response['message']);
+  //     isAddLocationLoading = false;
+  //     return true;
+  //   } on BackendException catch (e) {
+  //     isAddLocationLoading = false;
+  //     CustomToast.error(context, e.message);
+  //     return false;
+  //   } catch (e) {
+  //     isAddLocationLoading = false;
+  //     CustomToast.error(context, e.toString());
+  //     return false;
+  //   }
+  // }
 
   // Add this method for deleting locations
   Future<void> deleteLocations(

@@ -73,6 +73,7 @@ class _LocationListState extends State<LocationList>
   bool _showNotificationDot = true;
   TabController? _tabController;
   Screens _selectedScreen = Screens.connectionList;
+
   // TextEditingController _locationSearchController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
 
@@ -242,6 +243,7 @@ class _LocationListState extends State<LocationList>
     Provider.of<LocationListProvider>(context, listen: false)
         .fetchCampusIds(widget.accountId, widget.subAccountId, widget.sovId);
   }
+
   Future<void> _setClaims() async {
     final results = await Future.wait([
       SharedPreferenceService.getClaimForSubfeature(
@@ -266,27 +268,26 @@ class _LocationListState extends State<LocationList>
 
     print("results.toString()");
 
-
-
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
-
 
     _getData1();
     _getMaintainancePeriod();
     setState(() {});
   }
+
   Future<void> _getMaintainancePeriod() async {
     isMaintenance =
         await SharedPreferenceService.getScheduleInProgress() ?? "false";
   }
+
   Future<void> _getData1() async {
     final dashboardProvider =
-    Provider.of<DashboardProvider>(context, listen: false);
+        Provider.of<DashboardProvider>(context, listen: false);
     final userProfileProvider =
-    Provider.of<UserProfileProvider>(context, listen: false);
+        Provider.of<UserProfileProvider>(context, listen: false);
     final configurationProvider =
-    Provider.of<ConfigurationProvider>(context, listen: false);
+        Provider.of<ConfigurationProvider>(context, listen: false);
 
     try {
       final results = await Future.wait([
@@ -405,8 +406,7 @@ class _LocationListState extends State<LocationList>
                           _selectedScreen = Screens.addLocation;
                           Navigator.of(context)
                               .push(MaterialPageRoute(
-                            builder: (_) =>
-                                AddLocationScreen(
+                            builder: (_) => AddLocationScreen(
                               accountId: widget.accountId,
                               subAccountId: widget.subAccountId,
                               sovId: widget.sovId,
@@ -415,7 +415,6 @@ class _LocationListState extends State<LocationList>
                             ),
                           ))
                               .then((value) {
-
                             _setClaims();
                             _getData();
                           });
@@ -965,10 +964,9 @@ class _LocationListState extends State<LocationList>
         var locationListProvider =
             Provider.of<LocationListProvider>(context, listen: false);
         // Open location details screen
-        Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext newContext) => LocationProfile(
-
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+          builder: (BuildContext newContext) => LocationProfile(
             accountId: widget.accountId,
             accountName: widget.companyName,
             subAccountId: widget.subAccountId,
@@ -978,11 +976,9 @@ class _LocationListState extends State<LocationList>
             searchQuery: locationQuery,
             page: (index).toString(),
             totalPages: locationListProvider.locationHits.toString(),
-
           ),
         ))
             .then((_) {
-
           // Call getData after pop
           _getData();
         });
@@ -1591,14 +1587,15 @@ class _LocationListState extends State<LocationList>
                                               context,
                                               MaterialPageRoute(
                                                   builder: (_) => MappingScreen(
-                                                    subAccountName: widget.subAccountName ??"",
+                                                        subAccountName: widget
+                                                                .subAccountName ??
+                                                            "",
                                                         tempId: success,
                                                         accountId:
                                                             widget.accountId,
                                                         accountName: widget
                                                                 .accountName ??
                                                             "",
-
                                                       )));
                                         }
                                       },

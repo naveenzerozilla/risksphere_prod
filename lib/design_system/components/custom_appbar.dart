@@ -1,4 +1,3 @@
-
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import '../../providers/news_feed_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../screens/listings/news_feed_screen.dart';
 import '../../service/shared_preference_service.dart';
+import '../../utils/global_imports.dart';
 import '../primitives/custom_typography.dart';
 import 'profile_dropdown.dart';
 
@@ -61,6 +61,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
   String getTrailLocation = "0";
   bool isSuperAdmin = false;
   bool isIndivudual = false;
+  bool INTERNAL = false;
   bool isLoggingOut = false;
   bool isPgAdmin = false;
   bool isAdmin = false;
@@ -70,16 +71,26 @@ class _CustomAppBarState extends State<CustomAppBar> {
   bool showCompanyOnboardingStats = false;
   bool showUserOnboardingStats = false;
   bool showVerificationRequests = false;
+  bool _initialRoleApiCalled = false;
 
   @override
   void initState() {
     super.initState();
-    _getData();
-    _setClaims();
+
+    // Run both async in microtask (after init)
+    Future.microtask(() async {
+      await Future.wait([
+        _getData(),
+        _setClaims(),
+      ]);
+
+      if (mounted) setState(() {});
+    });
+
   }
 
   Future<void> _setClaims() async {
-    final results = await Future.wait([
+    final prefsFutures = await Future.wait([
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASTC),
       SharedPreferenceService.getClaimForSubfeature(
@@ -96,36 +107,34 @@ class _CustomAppBarState extends State<CustomAppBar> {
           SharedPreferenceService.CAMVU),
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASVR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.INTERNAL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_SUPER_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.Is_Indivudual),
+      SharedPreferenceService.getHasAnyPlan(),
     ]);
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_ADMIN) ??
-        false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_SUPER_ADMIN) ??
-        false;
-    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.Is_Indivudual) ??
-        false;
 
-    print(results.toString());
-    print(isIndivudual);
-
-    showTotalCorporates = results[0] ?? false;
-    showAllUsers = results[1] ?? false;
-    showConnectionRequests = results[2] ?? false;
-    showCompanyOnboardingStats = results[3] ?? false;
-    showUserOnboardingStats = results[4] ?? false;
-
-    bool showCorporateVerificationRequests = results[5] ?? false;
-    bool showUserVerificationRequests = results[6] ?? false;
+    showTotalCorporates = prefsFutures[0] ?? false;
+    showAllUsers = prefsFutures[1] ?? false;
+    showConnectionRequests = prefsFutures[2] ?? false;
+    showCompanyOnboardingStats = prefsFutures[3] ?? false;
+    showUserOnboardingStats = prefsFutures[4] ?? false;
 
     showVerificationRequests =
-        showCorporateVerificationRequests || showUserVerificationRequests;
+        (prefsFutures[5] ?? false) || (prefsFutures[6] ?? false);
 
-    setState(() {});
+    isPgAdmin = prefsFutures[9] ?? false;
+    isAdmin = prefsFutures[10] ?? false;
+    isSuperAdmin = prefsFutures[11] ?? false;
+    isIndivudual = prefsFutures[12] ?? false;
+
+    hasAnyPlan = prefsFutures[13] ?? false;
   }
 
   Future<void> _getData() async {
@@ -206,190 +215,96 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 ),
           actions: <Widget>[
             const SizedBox(width: 8),
-            // if (showCorporateManagementTab ||
-            //     showNonCorporateManagementTab ||
-            //     showEmployeeManagementTab)
-// 👇 Completely null-safe version
             (userProfileProvider.userData.role == null ||
-                userProfileProvider.userData.role!.isEmpty)
+                    userProfileProvider.userData.role!.isEmpty)
                 ? const SizedBox.shrink() // or Container()
-                : (userProfileProvider.userData.role![0].name.toString() == "Admin" &&
-                (isSuperAdmin || isPgAdmin || isAdmin))
-                ? const SizedBox.shrink()
-                : Center(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton2<String>(
-                  customButton: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white30, width: 1),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.switch_account,
-                            color: Colors.grey, size: 20),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_drop_down,
-                            color: Colors.grey, size: 18),
-                      ],
-                    ),
-                  ),
-                  items: userProfileProvider.userData.role!
-                      .map<DropdownMenuItem<String>>((role) {
-                    return DropdownMenuItem<String>(
-                      value: role.name.toString(),
-                      child: Text(
-                        role.name.toString(),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.grey.shade400),
+                : (userProfileProvider.userData.role![0].name.toString() ==
+                            "Admin" &&
+                        (isSuperAdmin || isPgAdmin || isAdmin))
+                    ? const SizedBox.shrink()
+                    : Center(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton2<String>(
+                            customButton: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: Colors.white30, width: 1),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.switch_account,
+                                      color: Colors.grey, size: 20),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.arrow_drop_down,
+                                      color: Colors.grey, size: 18),
+                                ],
+                              ),
+                            ),
+                            items: userProfileProvider.userData.role!
+                                .map<DropdownMenuItem<String>>((role) {
+                              return DropdownMenuItem<String>(
+                                value: role.name.toString(),
+                                child: Text(
+                                  role.name.toString(),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.grey.shade400),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) async {
+                              if (newValue == null) return;
+                              setState(() {
+                                isLoadingRoleSwitch = true;
+                              });
+                              try {
+                                final selectedRoleObj = userProfileProvider
+                                    .userData.role!
+                                    .firstWhere((role) =>
+                                        role.name.toString() == newValue);
+
+                                final payload = {
+                                  "user_id":
+                                      userProfileProvider.userData.userId,
+                                  "last_selected_role": {
+                                    "role": selectedRoleObj.id,
+                                    "name": selectedRoleObj.name
+                                  }
+                                };
+
+                                await userProfileProvider.signInRoleBasedSwitch(
+                                    context, payload);
+                              } finally {
+                                setState(() {
+                                  isLoadingRoleSwitch = false;
+                                });
+                              }
+                            },
+                            dropdownStyleData: DropdownStyleData(
+                              width: 200,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.black26,
+                                border:
+                                    Border.all(color: Colors.grey, width: 1),
+                              ),
+                              offset: const Offset(0, 0),
+                            ),
+                            menuItemStyleData: MenuItemStyleData(
+                              customHeights: List<double>.filled(
+                                  userProfileProvider.userData.role!.length,
+                                  48),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) async {
-                    if (newValue == null) return;
-                    setState(() {
-                      isLoadingRoleSwitch = true;
-                    });
-                    try {
-                      final selectedRoleObj = userProfileProvider
-                          .userData.role!
-                          .firstWhere(
-                              (role) => role.name.toString() == newValue);
-
-                      final payload = {
-                        "user_id": userProfileProvider.userData.userId,
-                        "last_selected_role": {
-                          "role": selectedRoleObj.id,
-                          "name": selectedRoleObj.name
-                        }
-                      };
-
-                      await userProfileProvider.signInRoleBasedSwitch(
-                          context, payload);
-                    } finally {
-                      setState(() {
-                        isLoadingRoleSwitch = false;
-                      });
-                    }
-                  },
-                  dropdownStyleData: DropdownStyleData(
-                    width: 200,
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.black26,
-                      border: Border.all(color: Colors.grey, width: 1),
-                    ),
-                    offset: const Offset(0, 0),
-                  ),
-                  menuItemStyleData: MenuItemStyleData(
-                    customHeights: List<double>.filled(
-                        userProfileProvider.userData.role!.length, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                ),
-              ),
-            ),
-
-            // (userProfileProvider.userData.role != null &&
-            //         userProfileProvider.userData.role!.isNotEmpty &&
-            //         userProfileProvider.userData.role![0].name.toString() ==
-            //             "Admin" &&
-            //         (isSuperAdmin || isPgAdmin || isAdmin))
-            //     ? const SizedBox.shrink()
-            //     : Center(
-            //         child: DropdownButtonHideUnderline(
-            //           child: DropdownButton2<String>(
-            //             customButton: Container(
-            //               padding: const EdgeInsets.symmetric(
-            //                   horizontal: 8, vertical: 6),
-            //               decoration: BoxDecoration(
-            //                 // color:  Colors.red, // dark background (adjust if needed)
-            //                 borderRadius: BorderRadius.circular(8),
-            //                 border: Border.all(color: Colors.white30, width: 1),
-            //               ),
-            //               child: Row(
-            //                 mainAxisSize: MainAxisSize.min,
-            //                 children: const [
-            //                   Icon(
-            //                     Icons.switch_account,
-            //                     color: Colors.grey,
-            //                     size: 20,
-            //                   ),
-            //                   SizedBox(width: 4),
-            //                   Icon(
-            //                     Icons.arrow_drop_down,
-            //                     color: Colors.grey,
-            //                     size: 18,
-            //                   ),
-            //                 ],
-            //               ),
-            //             ),
-            //             items: userProfileProvider.userData.role!
-            //                 .map<DropdownMenuItem<String>>((role) {
-            //               return DropdownMenuItem<String>(
-            //                 value: role.name.toString(),
-            //                 child: Text(
-            //                   role.name.toString(),
-            //                   overflow: TextOverflow.ellipsis,
-            //                   style: TextStyle(color: Colors.grey.shade400),
-            //                 ),
-            //               );
-            //             }).toList(),
-            //             onChanged: (newValue) async {
-            //               if (newValue == null) return;
-            //               setState(() {
-            //                 isLoadingRoleSwitch = true;
-            //               });
-            //               try {
-            //                 final selectedRoleObj =
-            //                     userProfileProvider.userData.role!.firstWhere(
-            //                         (role) => role.name.toString() == newValue);
-            //
-            //                 final payload = {
-            //                   "user_id": userProfileProvider.userData.userId,
-            //                   "last_selected_role": {
-            //                     "role": selectedRoleObj.id,
-            //                     "name": selectedRoleObj.name
-            //                   }
-            //                 };
-            //
-            //                 await userProfileProvider.signInRoleBasedSwitch(
-            //                     context, payload);
-            //
-            //                 // Optional: update UI or show success message here
-            //               } finally {
-            //                 // 2️⃣ Hide loader
-            //                 setState(() {
-            //                   isLoadingRoleSwitch = false;
-            //                 });
-            //               }
-            //             },
-            //             dropdownStyleData: DropdownStyleData(
-            //               width: 200,
-            //               padding: const EdgeInsets.symmetric(
-            //                   vertical: 6, horizontal: 8),
-            //               decoration: BoxDecoration(
-            //                 borderRadius: BorderRadius.circular(8),
-            //                 color: Colors.black26,
-            //                 border: Border.all(color: Colors.grey, width: 1),
-            //               ),
-            //               offset: const Offset(0, 0),
-            //             ),
-            //             menuItemStyleData: MenuItemStyleData(
-            //               customHeights: List<double>.filled(
-            //                   userProfileProvider.userData.role!.length, 48),
-            //               padding: const EdgeInsets.symmetric(horizontal: 16),
-            //             ),
-            //           ),
-            //         ),
-            //       ),
-
-
             SizedBox(width: 5),
             Consumer<AuthNotifier>(
               builder: (context, authNotifier, child) {
@@ -423,7 +338,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                           right: -4,
                           child: Consumer<NewsFeedProvider>(
                             builder: (context, provider, child) {
-                              final count = provider.newsFeed?.length ?? 0;
+                              final count = provider.activityHits;
                               if (count == 0) return SizedBox.shrink();
                               return Container(
                                 width: 18,
@@ -511,128 +426,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                                 height: 30,
                                 constraints: BoxConstraints(maxWidth: 30),
                                 padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
-                                // decoration: BoxDecoration(
-                                //   border: Border.all(
-                                //     color: trialStatus.contains('Trial')
-                                //         ? (AppColors.warning)
-                                //         : AppColors.warning,
-                                //     width: 1,
-                                //   ),
-                                //   color: trialStatus.contains('Trial')
-                                //       ? (AppColors.warning.withOpacity(0.1))
-                                //       : AppColors.warning.withOpacity(0.1),
-                                //   borderRadius: BorderRadius.circular(20),
-                                // ),
                                 child: Container(),
-                                // Container(
-                                //   constraints: BoxConstraints(
-                                //     maxWidth:
-                                //         MediaQuery.of(context).size.width * 0.3,
-                                //   ),
-                                //   padding: EdgeInsets.fromLTRB(12, 4, 32, 4),
-                                //   decoration: BoxDecoration(
-                                //     border: Border.all(
-                                //       color: trialStatus.contains('Trial')
-                                //           ? AppColors.warning
-                                //           : AppColors.warning,
-                                //       width: 1,
-                                //     ),
-                                //     color: trialStatus.contains('Trial')
-                                //         ? AppColors.warning.withOpacity(0.1)
-                                //         : AppColors.warning.withOpacity(0.1),
-                                //     borderRadius: BorderRadius.circular(20),
-                                //   ),
-                                //   child: TweenAnimationBuilder<int>(
-                                //     key: ValueKey(_currentIndex),
-                                //     tween: IntTween(begin: 0, end: 100),
-                                //     duration: Duration(seconds: 6),
-                                //     onEnd: () {
-                                //       setState(() {
-                                //         final items = [
-                                //           trialStatus.isNotEmpty ? trialStatus : '',
-                                //           !isIndividual
-                                //               ? (getTrailUserCount != null &&
-                                //                       getTrailUserCount != 'null'
-                                //                   ? '$getTrailUserCount Users Left'
-                                //                   : '')
-                                //               : '',
-                                //           (hasAnyPlan == true
-                                //                   ? (hasGeocodingStatus != null &&
-                                //                           hasGeocodingStatus !=
-                                //                               'null'
-                                //                       ? hasGeocodingStatus
-                                //                       : '')
-                                //                   : (getTrailLocation != null &&
-                                //                           getTrailLocation != 'null'
-                                //                       ? getTrailLocation
-                                //                       : '')) +
-                                //               ((hasAnyPlan == true ||
-                                //                       (getTrailLocation != null &&
-                                //                           getTrailLocation !=
-                                //                               'null'))
-                                //                   ? ' Locations Left'
-                                //                   : ''),
-                                //         ].where((item) => item.isNotEmpty).toList();
-                                //         _currentIndex = (items.isEmpty
-                                //             ? 0
-                                //             : ((_currentIndex + 1) % items.length));
-                                //       });
-                                //     },
-                                //     builder: (context, value, child) {
-                                //       final items = [
-                                //         if (trialStatus.isNotEmpty) trialStatus,
-                                //         if (!isIndividual && getTrailUserCount != null && getTrailUserCount != 'null' && getTrailUserCount != '0')
-                                //           '$getTrailUserCount Users Left',
-                                //         if ((hasAnyPlan == true && hasGeocodingStatus != null && hasGeocodingStatus != 'null' && hasGeocodingStatus != '0') ||
-                                //             (hasAnyPlan != true && getTrailLocation != null && getTrailLocation != 'null' && getTrailLocation != '0'))
-                                //           ((hasAnyPlan == true
-                                //               ? hasGeocodingStatus
-                                //               : getTrailLocation) ?? '') +
-                                //               ' Locations Left',
-                                //       ].where((item) => item.isNotEmpty).toList();
-                                //       // final items = [
-                                //       //   trialStatus.isNotEmpty ? trialStatus : '',
-                                //       //   !isIndividual
-                                //       //       ? (getTrailUserCount != null &&
-                                //       //               getTrailUserCount != 'null'
-                                //       //           ? '$getTrailUserCount Users Left'
-                                //       //           : '')
-                                //       //       : '',
-                                //       //   (hasAnyPlan == true
-                                //       //           ? (hasGeocodingStatus != null &&
-                                //       //                   hasGeocodingStatus != 'null'
-                                //       //               ? hasGeocodingStatus
-                                //       //               : '')
-                                //       //           : (getTrailLocation != null &&
-                                //       //                   getTrailLocation != 'null'
-                                //       //               ? getTrailLocation
-                                //       //               : '')) +
-                                //       //       ((hasAnyPlan == true ||
-                                //       //               (getTrailLocation != null &&
-                                //       //                   getTrailLocation != 'null'))
-                                //       //           ? ' Locations Left'
-                                //       //           : ''),
-                                //       // ].where((item) => item.isNotEmpty).toList();
-                                //       return AnimatedSwitcher(
-                                //         duration: const Duration(milliseconds: 300),
-                                //         child: Text(
-                                //           items.isNotEmpty
-                                //               ? items[_currentIndex % items.length]
-                                //               : '',
-                                //           key: ValueKey(_currentIndex),
-                                //           maxLines: 1,
-                                //           style: typography
-                                //               .BottomNavigationActiveLabel.copyWith(
-                                //             color: trialStatus.contains('Trial')
-                                //                 ? AppColors.warning
-                                //                 : AppColors.warning,
-                                //             fontWeight: FontWeight.w500,
-                                //             fontSize: 10,
-                                //           ),
-                                //         ),
-                                //       );
-                                //     },
-                                //   ),
                               ),
                               Positioned(
                                 right: -6,

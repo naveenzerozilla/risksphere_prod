@@ -56,6 +56,7 @@ class ConflictsTabState extends State<ConflictsTab> {
   bool isResolving = false;
   bool conflictResolved = false;
   bool isRefreshing = false;
+  LatLng? selectedConflictLatLng;
 
   @override
   void initState() {
@@ -114,30 +115,46 @@ class ConflictsTabState extends State<ConflictsTab> {
 
   Set<Marker> _buildMarkers() {
     final Set<Marker> markers = {};
+
     final conflictData = widget.location != null && widget.location!.isNotEmpty
         ? widget.location!
         : widget.conflict!;
 
+    // MAIN LOCATION MARKERS
     for (int i = 0; i < conflictData.length; i++) {
       final item = conflictData[i];
+
       final lat = item is MyLocation
           ? item.finalAddress!.latitude ?? 0.0
           : (item as Conflicts).latitude ?? 0.0;
+
       final lng = item is MyLocation
           ? item.finalAddress!.longitude ?? 0.0
           : (item as Conflicts).longitude ?? 0.0;
-      final address = item is MyLocation
-          ? item.geocodedAddress
-          : (item as Conflicts).address ?? '';
 
-      markers.add(Marker(
-        markerId: MarkerId('marker_$i'),
-        position: LatLng(lat, lng),
-        icon: BitmapDescriptor.defaultMarkerWithHue(i == currentIndex
-            ? BitmapDescriptor.hueRed
-            : BitmapDescriptor.hueBlue),
-        infoWindow: InfoWindow(title: address),
-      ));
+      markers.add(
+        Marker(
+          markerId: MarkerId('marker_$i'),
+          position: LatLng(lat, lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            i == currentIndex
+                ? BitmapDescriptor.hueRed
+                : BitmapDescriptor.hueBlue,
+          ),
+        ),
+      );
+    }
+
+    // 🔥 SELECTED CONFLICT MARKER
+    if (selectedConflictLatLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId("selected_conflict"),
+          position: selectedConflictLatLng!,
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        ),
+      );
     }
 
     return markers;
@@ -246,7 +263,7 @@ class ConflictsTabState extends State<ConflictsTab> {
           leading: IconButton(
             iconSize: 25,
             icon: const Icon(Icons.arrow_back_ios),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, false),
           ),
           title: const Text("Resolve Conflict",
               style: TextStyle(
@@ -588,16 +605,14 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   ),
                                 ),
 
-
                             const SizedBox(height: 10),
 
                             // Conflict List
                             if (!hasMultipleLocations)
                               Column(
-                                key: ValueKey(selectedOption), // Force rebuild
+                                key: ValueKey(selectedOption),
                                 children: widget.conflict!
-                                    .take(
-                                        3) // 👈 only take first 2 items safely
+                                    .take(2)
                                     .toList()
                                     .asMap()
                                     .entries
@@ -605,17 +620,6 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   final index = entry.key;
                                   final option = entry.value;
                                   final value = option.address ?? 'Unknown';
-
-                                  // Auto-select first item if selectedOption is "none"
-                                  if (index == 0 && selectedOption == "none") {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      setState(() {
-                                        selectedOption = value;
-                                        selectedValue = value;
-                                      });
-                                    });
-                                  }
 
                                   return RadioListTile<String>(
                                     title: Text(value),
@@ -625,13 +629,26 @@ class ConflictsTabState extends State<ConflictsTab> {
                                       setState(() {
                                         selectedOption = newValue;
                                         selectedValue = newValue;
+                                        selectedIndex = index;
+
+                                        /// 🔥 THIS WAS MISSING → UPDATES RED PIN LOCATION
+                                        currentIndex = index;
+
+                                        selectedConflictLatLng = LatLng(
+                                          option.latitude ?? 0.0,
+                                          option.longitude ?? 0.0,
+                                        );
                                       });
-                                      print(
-                                          "Selected Conflict Option: $newValue");
+
+                                      /// Move map
+                                      _mapController?.animateCamera(
+                                        CameraUpdate.newLatLng(selectedConflictLatLng!),
+                                      );
                                     },
                                   );
                                 }).toList(),
                               )
+
                             else if (currentItem != null)
                               Builder(
                                 builder: (context) {
@@ -641,7 +658,6 @@ class ConflictsTabState extends State<ConflictsTab> {
                                   final defaultId =
                                       "${currentItem.id}_conflict_0";
 
-                                  // Always reset selectedValue if it's not matching currentItem
                                   if (conflicts.isNotEmpty &&
                                       (selectedValue == null ||
                                           !selectedValue!
@@ -655,11 +671,11 @@ class ConflictsTabState extends State<ConflictsTab> {
                                       }
                                     });
                                   }
+
                                   return Column(
                                     key: ValueKey(currentItem.id),
-                                    // forces rebuild on item change
                                     children: conflicts
-                                        .take(3) // 👈 only take first 2 items
+                                        .take(3)
                                         .toList()
                                         .asMap()
                                         .entries
@@ -668,30 +684,27 @@ class ConflictsTabState extends State<ConflictsTab> {
                                       final conflict = entry.value;
                                       final address = conflict.address;
                                       final locationId =
-                                          "${(currentItem).id}_conflict_$index";
+                                          "${currentItem.id}_conflict_$index";
 
                                       return RadioListTile<String>(
-                                        activeColor: Colors.white,
-                                        title: Text(
-                                          address ?? 'Unknown',
-                                          style: typography.Body2.copyWith(
-                                              color: Colors.white),
-                                        ),
+                                        title: Text(address ?? 'Unknown'),
                                         value: locationId,
                                         groupValue: selectedValue,
                                         onChanged: (value) {
                                           setState(() {
                                             selectedValue = value;
                                             selectedIndex = index;
-                                          });
-                                          print(
-                                              "Selected Conflict Option: $selectedIndex");
-                                          if (address != null) {
-                                            _navigateToMarker(
+
+                                            selectedConflictLatLng = LatLng(
                                               conflict.latitude ?? 0.0,
                                               conflict.longitude ?? 0.0,
                                             );
-                                          }
+                                          });
+
+                                          _mapController?.animateCamera(
+                                            CameraUpdate.newLatLng(
+                                                selectedConflictLatLng!),
+                                          );
                                         },
                                       );
                                     }).toList(),
@@ -700,7 +713,6 @@ class ConflictsTabState extends State<ConflictsTab> {
                               ),
 
                             const SizedBox(height: 25),
-
 
                             Padding(
                               padding:
@@ -751,4 +763,3 @@ class ConflictsTabState extends State<ConflictsTab> {
         ]));
   }
 }
-

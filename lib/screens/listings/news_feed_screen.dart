@@ -139,7 +139,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       return Tab(
                         child: Row(
                           children: [
-                            Text('Activity Feed', style: typography.Subtitle2),
+                            Text(
+
+                            LanguageService.getTranslated(
+                                context,
+                                "activity_feed"),
+                                style: typography.Subtitle2),
                             if (newsFeedProvider.activityHits > 0)
                               SizedBox(width: 6),
                             if (newsFeedProvider.activityHits > 0)
@@ -167,7 +172,12 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       return Tab(
                         child: Row(
                           children: [
-                            Text('Event Feed', style: typography.Subtitle2),
+                            Text(
+                                LanguageService.getTranslated(
+                                    context,
+                                    "event_feed"),
+
+                                 style: typography.Subtitle2),
                             if (newsFeedProvider.eventHits > 0)
                               SizedBox(width: 6),
                             if (newsFeedProvider.eventHits > 0)
@@ -190,8 +200,14 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       );
                     },
                   ),
-                  _buildTab("News Feed", ""),
-                  _buildTab("Pending Actions", ""),
+                  _buildTab(
+
+                      LanguageService.getTranslated(
+                          context,
+                          "news_feed"), ""),
+                  _buildTab( LanguageService.getTranslated(
+                      context,
+                      "pending_actions"),""),
                 ],
               ),
             ),
@@ -234,7 +250,11 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   controller: _searchController,
                   style: typography.Body2,
                   decoration: InputDecoration(
-                    hintText: 'Search keyword',
+                    hintText:
+
+                    LanguageService.getTranslated(
+                        context,
+                        "search_keyword"),
                     filled: true,
                     fillColor:
                         Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -303,44 +323,6 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                 ),
               ),
 
-              // Flexible(
-              //   child: Container(
-              //     decoration: BoxDecoration(
-              //       color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              //       borderRadius: BorderRadius.circular(10),
-              //     ),
-              //     child: Consumer<NewsFeedProvider>(
-              //       builder: (context, provider, child) {
-              //         return DropdownButtonHideUnderline(
-              //             child: DropdownButton<String>(
-              //           isExpanded: true,
-              //           value: ['All', 'Geocoding', 'Hazard']
-              //                   .contains(provider.selectedHazard)
-              //               ? provider.selectedHazard
-              //               : 'All',
-              //           // Fallback if selectedHazard is invalid
-              //           onChanged: (String? newValue) {
-              //             provider.updateSelectedHazard(newValue!);
-              //             Future.microtask(() => provider.fetchNewsFeed());
-              //           },
-              //           items: ['All', 'Geocoding', 'Hazard']
-              //               .map<DropdownMenuItem<String>>((String value) {
-              //             return DropdownMenuItem<String>(
-              //               value: value,
-              //               child: Padding(
-              //                 padding:
-              //                     const EdgeInsets.symmetric(horizontal: 16.0),
-              //                 child: Text(value, style: typography.Body2),
-              //               ),
-              //             );
-              //           }).toList(),
-              //         )
-              //
-              //             );
-              //       },
-              //     ),
-              //   ),
-              // ),
               SizedBox(width: 16),
               // Date Range Picker
               Flexible(
@@ -442,12 +424,33 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     );
   }
 
+  String formatNewsFeedDate(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal();
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    if (dateOnly == today) {
+      return DateFormat('hh:mm a').format(date).toLowerCase();
+    }
+
+    if (dateOnly == yesterday) {
+      return 'Yesterday';
+    }
+
+    return DateFormat('dd/MM/yyyy').format(date);
+  }
+
   Widget _buildNewsCard(
       Map<String, dynamic> item, CustomTypography typography) {
     final notification = item['notification_body'] ?? {};
-    final title = notification['title'];
-    final body = notification['body'];
-    // Handle updated_at as either a map or a string
+    final title = notification['title'] ?? '';
+    final body = notification['body'] ?? '';
+    final activityType = item['type'];
+    final readStatus = item['is_read'];
+    final feedId = item['id'];
     dynamic updatedAt = item['updated_at'];
     int timestamp;
 
@@ -470,91 +473,431 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     } else {
       timestamp = DateTime.now().millisecondsSinceEpoch;
     }
+    return Consumer<NewsFeedProvider>(
+      builder: (context, provider, _) {
+        final isLoading = feedId != null && provider.isLoading(feedId);
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: isLoading
+              ? null
+              : () async {
+                  final processId = item['process_id'] ?? '';
+                  if (feedId == null) return;
+                  final payload = {
+                    "data": {"id": feedId}
+                  };
+                  final isSuccess =
+                      await provider.updateNotificationRead(context, payload);
+                  if (!context.mounted) return;
+                  if (isSuccess) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JobMonitoringDashboard(
+                          initialProcessId: processId,
+                        ),
+                      ),
+                    ).then((_) => setState(() {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Provider.of<NewsFeedProvider>(context,
+                                    listen: false)
+                                .fetchNewsFeed();
+                          });
+                        }));
+                  }
+                },
+          child: Stack(
             children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: SvgPicture.asset(
-                  'assets/images/earthquake.svg',
-                  width: 40,
-                  height: 40,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.onSurface,
-                    BlendMode.srcIn,
-                  ),
-                ),
+              Positioned(
+                top: 5,
+                right: 10,
+                child: isLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : (readStatus != true
+                        ? Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        : const SizedBox()),
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  DateFormat('MM/dd/yyyy HH:mm').format(
-                      DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
-                  style: typography.Caption.copyWith(color: Colors.white54),
+              Opacity(
+                opacity: isLoading ? 0.6 : 1,
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white10,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            activityType == "hazard"
+                                ? 'assets/images/hazard_icon.svg'
+                                : 'assets/images/geocode.svg',
+                            width: 20,
+                            height: 20,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white70,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.Body1.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  formatNewsFeedDate(timestamp),
+                                  style: typography.Caption.copyWith(
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            _buildExpandableDescription(body, typography),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          ListTile(
-            titleAlignment: ListTileTitleAlignment.top,
-            title: Text(
-              title ?? "",
-              style: typography.Body1,
-            ),
-            subtitle: Column(
-              children: [
-                SizedBox(height: 4),
-                _buildExpandableDescription(body ?? "", typography),
-              ],
-            ),
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                onPressed: () {
-                  print("View Event for $title");
-                  String processId = item['process_id'] ??
-                      ''; // Ensure process_id is available
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => JobMonitoringDashboard(
-                        initialProcessId: processId,
-                      ),
-                    ),
-                  );
-                },
-                child: Text(
-                  'View Summary',
-                  style: typography.ButtonLarge.copyWith(
-                    color: Colors.black,
-                  ),
-                ),
-                type: ButtonType.elevated,
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-        ],
-      ),
+        );
+      },
     );
   }
+
+  // Widget _buildNewsCard(
+  //     Map<String, dynamic> item, CustomTypography typography) {
+  //   final notification = item['notification_body'] ?? {};
+  //   final title = notification['title'] ?? '';
+  //   final body = notification['body'] ?? '';
+  //   final activityType = item['type'];
+  //   final readStatus = item['is_read'];
+  //   // Handle updated_at as either a map or a string
+  //   dynamic updatedAt = item['updated_at'];
+  //   int timestamp;
+  //
+  //   if (updatedAt != null) {
+  //     if (updatedAt is Map && updatedAt.containsKey('_seconds')) {
+  //       timestamp = updatedAt['_seconds'] * 1000;
+  //     } else if (updatedAt is String) {
+  //       try {
+  //         timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'")
+  //             .parseUTC(updatedAt)
+  //             .millisecondsSinceEpoch;
+  //       } catch (e) {
+  //         print('Error parsing date: $e');
+  //         timestamp =
+  //             DateTime.now().millisecondsSinceEpoch; // Fallback to current time
+  //       }
+  //     } else {
+  //       timestamp = DateTime.now().millisecondsSinceEpoch;
+  //     }
+  //   } else {
+  //     timestamp = DateTime.now().millisecondsSinceEpoch;
+  //   }
+  //   return InkWell(
+  //     borderRadius: BorderRadius.circular(16),
+  //     onTap: () async {
+  //       final processId = item['process_id'] ?? '';
+  //       final feedId = item['id'];
+  //
+  //       if (feedId == null) return;
+  //
+  //       final payload = {
+  //         "data": {
+  //           "id": feedId,
+  //         }
+  //       };
+  //
+  //       final provider = context.read<NewsFeedProvider>();
+  //
+  //       final isSuccess =
+  //           await provider.updateNotificationRead(context, payload);
+  //
+  //       if (!context.mounted) return;
+  //
+  //       if (isSuccess) {
+  //
+  //         Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => JobMonitoringDashboard(
+  //               initialProcessId: processId,
+  //             ),
+  //           ),
+  //         );
+  //       }
+  //     },
+  //     child: Stack(
+  //       children: [
+  //         Positioned(
+  //           top: 7,
+  //           right: 12,
+  //           child: readStatus != true
+  //               ? Container(
+  //                   width: 8,
+  //                   height: 8,
+  //                   decoration: const BoxDecoration(
+  //                     color: Colors.red,
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                 )
+  //               : Container(),
+  //         ),
+  //         Container(
+  //           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //           padding: const EdgeInsets.all(16),
+  //           decoration: BoxDecoration(
+  //             color: const Color(0xFF1E1E1E),
+  //             borderRadius: BorderRadius.circular(16),
+  //           ),
+  //           child: Row(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Container(
+  //                 width: 40,
+  //                 height: 40,
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white10,
+  //                   shape: BoxShape.circle,
+  //                 ),
+  //                 child: Center(
+  //                   child: SvgPicture.asset(
+  //                     activityType == "hazard"
+  //                         ? 'assets/images/hazard_icon.svg'
+  //                         : 'assets/images/geocode.svg',
+  //                     width: 20,
+  //                     height: 20,
+  //                     colorFilter: const ColorFilter.mode(
+  //                       Colors.white70,
+  //                       BlendMode.srcIn,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //               const SizedBox(width: 12),
+  //               Expanded(
+  //                 child: Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Row(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         Expanded(
+  //                           child: Text(
+  //                             title,
+  //                             style: typography.Body1.copyWith(
+  //                               fontWeight: FontWeight.w600,
+  //                               color: Colors.white,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 8),
+  //                         Text(
+  //                           DateFormat('MM/dd/yyyy HH:mm').format(
+  //                               DateTime.fromMillisecondsSinceEpoch(timestamp)
+  //                                   .toLocal()),
+  //                           style: typography.Caption.copyWith(
+  //                             color: Colors.white54,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //
+  //                     const SizedBox(height: 6),
+  //                     _buildExpandableDescription(body ?? "", typography),
+  //
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildNewsCard(
+  //     Map<String, dynamic> item, CustomTypography typography) {
+  //   final notification = item['notification_body'] ?? {};
+  //   final title = notification['title'];
+  //   final body = notification['body'];
+  //   // Handle updated_at as either a map or a string
+  //   dynamic updatedAt = item['updated_at'];
+  //   int timestamp;
+  //
+  //   if (updatedAt != null) {
+  //     if (updatedAt is Map && updatedAt.containsKey('_seconds')) {
+  //       timestamp = updatedAt['_seconds'] * 1000;
+  //     } else if (updatedAt is String) {
+  //       try {
+  //         timestamp = DateFormat("MMMM d, yyyy 'at' h:mm:ss a 'UTC'")
+  //             .parseUTC(updatedAt)
+  //             .millisecondsSinceEpoch;
+  //       } catch (e) {
+  //         print('Error parsing date: $e');
+  //         timestamp =
+  //             DateTime.now().millisecondsSinceEpoch; // Fallback to current time
+  //       }
+  //     } else {
+  //       timestamp = DateTime.now().millisecondsSinceEpoch;
+  //     }
+  //   } else {
+  //     timestamp = DateTime.now().millisecondsSinceEpoch;
+  //   }
+  //
+  //   return InkWell(
+  //     onTap: () {
+  //       print("View Event for $title");
+  //       String processId = item['process_id'] ??
+  //           ''; // Ensure process_id is available
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(
+  //           builder: (context) => JobMonitoringDashboard(
+  //             initialProcessId: processId,
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //     child: Container(
+  //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //       decoration: BoxDecoration(
+  //         color: Theme.of(context).colorScheme.surface,
+  //         borderRadius: BorderRadius.circular(10),
+  //       ),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         mainAxisAlignment: MainAxisAlignment.start,
+  //         children: [
+  //
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.end,
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(".",style: TextStyle(color: Colors.blueAccent,fontSize: 30),),
+  //             ],
+  //           ),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Padding(
+  //                 padding:
+  //                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+  //                 child: SvgPicture.asset(
+  //                   'assets/images/earthquake.svg',
+  //                   width: 40,
+  //                   height: 40,
+  //                   colorFilter: ColorFilter.mode(
+  //                     Theme.of(context).colorScheme.onSurface,
+  //                     BlendMode.srcIn,
+  //                   ),
+  //                 ),
+  //               ),
+  //               Padding(
+  //                 padding:
+  //                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+  //                 child: Text(
+  //                   DateFormat('MM/dd/yyyy HH:mm').format(
+  //                       DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal()),
+  //                   style: typography.Caption.copyWith(color: Colors.white54),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           ListTile(
+  //             titleAlignment: ListTileTitleAlignment.top,
+  //             title: Text(
+  //               title ?? "",
+  //               style: typography.Body1,
+  //             ),
+  //             subtitle: Column(
+  //               children: [
+  //                 SizedBox(height: 4),
+  //                 _buildExpandableDescription(body ?? "", typography),
+  //               ],
+  //             ),
+  //           ),
+  //           // Padding(
+  //           //   padding:
+  //           //       const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+  //           //   child: SizedBox(
+  //           //     width: double.infinity,
+  //           //     child: CustomButton(
+  //           //       onPressed: () {
+  //           //         print("View Event for $title");
+  //           //         String processId = item['process_id'] ??
+  //           //             ''; // Ensure process_id is available
+  //           //         Navigator.push(
+  //           //           context,
+  //           //           MaterialPageRoute(
+  //           //             builder: (context) => JobMonitoringDashboard(
+  //           //               initialProcessId: processId,
+  //           //             ),
+  //           //           ),
+  //           //         );
+  //           //       },
+  //           //       child: Text(
+  //           //         'View Summary',
+  //           //         style: typography.ButtonLarge.copyWith(
+  //           //           color: Colors.black,
+  //           //         ),
+  //           //       ),
+  //           //       type: ButtonType.elevated,
+  //           //     ),
+  //           //   ),
+  //           // ),
+  //           // SizedBox(height: 8),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   /// Builds the expandable description with a clickable "More" link
   Widget _buildExpandableDescription(
@@ -578,13 +921,15 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: description.length > 50
-                            ? (isExpanded
-                                ? description
-                                : '${description.substring(0, 50)}...')
-                            : description,
-                        style: typography.Body2,
-                      ),
+                          text: description.length > 50
+                              ? (isExpanded
+                                  ? description
+                                  : '${description.substring(0, 50)}...')
+                              : description,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white,
+                              fontSize: 14)),
                       if (description.length > 50 && !isExpanded)
                         WidgetSpan(
                           child: GestureDetector(

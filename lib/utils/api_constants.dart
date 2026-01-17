@@ -2,6 +2,17 @@ import '../constants/configuration.dart';
 
 class AppConstant {
   static const String REGION = "us-central1";
+  static const DELETE_LOCATION_IMAGE =
+      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Locationparameter/";
+
+  static const DELETE_SOV_IMAGE =
+      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/SOVparameter/";
+
+  static const DELETE_CAMPUS_IMAGE =
+      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Campusparameter/";
+
+  static const DELETE_DATA_IMAGE =
+      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Dataparameter/";
 
   static String get baseURL =>
       'https://${REGION}-${Configuration.projectId}.cloudfunctions.net';
@@ -44,6 +55,7 @@ class AppConstant {
 
   static String get GET_EMPLOYEES =>
       '$baseURL/user_management?employees_list=true';
+
   static String get GET_CURRENT_ROLE =>
       '$baseURL/user_management?current_role=true&current_user=true';
 
@@ -136,7 +148,19 @@ class AppConstant {
 
   static String get GET_INVOICE_LIST => '$baseURL/pricing/payment/details';
 
+  static String get GET_RECOMMENDATION_LIST =>
+      '$baseURL/recommendation_engine/sov';
+  static String get HANDLEVENDORSUBMIT =>
+      '$baseURL/recommendation_engine/handle_vendor_data';
+
+
+  static String get SOV_PARAMETER_UPDATE =>
+      '$baseURL/recommendation_engine/sov_update';
+
   static String get RENAME_ACCOUNT => '$baseURL/accounts';
+
+  static String get RENAME_SOV =>
+      '$baseURL/accounts/undefined/subaccount/undefined/sov';
 
   static String get DUPLICATE_ACCOUNT =>
       '$baseURL/accounts'; //'$baseURL/accounts';
@@ -203,6 +227,8 @@ class AppConstant {
   static String get GET_SOV_LIST => '$baseURL/accounts';
 
   static String get GET_SOV_LIST_BY_SOV => '$baseURL/locations/accessible_sov';
+  static String get GET_VENDOR_HAZARD => '$baseURL/vendor_hazards/vendor_usage_dashboard';
+  static String get GET_CORPORATE_DASHBOARD => '$baseURL/vendor_hazards/corporate_usage_dashboard';
 
   static String get GET_SEARCH_LIST_BY_SOV => '$baseURL/user_management_new';
 
@@ -210,7 +236,7 @@ class AppConstant {
 
   static String get SHARE_SOV_LIST => '$baseURL/locations/share_sov';
 
-  static String get RENAME_SOV => '$baseURL/accounts';
+  // static String get RENAME_SOV => '$baseURL/accounts';
 
   static String get DUPLICATE_SOV => '$baseURL/accounts';
 
@@ -237,6 +263,7 @@ class AppConstant {
   static String get GET_LOCATION_PROFILE => '$baseURL/accounts';
 
   static String get SOV_COMPLETE_STATUS => '$baseURL/locations/location_status';
+  static String get SOV_COMPLETE_STATUS1 => '$baseURL/locations/getsubdestination?';
 
   static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW =>
       '$baseURL/locations/getlocation';
@@ -267,6 +294,8 @@ class AppConstant {
 
   static String get EXPORT => '$baseURL/locations/export';
 
+  static String get EXPORT_SOV => '$baseURL/locations/export_sov';
+
   static String get GLOBAL_SEARCH => '$baseURL/locations/global_search';
 
   static String get GET_CURRENT_COMPANY_ID =>
@@ -283,6 +312,8 @@ class AppConstant {
 
   static String UPDATE_CONFIGURATION =
       '$baseURL/locations/update_account_sub_global_configuration';
+  static String UPDATE_ACCOUNT_NAME =
+      '$baseURL/locations/update_company_config';
 
   static String get VENDOR_MANAGEMENT_URL =>
       '$baseURL/vendor_management/vendor_list/""';
@@ -301,6 +332,7 @@ class AppConstant {
   static String get GET_EVENT_DATE => '$baseURL/user_management_new/getevent';
 
   static String get UPDATE_HAZARD => '$baseURL/locations/updatehazard';
+  static String get NOTIFICATION_READ => '$baseURL/user_management_new/update_activity_feed_read_by';
 
 // DELETE API CALL
   static String get DELETE_ACCOUNT => '$baseURL/locations/delete_account/?';

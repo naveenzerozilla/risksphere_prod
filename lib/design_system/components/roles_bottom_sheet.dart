@@ -68,10 +68,11 @@ class _RolesBottomSheetState extends State<RolesBottomSheet> {
                 //     widget.selectedRoles.any((r) => r.id == role.id);
                 final optionKey = role.id ?? role.role ?? role.name ?? "";
 
-                final bool isSelected = widget.selectedRoles.any((r) =>
-                r.id == optionKey ||
-                    r.role == optionKey ||
-                    r.name == optionKey,
+                final bool isSelected = widget.selectedRoles.any(
+                  (r) =>
+                      r.id == optionKey ||
+                      r.role == optionKey ||
+                      r.name == optionKey,
                 );
 
                 return ListTile(
@@ -79,48 +80,47 @@ class _RolesBottomSheetState extends State<RolesBottomSheet> {
 
                   leading: widget.selectedOption == SignUpOptions.individual
                       ? Checkbox(
-                    value: isSelected,
-                    onChanged: (value) {
-                      if (value == true) {
-                        widget.addChip(Categories.fromJson(role.toJson()));
-                      } else {
-                        final toRemove = widget.selectedRoles.firstWhere(
-                              (r) =>
-                          r.id == optionKey ||
-                              r.role == optionKey ||
-                              r.name == optionKey,
-                          orElse: () => Categories(
-                            id: "",
-                            name: "",
-                            role: "",
-                            isForIndividual: false,
-                            isApplicableForTrial: false,
-                            isMultipleRoleEnabled: false,
-                          ),
-                        );
+                          value: isSelected,
+                          onChanged: (value) {
+                            if (value == true) {
+                              widget
+                                  .addChip(Categories.fromJson(role.toJson()));
+                            } else {
+                              final toRemove = widget.selectedRoles.firstWhere(
+                                (r) =>
+                                    r.id == optionKey ||
+                                    r.role == optionKey ||
+                                    r.name == optionKey,
+                                orElse: () => Categories(
+                                  id: "",
+                                  name: "",
+                                  role: "",
+                                  isForIndividual: false,
+                                  isApplicableForTrial: false,
+                                  isMultipleRoleEnabled: false,
+                                ),
+                              );
 
-                        if (toRemove.id!.isNotEmpty) {
-                          widget.removeChip(toRemove);
-                        }
-                      }
-                      setState(() {});
-                    },
-                  )
+                              if (toRemove.id!.isNotEmpty) {
+                                widget.removeChip(toRemove);
+                              }
+                            }
+                            setState(() {});
+                          },
+                        )
                       : Radio<String>(
-                    value: optionKey,   // <-- SAFE
-                    groupValue: widget.selectedRoles.isNotEmpty
-                        ? (widget.selectedRoles.first.id ??
-                        widget.selectedRoles.first.role ??
-                        widget.selectedRoles.first.name)
-                        : null,
-                    onChanged: (value) {
-                      widget.removeAllChips();
-                      widget.addChip(Categories.fromJson(role.toJson()));
-                      setState(() {});
-                    },
-                  ),
-
-
+                          value: optionKey, // <-- SAFE
+                          groupValue: widget.selectedRoles.isNotEmpty
+                              ? (widget.selectedRoles.first.id ??
+                                  widget.selectedRoles.first.role ??
+                                  widget.selectedRoles.first.name)
+                              : null,
+                          onChanged: (value) {
+                            widget.removeAllChips();
+                            widget.addChip(Categories.fromJson(role.toJson()));
+                            setState(() {});
+                          },
+                        ),
 
                   // leading: widget.selectedOption == SignUpOptions.individual
                   //     ? Checkbox(

@@ -159,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 if (Platform.isIOS) SizedBox(height: CustomSpacing.eight),
-                SizedBox(height: CustomSpacing.two),
+                // SizedBox(height: CustomSpacing.two),
                 CountryPickerDropdown(
                   initialValue: _getInitialCountry(),
                   itemBuilder: (Country country) {
@@ -224,16 +224,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _loginForm() {
     var typography = CustomTypography(context);
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
       child: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: CustomSpacing.four),
-            Text(
-              LanguageService.getTranslated(context, "login_title"),
-              style: typography.H4,
-              textAlign: TextAlign.center,
+            Center(
+              child: Text(
+                LanguageService.getTranslated(context, "login_title"),
+                style: typography.H4,
+                textAlign: TextAlign.center,
+              ),
             ),
             SizedBox(height: CustomSpacing.eight),
             // AppleSignInButton(),
@@ -255,24 +257,36 @@ class _LoginScreenState extends State<LoginScreen> {
             //     }
             //   },
             // ),
-            SizedBox(height: CustomSpacing.two),
+            // SizedBox(height: CustomSpacing.two),
             // Social Media Buttons
             // if (Platform.isAndroid) ...[
-            Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-              return SocialMediaButton(
-                onPressed: () async {
-                  // Add your onPressed function here
-                  await authNotifier.signInWithGoogle(context: context);
-                  print(authNotifier.user.toString());
-                  print(authNotifier.isNewUser.toString());
-                },
-                buttonText: LanguageService.getTranslated(
-                    context, "login_googlebutton"),
-                iconPath: 'assets/images/googleLogo.svg',
-              );
-            }),
+            Consumer<AuthNotifier>(
+              builder: (context, authNotifier, _) {
+                return SocialMediaButton(
+                  onPressed: authNotifier.isSigningIn
+                      ? null
+                      : () => authNotifier.signInWithGoogle(context: context),
+                  buttonText: LanguageService.getTranslated(
+                      context, "login_googlebutton"),
+                  iconPath: 'assets/images/googleLogo.svg',
+                );
+              },
+            ),
 
-            SizedBox(height: CustomSpacing.two),
+            // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
+            //   return SocialMediaButton(
+            //     onPressed: () async {
+            //       // Add your onPressed function here
+            //       await authNotifier.signInWithGoogle(context: context);
+            //
+            //     },
+            //     buttonText: LanguageService.getTranslated(
+            //         context, "login_googlebutton"),
+            //     iconPath: 'assets/images/googleLogo.svg',
+            //   );
+            // }),
+
+            SizedBox(height: CustomSpacing.three),
 
             Consumer<AuthNotifier>(
               builder: (context, authNotifier, child) {
@@ -289,6 +303,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
             ),
+            // Consumer<AuthNotifier>(
+            //   builder: (context, authNotifier, _) {
+            //     return AppleSignInButton(
+            //       key: const ValueKey('apple_sign_in_button'),
+            //       onSuccess: () async {
+            //         // ✅ Apple + Firebase login success
+            //         await authNotifier.handleAppleLogin(context);
+            //       },
+            //       onError: (error) {
+            //         ScaffoldMessenger.of(context).showSnackBar(
+            //           SnackBar(
+            //             content: Text(error.toString()),
+            //             backgroundColor: Colors.red,
+            //           ),
+            //         );
+            //       },
+            //     );
+            //   },
+            // ),
 
             SizedBox(height: CustomSpacing.four),
             Row(
@@ -318,10 +351,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            SizedBox(height: CustomSpacing.eight),
+            SizedBox(height: CustomSpacing.six),
             // ],
             // Email
             TextFormField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: LanguageService.getTranslated(
@@ -342,9 +376,10 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               controller: emailController,
             ),
-            SizedBox(height: CustomSpacing.two),
+            SizedBox(height: CustomSpacing.three),
             // Password
             TextFormField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               decoration: InputDecoration(
                 suffixIcon: IconButton(
                   icon: _showPassword
@@ -470,7 +505,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Expanded(
                     child: Container(
-                      height: 55,
+                      height: 50,
                       child: authNotifier.isSigningIn
                           ? Center(
                               child: CircularProgressIndicator(
@@ -485,7 +520,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 padding: EdgeInsets.symmetric(
-                                    horizontal: 22, vertical: 8),
+                                    horizontal: 12, vertical: 8),
                               ),
                               onPressed: () async {
                                 saveLoginData();
@@ -665,11 +700,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return json.decode(decoded);
   }
 
-  _getInitialCountry() {
-    String isoCode = context.locale.languageCode;
-    switch (isoCode) {
-      case 'en':
-        return 'US';
+  String _getInitialCountry() {
+    final locale = context.locale.languageCode;
+
+    switch (locale) {
       case 'es':
         return 'ES';
       case 'fr':
@@ -678,6 +712,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return 'JP';
       case 'zh':
         return 'CN';
+      default:
+        return 'US';
     }
   }
 }

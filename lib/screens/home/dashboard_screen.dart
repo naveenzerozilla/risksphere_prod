@@ -9,7 +9,9 @@ import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final String? newUser;
+
+  DashboardScreen({super.key, this.newUser});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -19,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // App Bar
   bool _isExpanded = false;
   bool _showNotificationDot = true;
+  List<Map<String, dynamic>> subscriptionMeta = [];
 
   // Dashboard Body
   bool isCompanyOnboardingStatsExpanded = false;
@@ -49,31 +52,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
   GlobalKey keyFeature2 = GlobalKey();
   GlobalKey keyFeature3 = GlobalKey();
   List<TargetFocus> targets = [];
+  bool _showFirstTimeLoader = true;
+  bool _initialRoleApiCalled = false;
+  String? selectedRole;
+  bool isLoadingRoleSwitch = false;
+  bool _showOverlay = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
 
-    // Kick off initialization in background
-    _initializeData();
+    _initialize();
 
-    // Show tutorial asynchronously (non-blocking)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tryShowTutorialOnce();
+      _handleFirstTimeNavigation();
     });
   }
 
-  Future<void> _initializeData() async {
-    // Load static or cacheable data first (SharedPreferences, claims)
+  Future<void> _initialize() async {
+    await _loadAsyncData();
     await _setClaims();
-
-    // Start async loading of dynamic data (feeds, dashboard, etc.)
-    unawaited(_loadAsyncData());
+    await _checkFirstTimeLoader();
   }
 
-  Future<void> _setClaims() async {
-    final results = await Future.wait([
+  Future<void> _handleFirstTimeNavigation() async {
+    if (!mounted) return;
+    bool isNewUser = await SharedPreferenceService.getHasNewUser();
+    isNewUser = widget.newUser == "false" ? false : isNewUser;
+    print(isNewUser);
+
+    if (!isNewUser) return;
+
+    final String? accountId =
+        await SharedPreferenceService.getDefaultAccountID();
+    final String? subAccountId =
+        await SharedPreferenceService.getDefaultSubAccountID();
+    final String? accountName =
+        await SharedPreferenceService.GetDefaultAccountName();
+    final String? subAccountName =
+        await SharedPreferenceService.GetDefaultSUBAccountName();
+
+    if (accountId == null ||
+        subAccountId == null ||
+        accountName == null ||
+        subAccountName == null) {
+      debugPrint("First-time data not ready, skipping navigation");
+      return;
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddLocationScreen(
+          newUser: isNewUser.toString(),
+          accountId: accountId,
+          subAccountId: subAccountId,
+          accountName: accountName,
+          subAccountName: subAccountName,
+          sovId: '',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkFirstTimeLoader() async {
+    final pref = await SharedPreferences.getInstance();
+
+    bool isFirstTime = pref.getBool("first_dashboard_loader") ?? true;
+
+    if (isFirstTime) {
+      setState(() => _showFirstTimeLoader = true);
+
+      // Show for 4s (but API is already running)
+      await Future.delayed(Duration(seconds: 4));
+
+      setState(() => _showFirstTimeLoader = false);
+
+      pref.setBool("first_dashboard_loader", false);
+    } else {
+      _showFirstTimeLoader = false;
+    }
+  }
+
+  _setClaims() async {
+    final values = await Future.wait([
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASTC),
       SharedPreferenceService.getClaimForSubfeature(
@@ -84,42 +148,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SharedPreferenceService.DASCO),
       SharedPreferenceService.getClaimForSubfeature(
           SharedPreferenceService.DASUO),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.CAMLL),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.CAMVU),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.DASVR),
     ]);
-    isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_PG_ADMIN) ??
-        false;
-    isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_ADMIN) ??
-        false;
-    isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.IS_SUPER_ADMIN) ??
-        false;
-    isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-            SharedPreferenceService.Is_Indivudual) ??
-        false;
-    isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
-    showTotalCorporates = results[0] ?? false;
-    showAllUsers = results[1] ?? false;
-    showConnectionRequests = results[2] ?? false;
-    showCompanyOnboardingStats = results[3] ?? false;
-    showUserOnboardingStats = results[4] ?? false;
 
-    bool showCorporateVerificationRequests = results[5] ?? false;
-    bool showUserVerificationRequests = results[6] ?? false;
-    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
-        showVerificationRequests =
-            showCorporateVerificationRequests || showUserVerificationRequests;
+    final adminValues = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_SUPER_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.Is_Indivudual),
+      SharedPreferenceService.getHasAnyPlan(),
+    ]);
 
-    _getData();
-    _getMaintainancePeriod();
-    setState(() {});
+    showTotalCorporates = values[0] ?? false;
+    showAllUsers = values[1] ?? false;
+    showConnectionRequests = values[2] ?? false;
+    showCompanyOnboardingStats = values[3] ?? false;
+    showUserOnboardingStats = values[4] ?? false;
+
+    isPgAdmin = adminValues[0] ?? false;
+    isAdmin = adminValues[1] ?? false;
+    isSuperAdmin = adminValues[2] ?? false;
+    isIndivudual = adminValues[3] ?? false;
+    isHasAnyPlan = adminValues[4] ?? false;
+
+    if (mounted) setState(() {});
   }
+
+  bool _isSubscriptionsLoading = true;
 
   Future<void> _loadAsyncData() async {
     final dashboardProvider =
@@ -131,26 +189,216 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final newsProvider = Provider.of<NewsFeedProvider>(context, listen: false);
 
     try {
-      // Run all heavy network calls concurrently
       await Future.wait([
         dashboardProvider.getDashboardData(context),
-        userProfileProvider.getAllUserData(context, "", ""),
         configProvider.getConfiguration(accountId: null, subAccountId: null),
-        configProvider.getVendors(),
+        userProfileProvider.getAllUserData(context, "", ""),
         newsProvider.fetchNewsFeed(),
+        configProvider.getVendors(),
       ]);
 
       userProfileProvider.fetchTrialInfo();
 
-      final config = configProvider.configurations['result'] ?? {};
-      subscriptions = config['subscribe'] ?? {};
       vendorList = configProvider.vendors['result'] ?? [];
+      subscriptions =
+          (configProvider.configurations['result'] ?? {})['subscribe'] ?? {};
+
+      _isSubscriptionsLoading = false;
 
       if (mounted) setState(() {});
-    } catch (error, stack) {
-      debugPrint("⚠️ Error fetching data: $error\n$stack");
+    } catch (e) {
+      debugPrint("Dashboard load error → $e");
+      _isSubscriptionsLoading = false;
+      if (mounted) setState(() {});
     }
   }
+
+  List<Map<String, dynamic>> _buildSubscriptionList(
+      List<dynamic> vendorList, Map subs) {
+    final List<Map<String, dynamic>> list = [];
+
+    for (final entry in subs.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      final parts = key.split('_');
+      if (parts.length != 2) continue;
+
+      final vendorId = parts[0];
+      final hazardName = parts[1];
+
+      final vendor = vendorList.firstWhere(
+        (v) => v['vendor_id'] == vendorId,
+        orElse: () => null,
+      );
+      if (vendor == null) continue;
+
+      final hazards = vendor['hazard_commercials'] as List?;
+      if (hazards == null) continue;
+
+      final hazard = hazards.firstWhere(
+        (h) => h['hazard_name'] == hazardName,
+        orElse: () => null,
+      );
+      if (hazard == null) continue;
+
+      list.add({
+        "key": key,
+        "vendorId": vendorId,
+        "vendorName": vendor['vendor_name_label'],
+        "vendorImage": vendor['display_image_url'],
+        "hazardLabel": hazard['hazard_name_label'],
+        "description": value['description'] ?? "",
+        "isSubscribed":
+            value['is_subscribed'] == true || value['is_subscribed'] == "true"
+      });
+    }
+
+    return list;
+  }
+
+  void _prepareSubscriptions() {
+    subscriptionMeta.clear();
+
+    subscriptions.forEach((key, value) {
+      final parts = key.split('_');
+      if (parts.length != 2) return;
+
+      final vendorId = parts[0];
+      final hazardName = parts[1];
+
+      final vendor = vendorList.firstWhere(
+        (v) => v['vendor_id'] == vendorId,
+        orElse: () => null,
+      );
+
+      if (vendor == null) return;
+
+      final hazard = (vendor['hazard_commercials'] as List?)?.firstWhere(
+          (h) => h['hazard_name'] == hazardName,
+          orElse: () => null);
+
+      if (hazard == null) return;
+
+      subscriptionMeta.add({
+        "key": key,
+        "vendorId": vendorId,
+        "vendorName": vendor['vendor_name_label'],
+        "vendorImage": vendor['display_image_url'],
+        "hazardLabel": hazard['hazard_name_label'],
+        "description": value['description'] ?? "",
+        "isSubscribed":
+            value['is_subscribed'] == true || value['is_subscribed'] == "true"
+      });
+    });
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _scrollController = ScrollController();
+  //
+  //   // Kick off initialization in background
+  //   _initializeData();
+  //
+  //   // Show tutorial asynchronously (non-blocking)
+  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
+  //   //   _tryShowTutorialOnce();
+  //   // });
+  // }
+  //
+  // Future<void> _initializeData() async {
+  //   // Load static or cacheable data first (SharedPreferences, claims)
+  //   await _setClaims();
+  //
+  //   // Start async loading of dynamic data (feeds, dashboard, etc.)
+  //   // unawaited(_loadAsyncData());
+  // }
+  //
+  // Future<void> _setClaims() async {
+  //   final results = await Future.wait([
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASTC),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASTU),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASCR),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASCO),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASUO),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.CAMLL),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.CAMVU),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.DASVR),
+  //     SharedPreferenceService.getClaimForSubfeature(
+  //         SharedPreferenceService.INTERNAL),
+  //   ]);
+  //   isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_PG_ADMIN) ??
+  //       false;
+  //   isAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_ADMIN) ??
+  //       false;
+  //   isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.IS_SUPER_ADMIN) ??
+  //       false;
+  //   isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
+  //           SharedPreferenceService.Is_Indivudual) ??
+  //       false;
+  //   isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
+  //   showTotalCorporates = results[0] ?? false;
+  //   showAllUsers = results[1] ?? false;
+  //   showConnectionRequests = results[2] ?? false;
+  //   showCompanyOnboardingStats = results[3] ?? false;
+  //   showUserOnboardingStats = results[4] ?? false;
+  //
+  //   bool showCorporateVerificationRequests = results[5] ?? false;
+  //   bool showUserVerificationRequests = results[6] ?? false;
+  //   bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
+  //       showVerificationRequests =
+  //           showCorporateVerificationRequests || showUserVerificationRequests;
+  //
+  //
+  //   // show UI immediately
+  //   if (mounted) setState(() {});
+  //   unawaited(_getData());
+  //   _getMaintainancePeriod();
+  //
+  // }
+  //
+  // Future<void> _loadAsyncData() async {
+  //   final dashboardProvider =
+  //       Provider.of<DashboardProvider>(context, listen: false);
+  //   final userProfileProvider =
+  //       Provider.of<UserProfileProvider>(context, listen: false);
+  //   final configProvider =
+  //       Provider.of<ConfigurationProvider>(context, listen: false);
+  //   final newsProvider = Provider.of<NewsFeedProvider>(context, listen: false);
+  //
+  //   try {
+  //     // Run all heavy network calls concurrently
+  //     await Future.wait([
+  //       // dashboardProvider.getDashboardData(context),
+  //       userProfileProvider.getAllUserData(context, "", ""),
+  //       configProvider.getConfiguration(accountId: null, subAccountId: null),
+  //       configProvider.getVendors(),
+  //       newsProvider.fetchNewsFeed(),
+  //     ]);
+  //
+  //     userProfileProvider.fetchTrialInfo();
+  //
+  //     final config = configProvider.configurations['result'] ?? {};
+  //     subscriptions = config['subscribe'] ?? {};
+  //     vendorList = configProvider.vendors['result'] ?? [];
+  //
+  //     if (mounted) setState(() {});
+  //   } catch (error, stack) {
+  //     debugPrint("⚠️ Error fetching data: $error\n$stack");
+  //   }
+  // }
 
   void _tryShowTutorialOnce() async {
     final prefs = await SharedPreferences.getInstance();
@@ -279,8 +527,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _getData() async {
-    final dashboardProvider =
-        Provider.of<DashboardProvider>(context, listen: false);
+    // final dashboardProvider =
+    //     Provider.of<DashboardProvider>(context, listen: false);
     final userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final configurationProvider =
@@ -288,7 +536,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       final results = await Future.wait([
-        dashboardProvider.getDashboardData(context),
+        // dashboardProvider.getDashboardData(context),
         userProfileProvider.getAllUserData(context, "", ""),
         configurationProvider.getConfiguration(
             accountId: null, subAccountId: null),
@@ -373,74 +621,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
             drawer: CustomDrawer(),
             body: RefreshIndicator(
               onRefresh: _handleRefresh,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/mesh.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  SizedBox(height: 20),
-                  _homeScreenBody(typography),
-
-                  // Overlay for trial expiration
-                  Consumer<UserProfileProvider>(
-                    builder: (context, userProfile, child) {
-                      final trialStatus = userProfile.trialInfo['status'] ?? '';
-                      if (trialStatus.contains('Expired') &&
-                          isHasAnyPlan == false) {
-                        return Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surface
-                                .withOpacity(0.95),
+              child: _showFirstTimeLoader
+                  ? Container(
+                      color: Colors.black.withOpacity(0.7),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.asset(
+                            'assets/images/mesh.png',
+                            fit: BoxFit.cover,
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(height: CustomSpacing.four),
-                              // Text(isHasAnyPlan.toString()),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: MessageCard(
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
-                                      style: typography.Body1,
-                                    ),
-                                    // tappable
-                                    TextSpan(
-                                      text: ' Upgrade Now!',
-                                      style: typography.Body1.copyWith(
-                                        color: AppColors.primaryMain,
+                        ),
+
+                        SizedBox(height: 20),
+                        _homeScreenBody(typography),
+
+                        // Overlay for trial expiration
+                        Consumer<UserProfileProvider>(
+                          builder: (context, userProfile, child) {
+                            final trialStatus =
+                                userProfile.trialInfo['status'] ?? '';
+                            if (trialStatus.contains('Expired') &&
+                                isHasAnyPlan == false) {
+                              return Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withOpacity(0.95),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(height: CustomSpacing.four),
+                                    // Text(isHasAnyPlan.toString()),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: MessageCard(
+                                        messageTextSpans: [
+                                          TextSpan(
+                                            text:
+                                                'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                                            style: typography.Body1,
+                                          ),
+                                          // tappable
+                                          TextSpan(
+                                            text: ' Upgrade Now!',
+                                            style: typography.Body1.copyWith(
+                                              color: AppColors.primaryMain,
+                                            ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            PurchaseLicensePage()));
+                                              },
+                                          ),
+                                        ],
+                                        isError: true,
                                       ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      PurchaseLicensePage()));
-                                        },
                                     ),
                                   ],
-                                  isError: true,
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      return SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
+                              );
+                            }
+                            return SizedBox.shrink();
+                          },
+                        ),
+                      ],
+                    ),
             ),
           ),
         );
@@ -451,456 +707,592 @@ class _DashboardScreenState extends State<DashboardScreen> {
   _homeScreenBody(CustomTypography typography) {
     return Consumer2<DashboardProvider, UserProfileProvider>(
         builder: (context, dashboardProvider, userProfileProvider, child) {
-      return dashboardProvider.dashboard.toString() == "null"
-          ? Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+      return SingleChildScrollView(
+        child: Container(
+          margin: EdgeInsets.only(
+              top: CustomSpacing.four,
+              left: CustomSpacing.four,
+              right: CustomSpacing.four),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (isMaintenance.toString() == 'in_progress') ...[
+                Container(
+                  child: MaintenanceUI(
+                      isMaintenance: "isMaintenance",
+                      startDate: startDate,
+                      endDate: endDate),
+                )
               ],
-            )
-          : SingleChildScrollView(
-              child: Container(
-                margin: EdgeInsets.only(
-                    top: CustomSpacing.four,
-                    left: CustomSpacing.four,
-                    right: CustomSpacing.four),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    if (isMaintenance.toString() == 'in_progress') ...[
-                      Container(
-                        child: MaintenanceUI(
-                            isMaintenance: "isMaintenance",
-                            startDate: startDate,
-                            endDate: endDate),
-                      )
-                    ],
-                    Text(
-                      LanguageService.getTranslated(
-                          context, 'usermanagement_dash_overview'),
-                      style: typography.H5_Regular,
-                    ),
-                    SizedBox(height: CustomSpacing.six),
-                    !showTotalCorporates
-                        ? SizedBox()
-                        : _overviewCardHorizontal(
-                            title: LanguageService.getTranslated(
-                                context, 'usermanagement_dash_total_corps'),
-                            amount: dashboardProvider
-                                .dashboard!.signups!.current!.csignup
-                                .toString(),
-                            icon:
-                                'assets/images/total_corporates_list_check.svg',
-                            bottomWidget: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                (dashboardProvider.dashboardModel?.signups
-                                                ?.current?.csignup ??
-                                            0) >
-                                        (dashboardProvider.dashboardModel
-                                                ?.signups?.past?.csignup ??
-                                            0)
-                                    ? Icon(Icons.trending_up,
-                                        color: Colors.green)
-                                    : Icon(Icons.trending_down,
-                                        color: Colors.red),
-                                SizedBox(width: CustomSpacing.two),
-                                Flexible(
-                                  child: Text(
-                                    _getTotalCorporatePercentage(
-                                        dashboardProvider),
-                                    style: typography.Subtitle1,
-                                    maxLines: 2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                    !showTotalCorporates
-                        ? SizedBox()
-                        : SizedBox(width: CustomSpacing.four),
-                    !showAllUsers
-                        ? SizedBox()
-                        : _overviewCardHorizontal(
-                            title: LanguageService.getTranslated(
-                                context, 'usermanagement_dash_signups'),
-                            amount: dashboardProvider
-                                    .dashboardModel?.signups?.current?.signup
-                                    .toString() ??
-                                '0',
-                            icon: 'assets/images/sign_ups_users.svg',
-                            bottomWidget: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                (dashboardProvider.dashboardModel?.signups
-                                                ?.current?.signup ??
-                                            0) >
-                                        (dashboardProvider.dashboardModel
-                                                ?.signups?.past?.signup ??
-                                            0)
-                                    ? Icon(Icons.trending_up,
-                                        color: Colors.green)
-                                    : Icon(Icons.trending_down,
-                                        color: Colors.red),
-                                SizedBox(width: CustomSpacing.two),
-                                Flexible(
-                                  child: Text(
-                                    _getSignupsPercentage(dashboardProvider),
-                                    style: typography.Subtitle1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                    (userProfileProvider.userData.role != null &&
-                            userProfileProvider.userData.role!.isNotEmpty &&
-                            userProfileProvider.userData.role![0].name
-                                    .toString() ==
-                                "Admin" &&
-                            (isSuperAdmin || isPgAdmin || isAdmin))
-                        ? _overviewCardHorizontal(
-                            title: LanguageService.getTranslated(context,
-                                'usermanagement_dash_verification_req'),
-                            amount: ((dashboardProvider.dashboardModel
-                                            ?.verificationCount ??
-                                        0) +
-                                    (dashboardProvider.dashboardModel
-                                            ?.companyUserLeadCount ??
-                                        0))
-                                .toString(),
-                            icon: 'assets/images/verification_req_checks.svg',
-                            bottomWidget: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                CustomButton(
-                                  key: keyFeature1,
-                                  type: ButtonType.outlined,
-                                  onPressed: () {
-                                    Provider.of<DrawerSelectionProvider>(
-                                            context,
-                                            listen: false)
-                                        .setSelectedItem('user_management');
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            UserManagementScreen(
-                                          initialIndex: 0,
-                                          subIndex: 0,
-                                          initialScreen:
-                                              Screens.corporateEmployeeAdd,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Add User', style: typography.Body1),
-                                      SizedBox(width: CustomSpacing.two),
-                                      Icon(Icons.person_add_alt_1, size: 18),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                CustomButton(
-                                  key: keyFeature2,
-                                  type: ButtonType.outlined,
-                                  onPressed: () {
-                                    Provider.of<DrawerSelectionProvider>(
-                                            context,
-                                            listen: false)
-                                        .setSelectedItem('user_management');
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            UserManagementScreen(
-                                          initialIndex: 0,
-                                          subIndex: 0,
-                                          initialScreen:
-                                              Screens.verificationList,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('See All', style: typography.Body1),
-                                      SizedBox(width: CustomSpacing.two),
-                                      Icon(Icons.arrow_forward_ios, size: 14),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Container(),
-                    !showConnectionRequests
-                        ? SizedBox()
-                        : SizedBox(width: CustomSpacing.four),
-                    _overviewCardHorizontal(
+              Text(
+                LanguageService.getTranslated(
+                    context, 'usermanagement_dash_overview'),
+                style: typography.H5_Regular,
+              ),
+              SizedBox(height: CustomSpacing.six),
+              !showTotalCorporates
+                  ? SizedBox()
+                  : _overviewCardHorizontal(
                       title: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_connection_request'),
-                      amount: dashboardProvider.dashboardModel?.requests
-                              ?.toString() ??
-                          '0',
-                      icon: 'assets/images/connection_request_people.svg',
+                          context, 'usermanagement_dash_total_corps'),
+                      amount: dashboardProvider
+                          .dashboard!.signups!.current!.csignup
+                          .toString(),
+                      icon: 'assets/images/total_corporates_list_check.svg',
                       bottomWidget: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          //reduce border radius
-                          CustomButton(
-                            key: keyFeature3,
-                            type: ButtonType.outlined,
-                            onPressed: () async {
-                              FirebaseAuth auth = FirebaseAuth.instance;
-                              String uid = auth.currentUser!.uid;
-                              IdTokenResult token =
-                                  await auth.currentUser!.getIdTokenResult();
-                              Map<String, dynamic>? claims = token.claims ?? {};
-                              log(claims.toString());
-                              log(auth.currentUser.toString());
-                              String name =
-                                  claims['name'] ?? ''; //name of the user
-                              Provider.of<DrawerSelectionProvider>(context,
-                                      listen: false)
-                                  .setSelectedItem('user_management');
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => ConnectionsScreen(
-                                    userId: uid,
-                                    userName: name,
-                                    selectedTabIndex: 1,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  LanguageService.getTranslated(context,
-                                      'usermanagement_dash_connection_req_list_btn'),
-                                  style: typography.Body1,
-                                ),
-                                SizedBox(width: CustomSpacing.two),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 14,
-                                ),
-                              ],
+                          (dashboardProvider.dashboardModel?.signups?.current
+                                          ?.csignup ??
+                                      0) >
+                                  (dashboardProvider.dashboardModel?.signups
+                                          ?.past?.csignup ??
+                                      0)
+                              ? Icon(Icons.trending_up, color: Colors.green)
+                              : Icon(Icons.trending_down, color: Colors.red),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              _getTotalCorporatePercentage(dashboardProvider),
+                              style: typography.Subtitle1,
+                              maxLines: 2,
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    // Text(isPgAdmin.toString()),
-                    // Text(isAdmin.toString()),
-                    // Text(isSuperAdmin.toString()),
-                    SizedBox(
-                      height: CustomSpacing.one,
-                    ),
-                    // (userProfileProvider.userData.role != null &&
-                    //         userProfileProvider.userData.role!.isNotEmpty &&
-                    //         userProfileProvider.userData.role![0].name
-                    //                 .toString() ==
-                    //             "Admin" &&
-                    //         (isSuperAdmin || isPgAdmin || isAdmin))
-                    // InkWell(
-                    //   onTap: () async {
-                    //     final status = await Permission.camera.request();
-                    //     if (status.isGranted) {
-                    //       final pickedFile = await ImagePicker()
-                    //           .pickImage(source: ImageSource.camera);
-                    //       if (pickedFile != null) {
-                    //         // Use pickedFile.path
-                    //         print('Image path: ${pickedFile.path}');
-                    //       }
-                    //     } else {
-                    //       ScaffoldMessenger.of(context).showSnackBar(
-                    //         SnackBar(content: Text('Camera permission denied')),
-                    //       );
-                    //     }
-                    //   },
-                    //   child: Text("Camera", style: typography.H5_Regular),
-                    // ),
-                    showAllUsers
-                        ? SizedBox()
-                        : Consumer2<UserProfileProvider, ConfigurationProvider>(
-                            builder: (context, userProfileProvider, provider,
-                                child) {
-                              if (provider.isLoading) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 50),
-                                  alignment: Alignment.center,
-                                  width: MediaQuery.of(context).size.width,
-                                  height:
-                                      MediaQuery.of(context).size.height / 2,
-                                  child: const CircularProgressIndicator(),
-                                );
-                              }
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "My Subscriptions",
-                                    style: typography.H5_Regular,
-                                  ),
-                                  SizedBox(
-                                    height: CustomSpacing.two,
-                                  ),
-                                  _subscriptionBody(),
-                                  // Show content once loading is complete
-                                ],
-                              );
-                            },
+              !showTotalCorporates
+                  ? SizedBox()
+                  : SizedBox(width: CustomSpacing.four),
+              !showAllUsers
+                  ? SizedBox()
+                  : _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_signups'),
+                      amount: dashboardProvider
+                              .dashboardModel?.signups?.current?.signup
+                              .toString() ??
+                          '0',
+                      icon: 'assets/images/sign_ups_users.svg',
+                      bottomWidget: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          (dashboardProvider.dashboardModel?.signups?.current
+                                          ?.signup ??
+                                      0) >
+                                  (dashboardProvider.dashboardModel?.signups
+                                          ?.past?.signup ??
+                                      0)
+                              ? Icon(Icons.trending_up, color: Colors.green)
+                              : Icon(Icons.trending_down, color: Colors.red),
+                          SizedBox(width: CustomSpacing.two),
+                          Flexible(
+                            child: Text(
+                              _getSignupsPercentage(dashboardProvider),
+                              style: typography.Subtitle1,
+                            ),
                           ),
-                    SizedBox(height: CustomSpacing.one),
-                    !showCompanyOnboardingStats
-                        ? SizedBox()
-                        : dashboardProvider.isCompanyLoading
-                            ? Column(
-                                children: [
-                                  Center(
-                                    child: SizedBox(
-                                        height: 25,
-                                        width: 25,
-                                        child: CircularProgressIndicator()),
-                                  )
-                                ],
-                              )
-                            : ExpandableCardContainer(
-                                isExpanded: isCompanyOnboardingStatsExpanded,
-                                collapsedChild: _collapsedCompanyCardWidget(
-                                  title: Text(
-                                    LanguageService.getTranslated(context,
-                                        'usermanagement_dash_company_onboarding_status_title'),
-                                    style: typography.Body1,
+                        ],
+                      ),
+                    ),
+              (userProfileProvider.userData.role != null &&
+                      userProfileProvider.userData.role!.isNotEmpty &&
+                      userProfileProvider.userData.role![0].name.toString() ==
+                          "Admin" &&
+                      (isSuperAdmin || isPgAdmin || isAdmin))
+                  ? _overviewCardHorizontal(
+                      title: LanguageService.getTranslated(
+                          context, 'usermanagement_dash_verification_req'),
+                      amount: ((dashboardProvider
+                                      .dashboardModel?.verificationCount ??
+                                  0) +
+                              (dashboardProvider
+                                      .dashboardModel?.companyUserLeadCount ??
+                                  0))
+                          .toString(),
+                      icon: 'assets/images/verification_req_checks.svg',
+                      bottomWidget: Row(
+                        children: [
+                          /// ➕ Add User
+                          Expanded(
+                            child: CustomButton(
+                              key: keyFeature1,
+                              type: ButtonType.outlined,
+                              onPressed: () {
+                                Provider.of<DrawerSelectionProvider>(context,
+                                        listen: false)
+                                    .setSelectedItem('user_management');
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => UserManagementScreen(
+                                      initialIndex: 0,
+                                      subIndex: 0,
+                                      initialScreen:
+                                          Screens.corporateEmployeeAdd,
+                                    ),
                                   ),
-                                ),
-                                expandedChild:
-                                    _expandedCompanyOnboardingStatsWidget(
-                                        dashboardProvider),
-                              ),
-                    SizedBox(height: CustomSpacing.one),
-                    !showUserOnboardingStats
-                        ? SizedBox()
-                        : dashboardProvider.isRoleLoading
-                            ? Column(
+                                );
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Center(
-                                    child: SizedBox(
-                                        height: 25,
-                                        width: 25,
-                                        child: CircularProgressIndicator()),
-                                  )
-                                ],
-                              )
-                            : ExpandableCardContainer(
-                                isExpanded: isUserOnboardingStatsExpanded,
-                                collapsedChild: _collapsedUserCardWidget(
-                                  title: Text(
-                                    LanguageService.getTranslated(context,
-                                        'usermanagement_dash_user_on_boarding_status'),
-                                    style: typography.Body1,
+                                  Flexible(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, 'dashboard_add_user_text'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.Body1,
+                                    ),
                                   ),
-                                ),
-                                expandedChild:
-                                    _expandedUserOnboardingStatsWidget(
-                                        dashboardProvider),
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.person_add_alt_1, size: 18),
+                                ],
                               ),
-                    SizedBox(height: CustomSpacing.eight),
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          /// ➡️ See All
+                          Expanded(
+                            child: CustomButton(
+                              key: keyFeature2,
+                              type: ButtonType.outlined,
+                              onPressed: () {
+                                Provider.of<DrawerSelectionProvider>(context,
+                                        listen: false)
+                                    .setSelectedItem('user_management');
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => UserManagementScreen(
+                                      initialIndex: 0,
+                                      subIndex: 0,
+                                      initialScreen: Screens.verificationList,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      LanguageService.getTranslated(
+                                          context, 'dashboard_see_all_text'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.Body1,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.arrow_forward_ios, size: 14),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      //   children: [
+                      //     CustomButton(
+                      //       key: keyFeature1,
+                      //       type: ButtonType.outlined,
+                      //       onPressed: () {
+                      //         Provider.of<DrawerSelectionProvider>(context,
+                      //                 listen: false)
+                      //             .setSelectedItem('user_management');
+                      //         Navigator.of(context).push(
+                      //           MaterialPageRoute(
+                      //             builder: (context) => UserManagementScreen(
+                      //               initialIndex: 0,
+                      //               subIndex: 0,
+                      //               initialScreen: Screens.corporateEmployeeAdd,
+                      //             ),
+                      //           ),
+                      //         );
+                      //       },
+                      //       child: Row(
+                      //         mainAxisSize: MainAxisSize.min,
+                      //         children: [
+                      //           Text(
+                      //               LanguageService.getTranslated(
+                      //                   context, 'dashboard_add_user_text'),
+                      //               style: typography.Body1),
+                      //           SizedBox(width: CustomSpacing.two),
+                      //           Icon(Icons.person_add_alt_1, size: 18),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //     SizedBox(width: 2),
+                      //     CustomButton(
+                      //       key: keyFeature2,
+                      //       type: ButtonType.outlined,
+                      //       onPressed: () {
+                      //         Provider.of<DrawerSelectionProvider>(context,
+                      //                 listen: false)
+                      //             .setSelectedItem('user_management');
+                      //         Navigator.of(context).push(
+                      //           MaterialPageRoute(
+                      //             builder: (context) => UserManagementScreen(
+                      //               initialIndex: 0,
+                      //               subIndex: 0,
+                      //               initialScreen: Screens.verificationList,
+                      //             ),
+                      //           ),
+                      //         );
+                      //       },
+                      //       child: Row(
+                      //         // mainAxisSize: MainAxisSize.min,
+                      //         children: [
+                      //           Container(
+                      //             width:120,
+                      //             child: Text(
+                      //                LanguageService.getTranslated(context, 'dashboard_see_all_text'),
+                      //                 maxLines: 1,
+                      //                 overflow: TextOverflow.ellipsis,
+                      //
+                      //
+                      //                 style: typography.Body1),
+                      //           ),
+                      //           SizedBox(width: CustomSpacing.two),
+                      //           Icon(Icons.arrow_forward_ios, size: 14),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                    )
+                  : Container(),
+              !showConnectionRequests
+                  ? SizedBox()
+                  : SizedBox(width: CustomSpacing.four),
+              _overviewCardHorizontal(
+                title: LanguageService.getTranslated(
+                    context, 'usermanagement_dash_connection_request'),
+                amount:
+                    dashboardProvider.dashboardModel?.requests?.toString() ??
+                        '0',
+                icon: 'assets/images/connection_request_people.svg',
+                bottomWidget: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    //reduce border radius
+                    CustomButton(
+                      key: keyFeature3,
+                      type: ButtonType.outlined,
+                      onPressed: () async {
+                        FirebaseAuth auth = FirebaseAuth.instance;
+                        String uid = auth.currentUser!.uid;
+                        IdTokenResult token =
+                            await auth.currentUser!.getIdTokenResult();
+                        Map<String, dynamic>? claims = token.claims ?? {};
+                        log(claims.toString());
+                        log(auth.currentUser.toString());
+                        String name = claims['name'] ?? ''; //name of the user
+                        Provider.of<DrawerSelectionProvider>(context,
+                                listen: false)
+                            .setSelectedItem('user_management');
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ConnectionsScreen(
+                              userId: uid,
+                              userName: name,
+                              selectedTabIndex: 1,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            LanguageService.getTranslated(context,
+                                'usermanagement_dash_connection_req_list_btn'),
+                            style: typography.Body1,
+                          ),
+                          SizedBox(width: CustomSpacing.two),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            );
+
+              // Text(isPgAdmin.toString()),
+              // Text(isAdmin.toString()),
+              // Text(isSuperAdmin.toString()),
+              SizedBox(
+                height: CustomSpacing.one,
+              ),
+              // (userProfileProvider.userData.role != null &&
+              //         userProfileProvider.userData.role!.isNotEmpty &&
+              //         userProfileProvider.userData.role![0].name
+              //                 .toString() ==
+              //             "Admin" &&
+              //         (isSuperAdmin || isPgAdmin || isAdmin))
+              // InkWell(
+              //   onTap: () async {
+              //     final status = await Permission.camera.request();
+              //     if (status.isGranted) {
+              //       final pickedFile = await ImagePicker()
+              //           .pickImage(source: ImageSource.camera);
+              //       if (pickedFile != null) {
+              //         // Use pickedFile.path
+              //         print('Image path: ${pickedFile.path}');
+              //       }
+              //     } else {
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         SnackBar(content: Text('Camera permission denied')),
+              //       );
+              //     }
+              //   },
+              //   child: Text("Camera", style: typography.H5_Regular),
+              // ),
+              showAllUsers
+                  ? SizedBox()
+                  : Consumer2<UserProfileProvider, ConfigurationProvider>(
+                      builder: (context, userProfileProvider, provider, child) {
+                        // if (provider.isLoading) {
+                        //   return Container(
+                        //     padding: const EdgeInsets.symmetric(horizontal: 50),
+                        //     alignment: Alignment.center,
+                        //     width: MediaQuery.of(context).size.width,
+                        //     height: MediaQuery.of(context).size.height / 2,
+                        //     child: const CircularProgressIndicator(),
+                        //   );
+                        // }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                LanguageService.getTranslated(
+                                    context, 'dashboard_my_subscription_text'),
+                                style: typography.H5_Regular),
+                            SizedBox(height: CustomSpacing.two),
+                            Selector<ConfigurationProvider,
+                                List<Map<String, dynamic>>>(
+                              selector: (_, provider) {
+                                final vendorList =
+                                    provider.vendors['result'] ?? [];
+                                final subs =
+                                    (provider.configurations['result'] ??
+                                            {})['subscribe'] ??
+                                        {};
+                                return _buildSubscriptionList(vendorList, subs);
+                              },
+                              builder: (_, subList, __) {
+                                return _subscriptionList(subList);
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+              SizedBox(height: CustomSpacing.one),
+              !showCompanyOnboardingStats
+                  ? SizedBox()
+                  : dashboardProvider.isCompanyLoading
+                      ? Column(
+                          children: [
+                            Center(
+                              child: SizedBox(
+                                  height: 25,
+                                  width: 25,
+                                  child: CircularProgressIndicator()),
+                            )
+                          ],
+                        )
+                      : ExpandableCardContainer(
+                          isExpanded: isCompanyOnboardingStatsExpanded,
+                          collapsedChild: _collapsedCompanyCardWidget(
+                            title: Text(
+                              LanguageService.getTranslated(context,
+                                  'usermanagement_dash_company_onboarding_status_title'),
+                              style: typography.Body1,
+                            ),
+                          ),
+                          expandedChild: _expandedCompanyOnboardingStatsWidget(
+                              dashboardProvider),
+                        ),
+              SizedBox(height: CustomSpacing.one),
+              !showUserOnboardingStats
+                  ? SizedBox()
+                  : dashboardProvider.isRoleLoading
+                      ? Column(
+                          children: [
+                            Center(
+                              child: SizedBox(
+                                  height: 25,
+                                  width: 25,
+                                  child: CircularProgressIndicator()),
+                            )
+                          ],
+                        )
+                      : ExpandableCardContainer(
+                          isExpanded: isUserOnboardingStatsExpanded,
+                          collapsedChild: _collapsedUserCardWidget(
+                            title: Text(
+                              LanguageService.getTranslated(context,
+                                  'usermanagement_dash_user_on_boarding_status'),
+                              style: typography.Body1,
+                            ),
+                          ),
+                          expandedChild: _expandedUserOnboardingStatsWidget(
+                              dashboardProvider),
+                        ),
+              SizedBox(height: CustomSpacing.eight),
+            ],
+          ),
+        ),
+      );
     });
   }
 
-  Widget _subscriptionBody() {
-    return Selector2<UserProfileProvider, ConfigurationProvider,
-        Tuple4<bool, Map<String, dynamic>?, bool, String>>(
-      selector: (_, userProfile, config) => Tuple4(
-          config.isLoading,
-          userProfile.trialInfo,
-          (userProfile.trialInfo['status']?.toString() ?? '') == 'active',
-          ''
-
-          // userProfile.isSubscribed,
-          // userProfile.subscriptionStatus ?? '',
-          ),
-      builder: (context, data, child) {
-        final isConfigLoading = data.item1;
-        final trialInfo = data.item2;
-        final isSubscribed = data.item3;
-        final subscriptionStatus = data.item4;
-
-        if (isConfigLoading) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 50),
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height / 2,
-            child: const CircularProgressIndicator(),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: subscriptions.keys.map((key) {
-            return FutureBuilder<Map<String, dynamic>?>(
-              future: _fetchSubscriptionData(key),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    loadingSubscriptions.contains(key)) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData) {
-                  return const SizedBox.shrink();
-                }
-
-                final data = snapshot.data!;
-                final trialStatus = trialInfo?['status'] ?? '';
-
-                return Column(
-                  children: [
-                    SubscriptionCard(
-                      title: '${data['hazardLabel']} (${data['vendorName']})',
-                      description:
-                          data['description'] ?? "Basic Subscription plan",
-                      iconPath: data['vendorImage'],
-                      isSubscribed: data['isSubscribed'],
-                      onSubscribe: () async {
-                        setState(() => loadingSubscriptions.add(key));
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => const PurchaseLicensePage()));
-                        setState(() => loadingSubscriptions.remove(key));
-                      },
-                      isPgAdmin: isPgAdmin,
-                      isAdmin: isAdmin,
-                      isSuperAdmin: isSuperAdmin,
-                    ),
-                    SizedBox(height: CustomSpacing.one),
-                  ],
-                );
-              },
+  Widget _subscriptionList(List<Map<String, dynamic>> list) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: list.length,
+      itemBuilder: (context, i) {
+        final data = list[i];
+        return SubscriptionCard(
+          title: "${data['hazardLabel']} (${data['vendorName']})",
+          description: data['description'],
+          iconPath: data['vendorImage'],
+          isSubscribed: data['isSubscribed'],
+          isPgAdmin: isPgAdmin,
+          isAdmin: isAdmin,
+          isSuperAdmin: isSuperAdmin,
+          onSubscribe: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PurchaseLicensePage()),
             );
-          }).toList(),
+          },
         );
       },
     );
   }
+
+  // Widget _subscriptionBody() {
+  //   return ListView.builder(
+  //     itemCount: subscriptionMeta.length,
+  //     shrinkWrap: true,
+  //     physics: NeverScrollableScrollPhysics(),
+  //     itemBuilder: (context, index) {
+  //       final data = subscriptionMeta[index];
+  //
+  //       return Padding(
+  //         padding: EdgeInsets.only(bottom: CustomSpacing.one),
+  //         child: SubscriptionCard(
+  //           title: "${data['hazardLabel']} (${data['vendorName']})",
+  //           description: data['description'],
+  //           iconPath: data['vendorImage'],
+  //           isSubscribed: data['isSubscribed'],
+  //           isPgAdmin: isPgAdmin,
+  //           isAdmin: isAdmin,
+  //           isSuperAdmin: isSuperAdmin,
+  //           onSubscribe: () {
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(builder: (_) => PurchaseLicensePage()),
+  //             );
+  //           },
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
+  // Widget _subscriptionBody() {
+  //   return Selector2<UserProfileProvider, ConfigurationProvider,
+  //       Tuple4<bool, Map<String, dynamic>?, bool, String>>(
+  //     selector: (_, userProfile, config) => Tuple4(
+  //         config.isLoading,
+  //         userProfile.trialInfo,
+  //         (userProfile.trialInfo['status']?.toString() ?? '') == 'active',
+  //         ''
+  //
+  //         // userProfile.isSubscribed,
+  //         // userProfile.subscriptionStatus ?? '',
+  //         ),
+  //     builder: (context, data, child) {
+  //       final isConfigLoading = data.item1;
+  //       final trialInfo = data.item2;
+  //       final isSubscribed = data.item3;
+  //       final subscriptionStatus = data.item4;
+  //
+  //       if (isConfigLoading) {
+  //         return Container(
+  //           padding: const EdgeInsets.symmetric(horizontal: 50),
+  //           alignment: Alignment.center,
+  //           width: MediaQuery.of(context).size.width,
+  //           height: MediaQuery.of(context).size.height / 2,
+  //           child: const CircularProgressIndicator(),
+  //         );
+  //       }
+  //
+  //       return Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: subscriptions.keys.map((key) {
+  //           return FutureBuilder<Map<String, dynamic>?>(
+  //             future: _fetchSubscriptionData(key),
+  //             builder: (context, snapshot) {
+  //               if (snapshot.connectionState == ConnectionState.waiting ||
+  //                   loadingSubscriptions.contains(key)) {
+  //                 return const Center(child: CircularProgressIndicator());
+  //               }
+  //
+  //               if (!snapshot.hasData) {
+  //                 return const SizedBox.shrink();
+  //               }
+  //
+  //               final data = snapshot.data!;
+  //               final trialStatus = trialInfo?['status'] ?? '';
+  //
+  //               return Column(
+  //                 children: [
+  //                   SubscriptionCard(
+  //                     title: '${data['hazardLabel']} (${data['vendorName']})',
+  //                     description:
+  //                         data['description'] ?? "Basic Subscription plan",
+  //                     iconPath: data['vendorImage'],
+  //                     isSubscribed: data['isSubscribed'],
+  //                     onSubscribe: () async {
+  //                       setState(() => loadingSubscriptions.add(key));
+  //                       Navigator.of(context).push(MaterialPageRoute(
+  //                           builder: (_) => const PurchaseLicensePage()));
+  //                       setState(() => loadingSubscriptions.remove(key));
+  //                     },
+  //                     isPgAdmin: isPgAdmin,
+  //                     isAdmin: isAdmin,
+  //                     isSuperAdmin: isSuperAdmin,
+  //                   ),
+  //                   SizedBox(height: CustomSpacing.one),
+  //                 ],
+  //               );
+  //             },
+  //           );
+  //         }).toList(),
+  //       );
+  //     },
+  //   );
+  // }
 
   /// Fetch vendor and hazard data for each subscription key
   Future<Map<String, dynamic>?> _fetchSubscriptionData(String key) async {

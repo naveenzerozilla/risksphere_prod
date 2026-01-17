@@ -40,6 +40,9 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Geographical
   String? selectedCountry;
+
+  // ✅ ADD THIS
+  double dataCompletenessScore = 0.0;
   String? zipcode;
   String? sortBy;
 
@@ -113,39 +116,52 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
 
   // Apply filters
   void applyFilters(BuildContext context) {
-    print(sortBy);
-    print(sortBy);
     final locationListProvider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
+    Provider.of<MyLocationListProvider>(context, listen: false);
+
+    // 🌍 Country
     locationListProvider.countries =
-        selectedCountry != null ? [selectedCountry!] : [];
+    selectedCountry != null ? [selectedCountry!] : [];
+
+    // 📍 Zipcode
     locationListProvider.zipcode = zipcode ?? '';
+
+    // 🔃 Sort
     locationListProvider.sortBy = sortBy ?? '';
 
+    // 🏅 Certifications
     locationListProvider.certifications = [
       if (manualCertified) 'Manual Certified',
       if (autoCertified) 'Auto Certified'
     ];
-    print("certifications are: ${locationListProvider.certifications}");
 
-    // API Format for hazard ratings
-    Map<String, List<int>> hazardsForApi = {};
+    // ⚠️ Hazard ratings
+    final Map<String, List<int>> hazardsForApi = {};
     hazardRatings.forEach((hazard, ratings) {
       if (ratings.isNotEmpty) {
         hazardsForApi[hazard] = ratings;
       }
     });
-    print("hazardsForApi: $hazardsForApi");
     locationListProvider.hazardRatings = hazardsForApi;
-    // Pass selected geo ratings to the provider or API
-    print('location hazard ratings: ${locationListProvider.hazardRatings}');
+
+    // ⭐ Geo ratings
     locationListProvider.rating = selectedGeoRatings;
-    print(hazardsForApi); // Pass this to the API
+
+    // ✅ DATA COMPLETENESS (KEY FIX)
+    if (dataCompletenessScore != null) {
+      locationListProvider.setDataCompletenessScore(
+        dataCompletenessScore!,
+      );
+    } else {
+      locationListProvider.clearDataCompletenessScore();
+    }
+
+    // 🏫 Campus
     locationListProvider.selectedCampusIds = selectedCampusIds;
 
+    // 🚀 API CALL
     if (widget.showGeoRatings) {
-      Provider.of<MyLocationListProvider>(context, listen: false)
-          .fetchLocationList(
+      locationListProvider.fetchLocationList(
         context,
         "",
         1,
@@ -154,11 +170,10 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
         widget.subAccountId,
         widget.initialProcessId,
         widget.initialSubProcessId,
-        ''
+        '',
       );
     } else {
-      Provider.of<MyLocationListProvider>(context, listen: false)
-          .fetchCertifiedLocationList(
+      locationListProvider.fetchCertifiedLocationList(
         context,
         "",
         1,
@@ -170,8 +185,130 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
       );
     }
 
-    Navigator.of(context).pop(); // Close the filter screen
+    Navigator.of(context).pop();
   }
+
+  // void applyFilters(BuildContext context) {
+  //   final locationListProvider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //
+  //   locationListProvider.countries =
+  //       selectedCountry != null ? [selectedCountry!] : [];
+  //   locationListProvider.zipcode = zipcode ?? '';
+  //   locationListProvider.sortBy = sortBy ?? '';
+  //
+  //   locationListProvider.certifications = [
+  //     if (manualCertified) 'Manual Certified',
+  //     if (autoCertified) 'Auto Certified'
+  //   ];
+  //
+  //   // Hazard ratings
+  //   Map<String, List<int>> hazardsForApi = {};
+  //   hazardRatings.forEach((hazard, ratings) {
+  //     if (ratings.isNotEmpty) {
+  //       hazardsForApi[hazard] = ratings;
+  //     }
+  //   });
+  //   locationListProvider.hazardRatings = hazardsForApi;
+  //
+  //   // Geo ratings
+  //   locationListProvider.rating = selectedGeoRatings;
+  //
+  //   locationListProvider.setDataCompletenessScore(dataCompletenessScore);
+  //
+  //   // locationListProvider.dataCompletenessScore = dataCompletenessScore;
+  //
+  //   // Campus
+  //   locationListProvider.selectedCampusIds = selectedCampusIds;
+  //
+  //   // API CALL
+  //   if (widget.showGeoRatings) {
+  //     locationListProvider.fetchLocationList(
+  //       context,
+  //       "",
+  //       1,
+  //       40,
+  //       widget.accountId,
+  //       widget.subAccountId,
+  //       widget.initialProcessId,
+  //       widget.initialSubProcessId,
+  //       '',
+  //     );
+  //   } else {
+  //     locationListProvider.fetchCertifiedLocationList(
+  //       context,
+  //       "",
+  //       1,
+  //       40,
+  //       widget.accountId,
+  //       widget.subAccountId,
+  //       widget.initialProcessId,
+  //       widget.initialSubProcessId,
+  //     );
+  //   }
+  //
+  //   Navigator.of(context).pop();
+  // }
+
+  // void applyFilters(BuildContext context) {
+  //   print(sortBy);
+  //   print(sortBy);
+  //   final locationListProvider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //   locationListProvider.countries =
+  //       selectedCountry != null ? [selectedCountry!] : [];
+  //   locationListProvider.zipcode = zipcode ?? '';
+  //   locationListProvider.sortBy = sortBy ?? '';
+  //
+  //   locationListProvider.certifications = [
+  //     if (manualCertified) 'Manual Certified',
+  //     if (autoCertified) 'Auto Certified'
+  //   ];
+  //   print("certifications are: ${locationListProvider.certifications}");
+  //
+  //   // API Format for hazard ratings
+  //   Map<String, List<int>> hazardsForApi = {};
+  //   hazardRatings.forEach((hazard, ratings) {
+  //     if (ratings.isNotEmpty) {
+  //       hazardsForApi[hazard] = ratings;
+  //     }
+  //   });
+  //   print("hazardsForApi: $hazardsForApi");
+  //   locationListProvider.hazardRatings = hazardsForApi;
+  //   // Pass selected geo ratings to the provider or API
+  //   print('location hazard ratings: ${locationListProvider.hazardRatings}');
+  //   locationListProvider.rating = selectedGeoRatings;
+  //   print(hazardsForApi); // Pass this to the API
+  //   locationListProvider.selectedCampusIds = selectedCampusIds;
+  //
+  //   if (widget.showGeoRatings) {
+  //     Provider.of<MyLocationListProvider>(context, listen: false)
+  //         .fetchLocationList(
+  //             context,
+  //             "",
+  //             1,
+  //             40,
+  //             widget.accountId,
+  //             widget.subAccountId,
+  //             widget.initialProcessId,
+  //             widget.initialSubProcessId,
+  //             '');
+  //   } else {
+  //     Provider.of<MyLocationListProvider>(context, listen: false)
+  //         .fetchCertifiedLocationList(
+  //       context,
+  //       "",
+  //       1,
+  //       40,
+  //       widget.accountId,
+  //       widget.subAccountId,
+  //       widget.initialProcessId,
+  //       widget.initialSubProcessId,
+  //     );
+  //   }
+  //
+  //   Navigator.of(context).pop(); // Close the filter screen
+  // }
 
   // Load initial filters from the provider
   void loadInitialFilters() {
@@ -357,6 +494,8 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 // Hazard Filter with dropdown and multiple rating checkboxes
                 buildHazardFilterWithDropdown(
                     typography, locationListProvider.hazardList),
+                // Data Completeness Slider
+                buildDataCompletenessSlider(typography),
               ],
             );
           }),
@@ -371,7 +510,7 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                 onPressed: () {
                   applyFilters(context);
                 },
-                child: Text('Apply', style: typography.ButtonLarge),
+                child: Text('Apply', style: typography.ButtonLargeBlack),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -380,15 +519,15 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
                   if (widget.showGeoRatings) {
                     Provider.of<MyLocationListProvider>(context, listen: false)
                         .fetchLocationList(
-                      context,
-                      "",
-                      1,
-                      40,
-                      widget.accountId,
-                      widget.subAccountId,
-                      widget.initialProcessId,
-                      widget.initialSubProcessId,''
-                    );
+                            context,
+                            "",
+                            1,
+                            40,
+                            widget.accountId,
+                            widget.subAccountId,
+                            widget.initialProcessId,
+                            widget.initialSubProcessId,
+                            '');
                   } else {
                     Provider.of<MyLocationListProvider>(context, listen: false)
                         .fetchCertifiedLocationList(
@@ -697,6 +836,72 @@ class _ListingsFilterScreenState extends State<ListingsFilterScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget buildDataCompletenessSlider(CustomTypography typography) {
+    return ExpansionTile(
+      title: Text('Data Completeness Score', style: typography.Body1),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// SCORE LABEL
+              Text(
+                'Score:', // ${dataCompletenessScore.toStringAsFixed(1)}',
+                style: typography.Body1,
+              ),
+
+              const SizedBox(height: 12),
+
+              /// SLIDER
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 4,
+                  thumbShape:
+                      const RoundSliderThumbShape(enabledThumbRadius: 8),
+                  overlayShape:
+                      const RoundSliderOverlayShape(overlayRadius: 16),
+                  activeTrackColor: Colors.lightBlue,
+                  inactiveTrackColor: Colors.grey.shade400,
+                  thumbColor: Colors.lightBlueAccent,
+                ),
+                child: Slider(
+                  min: 0,
+                  max: 5,
+                  divisions: 10,
+                  // 👈 0.5 steps
+                  value: dataCompletenessScore,
+                  label: dataCompletenessScore.toStringAsFixed(1),
+                  onChanged: (value) {
+                    setState(() {
+                      dataCompletenessScore =
+                          double.parse(value.toStringAsFixed(1));
+                    });
+                  },
+                ),
+              ),
+
+              /// SCALE LABELS
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(
+                    6,
+                    (index) => Text(
+                      index.toString(),
+                      style: typography.Caption,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

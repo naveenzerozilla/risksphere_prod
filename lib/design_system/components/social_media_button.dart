@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../primitives/custom_typography.dart';
 
 class SocialMediaButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String buttonText;
   final String iconPath;
 
@@ -42,7 +42,8 @@ class SocialMediaButton extends StatelessWidget {
             ),
             label: Text(
               buttonText,
-              style: typography.BottomNavigationActiveLabel.copyWith(color: Theme.of(context).colorScheme.onSurface),
+              style: typography.BottomNavigationActiveLabel.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
           ),
         ),

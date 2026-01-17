@@ -5,6 +5,8 @@ import '../../utils/global_imports.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
 
+import '../payments/purchase_license.dart';
+
 class AccountListScreen extends StatefulWidget {
   static const String routeName = '/accountList';
 
@@ -20,7 +22,8 @@ class _AccountListScreenState extends State<AccountListScreen>
     with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
-  bool hasAnyPlan = false;
+
+  bool isHasAnyPlan = false;
   TabController? _tabController;
   Screens _selectedScreen = Screens.accountList;
   TextEditingController _textEditingController = TextEditingController();
@@ -50,7 +53,8 @@ class _AccountListScreenState extends State<AccountListScreen>
   bool isPgAdmin = false;
   bool isAdmin = false;
   bool isSuperAdmin = false;
-  bool isIndivudual = false;
+
+  // bool isIndivudual = false;
 
   ScrollController _scrollController = ScrollController();
 
@@ -88,10 +92,10 @@ class _AccountListScreenState extends State<AccountListScreen>
     debounce(() async {
       if (!mounted) return;
       _accountQuery = query;
-      print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       provider.page = 1;
-      await provider.fetchAccountList(context, _accountQuery, provider.page, 4);
+      provider.forceReload = true;
+      await provider.fetchAccountList(context, _accountQuery, provider.page, 5);
     });
   }
 
@@ -134,16 +138,43 @@ class _AccountListScreenState extends State<AccountListScreen>
   @override
   void initState() {
     super.initState();
-    _checkFirstTime();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setClaims();
+      _getData();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTime();
+    });
+
     var userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
+
     final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    int tabCount = (trialStatus.isEmpty) ? 4 : 3;
+    int tabCount = (trialStatus.isEmpty) ? 2 : 3;
     _tabController = TabController(length: tabCount, vsync: this);
-    Future.microtask(() => _getData());
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _getData();
-    // });
+  }
+
+  void _setClaims() async {
+    final adminValues = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_PG_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.IS_SUPER_ADMIN),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.Is_Indivudual),
+      SharedPreferenceService.getHasAnyPlan(),
+    ]);
+
+    isPgAdmin = adminValues[0] ?? false;
+    isAdmin = adminValues[1] ?? false;
+    isSuperAdmin = adminValues[2] ?? false;
+    isHasAnyPlan = adminValues[4] ?? false;
+
+    if (mounted) setState(() {});
   }
 
   Future<void> _checkFirstTime() async {
@@ -169,29 +200,19 @@ class _AccountListScreenState extends State<AccountListScreen>
   }
 
   _getData() async {
-    final futures = await Future.wait([
-      SharedPreferenceService.getHasAnyPlan(),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_PG_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_SUPER_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.Is_Indivudual),
-    ]);
+    final prefs = await SharedPreferences.getInstance();
 
-    hasAnyPlan = futures[0] ?? false;
-    isPgAdmin = futures[1] ?? false;
-    isAdmin = futures[2] ?? false;
-    isSuperAdmin = futures[3] ?? false;
-    isIndivudual = futures[4] ?? false;
+    isPgAdmin = prefs.getBool(SharedPreferenceService.IS_PG_ADMIN) ?? false;
+    isAdmin = prefs.getBool(SharedPreferenceService.IS_ADMIN) ?? false;
+    isSuperAdmin =
+        prefs.getBool(SharedPreferenceService.IS_SUPER_ADMIN) ?? false;
 
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
 
-    await accountListProvider.fetchAccountList(context, "", 1, 5);
-    setState(() => _selectedScreen = Screens.accountList);
+    accountListProvider.fetchAccountList(context, "", 1, 5);
+
+    if (mounted) setState(() => _selectedScreen = Screens.accountList);
   }
 
   @override
@@ -269,13 +290,60 @@ class _AccountListScreenState extends State<AccountListScreen>
                 : SizedBox(),
             body: Consumer<UserProfileProvider>(
                 builder: (context, userProfileProvider, child) {
-              return PopScope(
-                canPop: /*_selectedScreen == Screens.connectionList ||
+              final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+
+              return (trialStatus.contains('Expired') && isHasAnyPlan == false)
+                  ? Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.95),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: MessageCard(
+                              messageTextSpans: [
+                                TextSpan(
+                                  text: trialStatus,
+                                  // 'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                                  style: typography.Body1,
+                                ),
+                                // tappable
+                                TextSpan(
+                                  text: ' Upgrade Now!',
+                                  style: typography.Body1.copyWith(
+                                    color: AppColors.primaryMain,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PurchaseLicensePage()));
+                                    },
+                                ),
+                              ],
+                              isError: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : PopScope(
+                      canPop: /*_selectedScreen == Screens.connectionList ||
                           _selectedScreen == Screens.corporateConnectionList,*/
-                    true,
-                onPopInvoked: (canPop) {
-                  print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                  /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
+                          true,
+                      onPopInvoked: (canPop) {
+                        print(
+                            'Can Pop: $canPop, Selected Screen: $_selectedScreen');
+                        /* if (_selectedScreen == Screens.nonCorporateConnectionList) {
                           setState(() {
                             _selectedScreen = Screens.corporateConnectionList;
                           });
@@ -285,210 +353,236 @@ class _AccountListScreenState extends State<AccountListScreen>
                             _selectedScreen = Screens.corporateConnectionList;
                           });
                         }*/
-                },
-                child: Stack(
-                  children: [
-                    // Background image
-                    Positioned.fill(
-                      child: Opacity(
-                        opacity: 0.3,
-                        child: Image.asset(
-                          'assets/images/mesh.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                //
-                                SizedBox(height: CustomSpacing.two),
-
-                                SizedBox(height: CustomSpacing.two),
-                                Container(
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHigh,
-                                    borderRadius: BorderRadius.circular(
-                                        16), // Rounded edges
-                                  ),
+                      },
+                      child: Stack(
+                        children: [
+                          // Background image
+                          Positioned.fill(
+                            child: Opacity(
+                              opacity: 0.3,
+                              child: Image.asset(
+                                'assets/images/mesh.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Column(
+                            children: [
+                              Expanded(
+                                child: Container(
                                   margin: EdgeInsets.symmetric(
-                                      horizontal: 0, vertical: 0),
-                                  child: DefaultTabController(
-                                    length: _tabController!.length,
-                                    child: Column(
-                                      children: <Widget>[
-                                        // Container for the TabBar with arrows
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHigh,
-                                          ),
-                                          height: 50,
-                                          child: Row(
+                                      horizontal: 16, vertical: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      //
+                                      SizedBox(height: CustomSpacing.two),
+
+                                      SizedBox(height: CustomSpacing.two),
+                                      Container(
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHigh,
+                                          borderRadius: BorderRadius.circular(
+                                              16), // Rounded edges
+                                        ),
+                                        margin: EdgeInsets.symmetric(
+                                            horizontal: 0, vertical: 0),
+                                        child: DefaultTabController(
+                                          length: _tabController!.length,
+                                          child: Column(
                                             children: <Widget>[
-                                              // Left arrow button
-                                              IconButton(
-                                                icon: Icon(Icons.arrow_left,
-                                                    color: Colors.grey),
-                                                onPressed: _scrollLeft,
-                                              ),
-                                              // Scrollable TabBar
-                                              Consumer<AccountListProvider>(
-                                                  builder: (context,
-                                                      accountListProvider, _) {
-                                                return Expanded(
-                                                  child: SingleChildScrollView(
-                                                    controller:
-                                                        _scrollController,
-                                                    scrollDirection:
-                                                        Axis.horizontal,
-                                                    child: TabBar(
-                                                      onTap: (index) {
-                                                        // Prevent navigating to "Access Requested" tab
-                                                        // if (index == 3) {
-                                                        //   _tabController?.animateTo(0); // Stay on the first tab (My Accounts)
-                                                        // }
-                                                      },
-                                                      controller:
-                                                          _tabController,
-                                                      tabAlignment:
-                                                          TabAlignment.start,
-                                                      labelStyle:
-                                                          typography.Subtitle2,
-                                                      isScrollable: true,
-                                                      indicatorColor: Colors
-                                                          .lightBlueAccent,
-                                                      labelColor: Colors
-                                                          .lightBlueAccent,
-                                                      unselectedLabelColor:
-                                                          Colors.white,
-                                                      tabs: [
-                                                        Tab(
-                                                          child: Row(
-                                                            children: [
-                                                              Text(
-                                                                'My Accounts',
+                                              // Container for the TabBar with arrows
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHigh,
+                                                ),
+                                                height: 50,
+                                                child: Row(
+                                                  children: <Widget>[
+                                                    // Left arrow button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.arrow_left,
+                                                          color: Colors.grey),
+                                                      onPressed: _scrollLeft,
+                                                    ),
+                                                    // Scrollable TabBar
+                                                    Consumer<
+                                                            AccountListProvider>(
+                                                        builder: (context,
+                                                            accountListProvider,
+                                                            _) {
+                                                      return Expanded(
+                                                        child:
+                                                            SingleChildScrollView(
+                                                          controller:
+                                                              _scrollController,
+                                                          scrollDirection:
+                                                              Axis.horizontal,
+                                                          child: TabBar(
+                                                            onTap: (index) {
+                                                              debugPrint(
+                                                                  'Tab clicked: $index');
+
+                                                              if (index == 0) {
+                                                                _getData();
+                                                              }
+                                                            },
+                                                            controller:
+                                                                _tabController,
+                                                            tabAlignment:
+                                                                TabAlignment
+                                                                    .start,
+                                                            labelStyle:
+                                                                typography
+                                                                    .Subtitle2,
+                                                            isScrollable: true,
+                                                            indicatorColor: Colors
+                                                                .lightBlueAccent,
+                                                            labelColor: Colors
+                                                                .lightBlueAccent,
+                                                            unselectedLabelColor:
+                                                                Colors.white,
+                                                            tabs: [
+                                                              Tab(
+                                                                child: Row(
+                                                                  children: [
+                                                                    Text(
+                                                                      LanguageService.getTranslated(
+                                                                          context,
+                                                                          'my_accounts'),
+                                                                      // 'My Accounts',
+                                                                    ),
+                                                                    accountListProvider.isLoading ||
+                                                                            accountListProvider.accountHits ==
+                                                                                0
+                                                                        ? SizedBox()
+                                                                        : SizedBox(
+                                                                            width:
+                                                                                CustomSpacing.two,
+                                                                          ),
+                                                                    accountListProvider.isLoading ||
+                                                                            accountListProvider.accountHits ==
+                                                                                0
+                                                                        ? SizedBox()
+                                                                        : SizedBox(
+                                                                            height:
+                                                                                25,
+                                                                            child:
+                                                                                Chip(
+                                                                              labelPadding: EdgeInsets.all(0),
+                                                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                                              label: Text(
+                                                                                accountListProvider.accountHits.toString(),
+                                                                                style: typography.BottomNavigationActiveLabel.copyWith(height: -0.6),
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                  ],
+                                                                ),
                                                               ),
-                                                              accountListProvider
-                                                                          .isLoading ||
-                                                                      accountListProvider
-                                                                              .accountHits ==
-                                                                          0
-                                                                  ? SizedBox()
-                                                                  : SizedBox(
-                                                                      width: CustomSpacing
-                                                                          .two,
-                                                                    ),
-                                                              accountListProvider
-                                                                          .isLoading ||
-                                                                      accountListProvider
-                                                                              .accountHits ==
-                                                                          0
-                                                                  ? SizedBox()
-                                                                  : SizedBox(
-                                                                      height:
-                                                                          25,
-                                                                      child:
-                                                                          Chip(
-                                                                        labelPadding:
-                                                                            EdgeInsets.all(0),
-                                                                        materialTapTargetSize:
-                                                                            MaterialTapTargetSize.shrinkWrap,
-                                                                        label:
-                                                                            Text(
-                                                                          accountListProvider
-                                                                              .accountHits
-                                                                              .toString(),
-                                                                          style:
-                                                                              typography.BottomNavigationActiveLabel.copyWith(height: -0.6),
-                                                                        ),
-                                                                      ),
-                                                                    ),
+                                                              // Tab(text: 'Shared'),
+                                                              if (isSuperAdmin ||
+                                                                  isPgAdmin)
+                                                                Tab(
+                                                                  text: LanguageService
+                                                                      .getTranslated(
+                                                                          context,
+                                                                          'configuration'),
+                                                                ),
+                                                              // Tab(
+                                                              //     text:
+                                                              //         'Access Requested'),
                                                             ],
                                                           ),
                                                         ),
-                                                        Tab(text: 'Shared'),
-                                                        if (isSuperAdmin ||
-                                                            isPgAdmin)
-                                                          Tab(
-                                                              text:
-                                                                  'Configuration'),
-                                                        Tab(
-                                                            text:
-                                                                'Access Requested'),
-                                                      ],
+                                                      );
+                                                    }),
+                                                    // Right arrow button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.arrow_right,
+                                                          color: Colors.grey),
+                                                      onPressed: _scrollRight,
                                                     ),
-                                                  ),
-                                                );
-                                              }),
-                                              // Right arrow button
-                                              IconButton(
-                                                icon: Icon(Icons.arrow_right,
-                                                    color: Colors.grey),
-                                                onPressed: _scrollRight,
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                // TabBarView for the tab content
-                                Expanded(
-                                  child: TabBarView(
-                                    controller: _tabController,
-                                    children: [
-                                      _getAccountUI(),
-                                      _getComingSoonUI("shared"),
-                                      if (isSuperAdmin || isPgAdmin) ...[
-                                        ConfigurationTab(),
-                                      ],
-                                      _getComingSoonUI("request"),
-                                      // Consumer<AccountListProvider>(
-                                      //   builder: (context, accountListProvider, _) {
-                                      //     final accountId = accountListProvider.accountList.isNotEmpty
-                                      //         ? accountListProvider.accountList[0].accountId ?? ""
-                                      //         : "";
-                                      //     return DataTab(
-                                      //       accountName: accountListProvider.accountList[0].accountName ?? "",
-                                      //       accountId: accountId,
-                                      //       subaccountId: accountId,
-                                      //     );
-                                      //   },
-                                      // ),
-                                      // DataTab(
-                                      //   accountId:"",
-                                      //   // userProfileProvider.accountList.isNotEmpty
-                                      //   //     ? userProfileProvider.accountList[0].accountId ?? ""
-                                      //   //     : "",
-                                      //   subaccountId: null,
+                                      ),
+                                      // TabBarView for the tab content
+                                      Expanded(
+                                        child: Consumer<AccountListProvider>(
+                                          builder: (context,
+                                              accountListProvider, _) {
+                                            return TabBarView(
+                                              controller: _tabController,
+                                              children: [
+                                                _getAccountUI(),
+                                                if (isSuperAdmin || isPgAdmin)
+                                                  ConfigurationTab(
+                                                    accountName:
+                                                        accountListProvider
+                                                            .showAccountName,
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+
+                                      // Expanded(
+                                      //   child: TabBarView(
+                                      //     controller: _tabController,
+                                      //     children: [
+                                      //       _getAccountUI(),
+                                      //       // _getComingSoonUI("shared"),
+                                      //       if (isSuperAdmin || isPgAdmin) ...[
+                                      //         ConfigurationTab(),
+                                      //       ],
+                                      //       // _getComingSoonUI("request"),
+                                      //       // Consumer<AccountListProvider>(
+                                      //       //   builder: (context, accountListProvider, _) {
+                                      //       //     final accountId = accountListProvider.accountList.isNotEmpty
+                                      //       //         ? accountListProvider.accountList[0].accountId ?? ""
+                                      //       //         : "";
+                                      //       //     return DataTab(
+                                      //       //       accountName: accountListProvider.accountList[0].accountName ?? "",
+                                      //       //       accountId: accountId,
+                                      //       //       subaccountId: accountId,
+                                      //       //     );
+                                      //       //   },
+                                      //       // ),
+                                      //       // DataTab(
+                                      //       //   accountId:"",
+                                      //       //   // userProfileProvider.accountList.isNotEmpty
+                                      //       //   //     ? userProfileProvider.accountList[0].accountId ?? ""
+                                      //       //   //     : "",
+                                      //       //   subaccountId: null,
+                                      //       // ),
+                                      //     ],
+                                      //   ),
                                       // ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    if (_showOverlay) _buildOverlay(),
-                  ],
-                ),
-              );
+                          if (_showOverlay) _buildOverlay(),
+                        ],
+                      ),
+                    );
             }),
           ),
         );
@@ -514,7 +608,7 @@ class _AccountListScreenState extends State<AccountListScreen>
               children: [
                 InkWell(
                   onTap: () async {
-                    const url = 'https://www.youtube.com/watch?v=7kvdDtowGM0';
+                    const url = 'https://youtu.be/v11B3l3Fyuc';
                     if (await canLaunchUrl(Uri.parse(url))) {
                       await launchUrl(Uri.parse(url),
                           mode: LaunchMode.externalApplication);
@@ -579,7 +673,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                         _closeOverlay();
                         _showAddAccountDialog(context);
                       }, //_closeOverlay,
-                      child: const Text("Add Account",
+                      child: Text(
+                          LanguageService.getTranslated(context, "add_account"),
                           style: TextStyle(color: Colors.black)),
                     ),
                   ],
@@ -779,7 +874,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         LanguageService
                                                             .getTranslated(
                                                                 context,
-                                                                "account_list_edit_account_title"),
+                                                                "edit_account"),
                                                         style: typography
                                                             .H5_Regular,
                                                       ),
@@ -794,8 +889,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                 InputDecoration(
                                                               border:
                                                                   OutlineInputBorder(),
-                                                              labelText:
-                                                                  'Account Name',
+                                                              labelText: LanguageService
+                                                                  .getTranslated(
+                                                                      context,
+                                                                      "account_name"),
                                                               labelStyle:
                                                                   typography
                                                                       .Body1,
@@ -823,7 +920,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                         context);
                                                                   },
                                                                   child: Text(
-                                                                    'Cancel',
+                                                                    LanguageService.getTranslated(
+                                                                        context,
+                                                                        "cancel"),
                                                                     style: typography
                                                                         .ButtonLarge,
                                                                   ),
@@ -874,9 +973,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                           },
                                                                           child:
                                                                               Text(
-                                                                            'Update',
+                                                                            LanguageService.getTranslated(context,
+                                                                                "submit"),
                                                                             style:
-                                                                                typography.ButtonLarge,
+                                                                                typography.ButtonLargeBlack,
                                                                           ),
                                                                           type:
                                                                               ButtonType.elevated,
@@ -891,9 +991,19 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                   },
                                                 );
                                               },
-                                              child: Icon(
-                                                Icons.edit,
-                                                size: 16,
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Icon(
+                                                  Icons.edit,
+                                                  color: Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? AppColors.primaryMain
+                                                      : AppColors.primaryMain,
+                                                  size:
+                                                      16, // icon size stays same
+                                                ),
                                               ),
                                             ),
                                     ],
@@ -913,9 +1023,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                     index]
                                                                 .subAccountCount ==
                                                             1
-                                                    ? LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_sub_account_text")
+                                                    ? LanguageService
+                                                        .getTranslated(context,
+                                                            "sub_account")
                                                     : accountListProvider
                                                                 .accountList[
                                                                     index]
@@ -925,7 +1035,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         : LanguageService
                                                             .getTranslated(
                                                                 context,
-                                                                "account_list_app_sub_accounts_text"),
+                                                                "sub_account"),
                                                 style: typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
@@ -939,55 +1049,54 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                 style: typography.Caption),
                                           ],
                                         ),
-                                  !accountListProvider.showSOVCount
-                                      ? SizedBox()
-                                      : Row(
-                                          children: [
-                                            Text(
-                                                accountListProvider
-                                                                .accountList[
-                                                                    index]
-                                                                .sovCount !=
-                                                            null &&
-                                                        accountListProvider
-                                                                .accountList[
-                                                                    index]
-                                                                .sovCount ==
-                                                            1
-                                                    ? LanguageService.getTranslated(
-                                                        context,
-                                                        "account_list_app_sov_text")
-                                                    : accountListProvider
-                                                                .accountList[
-                                                                    index]
-                                                                .sovCount ==
-                                                            null
-                                                        ? ""
-                                                        : LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "account_list_app_sovs_text"),
-                                                style: typography.Caption),
-                                            SizedBox(
-                                              width: CustomSpacing.two,
-                                            ),
-                                            Text(
-                                                accountListProvider
-                                                        .accountList[index]
-                                                        .sovCount
-                                                        ?.toString() ??
-                                                    "",
-                                                style: typography.Caption),
-                                          ],
-                                        ),
+                                  // !accountListProvider.showSOVCount
+                                  //     ? SizedBox()
+                                  //     : Row(
+                                  //         children: [
+                                  //           Text(
+                                  //               accountListProvider
+                                  //                               .accountList[
+                                  //                                   index]
+                                  //                               .sovCount !=
+                                  //                           null &&
+                                  //                       accountListProvider
+                                  //                               .accountList[
+                                  //                                   index]
+                                  //                               .sovCount ==
+                                  //                           1
+                                  //                   ? LanguageService.getTranslated(
+                                  //                       context,
+                                  //                       "account_list_app_sov_text")
+                                  //                   : accountListProvider
+                                  //                               .accountList[
+                                  //                                   index]
+                                  //                               .sovCount ==
+                                  //                           null
+                                  //                       ? ""
+                                  //                       : LanguageService
+                                  //                           .getTranslated(
+                                  //                               context,
+                                  //                               "account_list_app_sovs_text"),
+                                  //               style: typography.Caption),
+                                  //           SizedBox(
+                                  //             width: CustomSpacing.two,
+                                  //           ),
+                                  //           Text(
+                                  //               accountListProvider
+                                  //                       .accountList[index]
+                                  //                       .sovCount
+                                  //                       ?.toString() ??
+                                  //                   "",
+                                  //               style: typography.Caption),
+                                  //         ],
+                                  //       ),
                                   !accountListProvider.showOwner
                                       ? SizedBox()
                                       : Row(
                                           children: [
                                             Text(
                                                 LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_owner_text"),
+                                                    context, "owner"),
                                                 style: typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
@@ -1055,20 +1164,20 @@ class _AccountListScreenState extends State<AccountListScreen>
                           child: Row(
                             children: [
                               // Icon with text
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Transfer account
-                                  _showTransferDialog(context,
-                                      accountListProvider.accountList[index]);
-                                },
-                                icon: const Icon(Symbols.share_windows),
-                                label: Text('Transfer',
-                                    style: typography.Caption.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? AppColors.white
-                                            : AppColors.black)),
-                              ),
+                              // TextButton.icon(
+                              //   onPressed: () {
+                              //     // Transfer account
+                              //     _showTransferDialog(context,
+                              //         accountListProvider.accountList[index]);
+                              //   },
+                              //   icon: const Icon(Symbols.share_windows),
+                              //   label: Text('Transfer',
+                              //       style: typography.Caption.copyWith(
+                              //           color: Theme.of(context).brightness ==
+                              //                   Brightness.dark
+                              //               ? AppColors.white
+                              //               : AppColors.black)),
+                              // ),
                               //SizedBox(),
 
                               const Spacer(),
@@ -1096,10 +1205,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     barrierDismissible: false,
                                     builder: (context) {
                                       return AlertDialog(
-
                                         title: Text(
-                                          LanguageService.getTranslated(context,
-                                              "account_list_app_duplicate_title"),
+                                          LanguageService.getTranslated(
+                                              context, "duplicate_account"),
                                           style: typography.H5_Regular,
                                         ),
                                         content: Column(
@@ -1108,7 +1216,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             Text(
                                               LanguageService.getTranslated(
                                                   context,
-                                                  "account_list_app_duplicate_text"),
+                                                  "confirm_duplicate_account"),
                                               style: typography.Body1,
                                             ),
                                             SizedBox(height: CustomSpacing.two),
@@ -1122,9 +1230,10 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                     onPressed: () =>
                                                         Navigator.pop(context),
                                                     child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "account_list_app_duplicate_cancel"),
+                                                      LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "cancel"),
                                                       style: typography
                                                           .ButtonLarge,
                                                     ),
@@ -1151,42 +1260,53 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                           2),
                                                             ))
                                                           : CustomButton(
-                                                        onPressed: () async {
-                                                          final provider = Provider.of<AccountListProvider>(context, listen: false);
+                                                              onPressed:
+                                                                  () async {
+                                                                final provider =
+                                                                    Provider.of<
+                                                                            AccountListProvider>(
+                                                                        context,
+                                                                        listen:
+                                                                            false);
 
-                                                          // 👉 START LOADER
-                                                          provider.isDuplicateLoading = true;
-                                                          provider.notifyListeners();
+                                                                provider.isDuplicateLoading =
+                                                                    true;
+                                                                provider
+                                                                    .notifyListeners();
 
-                                                          try {
-                                                            // 1️⃣ Duplicate the Account
-                                                            await provider.duplicateAccount(
-                                                              context,
-                                                              provider.accountList[index].accountId!,
-                                                            );
+                                                                try {
+                                                                  await provider
+                                                                      .duplicateAccount(
+                                                                    context,
+                                                                    provider
+                                                                        .accountList[
+                                                                            index]
+                                                                        .accountId!,
+                                                                  );
+                                                                  provider.forceReload =
+                                                                      true;
+                                                                  await provider
+                                                                      .fetchAccountList(
+                                                                    context,
+                                                                    _accountQuery,
+                                                                    1,
+                                                                    5,
+                                                                  );
+                                                                } finally {
+                                                                  provider.isDuplicateLoading =
+                                                                      false;
+                                                                  provider
+                                                                      .notifyListeners();
+                                                                }
 
-                                                            await provider.fetchAccountList(
-                                                              context,
-                                                              _accountQuery,
-                                                              1,
-                                                              3,
-                                                            );
-
-                                                          } finally {
-
-                                                            provider.isDuplicateLoading = false;
-                                                            provider.notifyListeners();
-                                                          }
-
-                                                          // 3️⃣ Close Dialog
-                                                          Navigator.pop(context);
-                                                        },
-
+                                                                Navigator.pop(
+                                                                    context);
+                                                              },
                                                               child: Text(
                                                                 LanguageService
                                                                     .getTranslated(
                                                                         context,
-                                                                        "account_list_app_duplicate_duplicate"),
+                                                                        "duplicate"),
                                                               ),
                                                               type: ButtonType
                                                                   .elevated,
@@ -1202,7 +1322,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                     },
                                   );
                                 },
-                                tooltip: 'Duplicate',
+                                tooltip: LanguageService.getTranslated(
+                                    context, "duplicate"),
                               ),
 
                               Consumer<AccountListProvider>(
@@ -1218,14 +1339,17 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         builder: (context) {
                                           return AlertDialog(
                                             title: Text(
-                                              'Delete Account',
+                                              LanguageService.getTranslated(
+                                                  context, "delete_account"),
                                               style: typography.H5_Regular,
                                             ),
                                             content: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  'Are you sure you want to delete the account?',
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "confirm_delete_account"),
                                                   style: typography.Body1,
                                                 ),
                                                 SizedBox(
@@ -1233,7 +1357,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                 ),
                                                 Row(
                                                   children: [
-                                                    // Cancel Button
                                                     Expanded(child: Consumer<
                                                             AccountListProvider>(
                                                         builder: (context,
@@ -1248,7 +1371,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                             LanguageService
                                                                 .getTranslated(
                                                                     context,
-                                                                    "account_list_app_duplicate_cancel"),
+                                                                    "cancel"),
                                                             style: typography
                                                                 .ButtonLarge,
                                                           ),
@@ -1256,57 +1379,75 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                               ButtonType.text);
                                                     })),
                                                     Expanded(
-                                                      child: Consumer<AccountListProvider>(
-                                                        builder: (context, provider, child) {
-                                                          return provider.isDeleteLocationLoading
+                                                      child: Consumer<
+                                                          AccountListProvider>(
+                                                        builder: (context,
+                                                            provider, child) {
+                                                          return provider
+                                                                  .isDeleteLocationLoading
                                                               ? Center(
-                                                            child: SizedBox(
-                                                              height: 28,
-                                                              width: 28,
-                                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                                            ),
-                                                          )
+                                                                  child:
+                                                                      SizedBox(
+                                                                    height: 28,
+                                                                    width: 28,
+                                                                    child: CircularProgressIndicator(
+                                                                        strokeWidth:
+                                                                            2),
+                                                                  ),
+                                                                )
                                                               : CustomButton(
-                                                            onPressed: () async {
-                                                              // 👉 START LOADER
-                                                              provider.isDeleteLocationLoading = true;
-                                                              provider.notifyListeners();
+                                                                  onPressed:
+                                                                      () async {
+                                                                    provider.isDeleteLocationLoading =
+                                                                        true;
+                                                                    provider
+                                                                        .notifyListeners();
 
-                                                              bool isSuccess = false;
+                                                                    bool
+                                                                        isSuccess =
+                                                                        false;
 
-                                                              try {
+                                                                    try {
+                                                                      isSuccess =
+                                                                          await provider
+                                                                              .deleteAccount(
+                                                                        context,
+                                                                        provider
+                                                                            .accountList[index]
+                                                                            .accountId!,
+                                                                      );
+                                                                      if (isSuccess) {
+                                                                        provider.forceReload =
+                                                                            true;
+                                                                        await provider
+                                                                            .fetchAccountList(
+                                                                          context,
+                                                                          _accountQuery,
+                                                                          1,
+                                                                          5,
+                                                                        );
 
-                                                                isSuccess = await provider.deleteAccount(
-                                                                  context,
-                                                                  provider.accountList[index].accountId!,
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                      }
+                                                                    } finally {
+                                                                      provider.isDeleteLocationLoading =
+                                                                          false;
+                                                                      provider
+                                                                          .notifyListeners();
+                                                                    }
+                                                                  },
+                                                                  child: Text(
+                                                                    LanguageService.getTranslated(
+                                                                        context,
+                                                                        "delete"),
+                                                                  ),
+                                                                  type: ButtonType
+                                                                      .elevated,
                                                                 );
-
-                                                                // 2️⃣ Refresh list ONLY if delete succeeded
-                                                                if (isSuccess) {
-                                                                  await provider.fetchAccountList(
-                                                                    context,
-                                                                    _accountQuery,
-                                                                    1, // reset first page
-                                                                    5, // page size
-                                                                  );
-
-                                                                  // 3️⃣ Close dialog after full success
-                                                                  Navigator.pop(context);
-                                                                }
-
-                                                              } finally {
-                                                                // 👉 STOP LOADER
-                                                                provider.isDeleteLocationLoading = false;
-                                                                provider.notifyListeners();
-                                                              }
-                                                            },
-                                                            child: Text("Delete"),
-                                                            type: ButtonType.elevated,
-                                                          );
                                                         },
                                                       ),
                                                     )
-
                                                   ],
                                                 ),
                                               ],
@@ -1315,7 +1456,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         },
                                       );
                                     },
-                                    tooltip: 'Delete',
+                                    tooltip: LanguageService.getTranslated(
+                                        context, "delete"),
                                   );
                                 },
                               )
@@ -1539,8 +1681,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        LanguageService.getTranslated(
-                            context, "account_list_app_add_account_title"),
+                        LanguageService.getTranslated(context, "add_account"),
                         style: typography.H5_Regular,
                       ),
                       SizedBox(height: 16.0),
@@ -1588,11 +1729,9 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         )
                                       : null,
                                   labelText: LanguageService.getTranslated(
-                                      context,
-                                      "account_list_app_add_account_title"),
+                                      context, "add_account"),
                                   hintText: LanguageService.getTranslated(
-                                      context,
-                                      "account_list_app_add_account_title"),
+                                      context, "add_account"),
                                   border: const OutlineInputBorder(),
                                 ),
                               ),
@@ -1645,11 +1784,12 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(SnackBar(
                                                       content: Text(
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_add_account_empty_text_error"),
-                                                style: typography.Body1,
-                                              )));
+                                                          LanguageService
+                                                              .getTranslated(
+                                                                  context,
+                                                                  "account_list_app_add_account_empty_text_error"),
+                                                          style: typography
+                                                              .ButtonLargeBlack)));
                                               return;
                                             }
 
@@ -1690,8 +1830,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             //         "account_list_app_request_access_text")
                                             //     :
                                             LanguageService.getTranslated(
-                                                context,
-                                                "account_list_app_submit_text"),
+                                                context, "submit"),
                                             style: typography.ButtonLargeBlack,
                                           ),
                                           type: ButtonType.elevated,
@@ -1708,8 +1847,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                               Navigator.pop(context);
                             },
                             child: Text(
-                              LanguageService.getTranslated(
-                                  context, "account_list_app_cancel_text"),
+                              LanguageService.getTranslated(context, "cancel"),
                               style: typography.ButtonLarge,
                             ),
                             type: ButtonType.text,
@@ -1775,7 +1913,7 @@ class _AccountListScreenState extends State<AccountListScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${LanguageService.getTranslated(context, "account_list_app_title")} ',
+              '${LanguageService.getTranslated(context, "my_accounts")} ',
               style: typography.Body1,
             ),
           ],
@@ -1787,7 +1925,6 @@ class _AccountListScreenState extends State<AccountListScreen>
           child: TextField(
             controller: _textEditingController,
             onChanged: (query) {
-              print("Query: ${_textEditingController.text}");
               accountsSearchClient(query);
               setState(() {
                 _accountQuery = query;
@@ -1806,13 +1943,28 @@ class _AccountListScreenState extends State<AccountListScreen>
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              hintText: LanguageService.getTranslated(
-                  context, "account_list_search_hint"),
+              hintText: LanguageService.getTranslated(context, "search"),
               hintStyle: typography.Body2,
             ),
           ),
         ),
         SizedBox(height: CustomSpacing.four),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Consumer<AccountListProvider>(
+                builder: (context, accountListProvider, _) {
+              return Text(
+                accountListProvider.showAccountName?.trim().isNotEmpty == true
+                    ? accountListProvider.showAccountName.toString() == "null"
+                        ? "Account Name"
+                        : accountListProvider.showAccountName.toString()
+                    : 'Account Name',
+              );
+            }),
+          ],
+        ),
         // List of accounts
         Expanded(
           child: Selector<AccountListProvider,
@@ -1848,8 +2000,11 @@ class _AccountListScreenState extends State<AccountListScreen>
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  await Provider.of<AccountListProvider>(context, listen: false)
-                      .fetchAccountList(context, _accountQuery, 1, 5);
+                  final provider =
+                      Provider.of<AccountListProvider>(context, listen: false);
+                  provider.forceReload = true;
+                  await provider.fetchAccountList(
+                      context, provider.lastSearchQuery, 1, 5);
                 },
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (scrollInfo) {
@@ -1869,7 +2024,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                         );
                       } else {
                         debugPrint(
-                            "✅ All data loaded (${provider.accountList.length} / ${provider.accountHits})");
+                            "All data loaded (${provider.accountList.length} / ${provider.accountHits})");
                       }
                     }
 

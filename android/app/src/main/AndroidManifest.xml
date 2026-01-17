@@ -2,21 +2,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.risksphere.green.qa">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -69,8 +62,10 @@
             <!-- Deep Link & App Link Configuration -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="web.risksphere.site"
                     android:pathPrefix="/learner"
@@ -85,25 +80,31 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="auth"
-                    android:scheme="msaleb81a783-765c-482d-8fcb-6440ab1d1201" />
+                    android:scheme="msal184459ca-bb23-407f-845c-720d49b25768" />
+                <!--                    android:scheme="msaleb81a783-765c-482d-8fcb-6440ab1d1201" />-->
             </intent-filter>
         </activity>
 
         <activity
             android:name="net.openid.appauth.RedirectUriReceiverActivity"
-            android:theme="@style/Theme.AppCompat.Translucent.NoTitleBar"
             android:exported="true"
+            android:theme="@style/Theme.AppCompat.Translucent.NoTitleBar"
             tools:node="replace">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="com.risksphere.green.qa"
-                    android:host="oauth2redirect"/>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="oauth2redirect"
+                    android:scheme="com.risksphere.green.qa" />
             </intent-filter>
         </activity>
 

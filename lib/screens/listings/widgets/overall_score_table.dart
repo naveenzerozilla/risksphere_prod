@@ -45,53 +45,63 @@ class _LocationTableState extends State<LocationTable> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      provider = context.read<MyLocationListProvider>();
+    provider = context.read<MyLocationListProvider>();
 
-// 🟢 First API call for page 1
-      provider!
-          .fetchLocationList(
+    // 1️⃣ Start FIRST API immediately (no delay)
+    Future.microtask(() => _loadFirstPage());
+
+    // 2️⃣ Setup scroll listener – optimized
+    _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadFirstPage() async {
+    await provider!.fetchLocationList(
+      context,
+      "",
+      1,
+      rowsPerPage,
+      widget.accountID,
+      widget.subAccountID,
+      widget.initialProcessId,
+      widget.initialSubProcessId,
+      widget.sovId,
+    );
+
+    // Update hazard columns without blocking UI
+    if (provider!.myLocationList.isNotEmpty) {
+      final first = provider!.myLocationList.first;
+      if (first.hazard != null) {
+        // schedule UI update for next microtask
+        Future.microtask(() {
+          if (mounted) {
+            setState(() {
+              hazardColumns = first.hazard!.keys.toList();
+            });
+          }
+        });
+      }
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !provider!.isNextPageLoading &&
+        provider!.page < provider!.totalPages) {
+      provider!.page++;
+
+      provider!.fetchLocationList(
         context,
         "",
-        1,
+        provider!.page,
         rowsPerPage,
         widget.accountID,
         widget.subAccountID,
         widget.initialProcessId,
         widget.initialSubProcessId,
         widget.sovId,
-      )
-          .then((_) {
-        if (provider!.myLocationList.isNotEmpty) {
-          final firstLocation = provider!.myLocationList.first;
-          if (firstLocation.hazard != null) {
-            setState(() {
-              hazardColumns = firstLocation.hazard!.keys.toList();
-            });
-          }
-        }
-      });
-      _scrollController.addListener(() {
-        if (_scrollController.position.pixels >=
-                _scrollController.position.maxScrollExtent - 200 &&
-            !provider!.isNextPageLoading &&
-            provider!.page < provider!.totalPages) {
-          provider!.page += 1;
-
-          provider!.fetchLocationList(
-            context,
-            "",
-            provider!.page,
-            rowsPerPage,
-            widget.accountID,
-            widget.subAccountID,
-            widget.initialProcessId,
-            widget.initialSubProcessId,
-            widget.sovId,
-          );
-        }
-      });
-    });
+      );
+    }
   }
 
   List<MyLocation> get pagedLocations {
@@ -112,10 +122,6 @@ class _LocationTableState extends State<LocationTable> {
         child: CircularProgressIndicator(),
       );
     }
-
-// if (hazardColumns.isEmpty) {
-//   return const Center(child: CircularProgressIndicator());
-// }
 
     final int visibleHazardsCount = hazardColumns
         .where((hazard) => columnVisibility[hazard] ?? true)
@@ -152,405 +158,255 @@ class _LocationTableState extends State<LocationTable> {
       ..sort(
           (a, b) => (hazardOrder[a] ?? 999).compareTo(hazardOrder[b] ?? 999));
 
-    return Column(
-      children: [
-// Text("${provider.myLocationList.length} Locations"),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return provider.myLocationList.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "It looks like there is no overall score to show.",
+                style: CustomTypography(context).Body1,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        : Column(
             children: [
-              InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LocationScoreChart()),
-                    );
-                  },
-                  child: Text("See Risk Score",
-                      style: CustomTypography(context).Body1)),
-              Switch(
-                value: showRiskScore,
-                onChanged: (value) {
-                  setState(() {
-                    showRiskScore = value;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        Container(
-          height: MediaQuery.of(context).size.height / 1.9,
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 8,
-                spreadRadius: 2,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Column(
-              children: [
-                // ✅ The DataTable goes first
-                Expanded(
-                  child: DataTable2(
-                    scrollController: _scrollController,
-                    isHorizontalScrollBarVisible: true,
-                    isVerticalScrollBarVisible: true,
-                    headingRowColor: WidgetStateProperty.all(
-                      Theme.of(context).colorScheme.surfaceContainerLowest,
+// Text("${provider.myLocationList.length} Locations"),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const LocationScoreChart()),
+                          );
+                        },
+                        child: Text(LanguageService.getTranslated(
+                            context,
+                            "see_risk_score"),
+                            style: CustomTypography(context).Body1)),
+                    Switch(
+                      value: showRiskScore,
+                      onChanged: (value) {
+                        setState(() {
+                          showRiskScore = value;
+                        });
+                      },
                     ),
-                    columnSpacing: 0,
-                    fixedTopRows: 1,
-                    fixedLeftColumns: 1,
-                    minWidth: dynamicMinWidth,
-                    horizontalMargin: 12,
-                    bottomMargin: 20,
-                    dividerThickness: 1,
-                    dataRowHeight: !showRiskScore ? 200 : null,
-                    border: TableBorder.all(
-                      color: Theme.of(context).colorScheme.surface,
-                      width: 1,
-                      style: BorderStyle.solid,
-                      borderRadius: BorderRadius.circular(12),
+                  ],
+                ),
+              ),
+              Expanded(
+                  child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 2),
                     ),
-                    columns: [
-                      DataColumn2(
-                        fixedWidth: MediaQuery.of(context).size.width * 0.3,
-                        label: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Location',
-                                style: CustomTypography(context).InputLabel),
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert),
-                              onSelected: (String hazard) {
-                                setState(() {
-                                  columnVisibility[hazard] =
-                                      !(columnVisibility[hazard] ?? true);
-                                });
-                              },
-                              itemBuilder: (BuildContext context) {
-                                return [
-                                  PopupMenuItem<String>(
-                                    value: "show",
-                                    child: ListTile(
-                                      leading: const Icon(Icons.visibility),
-                                      title: Text("Show All Hazards",
-                                          style:
-                                              CustomTypography(context).Body2),
-                                      onTap: () {
-                                        setState(() {
-                                          hazardColumns!.forEach((hazard) {
-                                            columnVisibility[hazard] = true;
-                                          });
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: "hide",
-                                    child: ListTile(
-                                      leading: const Icon(Icons.visibility_off),
-                                      title: Text("Hide All Hazards",
-                                          style:
-                                              CustomTypography(context).Body2),
-                                      onTap: () {
-                                        setState(() {
-                                          hazardColumns!.forEach((hazard) {
-                                            columnVisibility[hazard] = false;
-                                          });
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ];
-                              },
-                            ),
-                          ],
-                        ),
-                        size: ColumnSize.L,
-                      ),
-                      DataColumn2(
-                        fixedWidth: MediaQuery.of(context).size.width * 0.3,
-                        size: ColumnSize.L,
-                        label: Text('Geocoding Score',
-                            style: CustomTypography(context).InputLabel),
-                      ),
-                      DataColumn2(
-                        fixedWidth: MediaQuery.of(context).size.width * 0.3,
-                        size: ColumnSize.L,
-                        label: Text('Hazard Score',
-                            style: CustomTypography(context).InputLabel),
-                      ),
-                      ...sortedHazardColumns.map((hazard) {
-                        return DataColumn2(
-                          size: ColumnSize.L,
-                          label: Text(
-                            hazard,
-                            style:
-                                CustomTypography(context).InputLabel.copyWith(
-                                      color: columnVisibility[hazard] == false
-                                          ? Colors.grey
-                                          : null,
-                                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    children: [
+                      // ✅ The DataTable goes first
+                      Expanded(
+                        child: DataTable2(
+                          scrollController: _scrollController,
+                          isHorizontalScrollBarVisible: true,
+                          isVerticalScrollBarVisible: true,
+                          headingRowColor: WidgetStateProperty.all(
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerLowest,
                           ),
-                        );
-                      }).toList(),
-                    ],
-                    rows: provider.myLocationList.map((location) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              location.geocodedAddress ?? '',
-                              style: CustomTypography(context).Body2,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: showRiskScore ? 2 : 7,
-                            ),
+                          columnSpacing: 0,
+                          fixedTopRows: 1,
+                          fixedLeftColumns: 1,
+                          minWidth: dynamicMinWidth,
+                          horizontalMargin: 12,
+                          bottomMargin: 20,
+                          dividerThickness: 1,
+                          dataRowHeight: !showRiskScore ? 200 : null,
+                          border: TableBorder.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 1,
+                            style: BorderStyle.solid,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          DataCell(_renderRiskScore(int.tryParse(
-                                  location.geocodingScore?.toString() ?? '') ??
-                              0)),
-                          DataCell(_renderRiskScore(int.tryParse(
-                                  location.overallScore?.toString() ?? '') ??
-                              0)),
-                          ...sortedHazardColumns.map((hazard) => DataCell(
-                                Container(
-                                  alignment: Alignment.center,
-                                  child: location.hazard?.containsKey(hazard) ??
-                                          false
-                                      ? (showRiskScore
-                                          ? _renderRiskScore(int.tryParse(
-                                              location.hazard?[hazard]?.rating
-                                                      ?.toString() ??
-                                                  ''))
-                                          : _renderFormattedHazardData(
-                                              location.hazard?[hazard],
-                                              int.tryParse(location
-                                                      .hazard?[hazard]?.rating
-                                                      ?.toString() ??
-                                                  '')))
-                                      : Text(
-                                          "-",
-                                          style: CustomTypography(context)
-                                              .Body2
-                                              .copyWith(color: Colors.grey),
+                          columns: [
+                            DataColumn2(
+                              fixedWidth:
+                                  MediaQuery.of(context).size.width * 0.3,
+                              label: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Location',
+                                      style:
+                                          CustomTypography(context).InputLabel),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert),
+                                    onSelected: (String hazard) {
+                                      setState(() {
+                                        columnVisibility[hazard] =
+                                            !(columnVisibility[hazard] ?? true);
+                                      });
+                                    },
+                                    itemBuilder: (BuildContext context) {
+                                      return [
+                                        PopupMenuItem<String>(
+                                          value: "show",
+                                          child: ListTile(
+                                            leading:
+                                                const Icon(Icons.visibility),
+                                            title: Text("Show All Hazards",
+                                                style: CustomTypography(context)
+                                                    .Body2),
+                                            onTap: () {
+                                              setState(() {
+                                                hazardColumns!
+                                                    .forEach((hazard) {
+                                                  columnVisibility[hazard] =
+                                                      true;
+                                                });
+                                              });
+                                            },
+                                          ),
                                         ),
+                                        PopupMenuItem<String>(
+                                          value: "hide",
+                                          child: ListTile(
+                                            leading: const Icon(
+                                                Icons.visibility_off),
+                                            title: Text("Hide All Hazards",
+                                                style: CustomTypography(context)
+                                                    .Body2),
+                                            onTap: () {
+                                              setState(() {
+                                                hazardColumns!
+                                                    .forEach((hazard) {
+                                                  columnVisibility[hazard] =
+                                                      false;
+                                                });
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ];
+                                    },
+                                  ),
+                                ],
+                              ),
+                              size: ColumnSize.L,
+                            ),
+                            DataColumn2(
+                              fixedWidth:
+                                  MediaQuery.of(context).size.width * 0.3,
+                              size: ColumnSize.L,
+                              label: Text('Geocoding Score',
+                                  style: CustomTypography(context).InputLabel),
+                            ),
+                            DataColumn2(
+                              fixedWidth:
+                                  MediaQuery.of(context).size.width * 0.3,
+                              size: ColumnSize.L,
+                              label: Text('Hazard Score',
+                                  style: CustomTypography(context).InputLabel),
+                            ),
+                            ...sortedHazardColumns.map((hazard) {
+                              return DataColumn2(
+                                size: ColumnSize.L,
+                                label: Text(
+                                  hazard,
+                                  style: CustomTypography(context)
+                                      .InputLabel
+                                      .copyWith(
+                                        color: columnVisibility[hazard] == false
+                                            ? Colors.grey
+                                            : null,
+                                      ),
                                 ),
-                              )),
-                        ],
-                      );
-                    }).toList(),
+                              );
+                            }).toList(),
+                          ],
+                          rows: provider.myLocationList.map((location) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Text(
+                                    location.geocodedAddress ?? '',
+                                    style: CustomTypography(context).Body2,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: showRiskScore ? 2 : 7,
+                                  ),
+                                ),
+                                DataCell(_renderRiskScore(int.tryParse(
+                                        location.geocodingScore?.toString() ??
+                                            '') ??
+                                    0)),
+                                DataCell(_renderRiskScore(int.tryParse(
+                                        location.overallScore?.toString() ??
+                                            '') ??
+                                    0)),
+                                ...sortedHazardColumns.map((hazard) => DataCell(
+                                      Container(
+                                        alignment: Alignment.center,
+                                        child: location.hazard
+                                                    ?.containsKey(hazard) ??
+                                                false
+                                            ? (showRiskScore
+                                                ? _renderRiskScore(int.tryParse(
+                                                    location.hazard?[hazard]
+                                                            ?.rating
+                                                            ?.toString() ??
+                                                        ''))
+                                                : _renderFormattedHazardData(
+                                                    location.hazard?[hazard],
+                                                    int.tryParse(location
+                                                            .hazard?[hazard]
+                                                            ?.rating
+                                                            ?.toString() ??
+                                                        '')))
+                                            : Text(
+                                                "-",
+                                                style: CustomTypography(context)
+                                                    .Body2
+                                                    .copyWith(
+                                                        color: Colors.grey),
+                                              ),
+                                      ),
+                                    )),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+
+                      // ✅ Loader below the table
+                      if (provider.isNextPageLoading)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 1, top: 8),
+                          child: const CircularProgressIndicator(),
+                        ),
+                    ],
                   ),
                 ),
-
-                // ✅ Loader below the table
-                if (provider.isNextPageLoading)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6, top: 8),
-                    child: const CircularProgressIndicator(),
-                  ),
-              ],
-            ),
-          ),
-        )
-
-        // Container(
-        //   height: MediaQuery.of(context).size.height / 2,
-        //   width: double.infinity,
-        //   margin: const EdgeInsets.symmetric(horizontal: 16),
-        //   decoration: BoxDecoration(
-        //     color: Theme.of(context).colorScheme.surface,
-        //     borderRadius: BorderRadius.circular(12),
-        //     boxShadow: [
-        //       BoxShadow(
-        //         color: Colors.black12,
-        //         blurRadius: 8,
-        //         spreadRadius: 2,
-        //         offset: const Offset(0, 2),
-        //       ),
-        //     ],
-        //   ),
-        //     child: ClipRRect(
-        //       borderRadius: BorderRadius.circular(12),
-        //       child: Stack(
-        //         children: [
-        //           DataTable2(
-        //             scrollController: _scrollController,
-        //             isHorizontalScrollBarVisible: true,
-        //             isVerticalScrollBarVisible: true,
-        //             headingRowColor: WidgetStateProperty.all(
-        //                 Theme.of(context).colorScheme.surfaceContainerLowest),
-        //             columnSpacing: 0,
-        //             fixedTopRows: 1,
-        //             fixedLeftColumns: 1,
-        //             minWidth: dynamicMinWidth,
-        //             horizontalMargin: 12,
-        //             bottomMargin: 20,
-        //             dividerThickness: 1,
-        //             dataRowHeight: !showRiskScore ? 160 : null,
-        //             // Enables dynamic height
-        //             border: TableBorder.all(
-        //               color: Theme.of(context).colorScheme.surface,
-        //               width: 1,
-        //               style: BorderStyle.solid,
-        //               borderRadius: BorderRadius.circular(12),
-        //             ),
-        //             columns: [
-        //               DataColumn2(
-        //                 fixedWidth: MediaQuery.of(context).size.width * 0.3,
-        //                 label: Row(
-        //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //                   children: [
-        //                     Text('Location',
-        //                         style: CustomTypography(context).InputLabel),
-        //                     PopupMenuButton<String>(
-        //                       icon: const Icon(Icons.more_vert),
-        //                       onSelected: (String hazard) {
-        //                         setState(() {
-        //                           columnVisibility[hazard] =
-        //                           !(columnVisibility[hazard] ?? true);
-        //                         });
-        //                       },
-        //                       itemBuilder: (BuildContext context) {
-        //                         return [
-        //                           PopupMenuItem<String>(
-        //                             value: "show",
-        //                             child: ListTile(
-        //                               leading: const Icon(Icons.visibility),
-        //                               title: Text("Show All Hazards",
-        //                                   style: CustomTypography(context).Body2),
-        //                               onTap: () {
-        //                                 setState(() {
-        //                                   hazardColumns!.forEach((hazard) {
-        //                                     columnVisibility[hazard] = true;
-        //                                   });
-        //                                 });
-        //                               },
-        //                             ),
-        //                           ),
-        //                           PopupMenuItem<String>(
-        //                             value: "hide",
-        //                             child: ListTile(
-        //                               leading: const Icon(Icons.visibility_off),
-        //                               title: Text("Hide All Hazards",
-        //                                   style: CustomTypography(context).Body2),
-        //                               onTap: () {
-        //                                 setState(() {
-        //                                   hazardColumns!.forEach((hazard) {
-        //                                     columnVisibility[hazard] = false;
-        //                                   });
-        //                                 });
-        //                               },
-        //                             ),
-        //                           ),
-        //                         ];
-        //                       },
-        //                     ),
-        //                   ],
-        //                 ),
-        //                 size: ColumnSize.L,
-        //               ),
-        //               DataColumn2(
-        //                 fixedWidth: MediaQuery.of(context).size.width * 0.3,
-        //                 size: ColumnSize.L,
-        //                 label: Text('Geocoding Score',
-        //                     style: CustomTypography(context).InputLabel),
-        //               ),
-        //               DataColumn2(
-        //                 fixedWidth: MediaQuery.of(context).size.width * 0.3,
-        //                 size: ColumnSize.L,
-        //                 label: Text('Hazard Score',
-        //                     style: CustomTypography(context).InputLabel),
-        //               ),
-        //               ...sortedHazardColumns.map((hazard) {
-        //                 return DataColumn2(
-        //                   size: ColumnSize.L,
-        //                   label: Text(
-        //                     hazard,
-        //                     style: CustomTypography(context).InputLabel.copyWith(
-        //                         color: columnVisibility[hazard] == false
-        //                             ? Colors.grey
-        //                             : null),
-        //                   ),
-        //                 );
-        //               }).toList(),
-        //             ],
-        //             rows: provider.myLocationList.map((location) {
-        //               return DataRow(
-        //                 cells: [
-        //                   DataCell(
-        //                     Text(
-        //                       location.geocodedAddress ?? '',
-        //                       style: CustomTypography(context).Body2,
-        //                       overflow: TextOverflow.ellipsis,
-        //                       maxLines: showRiskScore ? 4 : 7,
-        //                     ),
-        //                   ),
-        //                   DataCell(_renderRiskScore(int.tryParse(
-        //                       location.geocodingScore?.toString() ?? '') ??
-        //                       0)),
-        //                   DataCell(_renderRiskScore(
-        //                       int.tryParse(location.overallScore?.toString() ?? '') ??
-        //                           0)),
-        //                   ...sortedHazardColumns.map((hazard) => DataCell(
-        //                     Container(
-        //                       width: double.infinity,
-        //                       height: double.infinity,
-        //                       alignment: Alignment.center,
-        //                       child: location.hazard?.containsKey(hazard) ?? false
-        //                           ? (showRiskScore
-        //                           ? _renderRiskScore(int.tryParse(location
-        //                           .hazard?[hazard]?.rating
-        //                           ?.toString() ??
-        //                           ''))
-        //                           : _renderFormattedHazardData(
-        //                           location.hazard?[hazard],
-        //                           int.tryParse(location
-        //                               .hazard?[hazard]?.rating
-        //                               ?.toString() ??
-        //                               '')))
-        //                           : Text(
-        //                         "-",
-        //                         style: CustomTypography(context)
-        //                             .Body2
-        //                             .copyWith(color: Colors.grey),
-        //                       ),
-        //                     ),
-        //                   )),
-        //
-        //                 ],
-        //               );
-        //             }).toList(),
-        //           ),
-        //           if (provider.isNextPageLoading)
-        //             Positioned(
-        //               left: 0,
-        //               right: 0,
-        //               bottom: 22,
-        //               child: Container(
-        //                 height: 48,
-        //                 alignment: Alignment.center,
-        //                 child: const CircularProgressIndicator(),
-        //               ),
-        //             ),
-        //         ],
-        //       ),
-        //     ),
-        // ),
-      ],
-    );
+              )),
+            ],
+          );
   }
 
   Widget _renderRiskScore(int? score) {

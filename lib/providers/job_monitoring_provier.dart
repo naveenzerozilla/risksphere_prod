@@ -280,15 +280,25 @@ class JobMonitoringProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>?> fetchLocationSummary(
-      String accountId, String subaccountId) async {
+      String accountId, String subaccountId,String sovId) async {
     try {
       isSummaryLoading = true; // Trigger loader
       notifyListeners();
       print(
           '${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
-      // Initialize the API service
-      ApiService apiService = ApiService(
-          '${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId');
+      String url =
+          '${AppConstant.LOCATION_SUMMARY}?account_id=$accountId&sub_account_id=$subaccountId';
+
+      // Add sovId ONLY if it is not empty
+      if (sovId.isNotEmpty) {
+        url += '&sovId=$sovId';
+      }
+
+      // Print final URL
+      print(url);
+
+      // Initialize ApiService with the final URL
+      ApiService apiService = ApiService(url);
 
       final response = await apiService.get();
 

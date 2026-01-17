@@ -67,8 +67,6 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
   _getData() async {
     final accountListProvider =
         Provider.of<AccountListProvider>(context, listen: false);
-    final configurationProvider =
-        Provider.of<ConfigurationProvider>(context, listen: false);
     await accountListProvider.fetchPricingList(context, "", 1, 5);
   }
 
@@ -176,11 +174,9 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(),
-                      child:
-                      Platform.isIOS
+                      child: Platform.isIOS
                           ? Container(height: 10)
-                          :
-                      Column(
+                          : Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -390,7 +386,10 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                                               child:
                                                                   Container());
                                                         }
-                                                        return _buildSubscriptionCard(
+                                                        return
+
+
+                                                          _buildSubscriptionCard(
                                                             item, index);
                                                       },
                                                     ),
@@ -497,605 +496,645 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
           expandedCardIndex = expandedCardIndex == index ? null : index;
         });
       },
-      child: Card(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        elevation: 1,
-        margin: const EdgeInsets.fromLTRB(22, 0, 22, 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        children: [
+          index==0?
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            elevation: 1,
+            margin: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      item.planName ?? "Location Count (Hazard)",
-                      maxLines: 2,
-                      style: typography.Body1.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF99CCFF),
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    isExpanded
-                        ? Icons.arrow_drop_up
-                        : Icons.arrow_drop_down_circle_outlined,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ReadMoreText(
-                      text: item.description ?? "Default description...",
-                      trimLines: 10,
-                      colorClickableText: Colors.blueAccent,
-                      trimCollapsedText: 'Read more',
-                      trimExpandedText: 'Show less',
-                      style: typography.Body1.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (Platform.isIOS) ...[
-                SizedBox(height: 16),
-                Container(
-                  child: Text(
-                    "Requires an active license. Please sign in with your licensed account to use this feature.",
-                    style: typography.Body1.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: Color(0xFFFDBE71)),
-                  ),
-                )
-              ] else if (isExpanded) ...[
-                const SizedBox(height: 16),
-                item.planName == "Event Count Cost"
-                    ? DropdownButtonFormField<String>(
-                        value: selection.selectedPlanType,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          labelText: "Subscription Type",
-                        ),
-                        hint: const Text("Subscription Type"),
-                        items: [
-                          if (item.rangeMonth != null &&
-                              item.rangeMonth!.isNotEmpty)
-                            DropdownMenuItem<String>(
-                              value: 'Monthly',
-                              child: Text('Monthly'),
-                            ),
-                          if (item.rangeYear != null &&
-                              item.rangeYear!.isNotEmpty)
-                            DropdownMenuItem<String>(
-                              value: 'Yearly',
-                              child: Text('Yearly'),
-                            ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            print(value);
-                            print("value");
-                            setState(() {
-                              selection.selectedPlanType = value;
-
-                              item.planName == "Event Count Cost"
-                                  ? selection.title = "Event Count Cost"
-                                  : "";
-                              item.planName == "Event Count Cost"
-                                  ? selection.planId = item.planId!
-                                  : '';
-                              item.planName == "Event Count Cost"
-                                  ? selection.planType = item.planType!
-                                  : '';
-                              // item.planName == "Event Count Cost"
-                              //     ? value == 'Monthly'
-                              //         ? selection.priceperuser =
-                              //             item.rangeMonth![0].pricePerUser
-                              //         : selection.priceperuser =
-                              //             item.rangeYear![0].pricePerUser
-                              //     : "";
-                              // item.planName == "Event Count Cost"
-                              //     ? value == 'Monthly'
-                              //         ? selection.licensePrice =
-                              //             item.rangeMonth![0].pricePerUser
-                              //         : selection.priceperuser =
-                              //             item.rangeYear![0].pricePerUser
-                              //     : "";
-                              // selection.userCount = item.planName ==
-                              //         "Event Count Cost"
-                              //     ? (value == 'Monthly'
-                              //         ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
-                              //         : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
-                              //     : selection.userCount;
-                            });
-                          }
-                        },
-                      )
-                    : DropdownButtonFormField<String>(
-                        value: selection.selectedPlanType,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          labelText: "Subscription Type",
-                        ),
-                        hint: const Text("Subscription Type"),
-                        items: [
-                          if (item.rangeMonth != null &&
-                              item.rangeMonth!.isNotEmpty)
-                            DropdownMenuItem<String>(
-                              value: 'Monthly',
-                              child: Text('Monthly'),
-                            ),
-                          if (item.rangeYear != null &&
-                              item.rangeYear!.isNotEmpty)
-                            DropdownMenuItem<String>(
-                              value: 'Yearly',
-                              child: Text('Yearly'),
-                            ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            print(value);
-                            print("value");
-                            setState(() {
-                              selection.selectedPlanType = value;
-                              selection.selectedUserCount = '1-1';
-                              selection.totalPrice = null;
-
-                              item.planName == "Event Count Cost"
-                                  ? value == 'Monthly'
-                                      ? selection.totalPrice =
-                                          item.rangeMonth![0].rangePrice
-                                      : selection.totalPrice =
-                                          item.rangeYear![0].rangePrice
-                                  : "";
-                              item.planName == "Event Count Cost"
-                                  ? selection.title = "Event Count Cost"
-                                  : "";
-                              item.planName == "Event Count Cost"
-                                  ? selection.planId = item.planId!
-                                  : '';
-                              item.planName == "Event Count Cost"
-                                  ? selection.planType = item.planType!
-                                  : '';
-                              item.planName == "Event Count Cost"
-                                  ? value == 'Monthly'
-                                      ? selection.priceperuser =
-                                          item.rangeMonth![0].pricePerUser
-                                      : selection.priceperuser =
-                                          item.rangeYear![0].pricePerUser
-                                  : "";
-                              item.planName == "Event Count Cost"
-                                  ? value == 'Monthly'
-                                      ? selection.licensePrice =
-                                          item.rangeMonth![0].pricePerUser
-                                      : selection.priceperuser =
-                                          item.rangeYear![0].pricePerUser
-                                  : "";
-                              selection.userCount = item.planName ==
-                                      "Event Count Cost"
-                                  ? (value == 'Monthly'
-                                      ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
-                                      : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
-                                  : selection.userCount;
-                            });
-                          }
-                        },
-                      ),
-                const SizedBox(height: 16),
-                item.planName == "Event Count Cost"
-                    ? SizedBox()
-                    : DropdownButtonFormField<String>(
-                        value: userCountOptions
-                                .contains(selection.selectedUserCount)
-                            ? selection.selectedUserCount
-                            : null,
-                        decoration: InputDecoration(
-                          labelText: item.planName == "User License"
-                              ? "Select User"
-                              : "Select Locations",
-                          border: OutlineInputBorder(),
-                          filled: true,
-                        ),
-                        items: userCountOptions.map((rangeLabel) {
-                          return DropdownMenuItem<String>(
-                              value: rangeLabel,
-                              child: Text(
-                                  '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              // Set the selected user count from dropdown value
-                              selection.selectedUserCount = value;
-
-                              // Set title from the item
-                              selection.title =
-                                  item.planName ?? "Location Count (Hazard)";
-
-                              // Find the selected range from the list
-                              final selectedRange =
-                                  selectedRangeList.firstWhere(
-                                (range) =>
-                                    '${range.startCount}-${range.endCount}' ==
-                                    value,
-                                orElse: () => RangeYear(
-                                  startCount: '0',
-                                  endCount: '0',
-                                  pricePerUser: "0",
-                                  rangePrice: 0,
-                                ),
-                              );
-                              // Reformat selected user count (for consistency)
-                              selection.selectedUserCount =
-                                  '${selectedRange.endCount}-${selectedRange.startCount}';
-                              selection.planId = item.planId ?? '';
-                              selection.planType = item.planType ?? '';
-
-                              // Parse start and end counts
-                              int start = int.tryParse(
-                                      selectedRange.startCount.toString()) ??
-                                  0;
-                              int end = int.tryParse(
-                                      selectedRange.endCount.toString()) ??
-                                  0;
-                              int numberOfUsers = end - 0;
-                              selection.userCount =
-                                  start.toString() + '-' + end.toString();
-
-                              print(
-                                  'Selected Range → Start: $start, End: $end');
-                              print(selection.planType.toString());
-                              print(selection.priceperuser.toString());
-                              print(selectedRange.rangePrice.toString());
-
-                              int pricePerUser = int.tryParse(
-                                      selectedRange.pricePerUser.toString()) ??
-                                  0;
-                              print(pricePerUser.toString());
-                              selection.totalPrice =
-                                  selectedRange.rangePrice.toString();
-                              print(totalPrice.toString());
-                              selection.licensePrice =
-                                  selectedRange.rangePrice.toString();
-                              selection.priceperuser =
-                                  selection.licensePrice.toString();
-                            });
-                          }
-                        },
-                      ),
-
-
-                SizedBox(height: 2),
-                if (item.planName == "Event Count Cost" ||
-                    item.planName!.contains('event')) ...[
-                  SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: DropdownButtonFormField<String>(
-                      value: (selection.selectedPlanType.toString() == "Yearly"
-                                      ? item.rangeYear
-                                      : item.rangeMonth)
-                                  ?.any((rangeItem) =>
-                                      rangeItem.vendorId == selectedVendor) ==
-                              true
-                          ? selectedVendor
-                          : null,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[800],
-                        labelText: 'Select Vendor',
-                        labelStyle: const TextStyle(color: Colors.white),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      dropdownColor: Colors.grey[850],
-                      icon: const Icon(Icons.arrow_drop_down,
-                          color: Colors.white),
-                      items: (selection.selectedPlanType.toString() == "Yearly"
-                              ? item.rangeYear
-                              : item.rangeMonth)!
-                          .fold<List<DropdownMenuItem<String>>>([],
-                              (prev, rangeItem) {
-                        if (!prev.any((e) => e.value == rangeItem.vendorId)) {
-                          prev.add(DropdownMenuItem<String>(
-                            value: rangeItem.vendorId,
-                            child: Text(
-                              rangeItem.vendorNameLabel ?? 'Unknown',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ));
-                        }
-                        return prev;
-                      }),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedVendor = value;
-                          selectedHazard = null;
-                          // hazardName = '';
-
-                          final rangeList =
-                              selection.selectedPlanType.toString() == "Yearly"
-                                  ? item.rangeYear
-                                  : item.rangeMonth;
-
-                          final selected =
-                              (rangeList?.any((r) => r.vendorId == value) ??
-                                      false)
-                                  ? rangeList!
-                                      .firstWhere((r) => r.vendorId == value)
-                                  : null;
-
-                          vendorName = selected?.vendorNameLabel ?? 'Unknown';
-                          hazardName = selected?.hazardNameLabel ?? '';
-                          item.planName == "Event Count Cost"
-                              ? selection.title = "Event Count Cost"
-                              : "";
-
-                          print(
-                              "Selected Hazard: $selectedHazard, Name: $hazardName");
-                          // Automatically set hazardName if vendor has only 1 hazard
-                          if (selectedVendor != null) {
-                            final vendorData = vendorList.firstWhere(
-                              (v) => v['vendor_id'] == selectedVendor,
-                              orElse: () => {},
-                            );
-
-                            final hazards =
-                                (vendorData['hazard_commercials'] as List?) ??
-                                    [];
-
-                            if (hazards.length == 1) {
-                              selectedHazard = hazards[0]['hazard_id'];
-                              // hazardName = hazards[0]['hazard_name_label'] ?? '';
-                            }
-                          }
-                        });
-                      },
-                      validator: (value) {
-                        if (isEventCost && (value == null || value.isEmpty)) {
-                          return 'Vendor is required';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  hazardName.toString().isEmpty
-                      ? SizedBox()
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                          child: DropdownButtonFormField<String>(
-                            value: (selection.selectedPlanType.toString() ==
-                                                "Yearly"
-                                            ? item.rangeYear
-                                            : item.rangeMonth)
-                                        ?.any((rangeItem) =>
-                                            rangeItem.hazardNameLabel ==
-                                            hazardName) ==
-                                    true
-                                ? selectedHazard
-                                : null,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.grey[800],
-                              labelText: 'Select Hazard',
-                              labelStyle: const TextStyle(color: Colors.white),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            dropdownColor: Colors.grey[850],
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.white),
-                            items: (selection.selectedPlanType.toString() ==
-                                        "Yearly"
-                                    ? item.rangeYear
-                                    : item.rangeMonth)!
-                                .where((rangeItem) =>
-                                    rangeItem.hazardNameLabel ==
-                                    hazardName) // Filter here
-                                .fold<List<DropdownMenuItem<String>>>([],
-                                    (prev, rangeItem) {
-                              if (!prev
-                                  .any((e) => e.value == rangeItem.hazardId)) {
-                                prev.add(DropdownMenuItem<String>(
-                                  value: rangeItem.hazardId,
-                                  child: Text(
-                                    rangeItem.hazardNameLabel ?? 'Unknown',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ));
-                              }
-                              return prev;
-                            }),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedHazard = value;
-                                final rangeList =
-                                    selection.selectedPlanType.toString() ==
-                                            "Yearly"
-                                        ? item.rangeYear
-                                        : item.rangeMonth;
-
-                                final selected = (rangeList?.any((r) =>
-                                            r.hazardId == value &&
-                                            r.hazardNameLabel == hazardName) ??
-                                        false)
-                                    ? rangeList!.firstWhere((r) =>
-                                        r.hazardId == value &&
-                                        r.hazardNameLabel == hazardName)
-                                    : null;
-
-                                vendorName =
-                                    selected?.vendorNameLabel ?? 'Unknown';
-                                hazardName = selected?.hazardNameLabel ?? '';
-                                item.planName == "Event Count Cost"
-                                    ? selection.title = "Event Count Cost"
-                                    : "";
-
-                                print(
-                                    "Selected Hazard: $selectedHazard, Name: $hazardName");
-
-                                if (selectedVendor != null) {
-                                  final vendorData = vendorList.firstWhere(
-                                    (v) => v['vendor_id'] == selectedVendor,
-                                    orElse: () => {},
-                                  );
-
-                                  final hazards =
-                                      (vendorData['hazard_commercials']
-                                              as List?) ??
-                                          [];
-
-                                  if (hazards.length == 1) {
-                                    selectedHazard = hazards[0]['hazard_id'];
-                                  }
-                                }
-                              });
-                            },
-                            validator: (value) {
-                              if (isEventCost &&
-                                  (value == null || value.isEmpty)) {
-                                return 'Hazard is required';
-                              }
-                              return null;
-                            },
+                  index == 0
+                      ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "SOV Sharing at Zero Cost",
+                          maxLines: 2,
+                          style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF99CCFF),
+                            fontSize: 18,
                           ),
                         ),
-                  const SizedBox(height: 20),
-                  hazardName.toString().isEmpty
-                      ? SizedBox()
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                          child: DropdownButtonFormField<String>(
-                            value: selection.selectedUserCount != null &&
-                                    userCountOptions
-                                        .contains(selection.selectedUserCount)
+                      ),
+                     Text("\$0",style: TextStyle(fontSize: 20,fontWeight: FontWeight.w800),)
+                    ],
+                  )
+                      : Container(),
+
+
+              ]),
+            ),
+          ):Container(),
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            elevation: 1,
+            margin: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.planName ?? "Location Count (Hazard)",
+                          maxLines: 2,
+                          style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF99CCFF),
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isExpanded
+                            ? Icons.arrow_drop_up
+                            : Icons.arrow_drop_down_circle_outlined,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ReadMoreText(
+                          text: item.description ?? "Default description...",
+                          trimLines: 10,
+                          colorClickableText: Colors.blueAccent,
+                          trimCollapsedText: 'Read more',
+                          trimExpandedText: 'Show less',
+                          style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (Platform.isIOS) ...[
+                    SizedBox(height: 16),
+                    Container(
+                      child: Text(
+                        "Please visit https://app.risksphere.ai/ and sign in with your credentials to upgrade your account.",
+                        style: typography.Body1.copyWith(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            color: Color(0xFFFDBE71)),
+                      ),
+                    )
+                  ] else if (isExpanded) ...[
+                    const SizedBox(height: 16),
+                    item.planName == "Event Count Cost"
+                        ? DropdownButtonFormField<String>(
+                            value: selection.selectedPlanType,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              labelText: "Subscription Type",
+                            ),
+                            hint: const Text("Subscription Type"),
+                            items: [
+                              if (item.rangeMonth != null &&
+                                  item.rangeMonth!.isNotEmpty)
+                                DropdownMenuItem<String>(
+                                  value: 'Monthly',
+                                  child: Text('Monthly'),
+                                ),
+                              if (item.rangeYear != null &&
+                                  item.rangeYear!.isNotEmpty)
+                                DropdownMenuItem<String>(
+                                  value: 'Yearly',
+                                  child: Text('Yearly'),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                print(value);
+                                print("value");
+                                setState(() {
+                                  selection.selectedPlanType = value;
+
+                                  item.planName == "Event Count Cost"
+                                      ? selection.title = "Event Count Cost"
+                                      : "";
+                                  item.planName == "Event Count Cost"
+                                      ? selection.planId = item.planId!
+                                      : '';
+                                  item.planName == "Event Count Cost"
+                                      ? selection.planType = item.planType!
+                                      : '';
+                                  // item.planName == "Event Count Cost"
+                                  //     ? value == 'Monthly'
+                                  //         ? selection.priceperuser =
+                                  //             item.rangeMonth![0].pricePerUser
+                                  //         : selection.priceperuser =
+                                  //             item.rangeYear![0].pricePerUser
+                                  //     : "";
+                                  // item.planName == "Event Count Cost"
+                                  //     ? value == 'Monthly'
+                                  //         ? selection.licensePrice =
+                                  //             item.rangeMonth![0].pricePerUser
+                                  //         : selection.priceperuser =
+                                  //             item.rangeYear![0].pricePerUser
+                                  //     : "";
+                                  // selection.userCount = item.planName ==
+                                  //         "Event Count Cost"
+                                  //     ? (value == 'Monthly'
+                                  //         ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
+                                  //         : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
+                                  //     : selection.userCount;
+                                });
+                              }
+                            },
+                          )
+                        : DropdownButtonFormField<String>(
+                            value: selection.selectedPlanType,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              labelText: "Subscription Type",
+                            ),
+                            hint: const Text("Subscription Type"),
+                            items: [
+                              if (item.rangeMonth != null &&
+                                  item.rangeMonth!.isNotEmpty)
+                                DropdownMenuItem<String>(
+                                  value: 'Monthly',
+                                  child: Text('Monthly'),
+                                ),
+                              if (item.rangeYear != null &&
+                                  item.rangeYear!.isNotEmpty)
+                                DropdownMenuItem<String>(
+                                  value: 'Yearly',
+                                  child: Text('Yearly'),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                print(value);
+                                print("value");
+                                setState(() {
+                                  selection.selectedPlanType = value;
+                                  selection.selectedUserCount = '1-1';
+                                  selection.totalPrice = null;
+
+                                  item.planName == "Event Count Cost"
+                                      ? value == 'Monthly'
+                                          ? selection.totalPrice =
+                                              item.rangeMonth![0].rangePrice
+                                          : selection.totalPrice =
+                                              item.rangeYear![0].rangePrice
+                                      : "";
+                                  item.planName == "Event Count Cost"
+                                      ? selection.title = "Event Count Cost"
+                                      : "";
+                                  item.planName == "Event Count Cost"
+                                      ? selection.planId = item.planId!
+                                      : '';
+                                  item.planName == "Event Count Cost"
+                                      ? selection.planType = item.planType!
+                                      : '';
+                                  item.planName == "Event Count Cost"
+                                      ? value == 'Monthly'
+                                          ? selection.priceperuser =
+                                              item.rangeMonth![0].pricePerUser
+                                          : selection.priceperuser =
+                                              item.rangeYear![0].pricePerUser
+                                      : "";
+                                  item.planName == "Event Count Cost"
+                                      ? value == 'Monthly'
+                                          ? selection.licensePrice =
+                                              item.rangeMonth![0].pricePerUser
+                                          : selection.priceperuser =
+                                              item.rangeYear![0].pricePerUser
+                                      : "";
+                                  selection.userCount = item.planName ==
+                                          "Event Count Cost"
+                                      ? (value == 'Monthly'
+                                          ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
+                                          : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
+                                      : selection.userCount;
+                                });
+                              }
+                            },
+                          ),
+                    const SizedBox(height: 16),
+                    item.planName == "Event Count Cost"
+                        ? SizedBox()
+                        : DropdownButtonFormField<String>(
+                            value: userCountOptions
+                                    .contains(selection.selectedUserCount)
                                 ? selection.selectedUserCount
                                 : null,
-                            isExpanded: true,
                             decoration: InputDecoration(
+                              labelText: item.planName == "User License"
+                                  ? "Select User"
+                                  : "Select Locations",
+                              border: OutlineInputBorder(),
                               filled: true,
-                              fillColor: Colors.grey[800],
-                              labelText: 'Select Locations',
-                              labelStyle: const TextStyle(color: Colors.white),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
                             ),
-                            dropdownColor: Colors.grey[850],
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.white),
-                            items: (selection.selectedPlanType.toString() ==
-                                        "Yearly"
-                                    ? item.rangeYear
-                                    : item.rangeMonth)!
-                                .where((rangeItem) =>
-                                        rangeItem.hazardNameLabel ==
-                                        hazardName // filter by hazardName
-                                    )
-                                .map((rangeItem) {
+                            items: userCountOptions.map((rangeLabel) {
                               return DropdownMenuItem<String>(
-                                value:
-                                    '${rangeItem.startCount}-${rangeItem.endCount}',
-                                // Use this as value
-                                child: Text(
-                                  '${rangeItem.startCount}-${rangeItem.endCount} Locations',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              );
+                                  value: rangeLabel,
+                                  child: Text(
+                                      '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
                             }).toList(),
                             onChanged: (value) {
-                              setState(() {
-                                selection.selectedUserCount = value!;
-                                final selectedRange =
-                                    (selection.selectedPlanType.toString() ==
-                                                "Yearly"
-                                            ? item.rangeYear
-                                            : item.rangeMonth)!
-                                        .firstWhere(
-                                  (range) =>
-                                      '${range.startCount}-${range.endCount}' ==
-                                          value &&
-                                      range.hazardNameLabel == hazardName,
-                                  // ensure hazardName match
-                                  orElse: () => RangeYear(
-                                    startCount: '0',
-                                    endCount: '0',
-                                    pricePerUser: "0",
-                                    rangePrice: 0,
-                                  ),
-                                );
+                              if (value != null) {
+                                setState(() {
+                                  // Set the selected user count from dropdown value
+                                  selection.selectedUserCount = value;
 
-                                selection.selectedUserCount =
-                                    '${selectedRange.startCount}-${selectedRange.endCount}';
+                                  // Set title from the item
+                                  selection.title =
+                                      item.planName ?? "Location Count (Hazard)";
 
-                                selection.planId = item.planId ?? '';
-                                selection.planType = item.planType ?? '';
-                                selection.title =
-                                    item.planName ?? "Location Count (Hazard)";
+                                  // Find the selected range from the list
+                                  final selectedRange =
+                                      selectedRangeList.firstWhere(
+                                    (range) =>
+                                        '${range.startCount}-${range.endCount}' ==
+                                        value,
+                                    orElse: () => RangeYear(
+                                      startCount: '0',
+                                      endCount: '0',
+                                      pricePerUser: "0",
+                                      rangePrice: 0,
+                                    ),
+                                  );
+                                  // Reformat selected user count (for consistency)
+                                  selection.selectedUserCount =
+                                      '${selectedRange.endCount}-${selectedRange.startCount}';
+                                  selection.planId = item.planId ?? '';
+                                  selection.planType = item.planType ?? '';
 
-                                int start =
-                                    int.tryParse(selectedRange.startCount) ?? 0;
-                                int end =
-                                    int.tryParse(selectedRange.endCount) ?? 0;
-                                int pricePerUser =
-                                    int.tryParse(selectedRange.pricePerUser) ??
-                                        0;
+                                  // Parse start and end counts
+                                  int start = int.tryParse(
+                                          selectedRange.startCount.toString()) ??
+                                      0;
+                                  int end = int.tryParse(
+                                          selectedRange.endCount.toString()) ??
+                                      0;
+                                  int numberOfUsers = end - 0;
+                                  selection.userCount =
+                                      start.toString() + '-' + end.toString();
 
-                                selection.userCount = '${start}-${end}';
-                                selection.totalPrice =
-                                    selectedRange.rangePrice.toString();
-                                selection.licensePrice =
-                                    selectedRange.rangePrice.toString();
-                                selection.priceperuser =
-                                    selectedRange.pricePerUser.toString();
+                                  print(
+                                      'Selected Range → Start: $start, End: $end');
+                                  print(selection.planType.toString());
+                                  print(selection.priceperuser.toString());
+                                  print(selectedRange.rangePrice.toString());
 
-                                print(
-                                    'Selected Range → Start: $start, End: $end');
-                                print('Price per user → $pricePerUser');
-                                print(
-                                    'Total price → ${selectedRange.rangePrice}');
-                                print('Total price → ${selection.totalPrice}');
-                                print(
-                                    'Total price1 → ${selectedRange.pricePerUser}');
-                              });
-                            },
-                            validator: (value) {
-                              if (isEventCost &&
-                                  (value == null || value.isEmpty)) {
-                                return 'Location is required';
+                                  int pricePerUser = int.tryParse(
+                                          selectedRange.pricePerUser.toString()) ??
+                                      0;
+                                  print(pricePerUser.toString());
+                                  selection.totalPrice =
+                                      selectedRange.rangePrice.toString();
+                                  print(totalPrice.toString());
+                                  selection.licensePrice =
+                                      selectedRange.rangePrice.toString();
+                                  selection.priceperuser =
+                                      selection.licensePrice.toString();
+                                });
                               }
-                              return null;
                             },
                           ),
+                    SizedBox(height: 2),
+                    if (item.planName == "Event Count Cost" ||
+                        item.planName!.contains('event')) ...[
+                      SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        child: DropdownButtonFormField<String>(
+                          value: (selection.selectedPlanType.toString() == "Yearly"
+                                          ? item.rangeYear
+                                          : item.rangeMonth)
+                                      ?.any((rangeItem) =>
+                                          rangeItem.vendorId == selectedVendor) ==
+                                  true
+                              ? selectedVendor
+                              : null,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.grey[800],
+                            labelText: 'Select Vendor',
+                            labelStyle: const TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          dropdownColor: Colors.grey[850],
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Colors.white),
+                          items: (selection.selectedPlanType.toString() == "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)!
+                              .fold<List<DropdownMenuItem<String>>>([],
+                                  (prev, rangeItem) {
+                            if (!prev.any((e) => e.value == rangeItem.vendorId)) {
+                              prev.add(DropdownMenuItem<String>(
+                                value: rangeItem.vendorId,
+                                child: Text(
+                                  rangeItem.vendorNameLabel ?? 'Unknown',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ));
+                            }
+                            return prev;
+                          }),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedVendor = value;
+                              selectedHazard = null;
+                              // hazardName = '';
+
+                              final rangeList =
+                                  selection.selectedPlanType.toString() == "Yearly"
+                                      ? item.rangeYear
+                                      : item.rangeMonth;
+
+                              final selected =
+                                  (rangeList?.any((r) => r.vendorId == value) ??
+                                          false)
+                                      ? rangeList!
+                                          .firstWhere((r) => r.vendorId == value)
+                                      : null;
+
+                              vendorName = selected?.vendorNameLabel ?? 'Unknown';
+                              hazardName = selected?.hazardNameLabel ?? '';
+                              item.planName == "Event Count Cost"
+                                  ? selection.title = "Event Count Cost"
+                                  : "";
+
+                              print(
+                                  "Selected Hazard: $selectedHazard, Name: $hazardName");
+                              // Automatically set hazardName if vendor has only 1 hazard
+                              if (selectedVendor != null) {
+                                final vendorData = vendorList.firstWhere(
+                                  (v) => v['vendor_id'] == selectedVendor,
+                                  orElse: () => {},
+                                );
+
+                                final hazards =
+                                    (vendorData['hazard_commercials'] as List?) ??
+                                        [];
+
+                                if (hazards.length == 1) {
+                                  selectedHazard = hazards[0]['hazard_id'];
+                                  // hazardName = hazards[0]['hazard_name_label'] ?? '';
+                                }
+                              }
+                            });
+                          },
+                          validator: (value) {
+                            if (isEventCost && (value == null || value.isEmpty)) {
+                              return 'Vendor is required';
+                            }
+                            return null;
+                          },
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      hazardName.toString().isEmpty
+                          ? SizedBox()
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: DropdownButtonFormField<String>(
+                                value: (selection.selectedPlanType.toString() ==
+                                                    "Yearly"
+                                                ? item.rangeYear
+                                                : item.rangeMonth)
+                                            ?.any((rangeItem) =>
+                                                rangeItem.hazardNameLabel ==
+                                                hazardName) ==
+                                        true
+                                    ? selectedHazard
+                                    : null,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: Colors.grey[800],
+                                  labelText: 'Select Hazard',
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                dropdownColor: Colors.grey[850],
+                                icon: const Icon(Icons.arrow_drop_down,
+                                    color: Colors.white),
+                                items: (selection.selectedPlanType.toString() ==
+                                            "Yearly"
+                                        ? item.rangeYear
+                                        : item.rangeMonth)!
+                                    .where((rangeItem) =>
+                                        rangeItem.hazardNameLabel ==
+                                        hazardName) // Filter here
+                                    .fold<List<DropdownMenuItem<String>>>([],
+                                        (prev, rangeItem) {
+                                  if (!prev
+                                      .any((e) => e.value == rangeItem.hazardId)) {
+                                    prev.add(DropdownMenuItem<String>(
+                                      value: rangeItem.hazardId,
+                                      child: Text(
+                                        rangeItem.hazardNameLabel ?? 'Unknown',
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                    ));
+                                  }
+                                  return prev;
+                                }),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedHazard = value;
+                                    final rangeList =
+                                        selection.selectedPlanType.toString() ==
+                                                "Yearly"
+                                            ? item.rangeYear
+                                            : item.rangeMonth;
+
+                                    final selected = (rangeList?.any((r) =>
+                                                r.hazardId == value &&
+                                                r.hazardNameLabel == hazardName) ??
+                                            false)
+                                        ? rangeList!.firstWhere((r) =>
+                                            r.hazardId == value &&
+                                            r.hazardNameLabel == hazardName)
+                                        : null;
+
+                                    vendorName =
+                                        selected?.vendorNameLabel ?? 'Unknown';
+                                    hazardName = selected?.hazardNameLabel ?? '';
+                                    item.planName == "Event Count Cost"
+                                        ? selection.title = "Event Count Cost"
+                                        : "";
+
+                                    print(
+                                        "Selected Hazard: $selectedHazard, Name: $hazardName");
+
+                                    if (selectedVendor != null) {
+                                      final vendorData = vendorList.firstWhere(
+                                        (v) => v['vendor_id'] == selectedVendor,
+                                        orElse: () => {},
+                                      );
+
+                                      final hazards =
+                                          (vendorData['hazard_commercials']
+                                                  as List?) ??
+                                              [];
+
+                                      if (hazards.length == 1) {
+                                        selectedHazard = hazards[0]['hazard_id'];
+                                      }
+                                    }
+                                  });
+                                },
+                                validator: (value) {
+                                  if (isEventCost &&
+                                      (value == null || value.isEmpty)) {
+                                    return 'Hazard is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                      const SizedBox(height: 20),
+                      hazardName.toString().isEmpty
+                          ? SizedBox()
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: DropdownButtonFormField<String>(
+                                value: selection.selectedUserCount != null &&
+                                        userCountOptions
+                                            .contains(selection.selectedUserCount)
+                                    ? selection.selectedUserCount
+                                    : null,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: Colors.grey[800],
+                                  labelText: 'Select Locations',
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                dropdownColor: Colors.grey[850],
+                                icon: const Icon(Icons.arrow_drop_down,
+                                    color: Colors.white),
+                                items: (selection.selectedPlanType.toString() ==
+                                            "Yearly"
+                                        ? item.rangeYear
+                                        : item.rangeMonth)!
+                                    .where((rangeItem) =>
+                                            rangeItem.hazardNameLabel ==
+                                            hazardName // filter by hazardName
+                                        )
+                                    .map((rangeItem) {
+                                  return DropdownMenuItem<String>(
+                                    value:
+                                        '${rangeItem.startCount}-${rangeItem.endCount}',
+                                    // Use this as value
+                                    child: Text(
+                                      '${rangeItem.startCount}-${rangeItem.endCount} Locations',
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selection.selectedUserCount = value!;
+                                    final selectedRange =
+                                        (selection.selectedPlanType.toString() ==
+                                                    "Yearly"
+                                                ? item.rangeYear
+                                                : item.rangeMonth)!
+                                            .firstWhere(
+                                      (range) =>
+                                          '${range.startCount}-${range.endCount}' ==
+                                              value &&
+                                          range.hazardNameLabel == hazardName,
+                                      // ensure hazardName match
+                                      orElse: () => RangeYear(
+                                        startCount: '0',
+                                        endCount: '0',
+                                        pricePerUser: "0",
+                                        rangePrice: 0,
+                                      ),
+                                    );
+
+                                    selection.selectedUserCount =
+                                        '${selectedRange.startCount}-${selectedRange.endCount}';
+
+                                    selection.planId = item.planId ?? '';
+                                    selection.planType = item.planType ?? '';
+                                    selection.title =
+                                        item.planName ?? "Location Count (Hazard)";
+
+                                    int start =
+                                        int.tryParse(selectedRange.startCount) ?? 0;
+                                    int end =
+                                        int.tryParse(selectedRange.endCount) ?? 0;
+                                    int pricePerUser =
+                                        int.tryParse(selectedRange.pricePerUser) ??
+                                            0;
+
+                                    selection.userCount = '${start}-${end}';
+                                    selection.totalPrice =
+                                        selectedRange.rangePrice.toString();
+                                    selection.licensePrice =
+                                        selectedRange.rangePrice.toString();
+                                    selection.priceperuser =
+                                        selectedRange.pricePerUser.toString();
+
+                                    print(
+                                        'Selected Range → Start: $start, End: $end');
+                                    print('Price per user → $pricePerUser');
+                                    print(
+                                        'Total price → ${selectedRange.rangePrice}');
+                                    print('Total price → ${selection.totalPrice}');
+                                    print(
+                                        'Total price1 → ${selectedRange.pricePerUser}');
+                                  });
+                                },
+                                validator: (value) {
+                                  if (isEventCost &&
+                                      (value == null || value.isEmpty)) {
+                                    return 'Location is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                    ],
+                  ],
                 ],
-              ],
-            ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

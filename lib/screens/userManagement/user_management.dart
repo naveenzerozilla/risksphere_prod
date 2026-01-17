@@ -1197,7 +1197,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 ? FloatingActionButton(
                     onPressed: () async {
                       if (_selectedScreen == Screens.corporateList) {
-                        print("object");
                         selectedCorporateTypeRole = [
                           companyType.Roles(
                             name: "Admin",
@@ -1285,177 +1284,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   )
                 : const SizedBox(),
             body: PopScope(
-              /* canPop: (_selectedScreen == Screens.corporateList && !showCheckbox) ||
-                  _selectedScreen == Screens.defaultScreen,
-              onPopInvoked: (canPop) {
-                print('Can Pop: $canPop, Selected Screen: $_selectedScreen');
-                if (showCheckbox) {
-                  setState(() {
-                    showCheckbox = false;
-                  });
-                  return;
-                }
-                if (_selectedScreen == Screens.corporateAdd) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.corporateEdit) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.corporateEmployeeList) {
-                  setState(() {
-                    if (showCorporateList) {
-                      _selectedScreen = Screens.corporateList;
-                    } else {
-                      Navigator.pop(context);
-                    }
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.corporateEmployeeAdd) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateEmployeeList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.corporateEmployeeEdit) {
-                  setState(() {
-                    _selectedScreen = Screens.corporateEmployeeList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.nonCorporateList) {
-                  setState(() {
-                    if (showCorporateList) {
-                      _selectedScreen = Screens.corporateList;
-                    } else {
-                      if (showCorporateUserListDropdown) {
-                        _selectedScreen = Screens.corporateEmployeeList;
-                      } else if (showUserVerificationTab ||
-                          showCorporateVerificationTab) {
-                        _selectedScreen = Screens.verificationList;
-                      } else {
-                        var companyProvider =
-                            Provider.of<CompanyProvider>(context, listen: false);
-                        companyProvider.viewCompany(context, "true").then((value) {
-                          companyImageUrl = companyProvider.company.companyImageUrl;
-                          selectedCompanyType = CorporateType(
-                            name: companyProvider.company.companyTypeName,
-                            type: companyProvider.company.companyType,
-                          );
-                          _enableDomainCheck =
-                              companyProvider.company.enableDomainCheck ?? false;
-                          selectedCorporateTypeRole = [
-                            companyType.Roles(
-                              name: "Admin",
-                              role: "admin",
-                            )
-                          ];
-                          _domainListController.text =
-                              companyProvider.company.domainList?.join(",") ?? '';
-                          _companyLegalNameController.text =
-                              companyProvider.company.name ?? '';
-                          if (companyProvider.company.displayName != null) {
-                            _companyDisplayNameController.text = companyProvider
-                                        .company.displayName!
-                                        .substring(0, 1)
-                                        .toUpperCase() +
-                                    companyProvider.company.displayName!
-                                        .substring(1) ??
-                                '';
-                          }
-
-                          _adminNameController.text =
-                              companyProvider.company.admins?.name ?? "";
-                          _adminDisplayNameController.text =
-                              companyProvider.company.admins?.displayName ?? '';
-                          _adminEmailController.text =
-                              companyProvider.company.admins?.email ?? '';
-                          _selectedCountryCode = _adminMobileController.text =
-                              companyProvider.company.admins?.mobile ?? '';
-                          print('Country Code: ${countryCodeToIsoCode[_selectedCountryCode]}');
-                          corporateEditMobileController.value = PhoneNumber(isoCode:countryCodeToIsoCode[_selectedCountryCode]?.first??IsoCode.US, nsn: companyProvider.company.admins?.mobile??"");
-                          _enableDomainCheck =
-                              companyProvider.company.enableDomainCheck ?? false;
-                          _selectedCorporateCountryName = companyProvider.company.countryName ?? 'United States';
-                          // Set screen to edit
-
-                          /// Todo: Add the code to view the company profile
-                          _selectedScreen = Screens.corporateProfile;
-                          clearFilters();
-
-                          log(companyProvider.company.toJson().toString());
-                        });
-                        ///Todo: Add the code to view the company profile
-                        _selectedScreen = Screens.corporateProfile;
-                      }
-                    }
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.employeeAdd) {
-                  setState(() {
-                    _selectedScreen = Screens.employeeList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.employeeEdit) {
-                  setState(() {
-                    _selectedScreen = Screens.employeeList;
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.verificationList) {
-                  setState(() {
-                    if (showCorporateVerificationTab && showUserVerificationTab) {
-                      if (_tabVerificationController?.index == 0) {
-                        if (showCorporateList) {
-                          _selectedScreen = Screens.corporateList;
-                        } else {
-                          if (showCorporateUserListDropdown) {
-                            _selectedScreen = Screens.corporateEmployeeList;
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        }
-                      } else if (_tabVerificationController?.index == 1) {
-                        if (showCorporateList) {
-                          _selectedScreen = Screens.corporateList;
-                        } else {
-                          if (showCorporateUserListDropdown) {
-                            _selectedScreen = Screens.corporateEmployeeList;
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        }
-                      }
-                    } else if (showCorporateVerificationTab) {
-                      if (showCorporateList) {
-                        _selectedScreen = Screens.corporateList;
-                      } else {
-                        if (showCorporateUserListDropdown) {
-                          _selectedScreen = Screens.corporateEmployeeList;
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      }
-                    } else if (showUserVerificationTab) {
-                      if (showCorporateList) {
-                        _selectedScreen = Screens.corporateList;
-                      } else {
-                        if (showCorporateUserListDropdown) {
-                          _selectedScreen = Screens.corporateEmployeeList;
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      }
-                    }
-                    clearFilters();
-                  });
-                } else if (_selectedScreen == Screens.nonCorporateEdit) {
-                  setState(() {
-                    _selectedScreen = Screens.nonCorporateList;
-                    clearFilters();
-                  });
-                }
-              },*/
               child: Stack(
                 children: [
                   // Background image
@@ -1486,7 +1314,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'User Management',
+                                            LanguageService.getTranslated(
+                                                context,
+                                                "usermanagement_main_title"),
                                             style:
                                                 typography.H5_Regular.copyWith(
                                               color: Theme.of(context)
@@ -2074,93 +1904,93 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.stretch,
                                         children: [
-                                          CustomButton(
-                                            onPressed: () {
-                                              // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
-                                              if (_filterNameController
-                                                  .text.isNotEmpty) {
-                                                addFilter(
-                                                    _filterNameController.text,
-                                                    'name');
-                                                _filterNameController.clear();
-                                              }
-                                              if (_filterEmailController
-                                                  .text.isNotEmpty) {
-                                                addFilter(
-                                                    _filterEmailController.text,
-                                                    'email');
-                                                _filterEmailController.clear();
-                                              }
-                                              if (_filterPhoneController
-                                                  .text.isNotEmpty) {
-                                                addFilter(
-                                                    _filterPhoneController.text,
-                                                    'phone');
-                                                _filterPhoneController.clear();
-                                              }
-                                              if (_filterCompanyController
-                                                  .text.isNotEmpty) {
-                                                addFilter(
-                                                    _filterCompanyController
-                                                        .text,
-                                                    'company');
-                                                _filterCompanyController
-                                                    .clear();
-                                              }
-                                              if (selectedRoleForFilter !=
-                                                  null) {
-                                                addFilter(
-                                                    selectedRoleForFilter
-                                                            ?.name ??
-                                                        '',
-                                                    'role');
-                                                selectedRoleForFilter = null;
-                                              }
-                                              if (selectedStatus.isNotEmpty) {
-                                                addFilter(
-                                                    selectedStatus, 'status');
-                                                selectedStatus = '';
-                                              }
-                                              // call api and close the drawer
-                                              if (_selectedScreen ==
-                                                  Screens.corporateList) {
-                                                companySearchClient(
-                                                    _corporateSearchController
-                                                        .text);
-                                                Scaffold.of(context)
-                                                    .closeEndDrawer();
-                                              } else if (_selectedScreen ==
-                                                  Screens
-                                                      .corporateEmployeeList) {
-                                                corporateEmployeeSearchClient(
-                                                    _corporateEmployeeSearchController
-                                                        .text);
-                                                Scaffold.of(context)
-                                                    .closeEndDrawer();
-                                              } else if (_selectedScreen ==
-                                                  Screens.nonCorporateList) {
-                                                nonCorporateSearchClient(
-                                                    _nonCorporateSearchController
-                                                        .text);
-                                                Scaffold.of(context)
-                                                    .closeEndDrawer();
-                                              } else if (_selectedScreen ==
-                                                  Screens.employeeList) {
-                                                employeeSearchClient(
-                                                    _employeeSearchController
-                                                        .text);
-                                                Scaffold.of(context)
-                                                    .closeEndDrawer();
-                                              }
-                                            },
-                                            type: ButtonType.filled,
-                                            child: Text(
-                                              LanguageService.getTranslated(
-                                                  context,
-                                                  'usermanagement_app_filter_submit'),
-                                              style: typography.ButtonLarge,
-                                            ),
-                                          ),
+                                          // CustomButton(
+                                          //   onPressed: () {
+                                          //     // Handle submit button, first add to the filter list and then according to the screen we call the respective apis
+                                          //     if (_filterNameController
+                                          //         .text.isNotEmpty) {
+                                          //       addFilter(
+                                          //           _filterNameController.text,
+                                          //           'name');
+                                          //       _filterNameController.clear();
+                                          //     }
+                                          //     if (_filterEmailController
+                                          //         .text.isNotEmpty) {
+                                          //       addFilter(
+                                          //           _filterEmailController.text,
+                                          //           'email');
+                                          //       _filterEmailController.clear();
+                                          //     }
+                                          //     if (_filterPhoneController
+                                          //         .text.isNotEmpty) {
+                                          //       addFilter(
+                                          //           _filterPhoneController.text,
+                                          //           'phone');
+                                          //       _filterPhoneController.clear();
+                                          //     }
+                                          //     if (_filterCompanyController
+                                          //         .text.isNotEmpty) {
+                                          //       addFilter(
+                                          //           _filterCompanyController
+                                          //               .text,
+                                          //           'company');
+                                          //       _filterCompanyController
+                                          //           .clear();
+                                          //     }
+                                          //     if (selectedRoleForFilter !=
+                                          //         null) {
+                                          //       addFilter(
+                                          //           selectedRoleForFilter
+                                          //                   ?.name ??
+                                          //               '',
+                                          //           'role');
+                                          //       selectedRoleForFilter = null;
+                                          //     }
+                                          //     if (selectedStatus.isNotEmpty) {
+                                          //       addFilter(
+                                          //           selectedStatus, 'status');
+                                          //       selectedStatus = '';
+                                          //     }
+                                          //     // call api and close the drawer
+                                          //     if (_selectedScreen ==
+                                          //         Screens.corporateList) {
+                                          //       companySearchClient(
+                                          //           _corporateSearchController
+                                          //               .text);
+                                          //       Scaffold.of(context)
+                                          //           .closeEndDrawer();
+                                          //     } else if (_selectedScreen ==
+                                          //         Screens
+                                          //             .corporateEmployeeList) {
+                                          //       corporateEmployeeSearchClient(
+                                          //           _corporateEmployeeSearchController
+                                          //               .text);
+                                          //       Scaffold.of(context)
+                                          //           .closeEndDrawer();
+                                          //     } else if (_selectedScreen ==
+                                          //         Screens.nonCorporateList) {
+                                          //       nonCorporateSearchClient(
+                                          //           _nonCorporateSearchController
+                                          //               .text);
+                                          //       Scaffold.of(context)
+                                          //           .closeEndDrawer();
+                                          //     } else if (_selectedScreen ==
+                                          //         Screens.employeeList) {
+                                          //       employeeSearchClient(
+                                          //           _employeeSearchController
+                                          //               .text);
+                                          //       Scaffold.of(context)
+                                          //           .closeEndDrawer();
+                                          //     }
+                                          //   },
+                                          //   type: ButtonType.filled,
+                                          //   child: Text(
+                                          //     LanguageService.getTranslated(
+                                          //         context,
+                                          //         'usermanagement_app_filter_submit'),
+                                          //     style: typography.ButtonLarge,
+                                          //   ),
+                                          // ),
                                           SizedBox(width: CustomSpacing.two),
                                           OutlinedButton(
                                             onPressed: () {
@@ -3556,7 +3386,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                             LanguageService.getTranslated(
                                                 context,
                                                 'usermanagement_upload_image_btn'),
-                                            style: typography.ButtonLargeBlack,
+                                            // style: typography.ButtonLargeBlack,
                                             textAlign: TextAlign.center,
                                           ),
                                         );
@@ -4200,7 +4030,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   LanguageService.getTranslated(
                                                       context,
                                                       'usermanagement_save_act_btn'),
-                                                  style: typography.ButtonLargeBlack,
+                                                  style: typography
+                                                      .ButtonLargeBlack,
                                                 ),
                                               ),
                                       ),
@@ -4369,7 +4200,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: CustomSpacing.two,
                                               ),
                                               Text(
-                                                "Upload Image",
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "upload_image"),
+
                                                 style:
                                                     typography.Body1.copyWith(
                                                         color: Colors.black),
@@ -4379,7 +4213,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 height: CustomSpacing.two,
                                               ),
                                               Text(
-                                                "Min 400x400px\nPNG or JPEG",
+                                                "Min 400x401110px\nPNG or JPEG",
                                                 style: typography
                                                     .BottomNavigationActiveLabel,
                                                 textAlign: TextAlign.center,
@@ -4432,7 +4266,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           });
                                                         },
                                                         child: Text(
-                                                          "Upload Image",
+                                                          LanguageService.getTranslated(
+                                                              context,
+                                                              "upload_image"),
                                                           style: typography
                                                               .ButtonLargeBlack,
                                                           textAlign:
@@ -5803,7 +5639,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: Text(
                                     LanguageService.getTranslated(context,
                                         'usermanagement_cuser_upload_image_btn'),
-                                    style: typography.ButtonLarge,
+                                    style: typography.ButtonLargeBlack,
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -6881,7 +6717,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 LanguageService.getTranslated(
                                                     context,
                                                     'usermanagement_cuser_submit_btn'),
-                                                style: typography.ButtonLargeBlack,
+                                                style:
+                                                    typography.ButtonLargeBlack,
                                               ),
                                             ),
                                     );
@@ -9262,7 +9099,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                   child: Text(
                                     LanguageService.getTranslated(context,
                                         'usermanagement_upload_image_btn'),
-                                    style: typography.ButtonLarge,
+                                    style: typography.ButtonLargeBlack,
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -9736,11 +9573,19 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           SizedBox(
             height: CustomSpacing.five,
           ),
-          Text('Verification Requests', style: typography.H7),
+          Text(
+
+              LanguageService.getTranslated(
+                  context, "usermanagement_dash_verification_req"),
+              style: typography.H7),
           SizedBox(
             height: CustomSpacing.three,
           ),
-          Text('Manage all accounts request from this panel',
+          Text(
+
+              LanguageService.getTranslated(
+              context, "usermanagement_verification_req_description"),
+
               style: typography.Body2),
           SizedBox(
             height: CustomSpacing.two,
@@ -9915,7 +9760,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ),
                         TextSpan(
                           text:
-                              ' has requested to create new corporate account for company name ',
+
+                            LanguageService.getTranslated(
+                            context,
+                            "requested_new_corporate_account"),
                           style: typography.Body1_5,
                         ),
                         TextSpan(
@@ -10019,7 +9867,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             }
                           },
                           child: Text(
-                            'Accept',
+                            LanguageService.getTranslated(
+                                context,
+                                "connections_user_connection_accept_btn"),
+
                             style:
                                 typography.BottomNavigationActiveLabel.copyWith(
                                     color: AppColors.primaryMain),
@@ -10081,7 +9932,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           //   }
                           // },
                           child: Text(
-                            'Reject',
+                            LanguageService.getTranslated(
+                                context,
+                                "reject"),
+
                             style:
                                 typography.BottomNavigationActiveLabel.copyWith(
                                     color: AppColors.primaryMain),
@@ -10340,6 +10194,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     return dateFormat.format(dateTime.toLocal());
   }
 
+  int selectedAcceptIndex = -1;
+
   _verificationUserRequestsListItem(
       int index, VerificationProvider verificationProvider) {
     DateTime dateTime =
@@ -10383,7 +10239,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ),
                           TextSpan(
                             text: LanguageService.getTranslated(context,
-                                'usermanagement_app_corporate_verification_request_text'),
+                                'user_verification'),
                             style: typography.Body1_5,
                           ),
                         ],
@@ -10525,159 +10381,104 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
-                    verificationProvider.isCorporateAcceptLoading &&
+                    // ---- ACCEPT BUTTON with LOADER ----
+
+                    verificationProvider.isUserAcceptLoading &&
                             selectedUserVerificationAcceptListIndex == index
-                        ? Center(
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 24),
-                              height: 20,
-                              width: 20,
-                              child: const CircularProgressIndicator(),
-                            ),
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : CustomButton(
-                            type: ButtonType.outlined,
-                            onPressed: () {
-                              print(
-                                  'Total Users Verified: $totalUsersVerified');
-                              print('Total Trial Users: $totalTrialUsers');
-                              print('Trial Status: $trialStatus');
-                              if (trialStatus.isNotEmpty &&
-                                  (totalUsersVerified >= totalTrialUsers)) {
-                                showDialog(
-                                  context: context,
-                                  barrierColor: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerLowest,
-                                  builder: (BuildContext context) {
-                                    return Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(Icons.close),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                        MessageCard(
-                                          isUpgrade: true,
-                                          messageTextSpans: [
-                                            TextSpan(
-                                              text: 'You have ',
-                                              style: CustomTypography(context)
-                                                  .Body1,
-                                            ),
-                                            TextSpan(
-                                              text: 'reached the maximum limit',
-                                              style: CustomTypography(context)
-                                                  .Body1
-                                                  .copyWith(
-                                                    color: AppColors.warning,
-                                                  ),
-                                            ),
-                                            TextSpan(
-                                              text:
-                                                  ' of users for your account. Please upgrade your account to add more users.',
-                                              style: CustomTypography(context)
-                                                  .Body1,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                return;
-                              }
-                              // Handle accept
-                              selectedUserVerificationAcceptListIndex = index;
-                              verificationProvider
-                                  .changeUserVerificationStatus(
-                                      context,
-                                      verificationProvider
-                                              .userRequests[index].id ??
-                                          "",
-                                      true)
-                                  .then((value) {
-                                if (value) {
-                                  if (value) {
-                                    verificationProvider
-                                        .getAllUserRequests(context);
-                                  }
-                                }
+                            type: ButtonType.elevated,
+                            onPressed: () async {
+                              setState(() {
+                                selectedUserVerificationAcceptListIndex = index;
                               });
+
+                              final accepted = await verificationProvider
+                                  .changeUserVerificationStatus(
+                                context,
+                                verificationProvider.userRequests[index].id ??
+                                    "",
+                                true, // ← ACCEPT
+                              );
+
+                              if (accepted) {
+                                await verificationProvider
+                                    .getAllUserRequests(context);
+                                await verificationProvider
+                                    .getAllCorporateRequests(context);
+                              }
+
+                              if (mounted) {
+                                setState(() {
+                                  selectedUserVerificationAcceptListIndex =
+                                      -1; // ← RESET HERE
+                                });
+                              }
                             },
-                            child: Text('Accept',
-                                style: typography.BottomNavigationActiveLabel
-                                    .copyWith(color: AppColors.primaryMain)),
+                            child: Text(
+                              LanguageService.getTranslated(
+                                  context, 'connections_user_connection_accept_btn'),
+                              style: typography.BottomNavigationActiveLabel
+                                  .copyWith(color: Colors.black),
+                            ),
                           ),
+
                     SizedBox(width: CustomSpacing.two),
                     verificationProvider.isUserRejectLoading &&
                             selectedUserVerificationRejectListIndex == index
-                        ? Center(
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 16),
-                              height: 20,
-                              width: 20,
-                              child: const CircularProgressIndicator(),
-                            ),
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : verificationProvider.isUserRejectLoading &&
-                                selectedUserVerificationRejectListIndex == index
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(),
-                              )
-                            : CustomButton(
-                                type: ButtonType.text,
-                                onPressed: () async {
-                                  setState(() {
-                                    selectedUserVerificationRejectListIndex =
-                                        index;
-                                  });
+                        : CustomButton(
+                            type: ButtonType.danger,
+                            onPressed: () async {
+                              setState(() {
+                                selectedUserVerificationRejectListIndex = index;
+                              });
 
-                                  final rejected = await verificationProvider
-                                      .changeUserVerificationStatus(
-                                    context,
-                                    verificationProvider
-                                            .userRequests[index].id ??
-                                        "",
-                                    false,
-                                  );
+                              final rejected = await verificationProvider
+                                  .changeUserVerificationStatus(
+                                context,
+                                verificationProvider.userRequests[index].id ??
+                                    "",
+                                false, // ← REJECT
+                              );
 
-                                  if (rejected) {
-                                    await verificationProvider
-                                        .getAllUserRequests(context);
-                                    // If corporate counts depend on user changes
-                                    await Provider.of<VerificationProvider>(
-                                      context,
-                                      listen: false,
-                                    ).getAllCorporateRequests(context);
-                                  }
+                              if (rejected) {
+                                await verificationProvider
+                                    .getAllUserRequests(context);
+                                await verificationProvider
+                                    .getAllCorporateRequests(context);
+                              } else {
+                                await verificationProvider
+                                    .getAllUserRequests(context);
+                                await verificationProvider
+                                    .getAllCorporateRequests(context);
+                              }
 
-                                  if (mounted) {
-                                    setState(() {
-                                      selectedUserVerificationRejectListIndex =
-                                          -1;
-                                      selectedUserVerificationAcceptListIndex =
-                                          -1;
-                                    });
-                                  }
-                                },
-                                child: Text(
-                                  'Reject',
-                                  style: typography.BottomNavigationActiveLabel
-                                      .copyWith(color: AppColors.primaryMain),
-                                ),
-                              ),
+                              if (mounted) {
+                                setState(() {
+                                  selectedUserVerificationRejectListIndex =
+                                      -1; // RESET
+                                });
+                              }
+                            },
+                            child: Text(
+                              LanguageService.getTranslated(
+                                  context, 'reject'),
+                              style: typography.BottomNavigationActiveLabel
+                                  .copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800),
+                            ),
+                          ),
+
                     const Spacer(),
                     //date
                     // uncomment for time
@@ -10700,6 +10501,38 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     });
   }
 
+  Widget upgradePopup(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        MessageCard(
+          isUpgrade: true,
+          messageTextSpans: [
+            TextSpan(
+              text: 'You have reached the maximum limit of users. ',
+              style: CustomTypography(context).Body1,
+            ),
+            TextSpan(
+              text: 'Please upgrade your account.',
+              style: CustomTypography(context).Body1.copyWith(
+                    color: AppColors.warning,
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   buildDropdownMenuItems() {
     var typography = CustomTypography(context);
     return [
@@ -10709,7 +10542,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             const Icon(Icons.apartment),
             SizedBox(width: CustomSpacing.two),
             Text(
-              'Corporate Management',
+              LanguageService.getTranslated(
+                  context, "corporate_management"),
+
               style: typography.BottomNavigationActiveLabel,
             ),
           ],
@@ -10737,7 +10572,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showCorporateUserListDropdown
           ? DropdownMenuItem(
               child: Text(
-                'Users',
+                LanguageService.getTranslated(
+                    context, "users"),
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Users',
@@ -10746,7 +10582,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showViewCorporate
           ? DropdownMenuItem(
               child: Text(
-                'Company Profiles',
+                LanguageService.getTranslated(
+                    context, "company_profile"),
+
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Company Profiles',
@@ -10755,7 +10593,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showCorporateVerificationTab || showUserVerificationTab
           ? DropdownMenuItem(
               child: Text(
-                'Verification Requests',
+                LanguageService.getTranslated(
+                    context, "verification_requests"),
+
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Verification Requests',

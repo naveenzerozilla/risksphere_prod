@@ -11,7 +11,7 @@ import 'package:http/http.dart' as http;
 import '../payments/purchase_license.dart';
 import 'export_dialogsov.dart';
 
-class MySovList extends StatefulWidget {
+class VendorList extends StatefulWidget {
   final String? status;
   final String? accountID;
   final String? subAccountID;
@@ -20,7 +20,7 @@ class MySovList extends StatefulWidget {
   final String? initialProcessId;
   final String? initialSubProcessId;
 
-  const MySovList({
+  const VendorList({
     super.key,
     this.status,
     this.accountID,
@@ -32,10 +32,10 @@ class MySovList extends StatefulWidget {
   });
 
   @override
-  State<MySovList> createState() => _MySovListState();
+  State<VendorList> createState() => _VendorListState();
 }
 
-class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
+class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   Timer? _refreshTimer;
   static bool _hasActiveTimer = false;
   bool _isExpanded = false;
@@ -136,34 +136,13 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     provider.page = 1;
     provider.totalPages = 1;
     _setClaims();
-    provider.fetchSovList(
+    provider.fetchvendorList(
       context,
       _sovQuery,
       1,
       5,
       widget.status,
     );
-
-    _scrollController1.addListener(() {
-      if (!_scrollController1.hasClients) return;
-
-      if (_scrollController1.position.pixels >=
-              _scrollController1.position.maxScrollExtent - 300 &&
-          !provider.isNextPageLoading &&
-          provider.page < provider.totalPages) {
-        provider.page++;
-
-        provider.fetchSovList(
-          context,
-          // widget.accountID ?? '',
-          // widget.subAccountID ?? '',
-          _sovQuery,
-          provider.page,
-          5,
-          widget.status,
-        );
-      }
-    });
   }
 
   MyLocationListProvider? _myLocationProvider;
@@ -177,7 +156,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     _isDisposed = true;
     _mainTabController?.dispose();
     _masterTabController?.dispose();
-    _tabController.dispose();
+
     _refreshTimer?.cancel();
     _hasActiveTimer = false;
     _isDisposed = true;
@@ -257,21 +236,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                              padding: EdgeInsets.only(left: 20),
-                              child: Text(
-                                widget.status.toString() == "received"
-                                    ? "Received SOVs"
-                                    : widget.status.toString() == "my"
-                                        ? "My SOVs"
-                                        : widget.status.toString() == "shared"
-                                            ? "Shared SOVs"
-                                            : "SOVs",
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
-                              )),
                           Expanded(
                             child: Container(
                               margin: EdgeInsets.symmetric(
@@ -328,1011 +292,929 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
         builder: (context, sovListProvider, user, _) {
       final String trialStatus = user.trialInfo?['status'] ?? '';
 
-      return (trialStatus.contains('Expired') && isHasAnyPlan == false)
-          ? Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: MessageCard(
-                      messageTextSpans: [
-                        TextSpan(
-                          text:
-                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
-                          style: typography.Body1,
-                        ),
-                        // tappable
-                        TextSpan(
-                          text: ' Upgrade Now!',
-                          style: typography.Body1.copyWith(
-                            color: AppColors.primaryMain,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => PurchaseLicensePage()));
-                            },
-                        ),
-                      ],
-                      isError: true,
-                    ),
-                  ),
-                ],
-              ),
+      return sovListProvider.isLoading
+          ? Center(
+              child: CircularProgressIndicator(),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (selectedList.contains(true)) ...[
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-                    padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        // Set your border color here
-                        width: 1.0, // Set the width of the border
-                      ),
-                      //color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    ),
-                    child: Consumer<UserProfileProvider>(
-                        builder: (context, userProfileProvider, child) {
-                      final trialStatus =
-                          userProfileProvider.trialInfo['status'] ?? '';
-                      return Consumer<MyLocationListProvider>(
-                          builder: (context, locationListProvider, child) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (selectedList.contains(true)) ...[
-                              // Show selection count and select all button
-                              SizedBox(width: CustomSpacing.two),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "${selectedList.where((s) => s).length}",
-                                  style: typography.Body1.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+          : (trialStatus.contains('Expired') && isHasAnyPlan == false)
+              ? Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: MessageCard(
+                          messageTextSpans: [
+                            TextSpan(
+                              text:
+                                  'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                              style: typography.Body1,
+                            ),
+                            // tappable
+                            TextSpan(
+                              text: ' Upgrade Now!',
+                              style: typography.Body1.copyWith(
+                                color: AppColors.primaryMain,
                               ),
-                              SizedBox(width: 2),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    final bool selectAll =
-                                        selectedList.any((s) => s == false);
-
-                                    // Apply the same toggle logic as Checkbox
-                                    for (int i = 0;
-                                        i < selectedList.length;
-                                        i++) {
-                                      selectedList[i] = selectAll;
-                                    }
-                                    if (!selectAll) {
-                                      isSelectionMode = false;
-                                    }
-                                  });
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => PurchaseLicensePage()));
                                 },
-                                child: Text(
-                                  // Dynamically show "Select All" or "Deselect All"
-                                  selectedList.any((s) => s == false)
-                                      ? 'Select All'
-                                      : 'Deselect All',
-                                  style: typography.Body1.copyWith(
-                                    color: AppColors.primaryMain,
-                                  ),
-                                ),
-                              ),
-
-                              Spacer(),
-
-                              IconButton(
-                                onPressed: () {
-                                  // Collect selected SOV IDs
-                                  List<String> selectedSovIds = [];
-                                  for (int i = 0;
-                                      i < selectedList.length;
-                                      i++) {
-                                    if (selectedList[i] &&
-                                        i < sovListProvider.sovList.length) {
-                                      final sov = sovListProvider.sovList[i];
-                                      if (sov.sovId != null) {
-                                        selectedSovIds.add(sov.sovId!);
-                                      }
-                                    }
-                                  }
-
-                                  if (selectedSovIds.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text("No items selected")),
-                                    );
-                                    return;
-                                  }
-
-                                  final firstSelectedIndex = selectedList
-                                      .indexWhere((element) => element == true);
-
-                                  final selectedSov = sovListProvider
-                                      .sovList[firstSelectedIndex];
-
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text('Export Selected Sov'),
-                                      content: Text(
-                                          'Are you sure you want to export ${selectedSovIds.length} Sov?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-
-                                            final payload = {
-                                              "fileType": "profile",
-                                              "format": "excel",
-                                              "includeImage": false,
-                                              "sov_ids": selectedSovIds,
-                                              // List<String>
-                                            };
-
-                                            Provider.of<SOVListProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .exportDataSov(
-                                              context,
-                                              selectedSov.accountId!,
-                                              selectedSov.subAccountId!,
-                                              payload,
-                                              // ✔ Only MAP, not LIST
-                                              selectedSov.sovId!,
-                                            );
-                                          },
-                                          child: Text('Export'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                                icon: Icon(Icons.download),
-                                tooltip: 'Export Selected',
-                              ),
-
-                              // IconButton(
-                              //   onPressed: () {
-                              //     // Collect selected SOV IDs
-                              //     List<String> selectedSovIds = [];
-                              //     for (int i = 0; i < selectedList.length; i++) {
-                              //       if (selectedList[i] && i < sovListProvider.sovList.length) {
-                              //         final sov = sovListProvider.sovList[i];
-                              //         if (sov.sovId != null) {
-                              //           selectedSovIds.add(sov.sovId!);
-                              //         }
-                              //       }
-                              //     }
-                              //
-                              //     if (selectedSovIds.isEmpty) {
-                              //       ScaffoldMessenger.of(context).showSnackBar(
-                              //         SnackBar(
-                              //           content: Text(
-                              //             LanguageService.getTranslated(context, "no_items_selected_error"),
-                              //             style: typography.Body1,
-                              //           ),
-                              //         ),
-                              //       );
-                              //       return;
-                              //     }
-                              //
-                              //     // Get the FIRST selected SOV
-                              //     final firstSelectedIndex =
-                              //     selectedList.indexWhere((element) => element == true);
-                              //
-                              //     final selectedSov = sovListProvider.sovList[firstSelectedIndex];
-                              //
-                              //     showDialog(
-                              //       context: context,
-                              //       builder: (context) => AlertDialog(
-                              //         title: Text('Export Selected Locations'),
-                              //         content: Text(
-                              //             'Are you sure you want to export ${selectedSovIds.length} locations?'),
-                              //         actions: [
-                              //           TextButton(
-                              //             onPressed: () => Navigator.pop(context),
-                              //             child: Text('Cancel'),
-                              //           ),
-                              //           TextButton(
-                              //             onPressed: () {
-                              //               Navigator.pop(context);
-                              //
-                              //               showDialog(
-                              //                 context: context,
-                              //                 builder: (BuildContext context) {
-                              //                   return ExportDialogSov(
-                              //                     accountId: selectedSov.accountId!,      // ✅ Correct ID
-                              //                     subAccountId: selectedSov.subAccountId!, // ✅ Correct ID
-                              //                     locationId: [selectedSovIds.first],      // send first selected
-                              //                   );
-                              //                 },
-                              //               );
-                              //             },
-                              //             child: Text('Export', style: typography.Body1),
-                              //           ),
-                              //         ],
-                              //       ),
-                              //     );
-                              //   },
-                              //   icon: Icon(Icons.download),
-                              //   tooltip: 'Export Selected',
-                              // ),
-                              widget.status.toString() == "received" ?Container():
-                              IconButton(
-                                onPressed: () {
-                                  if (selectedList.length !=
-                                      sovListProvider.sovList.length) {
-                                    selectedList = List.generate(
-                                      sovListProvider.sovList.length,
-                                      (_) => false,
-                                    );
-                                  }
-
-                                  final selectedSovs = sovListProvider.sovList
-                                      .asMap()
-                                      .entries
-                                      .where((entry) => selectedList[entry.key])
-                                      .map((entry) => entry.value)
-                                      .toList();
-
-                                  if (selectedSovs.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              "Please select at least one SOV to share.")),
-                                    );
-                                    return;
-                                  }
-
-                                  _showTransferDialog(context, selectedSovs);
-                                },
-                                icon: const Icon(
-                                  Symbols.share,
-                                  color: Color(0xFF90CAF9),
-                                ),
-                                tooltip: 'Share Selected',
-                              ),
-                            ]
+                            ),
                           ],
-                        );
-                      });
-                    }),
-                  ),
-                ],
-                // Search
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  height: 50,
-                  child: TextField(
-                    controller: _textEditingController,
-                    onChanged: (query) => sovSearchClient(query),
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                          isError: true,
+                        ),
                       ),
-                      hintText: LanguageService.getTranslated(
-                          context, "search_by_sov_name"),
-                      hintStyle: typography.Body2,
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _textEditingController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _textEditingController.clear();
-                                sovSearchClient('');
-                              },
-                            )
-                          : null,
-                    ),
+                    ],
                   ),
-                ),
-                SizedBox(height: CustomSpacing.four),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Consumer<SOVListProvider>(
-                      builder: (context, sovListProvider, _) {
-                    // if (sovListProvider.isLoading) {
-                    return Row(
-                      children: [
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "total_sovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.all.toString()),
-                          icon: Icons.file_copy_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_mysovs"),
-                          count:
-                              safeParseInt(sovListProvider.sovCounterList.my),
-                          icon: Icons.file_copy_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_sharedsovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.shared),
-                          icon: Icons.ios_share_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_receivedsovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.received),
-                          icon: Icons.call_received,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "completed_sovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.completed),
-                          icon: Icons.done_all,
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-
-                SizedBox(height: CustomSpacing.four),
-
-                // List of accounts
-                Expanded(
-                  child: Consumer<SOVListProvider>(
-                    builder: (context, sovListProvider, _) {
-                      if (sovListProvider.isLoading) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 100),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      }
-
-                      if (sovListProvider.sovList.isEmpty) {
-                        return RefreshIndicator(
-                          onRefresh: () async {
-                            sovListProvider.page = 1;
-                            await sovListProvider.fetchSovList(
-                              context,
-                              // widget.accountID!,
-                              // widget.subAccountID!,
-                              _sovQuery,
-                              1,
-                              7,
-                              "my",
-                            );
-                          },
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.5,
-                                child: Center(
-                                  child: Text(
-                                    "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
-                                    style: typography.Body1,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          sovListProvider.page = 1;
-                          await sovListProvider.fetchSovList(
-                            context,
-                            // sovListProvider.sovList.first.accountId!,
-                            // sovListProvider.sovList.first.subAccountId!,
-                            _sovQuery,
-                            1,
-                            7,
-                            widget.status,
-                          );
-                        },
-                        child: ListView.builder(
-                          controller: _scrollController1,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: sovListProvider.isNextPageLoading
-                              ? sovListProvider.sovList.length + 1
-                              : sovListProvider.sovList.length,
-                          itemBuilder: (context, index) {
-                            if (index == sovListProvider.sovList.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            return _buildSovCard(index, sovListProvider);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-    });
-  }
-
-  Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
-    var typography = CustomTypography(context);
-
-    final sov = sOVListProvider.sovList[index];
-    final sovId = sov.sovId ?? "";
-
-    final meta = sOVListProvider.sovMeta[sovId];
-    final isRefreshPending = meta?['refresh_pending'] == true;
-    final sharedUsersWithEmail = sov.sharingStatus?.users.values
-            .where((u) => u.email != null && u.email!.trim().isNotEmpty)
-            .toList() ??
-        [];
-    return Opacity(
-      opacity: isRefreshPending ? 0.5 : 1.0, // Fade UI
-      child: IgnorePointer(
-        ignoring: isRefreshPending, // Disable touch
-        child: Container(
-          margin: EdgeInsets.only(top: 0.0, bottom: 8),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              setState(() {
-                if (isSelectionMode) {
-                  selectedList[index] = !selectedList[index];
-                  if (!selectedList.contains(true)) {
-                    isSelectionMode = false;
-                  }
-
-                  selectedSovIds = sOVListProvider.sovList
-                      .asMap()
-                      .entries
-                      .where((entry) => selectedList[entry.key])
-                      .map((entry) => entry.value.sovId)
-                      .whereType<String>()
-                      .toSet();
-                } else {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return SovLocationList(
-                      status:  widget.status.toString() == "received"
-                          ? "Received SOVs"
-                          : widget.status.toString() == "my"
-                          ? "My SOVs"
-                          : widget.status.toString() == "shared"
-                          ? "Shared SOVs"
-                          : "SOVs",
-                      accountID: sov.accountId,
-                      subAccountID: sov.subAccountId,
-                      accountName: "",
-                      subAccountName: "",
-                      sovID: sov.sovId ?? "",
-                      sovName: sov.name ?? "",
-                    );
-                  }));
-                  _isDisposed = true;
-                  _refreshTimer?.cancel();
-                  deBouncer?.cancel();
-                }
-              });
-            },
-            onLongPress: () {
-              setState(() {
-                if (selectedList.length != sOVListProvider.sovList.length) {
-                  selectedList = List.generate(
-                    sOVListProvider.sovList.length,
-                    (_) => false,
-                  );
-                }
-
-                if (isSelectionMode) {
-                  selectedList[index] = !selectedList[index];
-                  if (!selectedList.contains(true)) {
-                    isSelectionMode = false;
-                  }
-                } else {
-                  selectedList[index] = true;
-                  isSelectionMode = true;
-                }
-
-                selectedSovIds = sOVListProvider.sovList
-                    .asMap()
-                    .entries
-                    .where((entry) => selectedList[entry.key])
-                    .map((entry) => entry.value.sovId)
-                    .whereType<String>()
-                    .toSet();
-              });
-            },
-            child: Stack(
-              children: [
-                Row(
+                )
+              : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 230,
-                            width: MediaQuery.of(context).size.width,
-                            child: Card(
-                              color: Colors.white12,
-                              margin: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(width: CustomSpacing.two),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      if (isSelectionMode)
-                                                        Checkbox(
-                                                          value: (index <
-                                                                  selectedList
-                                                                      .length)
-                                                              ? selectedList[
-                                                                  index]
-                                                              : false,
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              if (selectedList
-                                                                      .length !=
-                                                                  sOVListProvider
-                                                                      .sovList
-                                                                      .length) {
-                                                                selectedList =
-                                                                    List.generate(
-                                                                  sOVListProvider
-                                                                      .sovList
-                                                                      .length,
-                                                                  (_) => false,
-                                                                );
-                                                              }
-                                                              selectedList[
-                                                                      index] =
-                                                                  value ??
-                                                                      false;
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Back icon
+                        // Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
 
-                                                              if (!selectedList
-                                                                  .contains(
-                                                                      true)) {
-                                                                isSelectionMode =
-                                                                    false;
-                                                              }
-                                                            });
-                                                          },
-                                                        ),
-                                                      Chip(
-                                                        label: Text(
-                                                          sov.status ??
-                                                              "Pending",
-                                                          style: typography
-                                                              .Body2.copyWith(
-                                                            color: sov.status ==
-                                                                    "completed"
-                                                                ? Colors.white
-                                                                : Color(
-                                                                    0xFFFFA726),
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                        backgroundColor: sov
-                                                                    .status ==
-                                                                "completed"
-                                                            ? Colors.green
-                                                            : Color(0xFFFFA726)
-                                                                .withOpacity(
-                                                                    0.2),
-                                                      ),
-                                                      IconButton(
-                                                        icon: const Icon(Icons
-                                                            .file_copy_rounded),
-                                                        color: AppColors
-                                                            .primaryMain,
-                                                        onPressed: () {
-                                                          // Show duplicate dialog
-                                                          showDialog(
-                                                            context: context,
-                                                            barrierDismissible:
-                                                                false,
-                                                            builder: (context) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                  LanguageService
-                                                                      .getTranslated(
-                                                                          context,
-                                                                          "duplicate_sov_account"),
-                                                                  style: typography
-                                                                      .H5_Regular,
-                                                                ),
-                                                                content: Column(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    Text(
-                                                                      LanguageService.getTranslated(
-                                                                          context,
-                                                                          "sov_list_app_duplicate_text"),
-                                                                      style: typography
-                                                                          .Body1,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height:
-                                                                          CustomSpacing
-                                                                              .two,
-                                                                    ),
-                                                                    Row(
-                                                                      children: [
-                                                                        Expanded(
-                                                                          child:
-                                                                              CustomButton(
-                                                                            onPressed:
-                                                                                () {
-                                                                              // Cancel
-                                                                              Navigator.pop(context);
-                                                                            },
-                                                                            child:
-                                                                                Text(
-                                                                              LanguageService.getTranslated(context, "cancel"),
-                                                                              style: typography.ButtonLarge,
-                                                                            ),
-                                                                            type:
-                                                                                ButtonType.text,
-                                                                          ),
-                                                                        ),
-                                                                        Expanded(
-                                                                          child:
-                                                                              Consumer<SOVListProvider>(
-                                                                            builder: (context,
-                                                                                provider,
-                                                                                child) {
-                                                                              if (provider.isDuplicateLoading) {
-                                                                                return Center(
-                                                                                  child: SizedBox(
-                                                                                    height: 28,
-                                                                                    width: 28,
-                                                                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                                                                  ),
-                                                                                );
-                                                                              }
+                        const SizedBox(width: 10),
 
-                                                                              return CustomButton(
-                                                                                onPressed: () async {
-                                                                                  provider.isDuplicateLoading = true;
-                                                                                  provider.notifyListeners();
-
-                                                                                  try {
-                                                                                    // 1️⃣ Duplicate Sub Account
-                                                                                    await provider.duplicateSov(
-                                                                                      context,
-                                                                                      sov.sovId!,
-                                                                                    );
-
-                                                                                    final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
-                                                                                    Navigator.pop(context);
-                                                                                    await sovProvider.fetchSovList(
-                                                                                      context,
-                                                                                      "",
-                                                                                      1,
-                                                                                      5,
-                                                                                      widget.status,
-                                                                                    );
-                                                                                    sOVListProvider.notifyListeners();
-
-                                                                                    /// STOP LOADER
-                                                                                    // accountListProvider.isRenameLoading = false;
-                                                                                    // accountListProvider.notifyListeners();
-                                                                                  } finally {
-                                                                                    provider.isDuplicateLoading = false;
-                                                                                    provider.notifyListeners();
-                                                                                  }
-                                                                                },
-                                                                                child: Text(
-                                                                                  LanguageService.getTranslated(
-                                                                                    context,
-                                                                                    "duplicate",
-                                                                                  ),
-                                                                                ),
-                                                                                type: ButtonType.elevated,
-                                                                              );
-                                                                            },
-                                                                          ),
-                                                                        )
-                                                                      ],
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              );
-                                                            },
-                                                          );
-                                                        },
-                                                        tooltip: LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "sub_account_list_app_duplicate_tooltip_text"),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                _buildMoreMenu(index),
-                                              ],
-                                            ),
-                                            SizedBox(height: 4),
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                /// LEFT
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      Flexible(
-                                                        child: Text(
-                                                          sov.name ?? "",
-                                                          style: typography
-                                                              .Body2.copyWith(
-                                                            fontSize: 20,
-                                                            fontWeight:
-                                                                FontWeight.w400,
-                                                            color: const Color(
-                                                                0xFF90CAF9),
-                                                          ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 6),
-                                                      InkWell(
-                                                        onTap: () =>
-                                                            _showRenameDialog(
-                                                                index, sov),
-                                                        child: const Icon(
-                                                          Icons.edit,
-                                                          size: 16,
-                                                          color: Colors.white70,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-
-                                                /// RIGHT
-                                                widget.status
-                                                            .toString()
-                                                            .toLowerCase() ==
-                                                        "shared"
-                                                    ? InkWell(
-                                                        onTap: () =>
-                                                            _showSharedWithDialog(
-                                                                context,
-                                                                sov.sharingStatus),
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal: 5,
-                                                                  vertical: 6),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: const Color(
-                                                                0xFF2A2A2A),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        8),
-                                                            border: Border.all(
-                                                                color: const Color(
-                                                                    0xFF3A3A3A)),
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              const Icon(
-                                                                Icons.mail,
-                                                                size: 16,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                              const SizedBox(
-                                                                  width: 4),
-                                                              Text(
-                                                                "${sov.sharingStatus!.users.values.toList().length ?? 0}",
-                                                                style: typography
-                                                                        .Body2
-                                                                    .copyWith(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      )
-                                                    : Container(),
-                                                SizedBox(width: 4),
-                                              ],
-                                            ),
-                                            SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 16,
-                                                  backgroundColor:
-                                                      Colors.grey[800],
-                                                  child: Text(
-                                                    sov.owner?.name
-                                                            ?.substring(0, 2)
-                                                            .toUpperCase() ??
-                                                        "?",
-                                                    style: TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    sov.owner?.name ??
-                                                        "Unknown",
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        const Color(0xFF2A2A2A),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    border: Border.all(
-                                                        color: const Color(
-                                                            0xFF3A3A3A)),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(
-                                                          Icons.location_on,
-                                                          size: 18,
-                                                          color: Colors.white),
-                                                      const SizedBox(width: 2),
-                                                      Text(
-                                                        "${sov.locationCount ?? 0}",
-                                                        style: typography.Body2
-                                                            .copyWith(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                SizedBox(width: 4),
-                                              ],
-                                            ),
-                                            SizedBox(height: 8),
-                                            if ((sov.companyName ?? "")
-                                                .isNotEmpty)
-                                              Text(
-                                                "Company: ${sov.companyName}",
-                                                style:
-                                                    typography.Body2.copyWith(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            SizedBox(height: 8),
-                                            _buildScrollableScores(
-                                              context,
-                                              sov.geocodeAvg.toString(),
-                                              sov.overallAvg.toString(),
-                                              sov.dataCompleteness.toString(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                        // Title
+                        const Text(
+                          'Credit Usage',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
+                        //
+                        // const SizedBox(width: 12),
+
+                        // Push right content to end
+                        // Expanded(
+                        //   child: Column(
+                        //     mainAxisAlignment: MainAxisAlignment.end,
+                        //     children: [
+                        //       Text(
+                        //         '12,480 Credits Remaining',
+                        //         style: TextStyle(
+                        //           color: Colors.white,
+                        //           fontSize: 12,
+                        //         ),
+                        //       ),
+                        //
+                        //       // const SizedBox(width: 10),
+                        //
+                        //       // Progress bar
+                        //       SizedBox(
+                        //         width: 140,
+                        //         height: 8,
+                        //         child: ClipRRect(
+                        //           borderRadius: BorderRadius.circular(4),
+                        //           child: LinearProgressIndicator(
+                        //             value: 0.65, // progress value
+                        //             backgroundColor: Colors.grey.shade700,
+                        //             valueColor: const AlwaysStoppedAnimation<Color>(
+                        //                 AppColors.primaryMain),
+                        //           ),
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
+                        //
+                        // // Info icon
+                        // const Icon(
+                        //   Icons.info_outline,
+                        //   color: AppColors.primaryMain,
+                        //   size: 18,
+                        // ),
+                      ],
+                    ),
+
+                    SizedBox(height: CustomSpacing.two),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Consumer<SOVListProvider>(
+                          builder: (context, sovListProvider, _) {
+                        return Row(
+                          children: [
+                            InfoCard(
+                              title: "Total APIs Used",
+                              count: sovListProvider.cardlist!.totalApisUsed
+                                      .toString() ??
+                                  "",
+                              icon: Icons.checklist,
+                              growthText: "increase vs last month",
+                            ),
+                            InfoCard(
+                              title: "Total Cost Incurred",
+                              count: sovListProvider.cardlist!.totalApiCost
+                                      .toString() ??
+                                  "",
+                              icon: Icons.attach_money,
+                              growthText: "increase vs last month",
+                            ),
+                            InfoCard(
+                              title: "Average Cost per API",
+                              count: sovListProvider.cardlist!.avgCostPerApi
+                                      .toString() ??
+                                  "",
+                              icon: Icons.attach_money,
+                              growthText: "increase vs last month",
+                            ),
+                            InfoCard(
+                              title: "Active Users",
+                              count: sovListProvider.cardlist!.activeVendors
+                                      .toString() ??
+                                  "",
+                              icon: Icons.attach_money,
+                              growthText: "increase vs last month",
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+
+                    usageDetailsHeader(),
+                    // List of accounts
+                    Expanded(
+                      child: Consumer<SOVListProvider>(
+                        builder: (context, sovListProvider, _) {
+                          if (sovListProvider.isLoading) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.only(top: 100),
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              sovListProvider.page = 1;
+                              await sovListProvider.fetchvendorList(
+                                context,
+                                // sovListProvider.sovList.first.accountId!,
+                                // sovListProvider.sovList.first.subAccountId!,
+                                _sovQuery,
+                                1,
+                                7,
+                                widget.status,
+                              );
+                            },
+                            child: ListView.builder(
+                              controller: _scrollController1,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: sovListProvider
+                                  .filteredAutoCompleteList1.length,
+                              itemBuilder: (context, index) {
+                                return _buildSovCard(index, sovListProvider);
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
-                ),
-                if (isRefreshPending)
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.blue,
-                      ),
-                    ),
+                );
+    });
+  }
+
+  Widget _buildSovCard(int index, SOVListProvider provider) {
+    final vendorData = provider.filteredAutoCompleteList1[index];
+    return Card(
+      color: const Color(0xFFFFFFFF).withOpacity(0.12),
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade800, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: 52,
+                    width: 52,
+                    color: Colors.grey.shade800,
+                    child:
+                        const Icon(Icons.location_city, color: Colors.white70),
                   ),
+                ),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        vendorData.companyName.toString(),
+                        style: const TextStyle(
+                          color: Color(0xFF90CAF9),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        vendorData.vendorName ?? "",
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                /// Date
+                Text(
+                  vendorData.date.toString(),
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            _infoRow("User", vendorData?.name ?? "N/A"),
+            _infoRow("Role", "Admin" ?? "—"),
+            _infoRow("Vendor", vendorData.vendorName.toString() ?? "—"),
+            const SizedBox(height: 8),
+            Divider(color: Colors.white.withOpacity(0.2)),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _metricBlock(
+                  title: "API Accessed",
+                  value: vendorData.apisUsed.toString(),
+                ),
+                _metricBlock(
+                  title: "Total Cost",
+                  value: vendorData.totalCost.toString(),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: "$label : ",
+              style: const TextStyle(
+                color: Colors.white60,
+                fontSize: 12,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget usageDetailsHeader() {
+    return Row(
+      children: [
+        /// Title
+        const Text(
+          "Usage Details",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        const Spacer(),
+
+        /// Filter icon
+        IconButton(
+          onPressed: () {
+            // filter action
+          },
+          icon: const Icon(
+            Icons.filter_list_alt,
+            color: Color(0xFF90CAF9),
+            size: 20,
+          ),
+          splashRadius: 20,
+        ),
+
+        /// Share icon
+        IconButton(
+          onPressed: () {
+            // share action
+          },
+          icon: const Icon(
+            Icons.download_rounded,
+            color: Colors.white70,
+            size: 20,
+          ),
+          splashRadius: 20,
+        ),
+      ],
+    );
+  }
+
+  Widget _metricBlock({required String title, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
+  //   var typography = CustomTypography(context);
+  //
+  //   final sov = sOVListProvider.sovList[index];
+  //   final sovId = sov.sovId ?? "";
+  //
+  //   final meta = sOVListProvider.sovMeta[sovId];
+  //   final isRefreshPending = meta?['refresh_pending'] == true;
+  //   final sharedUsersWithEmail = sov.sharingStatus?.users.values
+  //           .where((u) => u.email != null && u.email!.trim().isNotEmpty)
+  //           .toList() ??
+  //       [];
+  //   return Opacity(
+  //     opacity: isRefreshPending ? 0.5 : 1.0, // Fade UI
+  //     child: IgnorePointer(
+  //       ignoring: isRefreshPending, // Disable touch
+  //       child: Container(
+  //         margin: EdgeInsets.only(top: 0.0, bottom: 8),
+  //         child: InkWell(
+  //           borderRadius: BorderRadius.circular(8),
+  //           onTap: () {
+  //             setState(() {
+  //               if (isSelectionMode) {
+  //                 selectedList[index] = !selectedList[index];
+  //                 if (!selectedList.contains(true)) {
+  //                   isSelectionMode = false;
+  //                 }
+  //
+  //                 selectedSovIds = sOVListProvider.sovList
+  //                     .asMap()
+  //                     .entries
+  //                     .where((entry) => selectedList[entry.key])
+  //                     .map((entry) => entry.value.sovId)
+  //                     .whereType<String>()
+  //                     .toSet();
+  //               } else {
+  //                 Navigator.push(context, MaterialPageRoute(builder: (context) {
+  //                   return SovLocationList(
+  //                     accountID: sov.accountId,
+  //                     subAccountID: sov.subAccountId,
+  //                     accountName: "",
+  //                     subAccountName: "",
+  //                     sovID: sov.sovId ?? "",
+  //                     sovName: sov.name ?? "",
+  //                   );
+  //                 }));
+  //                 _isDisposed = true;
+  //                 _refreshTimer?.cancel();
+  //                 deBouncer?.cancel();
+  //               }
+  //             });
+  //           },
+  //           onLongPress: () {
+  //             setState(() {
+  //               if (selectedList.length != sOVListProvider.sovList.length) {
+  //                 selectedList = List.generate(
+  //                   sOVListProvider.sovList.length,
+  //                   (_) => false,
+  //                 );
+  //               }
+  //
+  //               if (isSelectionMode) {
+  //                 selectedList[index] = !selectedList[index];
+  //                 if (!selectedList.contains(true)) {
+  //                   isSelectionMode = false;
+  //                 }
+  //               } else {
+  //                 selectedList[index] = true;
+  //                 isSelectionMode = true;
+  //               }
+  //
+  //               selectedSovIds = sOVListProvider.sovList
+  //                   .asMap()
+  //                   .entries
+  //                   .where((entry) => selectedList[entry.key])
+  //                   .map((entry) => entry.value.sovId)
+  //                   .whereType<String>()
+  //                   .toSet();
+  //             });
+  //           },
+  //           child: Stack(
+  //             children: [
+  //               Row(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Expanded(
+  //                     child: Column(
+  //                       mainAxisAlignment: MainAxisAlignment.start,
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         SizedBox(
+  //                           height: 230,
+  //                           width: MediaQuery.of(context).size.width,
+  //                           child: Card(
+  //                             color: Colors.white12,
+  //                             margin: EdgeInsets.zero,
+  //                             shape: RoundedRectangleBorder(
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Column(
+  //                               crossAxisAlignment: CrossAxisAlignment.start,
+  //                               children: [
+  //                                 Row(
+  //                                   crossAxisAlignment:
+  //                                       CrossAxisAlignment.start,
+  //                                   children: [
+  //                                     SizedBox(width: CustomSpacing.two),
+  //                                     Expanded(
+  //                                       child: Column(
+  //                                         crossAxisAlignment:
+  //                                             CrossAxisAlignment.start,
+  //                                         children: [
+  //                                           Row(
+  //                                             mainAxisAlignment:
+  //                                                 MainAxisAlignment
+  //                                                     .spaceBetween,
+  //                                             children: [
+  //                                               Expanded(
+  //                                                 child: Row(
+  //                                                   children: [
+  //                                                     if (isSelectionMode)
+  //                                                       Checkbox(
+  //                                                         value: (index <
+  //                                                                 selectedList
+  //                                                                     .length)
+  //                                                             ? selectedList[
+  //                                                                 index]
+  //                                                             : false,
+  //                                                         onChanged: (value) {
+  //                                                           setState(() {
+  //                                                             if (selectedList
+  //                                                                     .length !=
+  //                                                                 sOVListProvider
+  //                                                                     .sovList
+  //                                                                     .length) {
+  //                                                               selectedList =
+  //                                                                   List.generate(
+  //                                                                 sOVListProvider
+  //                                                                     .sovList
+  //                                                                     .length,
+  //                                                                 (_) => false,
+  //                                                               );
+  //                                                             }
+  //                                                             selectedList[
+  //                                                                     index] =
+  //                                                                 value ??
+  //                                                                     false;
+  //
+  //                                                             if (!selectedList
+  //                                                                 .contains(
+  //                                                                     true)) {
+  //                                                               isSelectionMode =
+  //                                                                   false;
+  //                                                             }
+  //                                                           });
+  //                                                         },
+  //                                                       ),
+  //                                                     Chip(
+  //                                                       label: Text(
+  //                                                         sov.status ??
+  //                                                             "Pending",
+  //                                                         style: typography
+  //                                                             .Body2.copyWith(
+  //                                                           color: sov.status ==
+  //                                                                   "completed"
+  //                                                               ? Colors.white
+  //                                                               : Color(
+  //                                                                   0xFFFFA726),
+  //                                                           fontWeight:
+  //                                                               FontWeight.w500,
+  //                                                         ),
+  //                                                       ),
+  //                                                       backgroundColor: sov
+  //                                                                   .status ==
+  //                                                               "completed"
+  //                                                           ? Colors.green
+  //                                                           : Color(0xFFFFA726)
+  //                                                               .withOpacity(
+  //                                                                   0.2),
+  //                                                     ),
+  //                                                     IconButton(
+  //                                                       icon: const Icon(Icons
+  //                                                           .file_copy_rounded),
+  //                                                       color: AppColors
+  //                                                           .primaryMain,
+  //                                                       onPressed: () {
+  //                                                         // Show duplicate dialog
+  //                                                         showDialog(
+  //                                                           context: context,
+  //                                                           barrierDismissible:
+  //                                                               false,
+  //                                                           builder: (context) {
+  //                                                             return AlertDialog(
+  //                                                               title: Text(
+  //                                                                 LanguageService
+  //                                                                     .getTranslated(
+  //                                                                         context,
+  //                                                                         "duplicate_sov_account"),
+  //                                                                 style: typography
+  //                                                                     .H5_Regular,
+  //                                                               ),
+  //                                                               content: Column(
+  //                                                                 mainAxisSize:
+  //                                                                     MainAxisSize
+  //                                                                         .min,
+  //                                                                 children: [
+  //                                                                   Text(
+  //                                                                     LanguageService.getTranslated(
+  //                                                                         context,
+  //                                                                         "sov_list_app_duplicate_text"),
+  //                                                                     style: typography
+  //                                                                         .Body1,
+  //                                                                   ),
+  //                                                                   SizedBox(
+  //                                                                     height:
+  //                                                                         CustomSpacing
+  //                                                                             .two,
+  //                                                                   ),
+  //                                                                   Row(
+  //                                                                     children: [
+  //                                                                       Expanded(
+  //                                                                         child:
+  //                                                                             CustomButton(
+  //                                                                           onPressed:
+  //                                                                               () {
+  //                                                                             // Cancel
+  //                                                                             Navigator.pop(context);
+  //                                                                           },
+  //                                                                           child:
+  //                                                                               Text(
+  //                                                                             LanguageService.getTranslated(context, "cancel"),
+  //                                                                             style: typography.ButtonLarge,
+  //                                                                           ),
+  //                                                                           type:
+  //                                                                               ButtonType.text,
+  //                                                                         ),
+  //                                                                       ),
+  //                                                                       Expanded(
+  //                                                                         child:
+  //                                                                             Consumer<SOVListProvider>(
+  //                                                                           builder: (context,
+  //                                                                               provider,
+  //                                                                               child) {
+  //                                                                             if (provider.isDuplicateLoading) {
+  //                                                                               return Center(
+  //                                                                                 child: SizedBox(
+  //                                                                                   height: 28,
+  //                                                                                   width: 28,
+  //                                                                                   child: CircularProgressIndicator(strokeWidth: 2),
+  //                                                                                 ),
+  //                                                                               );
+  //                                                                             }
+  //
+  //                                                                             return CustomButton(
+  //                                                                               onPressed: () async {
+  //                                                                                 provider.isDuplicateLoading = true;
+  //                                                                                 provider.notifyListeners();
+  //
+  //                                                                                 try {
+  //                                                                                   // 1️⃣ Duplicate Sub Account
+  //                                                                                   await provider.duplicateSov(
+  //                                                                                     context,
+  //                                                                                     sov.sovId!,
+  //                                                                                   );
+  //
+  //                                                                                   final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
+  //                                                                                   Navigator.pop(context);
+  //                                                                                   await sovProvider.fetchSovList(
+  //                                                                                     context,
+  //                                                                                     "",
+  //                                                                                     1,
+  //                                                                                     5,
+  //                                                                                     widget.status,
+  //                                                                                   );
+  //                                                                                   sOVListProvider.notifyListeners();
+  //
+  //                                                                                   /// STOP LOADER
+  //                                                                                   // accountListProvider.isRenameLoading = false;
+  //                                                                                   // accountListProvider.notifyListeners();
+  //                                                                                 } finally {
+  //                                                                                   provider.isDuplicateLoading = false;
+  //                                                                                   provider.notifyListeners();
+  //                                                                                 }
+  //                                                                               },
+  //                                                                               child: Text(
+  //                                                                                 LanguageService.getTranslated(
+  //                                                                                   context,
+  //                                                                                   "duplicate",
+  //                                                                                 ),
+  //                                                                               ),
+  //                                                                               type: ButtonType.elevated,
+  //                                                                             );
+  //                                                                           },
+  //                                                                         ),
+  //                                                                       )
+  //                                                                     ],
+  //                                                                   ),
+  //                                                                 ],
+  //                                                               ),
+  //                                                             );
+  //                                                           },
+  //                                                         );
+  //                                                       },
+  //                                                       tooltip: LanguageService
+  //                                                           .getTranslated(
+  //                                                               context,
+  //                                                               "sub_account_list_app_duplicate_tooltip_text"),
+  //                                                     ),
+  //                                                   ],
+  //                                                 ),
+  //                                               ),
+  //                                               _buildMoreMenu(index),
+  //                                             ],
+  //                                           ),
+  //                                           SizedBox(height: 4),
+  //                                           Row(
+  //                                             crossAxisAlignment:
+  //                                                 CrossAxisAlignment.center,
+  //                                             children: [
+  //                                               /// LEFT
+  //                                               Expanded(
+  //                                                 child: Row(
+  //                                                   children: [
+  //                                                     Flexible(
+  //                                                       child: Text(
+  //                                                         sov.name ?? "",
+  //                                                         style: typography
+  //                                                             .Body2.copyWith(
+  //                                                           fontSize: 20,
+  //                                                           fontWeight:
+  //                                                               FontWeight.w400,
+  //                                                           color: const Color(
+  //                                                               0xFF90CAF9),
+  //                                                         ),
+  //                                                         overflow: TextOverflow
+  //                                                             .ellipsis,
+  //                                                       ),
+  //                                                     ),
+  //                                                     const SizedBox(width: 6),
+  //                                                     InkWell(
+  //                                                       onTap: () =>
+  //                                                           _showRenameDialog(
+  //                                                               index, sov),
+  //                                                       child: const Icon(
+  //                                                         Icons.edit,
+  //                                                         size: 16,
+  //                                                         color: Colors.white70,
+  //                                                       ),
+  //                                                     ),
+  //                                                   ],
+  //                                                 ),
+  //                                               ),
+  //
+  //                                               /// RIGHT
+  //                                               widget.status
+  //                                                           .toString()
+  //                                                           .toLowerCase() ==
+  //                                                       "shared"
+  //                                                   ? InkWell(
+  //                                                       onTap: () =>
+  //                                                           _showSharedWithDialog(
+  //                                                               context,
+  //                                                               sov.sharingStatus),
+  //                                                       child: Container(
+  //                                                         padding:
+  //                                                             const EdgeInsets
+  //                                                                 .symmetric(
+  //                                                                 horizontal: 5,
+  //                                                                 vertical: 6),
+  //                                                         decoration:
+  //                                                             BoxDecoration(
+  //                                                           color: const Color(
+  //                                                               0xFF2A2A2A),
+  //                                                           borderRadius:
+  //                                                               BorderRadius
+  //                                                                   .circular(
+  //                                                                       8),
+  //                                                           border: Border.all(
+  //                                                               color: const Color(
+  //                                                                   0xFF3A3A3A)),
+  //                                                         ),
+  //                                                         child: Row(
+  //                                                           mainAxisSize:
+  //                                                               MainAxisSize
+  //                                                                   .min,
+  //                                                           children: [
+  //                                                             const Icon(
+  //                                                               Icons.mail,
+  //                                                               size: 16,
+  //                                                               color: Colors
+  //                                                                   .white,
+  //                                                             ),
+  //                                                             const SizedBox(
+  //                                                                 width: 4),
+  //                                                             Text(
+  //                                                               "${sov.sharingStatus!.users.values.toList().length ?? 0}",
+  //                                                               style: typography
+  //                                                                       .Body2
+  //                                                                   .copyWith(
+  //                                                                 color: Colors
+  //                                                                     .white,
+  //                                                                 fontWeight:
+  //                                                                     FontWeight
+  //                                                                         .w500,
+  //                                                               ),
+  //                                                             ),
+  //                                                           ],
+  //                                                         ),
+  //                                                       ),
+  //                                                     )
+  //                                                   : Container(),
+  //                                               SizedBox(width: 4),
+  //                                             ],
+  //                                           ),
+  //                                           SizedBox(height: 4),
+  //                                           Row(
+  //                                             children: [
+  //                                               CircleAvatar(
+  //                                                 radius: 16,
+  //                                                 backgroundColor:
+  //                                                     Colors.grey[800],
+  //                                                 child: Text(
+  //                                                   sov.owner?.name
+  //                                                           ?.substring(0, 2)
+  //                                                           .toUpperCase() ??
+  //                                                       "?",
+  //                                                   style: TextStyle(
+  //                                                       color: Colors.white),
+  //                                                 ),
+  //                                               ),
+  //                                               SizedBox(width: 10),
+  //                                               Expanded(
+  //                                                 child: Text(
+  //                                                   sov.owner?.name ??
+  //                                                       "Unknown",
+  //                                                   style: TextStyle(
+  //                                                     fontWeight:
+  //                                                         FontWeight.bold,
+  //                                                     fontSize: 16,
+  //                                                     color: Colors.white,
+  //                                                   ),
+  //                                                   overflow:
+  //                                                       TextOverflow.ellipsis,
+  //                                                 ),
+  //                                               ),
+  //                                               SizedBox(width: 10),
+  //                                               Container(
+  //                                                 padding: const EdgeInsets
+  //                                                     .symmetric(
+  //                                                     horizontal: 5,
+  //                                                     vertical: 6),
+  //                                                 decoration: BoxDecoration(
+  //                                                   color:
+  //                                                       const Color(0xFF2A2A2A),
+  //                                                   borderRadius:
+  //                                                       BorderRadius.circular(
+  //                                                           8),
+  //                                                   border: Border.all(
+  //                                                       color: const Color(
+  //                                                           0xFF3A3A3A)),
+  //                                                 ),
+  //                                                 child: Row(
+  //                                                   mainAxisSize:
+  //                                                       MainAxisSize.min,
+  //                                                   children: [
+  //                                                     const Icon(
+  //                                                         Icons.location_on,
+  //                                                         size: 18,
+  //                                                         color: Colors.white),
+  //                                                     const SizedBox(width: 2),
+  //                                                     Text(
+  //                                                       "${sov.locationCount ?? 0}",
+  //                                                       style: typography.Body2
+  //                                                           .copyWith(
+  //                                                         color: Colors.white,
+  //                                                         fontWeight:
+  //                                                             FontWeight.w500,
+  //                                                       ),
+  //                                                     ),
+  //                                                   ],
+  //                                                 ),
+  //                                               ),
+  //                                               SizedBox(width: 4),
+  //                                             ],
+  //                                           ),
+  //                                           SizedBox(height: 8),
+  //                                           if ((sov.companyName ?? "")
+  //                                               .isNotEmpty)
+  //                                             Text(
+  //                                               "Company: ${sov.companyName}",
+  //                                               style:
+  //                                                   typography.Body2.copyWith(
+  //                                                 color: Colors.white,
+  //                                                 fontSize: 14,
+  //                                                 fontWeight: FontWeight.w500,
+  //                                               ),
+  //                                             ),
+  //                                           SizedBox(height: 8),
+  //                                           _buildScrollableScores(
+  //                                             context,
+  //                                             sov.geocodeAvg.toString(),
+  //                                             sov.overallAvg.toString(),
+  //                                             sov.dataCompleteness.toString(),
+  //                                           ),
+  //                                         ],
+  //                                       ),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //               if (isRefreshPending)
+  //                 Positioned(
+  //                   top: 10,
+  //                   right: 10,
+  //                   child: SizedBox(
+  //                     height: 22,
+  //                     width: 22,
+  //                     child: CircularProgressIndicator(
+  //                       strokeWidth: 2,
+  //                       color: Colors.blue,
+  //                     ),
+  //                   ),
+  //                 ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildMoreMenu(int index) {
     return Consumer2<SubAccountListProvider, SOVListProvider>(
@@ -2424,67 +2306,143 @@ class _AutoHideCompletedRowState extends State<_AutoHideCompletedRow> {
   }
 }
 
+String formatCount(String value, {bool isCurrency = false}) {
+  final number = double.tryParse(value.replaceAll(',', '')) ?? 0;
+  final formatter = NumberFormat('#,##0');
+  return isCurrency
+      ? '\$ ${formatter.format(number)}'
+      : formatter.format(number);
+}
+
 class InfoCard extends StatelessWidget {
   final String title;
-  final dynamic count;
+  final String count;
   final IconData icon;
+  final String growthText; // eg: "12.4% increase vs last month"
 
   const InfoCard({
     super.key,
     required this.title,
     required this.count,
     required this.icon,
+    required this.growthText,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 160,
-      width: 170,
+      width: 200,
       child: Card(
-        color: Colors.white12,
+        color: const Color(0xFFFFFFFF).withOpacity(0.12),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Colors.white38, width: 1),
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            width: 2,
+            color: Colors.white.withOpacity(0.11),
+          ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              /// Icon
+              const SizedBox(height: 12),
               Container(
-                width: 30,
-                height: 30,
+                margin: EdgeInsets.only(left: 16),
+                // padding: const EdgeInsets.only(right: 16,left: 16),
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius:
-                      BorderRadius.circular(15), // adjust radius as needed
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white60,
-                  size: 20,
+                  size: 18,
+                  color: Colors.white70,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                    color: Colors.white60,
+
+              const SizedBox(height: 12),
+
+              /// Title
+              Container(
+                padding: const EdgeInsets.only(right: 16, left: 16),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.17),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                count.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
+              const SizedBox(height: 5),
+
+              /// Count
+              Container(
+                padding: const EdgeInsets.only(right: 16, left: 16),
+                child: Text(
+                  formatCount(
+                    count,
+                    isCurrency: title == "Total Cost Incurred" ||
+                        title == "Average Cost per API",
+                  ),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+
+              const SizedBox(height: 4),
+              Divider(color: Colors.white.withOpacity(0.08)),
+              const SizedBox(height: 2),
+
+              /// Growth Info
+              /// Growth Info
+              Container(
+                padding: const EdgeInsets.only(right: 16, left: 16, bottom: 2),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.trending_up,
+                      size: 18,
+                      color: Color(0xFF4CAF50),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '12.4% ',
+                              style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextSpan(
+                              text: growthText,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 4),
             ],
           ),
         ),

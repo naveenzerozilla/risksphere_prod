@@ -42,7 +42,7 @@ class VerificationTabsService {
                   // User Verification Text
                   Text(
                     LanguageService.getTranslated(
-                        context, 'usermanagement_user_verification_tab'),
+                        context, 'user_verification'),
                     style: typography.BottomNavigationActiveLabel,
                   ),
                   if (trialStatus.isNotEmpty)

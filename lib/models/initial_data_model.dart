@@ -61,13 +61,14 @@ class CompanyType {
     required this.roles,
     required this.corporateUserSelfRegistration,
     required this.name,
+    required this.companyName,
     required this.corporateUserVerificationByAdmin,
     required this.canBeListed,
     required this.trialPeriodDays,
     required this.id,
     required this.adminSelfRegistration,
     required this.type,
-    required this.usedBy,
+    // required this.usedBy,
   });
 
   late final bool isApplicableForTrial;
@@ -75,13 +76,14 @@ class CompanyType {
   late final List<Roles> roles;
   late final bool corporateUserSelfRegistration;
   late final String name;
+  late final String companyName;
   late final bool corporateUserVerificationByAdmin;
   late final bool canBeListed;
   late final int trialPeriodDays;
   late final String id;
   late final bool adminSelfRegistration;
   late final String type;
-  late final String usedBy;
+  // late final String usedBy;
 
   CompanyType.fromJson(Map<String, dynamic> json) {
     // id = json['id'];
@@ -126,6 +128,7 @@ class CompanyType {
     }
     //corporateUserSelfRegistration = json['corporate_user_self_registration'];
     name = json['company_name'] ?? "";
+    companyName = json['name'] ?? "";
     if (json['corporate_user_verification_by_admin'].runtimeType == bool) {
       corporateUserVerificationByAdmin =
           json['corporate_user_verification_by_admin'];
@@ -166,7 +169,7 @@ class CompanyType {
     }
     //adminSelfRegistration = json['admin_self_registration'];
     type = json['type'];
-    usedBy = json['used_by'];
+    // usedBy = json['used_by'];
   }
 
   Map<String, dynamic> toJson() {
@@ -176,6 +179,7 @@ class CompanyType {
     _data['roles'] = roles.map((e) => e.toJson()).toList();
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['company_name'] = name;
+    _data['name'] = companyName;
     _data['corporate_user_verification_by_admin'] =
         corporateUserVerificationByAdmin;
     _data['can_be_listed'] = canBeListed;
@@ -183,27 +187,101 @@ class CompanyType {
     _data['id'] = id;
     _data['admin_self_registration'] = adminSelfRegistration;
     _data['type'] = type;
-    _data['used_by'] = usedBy;
+    // _data['used_by'] = usedBy;
     return _data;
   }
 }
 
-class Roles {
-  Roles({
-    required this.isForIndividual,
-    required this.isApplicableForTrial,
-    required this.role,
-    required this.name,
-    required this.isMultipleRoleEnabled,
-    required this.id,
-  });
+class CorporateRoles {
+  bool? isForIndividual;
+  bool? isSelectable;
+  bool? isApplicableForTrial;
+  String? role;
+  String? name;
+  String? description;
+  bool? isApplicableForInternal;
+  int? trialPeriodDays;
+  bool? isMultipleRoleEnabled;
+  bool? status;
+  SovOperations? sovOperations;
 
-  late final bool isForIndividual;
-  late final bool isApplicableForTrial;
-  late final String role;
-  late final String name;
-  late final bool isMultipleRoleEnabled;
-  late final String id;
+  CorporateRoles(
+      {this.isForIndividual,
+      this.isSelectable,
+      this.isApplicableForTrial,
+      this.role,
+      this.name,
+      this.description,
+      this.isApplicableForInternal,
+      this.trialPeriodDays,
+      this.isMultipleRoleEnabled,
+      this.status,
+      this.sovOperations});
+
+  CorporateRoles.fromJson(Map<String, dynamic> json) {
+    isForIndividual = json['is_for_individual'];
+    isSelectable = json['is_selectable'];
+    isApplicableForTrial = json['is_applicable_for_trial'];
+    role = json['role'];
+    name = json['name'];
+    description = json['description'];
+    isApplicableForInternal = json['is_applicable_for_internal'];
+    trialPeriodDays = json['trial_period_days'];
+    isMultipleRoleEnabled = json['is_multiple_role_enabled'];
+    status = json['status'];
+    sovOperations = json['sov_operations'] != null
+        ? new SovOperations.fromJson(json['sov_operations'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['is_for_individual'] = this.isForIndividual;
+    data['is_selectable'] = this.isSelectable;
+    data['is_applicable_for_trial'] = this.isApplicableForTrial;
+    data['role'] = this.role;
+    data['name'] = this.name;
+    data['description'] = this.description;
+    data['is_applicable_for_internal'] = this.isApplicableForInternal;
+    data['trial_period_days'] = this.trialPeriodDays;
+    data['is_multiple_role_enabled'] = this.isMultipleRoleEnabled;
+    data['status'] = this.status;
+    if (this.sovOperations != null) {
+      data['sov_operations'] = this.sovOperations!.toJson();
+    }
+    return data;
+  }
+}
+
+class Roles {
+  Roles(
+      {this.isForIndividual,
+      this.isApplicableForTrial,
+      this.role,
+      this.name,
+      this.isMultipleRoleEnabled,
+      this.id,
+      this.isSelectable,
+      this.description,
+      this.isApplicableForInternal,
+      this.trialPeriodDays,
+      this.status,
+      this.sovOperations});
+
+  late final bool? isForIndividual;
+  late final bool? isApplicableForTrial;
+  late final String? role;
+  late final String? name;
+  late final bool? isMultipleRoleEnabled;
+
+  late final String? id;
+
+  bool? isSelectable;
+  String? description;
+  bool? isApplicableForInternal;
+  int? trialPeriodDays;
+  bool? status;
+  SovOperations? sovOperations;
 
   Roles.fromJson(Map<String, dynamic> json) {
     isForIndividual = json['is_for_individual'] ?? false;
@@ -216,17 +294,56 @@ class Roles {
     } else {
       id = "";
     }
+    isSelectable = json['is_selectable'];
+
+    description = json['description'];
+    isApplicableForInternal = json['is_applicable_for_internal'];
+    trialPeriodDays = json['trial_period_days'];
+    status = json['status'];
+    sovOperations = json['sov_operations'] != null
+        ? new SovOperations.fromJson(json['sov_operations'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
     final _data = <String, dynamic>{};
-    // _data['is_for_individual'] = isForIndividual;
-    // _data['is_applicable_for_trial'] = isApplicableForTrial;
+    _data['is_selectable'] = this.isSelectable;
+    _data['description'] = this.description;
+    _data['is_applicable_for_internal'] = this.isApplicableForInternal;
+    _data['trial_period_days'] = this.trialPeriodDays;
+    _data['is_for_individual'] = isForIndividual;
+    _data['is_applicable_for_trial'] = isApplicableForTrial;
     _data['role'] = role;
     _data['name'] = name;
-    // _data['is_multiple_role_enabled'] = isMultipleRoleEnabled;
-    // _data['id'] = id;
+    _data['is_multiple_role_enabled'] = isMultipleRoleEnabled;
+    _data['id'] = id;
+    _data['status'] = this.status;
+    if (this.sovOperations != null) {
+      _data['sov_operations'] = this.sovOperations!.toJson();
+    }
     return _data;
+  }
+}
+
+class SovOperations {
+  bool? view;
+  bool? edit;
+  bool? comment;
+
+  SovOperations({this.view, this.edit, this.comment});
+
+  SovOperations.fromJson(Map<String, dynamic> json) {
+    view = json['view'];
+    edit = json['edit'];
+    comment = json['comment'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['view'] = this.view;
+    data['edit'] = this.edit;
+    data['comment'] = this.comment;
+    return data;
   }
 }
 
@@ -303,6 +420,7 @@ class Companies {
     required this.adminSelfRegistration,
     required this.companyTypeId,
     required this.name,
+    required this.companyName,
     required this.companyTypeName,
     required this.corporateUserSelfRegistration,
     required this.corporateUserVerificationByAdmin,
@@ -310,15 +428,25 @@ class Companies {
     required this.admins,
     required this.roles,
     required this.countryName,
+    required this.countryCode,
+    required this.id,
+    required this.companyDisplayName,
+    required this.source,
+    required this.status,
+    // required this.createdAt,
+    // required this.updatedAt,
+    required this.verficationStatus,
   });
 
   late final bool isActive;
   late final bool isAuthorized;
   late final List<UserIds> userIds;
+
   late final String displayName;
   late final bool adminSelfRegistration;
   late final String companyTypeId;
   late final String name;
+  late final String companyName;
   late final String companyTypeName;
   late final bool corporateUserSelfRegistration;
   late final bool corporateUserVerificationByAdmin;
@@ -327,6 +455,14 @@ class Companies {
   late final List<Roles> roles;
   late final String id;
   late final String countryName;
+  late final String countryCode;
+  late final String companyDisplayName;
+  late final String source;
+  late bool isEnabled;
+  late bool status;
+  // late final CreatedAt createdAt;
+  // late final UpdatedAt updatedAt;
+  late final String verficationStatus;
 
   Companies.fromJson(Map<String, dynamic> json) {
     id = json['id'] ?? "";
@@ -351,6 +487,11 @@ class Companies {
     } else {
       name = "";
     }
+    if (json['name'] != null) {
+      companyName = json['name'];
+    } else {
+      companyName = "";
+    }
 
     if (json['company_type'] != null) {
       companyTypeName = json['company_type'];
@@ -363,7 +504,7 @@ class Companies {
         json['corporate_user_verification_by_admin'] ?? false;
     noOfUsers = json['no_of_users'] ?? 0;
     admins = [];
-    print("display name: $displayName");
+    // print("display name: $displayName");
     print("company id: $id");
     print("admins: $admins");
     roles = (json['roles'] != null)
@@ -374,6 +515,14 @@ class Companies {
     } else {
       countryName = json['country']?['name'] ?? "";
     }
+    countryCode = json['country_code'] ?? "";
+    companyDisplayName = json['company_display_name'] ?? "";
+    source = json['source'] ?? "";
+    isEnabled = json['is_enabled'] ?? true;
+    status = json['status'] ?? true;
+    // createdAt = CreatedAt.fromJson(json['created_at']);
+    // updatedAt = UpdatedAt.fromJson(json['updated_at']);
+    verficationStatus = json['verfication_status'] ?? "";
   }
 
   Map<String, dynamic> toJson() {
@@ -385,6 +534,7 @@ class Companies {
     _data['admin_self_registration'] = adminSelfRegistration;
     _data['company_type_id'] = companyTypeId;
     _data['company_name'] = name;
+    _data['name'] = companyName;
     _data['company_type'] = companyTypeName;
     _data['corporate_user_self_registration'] = corporateUserSelfRegistration;
     _data['corporate_user_verification_by_admin'] =
@@ -394,6 +544,14 @@ class Companies {
     _data['roles'] = roles.map((e) => e.toJson()).toList();
     _data["id"] = id;
     _data['country'] = countryName;
+    _data['country_code'] = countryCode;
+    _data['company_display_name'] = companyDisplayName;
+    _data['source'] = source;
+    _data['is_enabled'] = true;
+    _data['status'] = status;
+    // _data['created_at'] = createdAt.toJson();
+    // _data['updated_at'] = updatedAt.toJson();
+    _data['verfication_status'] = verficationStatus;
     return _data;
   }
 }

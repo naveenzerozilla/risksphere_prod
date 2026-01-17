@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:RiskSphere/screens/home/dashboard_screen.dart';
+import 'package:RiskSphere/screens/listings/sub_account_list.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -6,18 +9,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:RiskSphere/providers/location_list_provider.dart';
-import 'package:RiskSphere/providers/location_profile_provider.dart';
 import 'package:RiskSphere/providers/my_location_list_provider.dart';
 import 'package:RiskSphere/providers/user_profile_provider.dart';
-import 'package:RiskSphere/screens/listings/location_profile.dart';
-import 'package:RiskSphere/screens/listings/widgets/auto_complete_options_sovs.dart';
-import 'package:RiskSphere/screens/listings/widgets/map_full_screen.dart';
-import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -40,36 +39,40 @@ import 'package:country_picker/country_picker.dart' as country_picker;
 
 import '../../service/shared_preference_service.dart';
 import '../payments/purchase_license.dart';
+import 'account_list.dart';
 
 class AddLocationScreen extends StatefulWidget {
-  final String accountId;
-  final String accountName;
-  final String subAccountId;
-  final String subAccountName;
+  final String? newUser;
+  final String? accountId;
+  final String? subAccountId;
+  final String? accountName;
+
+  final String? subAccountName;
   final String sovId;
   final String sovName;
-  final String locationId;
+  final String? locationId;
   final String? locationName;
-  final String locationIdForRef;
+  final String? locationIdForRef;
   final String searchQuery;
-  final String page;
-  final String totalPages;
+  final String? page;
+  final String? totalPages;
   final bool? is_conflict;
 
   const AddLocationScreen(
       {super.key,
+      this.newUser,
       required this.accountId,
       required this.subAccountId,
       required this.sovId,
-      this.locationId = "",
-      this.accountName = "",
-      this.subAccountName = "",
+      this.locationId,
+      this.accountName,
+      this.subAccountName,
       this.sovName = "",
       this.locationName,
-      this.locationIdForRef = "",
+      this.locationIdForRef,
       this.searchQuery = "",
-      this.page = "0",
-      this.totalPages = "1",
+      this.page,
+      this.totalPages,
       this.is_conflict});
 
   @override
@@ -92,11 +95,15 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   TextEditingController _locationZipCodeController = TextEditingController();
   TextEditingController _locationDescriptionController =
       TextEditingController();
+  bool isSovSelected = false;
+
   String _selectedCountry = "United States";
   bool hasAnyPlan = false;
   String? hasLicenseStatus = "1";
   String? hasGeocodingStatus = "1";
   String? hasHazardLicenseStatus = "1";
+  String? hazardLicenseStatus1 = "1";
+  String? hazardLicenseStatus2 = "1";
 
   final Completer<GoogleMapController> _mapController = Completer();
   static const CameraPosition _defaultLocation = CameraPosition(
@@ -123,37 +130,42 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   bool _isLocationLoading = false;
   String _locationError = '';
 
+  bool get isEditMode => widget.locationId?.isNotEmpty == true;
+
   @override
   initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getCurrentLocation();
-    });
-    _initPgAdmin();
-    if (widget.locationId.isNotEmpty) {
-      _getData();
-      // get location details
+
+    if (widget.locationId?.isNotEmpty != true ? false : true) {
       var provider =
           Provider.of<MyLocationListProvider>(context, listen: false);
-      _locationNameController.text = (widget.is_conflict!
-          ? widget.locationName
-          : provider.locationProfile?.finalAddress?.locationName ??
-              widget.searchQuery!)!;
-
-      // _locationNameController.text = ((widget.is_conflict!) ? widget.locationName : provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!));
-
-      // _locationNameController.text =
-      //     provider.locationProfile?.finalAddress?.locationName ?? widget.searchQuery!;
-      _locationAddressController.text = (widget.is_conflict!
-          ? widget.locationName
-          : provider.locationProfile?.finalAddress?.locationName ??
-              widget.searchQuery!)!;
-
-      // provider.locationProfile?.finalAddress?.address ?? widget.searchQuery!;
+      _locationNameController.text =
+          provider.locationProfile?.finalAddress?.locationName ?? "";
+      _locationAddressController.text =
+          provider.locationProfile?.finalAddress?.address ?? "";
+      _locationAddress1Controller.text =
+          provider.locationProfile?.finalAddress?.locationName ?? "";
       _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
       _locationZipCodeController.text =
           provider.locationProfile?.finalAddress?.zip ?? "";
       //_selectedLocationType = provider.result?.locationType??"";
+      final lat = provider.locationProfile?.finalAddress?.latitude;
+      final lng = provider.locationProfile?.finalAddress?.longitude;
+
+      if (lat != null && lng != null) {
+        _selectedLatLng = LatLng(lat, lng);
+        _latitudeController.text = lat.toStringAsFixed(6);
+        _longitudeController.text = lng.toStringAsFixed(6);
+      }
+
+      // _latitudeController.text = provider
+      //         .locationProfile?.finalAddress?.latitude
+      //         ?.toStringAsFixed(6) ??
+      //     "";
+      // _longitudeController.text = provider
+      //         .locationProfile?.finalAddress?.longitude
+      //         ?.toStringAsFixed(6) ??
+      //     "";
       _locationCityController.text =
           provider.locationProfile?.finalAddress?.city ?? "";
       _locationStateController.text =
@@ -166,52 +178,112 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         sovController.text = provider.locationProfile!.finalAddress!.sovName!;
         disableToggle = true;
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (provider.locationProfile?.finalAddress?.latitude != null &&
-            provider.locationProfile?.finalAddress?.longitude != null) {
-          final MarkerId markerId = MarkerId("location_marker");
-          final marker = Marker(
-            markerId: markerId,
-            position: LatLng(
-              double.parse(
-                  provider.locationProfile!.finalAddress!.latitude!.toString()),
-              double.parse(provider.locationProfile!.finalAddress!.longitude!
-                  .toString()),
-            ),
-            infoWindow: InfoWindow(
-                title: provider.locationProfile?.finalAddress?.locationName),
-          );
-          setState(() {
-            markers[markerId] = marker;
-          });
-
-          // Move camera to marker position
-          final GoogleMapController controller = await _mapController.future;
-          controller.animateCamera(CameraUpdate.newLatLng(
-            LatLng(
-              double.parse(
-                  provider.locationProfile!.finalAddress!.latitude!.toString()),
-              double.parse(provider.locationProfile!.finalAddress!.longitude!
-                  .toString()),
-            ),
-          ));
-          _latitudeController = TextEditingController(
-              text:
-                  provider.locationProfile!.finalAddress!.latitude!.toString());
-          _longitudeController = TextEditingController(
-              text: provider.locationProfile!.finalAddress!.longitude!
-                  .toString());
-        }
+    }
+    if (!isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _getCurrentLocation();
       });
     }
-    print("account name: ${widget.accountName}");
-    print("sub account name: ${widget.subAccountName}");
+    _initPgAdmin();
+    if (widget.locationId?.isNotEmpty == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _getData();
+        _initLocationFields();
+        await _initMapFromApi(); // 🔥 THIS fixes Google Map
+      });
+    }
+  }
+
+  Future<void> _initMapFromApi() async {
+    final provider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+
+    final lat = provider.locationProfile?.finalAddress?.latitude;
+    final lng = provider.locationProfile?.finalAddress?.longitude;
+
+    if (lat == null || lng == null) return;
+
+    final position = LatLng(lat, lng);
+
+    // Wait until map is created
+    while (!_mapController.isCompleted) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    await _updateMap(position);
+  }
+
+  // Future<void> _initMapFromApi() async {
+  //   final provider =
+  //       Provider.of<MyLocationListProvider>(context, listen: false);
+  //
+  //   final lat = provider.locationProfile?.finalAddress?.latitude;
+  //   final lng = provider.locationProfile?.finalAddress?.longitude;
+  //
+  //   if (lat == null || lng == null) return;
+  //
+  //   final position = LatLng(lat, lng);
+  //
+  //   setState(() {
+  //     _selectedLatLng = position;
+  //     _latitudeController.text = lat.toStringAsFixed(6);
+  //     _longitudeController.text = lng.toStringAsFixed(6);
+  //   });
+  //
+  //   final controller = await _mapController.future;
+  //   controller.animateCamera(
+  //     CameraUpdate.newLatLngZoom(position, 16),
+  //   );
+  // }
+
+  void _initLocationFields() {
+    var provider = Provider.of<MyLocationListProvider>(context, listen: false);
+
+    _locationNameController.text = (widget.is_conflict!
+        ? widget.locationName
+        : provider.locationProfile?.finalAddress?.locationName ??
+            widget.searchQuery!)!;
+
+    _locationAddressController.text = (widget.is_conflict!
+        ? widget.locationName
+        : provider.locationProfile?.finalAddress?.locationName ??
+            widget.searchQuery!)!;
+
+    _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
+    _locationZipCodeController.text =
+        provider.locationProfile?.finalAddress?.zip ?? "";
+    _locationCityController.text =
+        provider.locationProfile?.finalAddress?.city ?? "";
+    _locationStateController.text =
+        provider.locationProfile?.finalAddress?.state ?? "";
+
+    if (provider.locationProfile?.finalAddress?.sovId != null) {
+      addToSOVCheck = true;
+      selectedSovId = provider.locationProfile!.finalAddress!.sovId!;
+      sovController.text = provider.locationProfile!.finalAddress!.sovName!;
+      disableToggle = true;
+    }
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     super.dispose();
+  }
+
+  Future<void> _updateMap(LatLng position, {double zoom = 16}) async {
+    setState(() {
+      _selectedLatLng = position;
+      _latitudeController.text = position.latitude.toStringAsFixed(6);
+      _longitudeController.text = position.longitude.toStringAsFixed(6);
+    });
+
+    if (_mapController.isCompleted) {
+      final controller = await _mapController.future;
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(position, zoom),
+      );
+    }
   }
 
 // Add this method to get current location
@@ -263,12 +335,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     );
 
     setState(() {
+      // _currentPosition = position;
       _currentPosition = position;
-      _selectedLatLng = LatLng(position.latitude, position.longitude);
+      _updateMap(
+        LatLng(position.latitude, position.longitude),
+      );
+      // _selectedLatLng = LatLng(position.latitude, position.longitude);
       _isLocationLoading = false;
     });
-
-    print('📍 Current location: ${position.latitude}, ${position.longitude}');
 
     // Move map
     final controller = await _mapController.future;
@@ -285,6 +359,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
     String? hazardLicenseStatus =
         await SharedPreferenceService.getHazardLicense();
+    var hazardLicenseStatus11 =
+        await SharedPreferenceService.getTrialMaxLocations();
+    var hazardLicenseStatus22 =
+        await SharedPreferenceService.getTrialLocations();
     print("geoCodingStatus: $geoCodingStatus");
     print("userLicenseStatus: $userLicenseStatus");
     print("hazardLicenseStatus: $hazardLicenseStatus");
@@ -294,16 +372,21 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         hasLicenseStatus = userLicenseStatus ?? "";
         hasGeocodingStatus = geoCodingStatus ?? "";
         hasHazardLicenseStatus = hazardLicenseStatus ?? "";
+        hazardLicenseStatus1 = hazardLicenseStatus11.toString() ?? "";
+        hazardLicenseStatus2 = hazardLicenseStatus22.toString();
       });
   }
 
   Future<void> _getData() async {
+    await Provider.of<MyLocationListProvider>(context, listen: false)
+      ..fetchIndividualLocationProfile(context, widget.locationId ?? '');
     final dashboardProvider =
         Provider.of<DashboardProvider>(context, listen: false);
     final userProfileProvider =
         Provider.of<UserProfileProvider>(context, listen: false);
     final configurationProvider =
         Provider.of<ConfigurationProvider>(context, listen: false);
+    final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
 
     try {
       final results = await Future.wait([
@@ -312,6 +395,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         configurationProvider.getConfiguration(
             accountId: null, subAccountId: null),
         configurationProvider.getVendors(),
+        sovProvider.fetchAutoCompleteSovListLocations(
+            context, widget.accountId!, widget.subAccountId!),
       ]);
 
       userProfileProvider.fetchTrialInfo();
@@ -376,8 +461,65 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                 int total = userProfileProvider.trialInfo['maxLocations'] ?? 0;
                 return Column(
                   children: [
+                    if (widget.newUser.toString() == "true") ...[
+                      Row(children: [
+                        Expanded(
+                          flex: 8,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                SizedBox(width: 10),
+                                InkWell(
+                                  onTap: () {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            AccountListScreen(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
+                                  child: Text(widget.accountName!,
+                                      style: typography.InputLabel),
+                                ),
+                                Text(' > ', style: typography.InputLabel),
+                                InkWell(
+                                  onTap: () {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            SubAccountListScreen(
+                                          accountId: widget.accountId!,
+                                          accountName: widget.accountName ??
+                                              widget.accountName,
+                                        ),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
+                                  child: Text(widget.subAccountName ?? "",
+                                      style: typography.InputLabel),
+                                ),
+                                Text(' > ',
+                                    style: TextStyle(
+                                        fontSize: 14, color: Colors.white70)),
+                                Text(
+                                  "Your first location",
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ],
                     // Text(userProfileProvider.trialInfo.toString()),
-                    SizedBox(height: CustomSpacing.four),
+                    SizedBox(height: CustomSpacing.two),
+
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
@@ -394,6 +536,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                             Expanded(
                               child: SingleChildScrollView(
                                 padding: EdgeInsets.only(
+                                    right: 8,
+                                    left: 8,
                                     bottom: MediaQuery.of(context)
                                         .viewInsets
                                         .bottom),
@@ -412,302 +556,283 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             margin: const EdgeInsets.symmetric(
                                                 horizontal: 8),
                                             child: SizedBox(
-                                              height: 250,
+                                              height: 240,
                                               width: double.infinity,
                                               child:
                                                   // _isSelectedFromAutocomplete
                                                   //     ?
                                                   AbsorbPointer(
-                                                absorbing: !isSearchSelected,
-                                                child: GoogleMap(
-                                                  zoomControlsEnabled: false,
-                                                  zoomGesturesEnabled: true,
-                                                  scrollGesturesEnabled: true,
-                                                  rotateGesturesEnabled:
-                                                      isSearchSelected,
-                                                  tiltGesturesEnabled:
-                                                      isSearchSelected,
-                                                  mapType: MapType.normal,
-                                                  initialCameraPosition:
-                                                      _selectedLatLng != null
-                                                          ? CameraPosition(
-                                                              target:
-                                                                  _selectedLatLng!,
-                                                              zoom: 16,
-                                                            )
-                                                          : _currentPosition !=
-                                                                  null
-                                                              ? CameraPosition(
-                                                                  target: LatLng(
-                                                                      _currentPosition!
-                                                                          .latitude,
-                                                                      _currentPosition!
-                                                                          .longitude),
-                                                                  zoom: 16,
-                                                                )
-                                                              : CameraPosition(
-                                                                  target: const LatLng(
-                                                                      40.7128,
-                                                                      -74.0060),
-                                                                  // New York fallback
-                                                                  zoom: 12,
-                                                                ),
-                                                  onMapCreated: (controller) {
-                                                    _mapController
-                                                        .complete(controller);
-
-                                                    // If we have current location but no selected location, move camera to current location
-                                                    if (_currentPosition !=
-                                                            null &&
-                                                        _selectedLatLng ==
-                                                            null) {
-                                                      WidgetsBinding.instance
-                                                          .addPostFrameCallback(
-                                                              (_) {
-                                                        controller
-                                                            .animateCamera(
-                                                          CameraUpdate
-                                                              .newLatLngZoom(
-                                                            LatLng(
-                                                                _currentPosition!
-                                                                    .latitude,
-                                                                _currentPosition!
-                                                                    .longitude),
-                                                            16,
-                                                          ),
-                                                        );
-                                                      });
-                                                    }
-                                                  },
-                                                  markers: {
-                                                    if (_selectedLatLng != null)
-                                                      Marker(
-                                                        markerId: const MarkerId(
-                                                            'selected_location'),
-                                                        position:
-                                                            _selectedLatLng!,
-                                                        draggable:
+                                                      absorbing: isEditMode ||
+                                                          !isSearchSelected,
+                                                      // absorbing: !isSearchSelected,
+                                                      child: GoogleMap(
+                                                        myLocationButtonEnabled:
+                                                            false,
+                                                        zoomControlsEnabled:
+                                                            false,
+                                                        zoomGesturesEnabled:
+                                                            true,
+                                                        scrollGesturesEnabled:
+                                                            true,
+                                                        rotateGesturesEnabled:
                                                             isSearchSelected,
-                                                        icon: BitmapDescriptor
-                                                            .defaultMarkerWithHue(
-                                                          BitmapDescriptor
-                                                              .hueRed,
+                                                        tiltGesturesEnabled:
+                                                            isSearchSelected,
+                                                        mapType: MapType.normal,
+                                                        initialCameraPosition:
+                                                            CameraPosition(
+                                                          target:
+                                                              _selectedLatLng ??
+                                                                  (_currentPosition !=
+                                                                          null
+                                                                      ? LatLng(
+                                                                          _currentPosition!
+                                                                              .latitude,
+                                                                          _currentPosition!
+                                                                              .longitude,
+                                                                        )
+                                                                      : const LatLng(
+                                                                          40.7128,
+                                                                          -74.0060)),
+                                                          zoom: 16,
                                                         ),
-                                                        onDragEnd:
-                                                            (newPosition) async {
-                                                          if (isSearchSelected) {
-                                                            setState(() {
-                                                              _selectedLatLng =
-                                                                  newPosition;
-                                                              _latitudeController
-                                                                      .text =
-                                                                  newPosition
-                                                                      .latitude
-                                                                      .toStringAsFixed(
-                                                                          6);
-                                                              _longitudeController
-                                                                      .text =
-                                                                  newPosition
-                                                                      .longitude
-                                                                      .toStringAsFixed(
-                                                                          6);
-                                                            });
-                                                            final controller =
-                                                                await _mapController
-                                                                    .future;
-                                                            controller
-                                                                .animateCamera(
-                                                              CameraUpdate
-                                                                  .newLatLng(
-                                                                      newPosition),
-                                                            );
-                                                            await _updateAddressFromCoordinates(
-                                                                newPosition);
+                                                        onMapCreated:
+                                                            (controller) {
+                                                          if (!_mapController
+                                                              .isCompleted) {
+                                                            _mapController
+                                                                .complete(
+                                                                    controller);
                                                           }
                                                         },
+                                                        markers:
+                                                            _selectedLatLng ==
+                                                                    null
+                                                                ? {}
+                                                                : {
+                                                                    Marker(
+                                                                      markerId:
+                                                                          const MarkerId(
+                                                                              'selected_location'),
+                                                                      position:
+                                                                          _selectedLatLng!,
+                                                                      draggable:
+                                                                          isSearchSelected,
+                                                                      icon: BitmapDescriptor
+                                                                          .defaultMarkerWithHue(
+                                                                        BitmapDescriptor
+                                                                            .hueRed,
+                                                                      ),
+                                                                    ),
+                                                                  },
+                                                        onTap:
+                                                            (position) async {
+                                                          if (!isSearchSelected)
+                                                            return;
+                                                          await _updateMap(
+                                                              position);
+                                                          await _updateAddressFromCoordinates(
+                                                              position);
+                                                        },
+                                                        gestureRecognizers: {
+                                                          Factory<
+                                                              OneSequenceGestureRecognizer>(
+                                                            () =>
+                                                                EagerGestureRecognizer(),
+                                                          ),
+                                                        },
+                                                      )
+
+                                                      // GoogleMap(
+                                                      //   myLocationButtonEnabled:
+                                                      //       false,
+                                                      //   zoomControlsEnabled: false,
+                                                      //   zoomGesturesEnabled: true,
+                                                      //   scrollGesturesEnabled: true,
+                                                      //   rotateGesturesEnabled:
+                                                      //       isSearchSelected,
+                                                      //   tiltGesturesEnabled:
+                                                      //       isSearchSelected,
+                                                      //   mapType: MapType.normal,
+                                                      //   initialCameraPosition:
+                                                      //       _selectedLatLng != null
+                                                      //           ? CameraPosition(
+                                                      //               target:
+                                                      //                   _selectedLatLng!,
+                                                      //               zoom: 16,
+                                                      //             )
+                                                      //           : _currentPosition !=
+                                                      //                   null
+                                                      //               ? CameraPosition(
+                                                      //                   target: LatLng(
+                                                      //                       _currentPosition!
+                                                      //                           .latitude,
+                                                      //                       _currentPosition!
+                                                      //                           .longitude),
+                                                      //                   zoom: 16,
+                                                      //                 )
+                                                      //               : CameraPosition(
+                                                      //                   target: const LatLng(
+                                                      //                       40.7128,
+                                                      //                       -74.0060),
+                                                      //                   // New York fallback
+                                                      //                   zoom: 12,
+                                                      //                 ),
+                                                      //   onMapCreated: (controller) {
+                                                      //     if (!_mapController
+                                                      //         .isCompleted) {
+                                                      //       _mapController
+                                                      //           .complete(controller);
+                                                      //     }
+                                                      //     // _mapController
+                                                      //     //     .complete(controller);
+                                                      //
+                                                      //     // If we have current location but no selected location, move camera to current location
+                                                      //     if (_currentPosition !=
+                                                      //             null &&
+                                                      //         _selectedLatLng ==
+                                                      //             null) {
+                                                      //       WidgetsBinding.instance
+                                                      //           .addPostFrameCallback(
+                                                      //               (_) {
+                                                      //         controller
+                                                      //             .animateCamera(
+                                                      //           CameraUpdate
+                                                      //               .newLatLngZoom(
+                                                      //             LatLng(
+                                                      //                 _currentPosition!
+                                                      //                     .latitude,
+                                                      //                 _currentPosition!
+                                                      //                     .longitude),
+                                                      //             16,
+                                                      //           ),
+                                                      //         );
+                                                      //       });
+                                                      //     }
+                                                      //   },
+                                                      //   markers:
+                                                      //       _selectedLatLng == null
+                                                      //           ? {}
+                                                      //           : {
+                                                      //               Marker(
+                                                      //                 markerId:
+                                                      //                     const MarkerId(
+                                                      //                         'selected_location'),
+                                                      //                 position:
+                                                      //                     _selectedLatLng!,
+                                                      //                 draggable:
+                                                      //                     isSearchSelected,
+                                                      //                 icon: BitmapDescriptor
+                                                      //                     .defaultMarkerWithHue(
+                                                      //                   BitmapDescriptor
+                                                      //                       .hueRed,
+                                                      //                 ),
+                                                      //               ),
+                                                      //             },
+                                                      //
+                                                      //   // markers: {
+                                                      //   //   if (_selectedLatLng != null)
+                                                      //   //     Marker(
+                                                      //   //       markerId: const MarkerId(
+                                                      //   //           'selected_location'),
+                                                      //   //       position:
+                                                      //   //           _selectedLatLng!,
+                                                      //   //       draggable:
+                                                      //   //           isSearchSelected,
+                                                      //   //       icon: BitmapDescriptor
+                                                      //   //           .defaultMarkerWithHue(
+                                                      //   //         BitmapDescriptor
+                                                      //   //             .hueRed,
+                                                      //   //       ),
+                                                      //   //       onDragEnd:
+                                                      //   //           (newPosition) async {
+                                                      //   //         if (isSearchSelected) {
+                                                      //   //           setState(() {
+                                                      //   //             _selectedLatLng =
+                                                      //   //                 newPosition;
+                                                      //   //             _latitudeController
+                                                      //   //                     .text =
+                                                      //   //                 newPosition
+                                                      //   //                     .latitude
+                                                      //   //                     .toStringAsFixed(
+                                                      //   //                         6);
+                                                      //   //             _longitudeController
+                                                      //   //                     .text =
+                                                      //   //                 newPosition
+                                                      //   //                     .longitude
+                                                      //   //                     .toStringAsFixed(
+                                                      //   //                         6);
+                                                      //   //           });
+                                                      //   //           final controller =
+                                                      //   //               await _mapController
+                                                      //   //                   .future;
+                                                      //   //           controller
+                                                      //   //               .animateCamera(
+                                                      //   //             CameraUpdate
+                                                      //   //                 .newLatLng(
+                                                      //   //                     newPosition),
+                                                      //   //           );await _updateMap(newPosition);
+                                                      //   //           await _updateAddressFromCoordinates(
+                                                      //   //               newPosition);
+                                                      //   //         }
+                                                      //   //       },
+                                                      //   //     ),
+                                                      //   //   // Add current location marker if available and no selected location
+                                                      //   //   if (_currentPosition !=
+                                                      //   //           null &&
+                                                      //   //       _selectedLatLng == null)
+                                                      //   //     Marker(
+                                                      //   //       markerId: const MarkerId(
+                                                      //   //           'current_location'),
+                                                      //   //       position: LatLng(
+                                                      //   //           _currentPosition!
+                                                      //   //               .latitude,
+                                                      //   //           _currentPosition!
+                                                      //   //               .longitude),
+                                                      //   //       icon: BitmapDescriptor
+                                                      //   //           .defaultMarkerWithHue(
+                                                      //   //         BitmapDescriptor
+                                                      //   //             .hueBlue,
+                                                      //   //       ),
+                                                      //   //       infoWindow: InfoWindow(
+                                                      //   //           title:
+                                                      //   //               'Current Location'),
+                                                      //   //     ),
+                                                      //   // },
+                                                      //   onTap: (position) async {
+                                                      //     if (!isSearchSelected)
+                                                      //       return;
+                                                      //     if (isSearchSelected) {
+                                                      //       setState(() {
+                                                      //         _selectedLatLng =
+                                                      //             position;
+                                                      //         _latitudeController
+                                                      //                 .text =
+                                                      //             position.latitude
+                                                      //                 .toStringAsFixed(
+                                                      //                     6);
+                                                      //         _longitudeController
+                                                      //                 .text =
+                                                      //             position.longitude
+                                                      //                 .toStringAsFixed(
+                                                      //                     6);
+                                                      //       });
+                                                      //       await _updateMap(
+                                                      //           position);
+                                                      //       await _updateAddressFromCoordinates(
+                                                      //           position);
+                                                      //     }
+                                                      //   },
+                                                      //   onCameraMove: (_) {},
+                                                      //   gestureRecognizers: {
+                                                      //     Factory<
+                                                      //         OneSequenceGestureRecognizer>(
+                                                      //       () =>
+                                                      //           EagerGestureRecognizer(),
+                                                      //     ),
+                                                      //   },
+                                                      // ),
                                                       ),
-                                                    // Add current location marker if available and no selected location
-                                                    if (_currentPosition !=
-                                                            null &&
-                                                        _selectedLatLng == null)
-                                                      Marker(
-                                                        markerId: const MarkerId(
-                                                            'current_location'),
-                                                        position: LatLng(
-                                                            _currentPosition!
-                                                                .latitude,
-                                                            _currentPosition!
-                                                                .longitude),
-                                                        icon: BitmapDescriptor
-                                                            .defaultMarkerWithHue(
-                                                          BitmapDescriptor
-                                                              .hueBlue,
-                                                        ),
-                                                        infoWindow: InfoWindow(
-                                                            title:
-                                                                'Current Location'),
-                                                      ),
-                                                  },
-                                                  onTap: (position) async {
-                                                    if (isSearchSelected) {
-                                                      setState(() {
-                                                        _selectedLatLng =
-                                                            position;
-                                                        _latitudeController
-                                                                .text =
-                                                            position.latitude
-                                                                .toStringAsFixed(
-                                                                    6);
-                                                        _longitudeController
-                                                                .text =
-                                                            position.longitude
-                                                                .toStringAsFixed(
-                                                                    6);
-                                                      });
-                                                      await _updateAddressFromCoordinates(
-                                                          position);
-                                                    }
-                                                  },
-                                                  onCameraMove: (_) {},
-                                                  gestureRecognizers: {
-                                                    Factory<
-                                                        OneSequenceGestureRecognizer>(
-                                                      () =>
-                                                          EagerGestureRecognizer(),
-                                                    ),
-                                                  },
-                                                ),
-                                              ),
-                                              //     AbsorbPointer(
-                                              //   absorbing: !isSearchSelected,
-                                              //   child: GoogleMap(
-                                              //     zoomControlsEnabled: false,
-                                              //     zoomGesturesEnabled: true,
-                                              //     scrollGesturesEnabled: true,
-                                              //     rotateGesturesEnabled:
-                                              //         isSearchSelected,
-                                              //     tiltGesturesEnabled:
-                                              //         isSearchSelected,
-                                              //     mapType: MapType.normal,
-                                              //     initialCameraPosition: _selectedLatLng != null
-                                              //         ? CameraPosition(
-                                              //       target: _selectedLatLng!,
-                                              //       zoom: 16,
-                                              //     )
-                                              //         : _currentPosition != null
-                                              //         ? CameraPosition(
-                                              //       target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                                              //       zoom: 16,
-                                              //     )
-                                              //         : CameraPosition(
-                                              //       target: const LatLng(40.7128, -74.0060), // New York fallback
-                                              //       zoom: 12,
-                                              //     ),
-                                              //
-                                              //     // initialCameraPosition:
-                                              //     //     _selectedLatLng != null
-                                              //     //         ? CameraPosition(
-                                              //     //             target:
-                                              //     //                 _selectedLatLng!,
-                                              //     //             zoom: 16)
-                                              //     //         : CameraPosition(
-                                              //     //             target:
-                                              //     //                 const LatLng(
-                                              //     //                     40.7128,
-                                              //     //                     -74.0060),
-                                              //     //             // New York
-                                              //     //             zoom: 12,
-                                              //     //           ),
-                                              //     onMapCreated: (controller) {
-                                              //       _mapController
-                                              //           .complete(controller);
-                                              //     },
-                                              //
-                                              //     markers: {
-                                              //       if (_selectedLatLng !=
-                                              //           null)
-                                              //         Marker(
-                                              //           markerId: const MarkerId(
-                                              //               'selected_location'),
-                                              //           // position: _selectedLatLng!,
-                                              //           position:
-                                              //               _selectedLatLng ??
-                                              //                   const LatLng(
-                                              //                       40.7128,
-                                              //                       -74.0060),
-                                              //           draggable:
-                                              //               isSearchSelected,
-                                              //           // 👈 draggable only when true
-                                              //           icon: BitmapDescriptor
-                                              //               .defaultMarkerWithHue(
-                                              //                   BitmapDescriptor
-                                              //                       .hueRed),
-                                              //           onDragEnd:
-                                              //               (newPosition) async {
-                                              //             if (isSearchSelected) {
-                                              //               setState(() {
-                                              //                 _selectedLatLng =
-                                              //                     newPosition;
-                                              //                 _latitudeController
-                                              //                         .text =
-                                              //                     newPosition
-                                              //                         .latitude
-                                              //                         .toStringAsFixed(
-                                              //                             6);
-                                              //                 _longitudeController
-                                              //                         .text =
-                                              //                     newPosition
-                                              //                         .longitude
-                                              //                         .toStringAsFixed(
-                                              //                             6);
-                                              //               });
-                                              //               final controller =
-                                              //                   await _mapController
-                                              //                       .future;
-                                              //               controller.animateCamera(
-                                              //                   CameraUpdate
-                                              //                       .newLatLng(
-                                              //                           newPosition));
-                                              //               await _updateAddressFromCoordinates(
-                                              //                   newPosition);
-                                              //             }
-                                              //           },
-                                              //         ),
-                                              //     },
-                                              //
-                                              //     onTap: (position) async {
-                                              //       if (isSearchSelected) {
-                                              //         setState(() {
-                                              //           _selectedLatLng =
-                                              //               position;
-                                              //           _latitudeController
-                                              //                   .text =
-                                              //               position.latitude
-                                              //                   .toStringAsFixed(
-                                              //                       6);
-                                              //           _longitudeController
-                                              //                   .text =
-                                              //               position.longitude
-                                              //                   .toStringAsFixed(
-                                              //                       6);
-                                              //         });
-                                              //         await _updateAddressFromCoordinates(
-                                              //             position);
-                                              //       }
-                                              //     },
-                                              //
-                                              //     onCameraMove: (_) {},
-                                              //     gestureRecognizers: {
-                                              //       Factory<OneSequenceGestureRecognizer>(
-                                              //           () =>
-                                              //               EagerGestureRecognizer()),
-                                              //     },
-                                              //   ),
-                                              // )
-                                              //     : Image.asset(
-                                              //   'assets/images/google_map.png',
-                                              //   fit: BoxFit.cover,
-                                              // ),
                                             ),
                                           ),
                                         ],
@@ -717,30 +842,35 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                           padding:
                                               const EdgeInsets.only(left: 8.0),
                                           child: Text(
-                                              widget.locationId.isEmpty
-                                                  ? LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_app_title")
-                                                  : "Edit Location",
+                                              !isEditMode
+                                                  ? LanguageService
+                                                      .getTranslated(context,
+                                                          "add_location")
+                                                  : LanguageService
+                                                      .getTranslated(context,
+                                                          "edit_location"),
                                               style: typography.H5_Regular),
                                         ),
 
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(left: 8.0),
+                                          padding: const EdgeInsets.only(
+                                              left: 8.0, top: 4),
                                           child: Text(
-                                            widget.locationId.isEmpty
+                                            isEditMode
                                                 ? LanguageService.getTranslated(
                                                     context,
-                                                    "addlocation_app_subtitle")
-                                                : "Please provide the necessary information to update the location details",
-                                            style: typography.Subtitle1,
+                                                    "create_location_info")
+                                                : LanguageService.getTranslated(
+                                                    context,
+                                                    "create_location_info"),
+                                            // style: typography.Subtitle1,
                                           ),
                                         ),
                                         SizedBox(
                                           height: CustomSpacing.two,
                                         ),
-                                        widget.locationId.isEmpty ?
+                                        // widget.locationId!.isEmpty
+                                        //     ?
                                         Container(
                                           // color: Colors.black,
                                           padding: const EdgeInsets.all(8),
@@ -749,7 +879,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 MainAxisAlignment.start,
                                             children: [
                                               _buildToggleButton(
-                                                title: "Search Address",
+                                                title: LanguageService
+                                                    .getTranslated(context,
+                                                        "search_address"),
                                                 isSelected: !isSearchSelected,
                                                 onTap: () {
                                                   print(isSearchSelected);
@@ -775,11 +907,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     _isSelectedFromAutocomplete =
                                                         false;
                                                   });
+                                                  _getCurrentLocation();
                                                 },
                                               ),
                                               // const SizedBox(width: 4),
                                               _buildToggleButton(
-                                                title: "Manual Entry",
+                                                title: LanguageService
+                                                    .getTranslated(context,
+                                                        "manual_entry"),
                                                 isSelected: isSearchSelected,
                                                 onTap: () {
                                                   setState(() {
@@ -876,8 +1011,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                             ],
                                           ),
-                                        ):Container(),
-                                        SizedBox(height: CustomSpacing.four),
+                                        ),
+                                        // : Container(),
+                                        SizedBox(height: CustomSpacing.two),
                                         // Location Address
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
@@ -939,8 +1075,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 },
                                                 decoration: InputDecoration(
                                                   labelText: isSearchSelected
-                                                      ? "Enter address manually"
-                                                      : "Search for Your property",
+                                                      ? LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "enter_address_manually")
+                                                      : LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "search_property"),
                                                   border:
                                                       const OutlineInputBorder(),
                                                   prefixIcon:
@@ -960,61 +1102,58 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         ),
 
                                         SizedBox(
-                                          height: CustomSpacing.two,
+                                          height: CustomSpacing.one,
                                         ),
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: TextFormField(
+                                            autovalidateMode: AutovalidateMode
+                                                .onUserInteraction,
                                             enabled: !areFieldsDisabled(),
                                             controller:
                                                 _locationAddress1Controller,
                                             decoration: InputDecoration(
                                               labelText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_location_name"),
+                                                      context, "location_name"),
                                               border: OutlineInputBorder(),
-                                              // hintText:
-                                              // LanguageService.getTranslated(
-                                              //     context,
-                                              //     "addlocation_address1_hint"),
                                             ),
                                             validator: (value) {
                                               if (value == null ||
                                                   value.isEmpty) {
                                                 return LanguageService
                                                     .getTranslated(context,
-                                                        "addlocation_address_error");
+                                                        "address_required");
                                               }
                                               return null;
                                             },
                                           ),
                                         ),
-                                        SizedBox(height: CustomSpacing.four),
+                                        SizedBox(height: CustomSpacing.one),
                                         // Location Address
                                         Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: TextFormField(
+                                            autovalidateMode: AutovalidateMode
+                                                .onUserInteraction,
                                             enabled: !areFieldsDisabled(),
                                             controller:
                                                 _locationAddressController,
                                             decoration: InputDecoration(
                                               labelText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_address1"),
+                                                      context, "address"),
                                               border: OutlineInputBorder(),
                                               hintText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_address1"),
+                                                      context, "address"),
                                             ),
                                             validator: (value) {
                                               if (value == null ||
                                                   value.isEmpty) {
                                                 return LanguageService
                                                     .getTranslated(context,
-                                                        "addlocation_address_error");
+                                                        "address_required");
                                               }
                                               return null;
                                             },
@@ -1023,30 +1162,29 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                         SizedBox(height: CustomSpacing.three),
                                         // Country just show flag and country name
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(left: 8.0),
+                                          padding: const EdgeInsets.all(8.0),
                                           child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            // crossAxisAlignment:
+                                            //     CrossAxisAlignment.start,
                                             children: [
+                                              /// 🌍 Country Picker
                                               Expanded(
+                                                flex: 1,
                                                 child: StatefulBuilder(
                                                   builder: (BuildContext
                                                           context,
                                                       StateSetter setState) {
-                                                    bool disabled =
+                                                    final bool disabled =
                                                         areFieldsDisabled();
+
                                                     return AbsorbPointer(
                                                       absorbing: disabled,
-                                                      // Prevent interactions if disabled
                                                       child: Opacity(
                                                         opacity: disabled
                                                             ? 0.5
                                                             : 1.0,
-                                                        // Visual indication of disabled state
                                                         child:
-                                                            CountryPickerFlagName(
+                                                            CountryPickerFlagNameCreate(
                                                           key: countryPickerKey,
                                                           onCountryChange:
                                                               (country) {
@@ -1083,63 +1221,156 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   },
                                                 ),
                                               ),
+                                              SizedBox(width: 2),
+                                              Expanded(
+                                                flex: 6,
+                                                child: TextFormField(
+                                                  autovalidateMode:
+                                                      AutovalidateMode
+                                                          .onUserInteraction,
+                                                  style: typography.Body1,
+                                                  enabled: !areFieldsDisabled(),
+                                                  controller:
+                                                      _locationZipCodeController,
+                                                  decoration: InputDecoration(
+                                                    labelText: LanguageService
+                                                        .getTranslated(context,
+                                                            "zip_postal_code"),
+                                                    hintText: LanguageService
+                                                        .getTranslated(context,
+                                                            "zip_postal_code"),
+                                                    border:
+                                                        const OutlineInputBorder(),
+                                                    isDense:
+                                                        true, // ✅ height match with country picker
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.isEmpty) {
+                                                      return LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "zip_code_required");
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
 
-                                        SizedBox(height: CustomSpacing.three),
-                                        // Location Zip/Postal Code
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: TextFormField(
-                                            style: typography.Body1,
-                                            enabled: !areFieldsDisabled(),
-                                            controller:
-                                                _locationZipCodeController,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_zip"),
-                                              border: OutlineInputBorder(),
-                                              hintText:
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_zip_hint"),
-                                            ),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return LanguageService
-                                                    .getTranslated(context,
-                                                        "addlocation_zip_error");
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
+                                        // Padding(
+                                        //   padding:
+                                        //       const EdgeInsets.only(left: 8.0),
+                                        //   child: Row(
+                                        //     mainAxisSize: MainAxisSize.min,
+                                        //     mainAxisAlignment:
+                                        //         MainAxisAlignment.start,
+                                        //     children: [
+                                        //       Expanded(
+                                        //         child: StatefulBuilder(
+                                        //           builder: (BuildContext
+                                        //                   context,
+                                        //               StateSetter setState) {
+                                        //             bool disabled =
+                                        //                 areFieldsDisabled();
+                                        //             return AbsorbPointer(
+                                        //               absorbing: disabled,
+                                        //               // Prevent interactions if disabled
+                                        //               child: Opacity(
+                                        //                 opacity: disabled
+                                        //                     ? 0.5
+                                        //                     : 1.0,
+                                        //                 // Visual indication of disabled state
+                                        //                 child:
+                                        //                     CountryPickerFlagName(
+                                        //                   key: countryPickerKey,
+                                        //                   onCountryChange:
+                                        //                       (country) {
+                                        //                     if (!disabled) {
+                                        //                       setState(() {
+                                        //                         _selectedCountry =
+                                        //                             country
+                                        //                                 .name;
+                                        //                       });
+                                        //                     }
+                                        //                   },
+                                        //                   initialValue:
+                                        //                       country_picker
+                                        //                           .Country(
+                                        //                     phoneCode: '1',
+                                        //                     countryCode:
+                                        //                         getCountryCodeFromName(
+                                        //                                 _selectedCountry) ??
+                                        //                             "",
+                                        //                     e164Sc: 1,
+                                        //                     geographic: true,
+                                        //                     level: 1,
+                                        //                     name:
+                                        //                         _selectedCountry,
+                                        //                     example: '',
+                                        //                     displayName: '',
+                                        //                     displayNameNoCountryCode:
+                                        //                         '',
+                                        //                     e164Key: '',
+                                        //                   ),
+                                        //                 ),
+                                        //               ),
+                                        //             );
+                                        //           },
+                                        //         ),
+                                        //       ),
+                                        //     ],
+                                        //   ),
+                                        // ),
+                                        //
+                                        // SizedBox(height: CustomSpacing.three),
+                                        // // Location Zip/Postal Code
+                                        // Padding(
+                                        //   padding: const EdgeInsets.all(8.0),
+                                        //   child: TextFormField(
+                                        //     autovalidateMode: AutovalidateMode
+                                        //         .onUserInteraction,
+                                        //     style: typography.Body1,
+                                        //     enabled: !areFieldsDisabled(),
+                                        //     controller:
+                                        //         _locationZipCodeController,
+                                        //     decoration: InputDecoration(
+                                        //       labelText:
+                                        //           LanguageService.getTranslated(
+                                        //               context,
+                                        //               "zip_postal_code"),
+                                        //       border: OutlineInputBorder(),
+                                        //       hintText:
+                                        //           LanguageService.getTranslated(
+                                        //               context,
+                                        //               "zip_postal_code"),
+                                        //     ),
+                                        //     validator: (value) {
+                                        //       if (value == null ||
+                                        //           value.isEmpty) {
+                                        //         return LanguageService
+                                        //             .getTranslated(context,
+                                        //                 "zip_code_required");
+                                        //       }
+                                        //       return null;
+                                        //     },
+                                        //   ),
+                                        // ),
                                         SizedBox(height: CustomSpacing.three),
                                         Row(
                                           children: [
-                                            SizedBox(width: 10),
-                                            // Latitude field
+                                            const SizedBox(width: 10),
+
+                                            /// LATITUDE
                                             Expanded(
                                               child: TextFormField(
-                                                // controller: _latitudeController,
-                                                controller:
-                                                    TextEditingController(
-                                                  text: _selectedLatLng !=
-                                                              null &&
-                                                          _selectedLatLng!
-                                                                  .longitude !=
-                                                              null
-                                                      ? _selectedLatLng!
-                                                          .longitude
-                                                          .toString()
-                                                      : '',
-                                                ),
+                                                controller: _latitudeController,
                                                 decoration: InputDecoration(
-                                                  labelText: 'Latitude',
+                                                  labelText: LanguageService
+                                                      .getTranslated(
+                                                          context, "latitude"),
                                                   labelStyle: const TextStyle(
                                                       color: Colors.white70),
                                                   filled: true,
@@ -1174,13 +1405,17 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 ),
                                                 style: const TextStyle(
                                                     color: Colors.white),
-                                                readOnly: false,
+                                                keyboardType:
+                                                    const TextInputType
+                                                        .numberWithOptions(
+                                                        decimal: true),
                                                 onChanged: (value) {
                                                   final lat =
                                                       double.tryParse(value);
                                                   final lng = double.tryParse(
                                                       _longitudeController
                                                           .text);
+
                                                   if (lat != null &&
                                                       lng != null) {
                                                     setState(() {
@@ -1191,24 +1426,18 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 },
                                               ),
                                             ),
+
                                             const SizedBox(width: 16),
-// Longitude field
+
+                                            /// LONGITUDE
                                             Expanded(
                                               child: TextFormField(
                                                 controller:
-                                                    TextEditingController(
-                                                  text: _selectedLatLng !=
-                                                              null &&
-                                                          _selectedLatLng!
-                                                                  .latitude !=
-                                                              null
-                                                      ? _selectedLatLng!
-                                                          .latitude
-                                                          .toString()
-                                                      : '',
-                                                ),
+                                                    _longitudeController,
                                                 decoration: InputDecoration(
-                                                  labelText: 'Longitude',
+                                                  labelText: LanguageService
+                                                      .getTranslated(
+                                                          context, "longitude"),
                                                   labelStyle: const TextStyle(
                                                       color: Colors.white70),
                                                   filled: true,
@@ -1242,12 +1471,16 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 ),
                                                 style: const TextStyle(
                                                     color: Colors.white),
-                                                readOnly: false,
+                                                keyboardType:
+                                                    const TextInputType
+                                                        .numberWithOptions(
+                                                        decimal: true),
                                                 onChanged: (value) {
                                                   final lat = double.tryParse(
                                                       _latitudeController.text);
                                                   final lng =
                                                       double.tryParse(value);
+
                                                   if (lat != null &&
                                                       lng != null) {
                                                     setState(() {
@@ -1258,10 +1491,158 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 },
                                               ),
                                             ),
-                                            SizedBox(width: 10),
-                                            SizedBox(width: 10),
+
+                                            const SizedBox(width: 10),
                                           ],
                                         ),
+
+//                                         Row(
+//                                           children: [
+//                                             SizedBox(width: 10),
+//                                             // Latitude field
+//                                             Expanded(
+//                                               child: TextFormField(
+//                                                 // controller: _latitudeController,
+//                                                 controller:
+//                                                     TextEditingController(
+//                                                   text: _selectedLatLng !=
+//                                                               null &&
+//                                                           _selectedLatLng!
+//                                                                   .longitude !=
+//                                                               null
+//                                                       ? _selectedLatLng!
+//                                                           .longitude
+//                                                           .toString()
+//                                                       : '',
+//                                                 ),
+//                                                 decoration: InputDecoration(
+//                                                   labelText: LanguageService
+//                                                       .getTranslated(
+//                                                           context, "latitude"),
+//                                                   labelStyle: const TextStyle(
+//                                                       color: Colors.white70),
+//                                                   filled: true,
+//                                                   fillColor: Colors.white
+//                                                       .withOpacity(0.05),
+//                                                   enabledBorder:
+//                                                       OutlineInputBorder(
+//                                                     borderRadius:
+//                                                         BorderRadius.circular(
+//                                                             8),
+//                                                     borderSide:
+//                                                         const BorderSide(
+//                                                             color:
+//                                                                 Colors.white30),
+//                                                   ),
+//                                                   focusedBorder:
+//                                                       OutlineInputBorder(
+//                                                     borderRadius:
+//                                                         BorderRadius.circular(
+//                                                             8),
+//                                                     borderSide:
+//                                                         const BorderSide(
+//                                                             color:
+//                                                                 Colors.white60,
+//                                                             width: 1.5),
+//                                                   ),
+//                                                   contentPadding:
+//                                                       const EdgeInsets
+//                                                           .symmetric(
+//                                                           horizontal: 12,
+//                                                           vertical: 10),
+//                                                 ),
+//                                                 style: const TextStyle(
+//                                                     color: Colors.white),
+//                                                 readOnly: false,
+//                                                 onChanged: (value) {
+//                                                   final lat =
+//                                                       double.tryParse(value);
+//                                                   final lng = double.tryParse(
+//                                                       _longitudeController
+//                                                           .text);
+//                                                   if (lat != null &&
+//                                                       lng != null) {
+//                                                     setState(() {
+//                                                       _selectedLatLng =
+//                                                           LatLng(lat, lng);
+//                                                     });
+//                                                   }
+//                                                 },
+//                                               ),
+//                                             ),
+//                                             const SizedBox(width: 16),
+// // Longitude field
+//                                             Expanded(
+//                                               child: TextFormField(
+//                                                 controller:
+//                                                     TextEditingController(
+//                                                   text: _selectedLatLng !=
+//                                                               null &&
+//                                                           _selectedLatLng!
+//                                                                   .latitude !=
+//                                                               null
+//                                                       ? _selectedLatLng!
+//                                                           .latitude
+//                                                           .toString()
+//                                                       : '',
+//                                                 ),
+//                                                 decoration: InputDecoration(
+//                                                   labelText: LanguageService
+//                                                       .getTranslated(
+//                                                           context, "longitude"),
+//                                                   labelStyle: const TextStyle(
+//                                                       color: Colors.white70),
+//                                                   filled: true,
+//                                                   fillColor: Colors.white
+//                                                       .withOpacity(0.05),
+//                                                   enabledBorder:
+//                                                       OutlineInputBorder(
+//                                                     borderRadius:
+//                                                         BorderRadius.circular(
+//                                                             8),
+//                                                     borderSide:
+//                                                         const BorderSide(
+//                                                             color:
+//                                                                 Colors.white70),
+//                                                   ),
+//                                                   focusedBorder:
+//                                                       OutlineInputBorder(
+//                                                     borderRadius:
+//                                                         BorderRadius.circular(
+//                                                             8),
+//                                                     borderSide:
+//                                                         const BorderSide(
+//                                                             color: Colors.white,
+//                                                             width: 1.5),
+//                                                   ),
+//                                                   contentPadding:
+//                                                       const EdgeInsets
+//                                                           .symmetric(
+//                                                           horizontal: 12,
+//                                                           vertical: 10),
+//                                                 ),
+//                                                 style: const TextStyle(
+//                                                     color: Colors.white),
+//                                                 readOnly: false,
+//                                                 onChanged: (value) {
+//                                                   final lat = double.tryParse(
+//                                                       _latitudeController.text);
+//                                                   final lng =
+//                                                       double.tryParse(value);
+//                                                   if (lat != null &&
+//                                                       lng != null) {
+//                                                     setState(() {
+//                                                       _selectedLatLng =
+//                                                           LatLng(lat, lng);
+//                                                     });
+//                                                   }
+//                                                 },
+//                                               ),
+//                                             ),
+//                                             SizedBox(width: 10),
+//                                             SizedBox(width: 10),
+//                                           ],
+//                                         ),
 
                                         SizedBox(height: CustomSpacing.three),
                                         // Optional Details text with divider in row
@@ -1275,7 +1656,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 child: Text(
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "addlocation_optional_details"),
+                                                      "optional_details"),
                                                   style: typography.Body1,
                                                 ),
                                               ),
@@ -1312,7 +1693,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                               SizedBox(width: 8),
                                               Text(
-                                                "Rented",
+                                                LanguageService.getTranslated(
+                                                    context, "rented"),
                                                 style: typography.Body1,
                                               ),
                                               SizedBox(width: 16),
@@ -1333,7 +1715,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                               SizedBox(width: 8),
                                               Text(
-                                                "Owned",
+                                                LanguageService.getTranslated(
+                                                    context, "owned"),
                                                 style: typography.Body1,
                                               ),
                                             ],
@@ -1369,7 +1752,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                   decoration: InputDecoration(
                                                     labelText: LanguageService
                                                         .getTranslated(context,
-                                                            "addlocation_location_type"),
+                                                            "location_type"),
                                                     border:
                                                         OutlineInputBorder(),
                                                   ),
@@ -1426,13 +1809,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             decoration: InputDecoration(
                                               labelText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_city"),
+                                                      context, "city"),
                                               border: OutlineInputBorder(),
                                               hintText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_city_hint"),
+                                                      context, "city"),
                                             ),
                                           ),
                                         ),
@@ -1447,13 +1828,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             decoration: InputDecoration(
                                               labelText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_state"),
+                                                      context, "state"),
                                               border: OutlineInputBorder(),
                                               hintText:
                                                   LanguageService.getTranslated(
                                                       context,
-                                                      "addlocation_state_hint"),
+                                                      "enter_state_name"),
                                             ),
                                           ),
                                         ),
@@ -1469,8 +1849,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             decoration: InputDecoration(
                                               labelText:
                                                   LanguageService.getTranslated(
-                                                      context,
-                                                      "addlocation_description"),
+                                                      context, "description"),
                                               border: OutlineInputBorder(),
                                               hintText:
                                                   LanguageService.getTranslated(
@@ -1502,7 +1881,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               ),
                                               SizedBox(width: 8),
                                               Text(
-                                                "Add to SOV",
+                                                LanguageService.getTranslated(
+                                                    context, "add_to_sov"),
                                                 style: typography.Body1,
                                               ),
                                             ],
@@ -1515,13 +1895,65 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                             padding:
                                                 const EdgeInsets.only(left: 10),
                                             child: Text(
-                                              "Available Locations: $hasHazardLicenseStatus",
+                                              LanguageService.getTranslated(
+                                                      context,
+                                                      "available_locations") +
+                                                  " : " +
+                                                  hasHazardLicenseStatus
+                                                      .toString(),
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 20,
                                               ),
                                             ),
                                           )
+                                        ] else if (!hasAnyPlan) ...[
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.only(
+                                                    left: 10),
+                                                child: Text(
+                                                  LanguageService.getTranslated(
+                                                          context,
+                                                          "available_locations") +
+                                                      " : " +
+                                                      hazardLicenseStatus2
+                                                          .toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(width: 5),
+                                              InkWell(
+                                                  onTap: () {
+                                                    if (Platform.isIOS) {
+                                                      Fluttertoast.showToast(
+                                                        msg:
+                                                            "Please complete the payment on the website.",
+                                                        toastLength:
+                                                            Toast.LENGTH_SHORT,
+                                                        gravity:
+                                                            ToastGravity.BOTTOM,
+                                                      );
+                                                    } else {
+                                                      Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  PurchaseLicensePage()));
+                                                    }
+                                                  },
+                                                  child: Text(
+                                                    "Upgrade Now",
+                                                    style: TextStyle(
+                                                        color: Colors.orange,
+                                                        fontSize: 16),
+                                                  ))
+                                            ],
+                                          ),
                                         ] else ...[
                                           Container(
                                             padding:
@@ -1544,6 +1976,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
+                                                SizedBox(height: 8.0),
                                                 // Account Name (Pre-filled and non-editable)
                                                 TextField(
                                                   controller:
@@ -1552,7 +1985,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                               .accountName),
                                                   enabled: false,
                                                   decoration: InputDecoration(
-                                                    labelText: "Account Name",
+                                                    labelText: LanguageService
+                                                        .getTranslated(context,
+                                                            "account_name"),
                                                     border:
                                                         const OutlineInputBorder(),
                                                   ),
@@ -1566,14 +2001,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                               .subAccountName),
                                                   enabled: false,
                                                   decoration: InputDecoration(
-                                                    labelText:
-                                                        "Sub-account Name",
+                                                    labelText: LanguageService
+                                                        .getTranslated(context,
+                                                            "sub_account_name"),
                                                     border:
                                                         const OutlineInputBorder(),
                                                   ),
                                                 ),
                                                 SizedBox(height: 8.0),
-                                                // SoV Autocomplete Dropdown
                                                 Consumer<SOVListProvider>(
                                                   builder: (context,
                                                       sovProvider, child) {
@@ -1584,70 +2019,232 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                               sovController,
                                                           onChanged: (value) {
                                                             setState(() {
-                                                              // Reset SoV ID when typing
                                                               selectedSovId =
                                                                   "";
+                                                              isSovSelected =
+                                                                  false;
+                                                            });
 
-                                                              // Filter the autocomplete list based on user input
+                                                            _debounce?.cancel();
+                                                            _debounce = Timer(
+                                                                Duration(
+                                                                    milliseconds:
+                                                                        300),
+                                                                () {
                                                               sovProvider
-                                                                  .updateFilteredList(
-                                                                      value);
+                                                                  .fetchSovList(
+                                                                context,
+                                                                value,
+                                                                1,
+                                                                // IMPORTANT
+                                                                100,
+                                                                '',
+                                                              );
                                                             });
                                                           },
-                                                          validator: (value) {
-                                                            if (addToSOVCheck) {
-                                                              // Apply validation only if addToSOVCheck is true
-                                                              if (value ==
-                                                                      null ||
-                                                                  value
-                                                                      .isEmpty) {
-                                                                return LanguageService
-                                                                    .getTranslated(
-                                                                  context,
-                                                                  "addlocation_address_error",
-                                                                );
-                                                              }
+                                                          onTap: () {
+                                                            if (!isSovSelected &&
+                                                                sovController
+                                                                    .text
+                                                                    .isEmpty) {
+                                                              sovProvider
+                                                                  .setLoading(
+                                                                      true);
+                                                              sovProvider
+                                                                  .fetchSovList1(
+                                                                      context,
+                                                                      "",
+                                                                      1,
+                                                                      100,
+                                                                      '');
                                                             }
-                                                            return null;
                                                           },
                                                           decoration:
                                                               InputDecoration(
-                                                            labelText:
-                                                                "Name of the SoV",
+                                                            labelText: LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "name_of_sov"),
                                                             border:
-                                                                const OutlineInputBorder(),
-                                                            suffixIcon: Icon(
-                                                                Icons.search),
+                                                                OutlineInputBorder(),
+                                                            suffixIcon:
+                                                                sovProvider
+                                                                        .isLoading
+                                                                    ? Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            10),
+                                                                        child:
+                                                                            SizedBox(
+                                                                          width:
+                                                                              20,
+                                                                          height:
+                                                                              20,
+                                                                          child:
+                                                                              CircularProgressIndicator(strokeWidth: 2),
+                                                                        ),
+                                                                      )
+                                                                    : Icon(Icons
+                                                                        .search),
                                                           ),
                                                         ),
-                                                        if (sovController
-                                                            .text.isNotEmpty)
-                                                          AutocompleteOptionsSovs(
-                                                            options: sovProvider
-                                                                .filteredAutoCompleteList,
-                                                            onSelected: (Result
-                                                                selection) {
-                                                              setState(() {
-                                                                selectedSovId =
-                                                                    selection
-                                                                            .sovId ??
-                                                                        "";
-                                                                sovController
-                                                                        .text =
-                                                                    selection
-                                                                            .name ??
-                                                                        "";
-                                                                sovProvider
-                                                                    .clearAutoCompleteList();
-                                                              });
-                                                            },
-                                                            isLoading: sovProvider
-                                                                .isAutoCompleteLoading,
+
+                                                        // SHOW LIST ONLY WHEN NOT SELECTED + NOT LOADING + LIST AVAILABLE
+                                                        if (!isSovSelected &&
+                                                            !sovProvider
+                                                                .isLoading &&
+                                                            sovProvider
+                                                                .filtersovlist
+                                                                .isNotEmpty)
+                                                          Container(
+                                                            margin:
+                                                                EdgeInsets.only(
+                                                                    top: 4),
+                                                            child: ListView
+                                                                .builder(
+                                                              shrinkWrap: true,
+                                                              physics:
+                                                                  NeverScrollableScrollPhysics(),
+                                                              itemCount: sovProvider
+                                                                  .filtersovlist
+                                                                  .length,
+                                                              itemBuilder:
+                                                                  (context,
+                                                                      index) {
+                                                                final sov =
+                                                                    sovProvider
+                                                                            .filtersovlist[
+                                                                        index];
+                                                                return ListTile(
+                                                                  title: Text(
+                                                                      sov.name ??
+                                                                          ''),
+                                                                  onTap: () {
+                                                                    setState(
+                                                                        () {
+                                                                      selectedSovId =
+                                                                          sov.sovId ??
+                                                                              "";
+                                                                      sovController
+                                                                              .text =
+                                                                          sov.name ??
+                                                                              "";
+                                                                      isSovSelected =
+                                                                          true;
+                                                                    });
+
+                                                                    sovProvider
+                                                                        .clearAutoCompleteList();
+                                                                  },
+                                                                );
+                                                              },
+                                                            ),
                                                           ),
+
+                                                        // HIDE LIST WHILE LOADING
+                                                        if (!isSovSelected &&
+                                                            sovProvider
+                                                                .isLoading)
+                                                          SizedBox(),
                                                       ],
                                                     );
                                                   },
                                                 ),
+
+                                                // SoV Autocomplete Dropdown// SoV Autocomplete Dropdown
+                                                // // SoV Autocomplete Dropdown
+                                                // Consumer<SOVListProvider>(
+                                                //   builder: (context, sovProvider, child) {
+                                                //     return Column(
+                                                //       children: [
+                                                //         TextFormField(
+                                                //           controller: sovController,
+                                                //           onChanged: (value) {
+                                                //             // Reset SoV ID immediately when typing
+                                                //             setState(() {
+                                                //               selectedSovId = "";
+                                                //             });
+                                                //
+                                                //             // Debounce provider call to avoid spamming updates
+                                                //             _debounce?.cancel();
+                                                //             _debounce = Timer(const Duration(milliseconds: 300), () {
+                                                //               // Fetch filtered SOV list when user types
+                                                //               sovProvider.fetchAutoCompleteSovListLocations(
+                                                //                 context,
+                                                //                 widget.accountId,
+                                                //                 widget.subAccountId,
+                                                //                 searchQuery: value, // Pass the search query
+                                                //               );
+                                                //             });
+                                                //           },
+                                                //           onTap: () {
+                                                //             // Clear and fetch initial list when field is tapped
+                                                //             if (sovController.text.isEmpty) {
+                                                //               sovProvider.fetchAutoCompleteSovListLocations(
+                                                //                 context,
+                                                //                 widget.accountId,
+                                                //                 widget.subAccountId,
+                                                //               );
+                                                //             }
+                                                //           },
+                                                //           validator: (value) {
+                                                //             if (addToSOVCheck) {
+                                                //               // Apply validation only if addToSOVCheck is true
+                                                //               if (value == null || value.isEmpty) {
+                                                //                 return LanguageService.getTranslated(
+                                                //                   context,
+                                                //                   "addlocation_address_error",
+                                                //                 );
+                                                //               }
+                                                //             }
+                                                //             return null;
+                                                //           },
+                                                //           decoration: InputDecoration(
+                                                //             labelText: "Name of the SoV",
+                                                //             border: const OutlineInputBorder(),
+                                                //             suffixIcon: Icon(Icons.search),
+                                                //           ),
+                                                //         ),
+                                                //         Text(sovProvider.filteredAutoCompleteList1.length.toString()),
+                                                //         // Show autocomplete options when provider has results
+                                                //         if (sovProvider.filteredAutoCompleteList1.isNotEmpty)
+                                                //           Container(
+                                                //             decoration: BoxDecoration(
+                                                //               color: Theme.of(context).colorScheme.surface,
+                                                //               borderRadius: BorderRadius.circular(8),
+                                                //               boxShadow: [
+                                                //                 BoxShadow(
+                                                //                   color: Colors.black.withOpacity(0.1),
+                                                //                   blurRadius: 4,
+                                                //                   offset: Offset(0, 2),
+                                                //                 ),
+                                                //               ],
+                                                //             ),
+                                                //             margin: EdgeInsets.only(top: 4),
+                                                //             child: ListView.builder(
+                                                //               shrinkWrap: true,
+                                                //               physics: NeverScrollableScrollPhysics(),
+                                                //               itemCount: sovProvider.filteredAutoCompleteList1.length,
+                                                //               itemBuilder: (context, index) {
+                                                //                 final sov = sovProvider.filteredAutoCompleteList1[index];
+                                                //                 return ListTile(
+                                                //                   title: Text(sov.name ?? ''),
+                                                //                   subtitle: sov.name != null ? Text(sov.name!) : null,
+                                                //                   onTap: () {
+                                                //                     setState(() {
+                                                //                       selectedSovId = sov.sovId ?? "";
+                                                //                       sovController.text = sov.name ?? "";
+                                                //                       sovProvider.clearAutoCompleteList();
+                                                //                     });
+                                                //                   },
+                                                //                 );
+                                                //               },
+                                                //             ),
+                                                //           ),
+                                                //       ],
+                                                //     );
+                                                //   },
+                                                // ),
                                               ],
                                             ),
                                           ),
@@ -1666,21 +2263,41 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                         if (_formKey
                                                             .currentState!
                                                             .validate()) {
-                                                          print("object");
                                                           var body =
                                                               _buildRequestBody();
-
-                                                          if (widget.locationId
-                                                              .isEmpty) {
-                                                            print("Start");
-
-                                                            await _handleAddLocation(
-                                                                context, body);
-                                                          } else {
-                                                            // Update Location
+                                                          if (isEditMode) {
+                                                            // ✅ EDIT MODE → UPDATE
                                                             await _handleUpdateLocation(
                                                                 context, body);
+                                                          } else {
+                                                            // ✅ ADD MODE → ADD
+                                                            await _handleAddLocation(
+                                                                context, body);
                                                           }
+
+                                                          // if (isEditMode) {
+                                                          //   await Provider.of<
+                                                          //               LocationListProvider>(
+                                                          //           context,
+                                                          //           listen:
+                                                          //               false)
+                                                          //       .addLocation(
+                                                          //     context,
+                                                          //     widget.accountId!,
+                                                          //     widget
+                                                          //         .subAccountId!,
+                                                          //     widget.sovId,
+                                                          //     widget
+                                                          //         .accountName!,
+                                                          //     widget
+                                                          //         .subAccountName!,
+                                                          //     body,
+                                                          //   );
+                                                          // } else {
+                                                          //   // Update Location
+                                                          //   await _handleUpdateLocation(
+                                                          //       context, body);
+                                                          // }
                                                         }
                                                       },
                                                       child: _buildButtonChild(
@@ -1697,13 +2314,28 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                     child: CustomButton(
                                                       type: ButtonType.outlined,
                                                       onPressed: () {
-                                                        Navigator.pop(context);
+                                                        if (widget.newUser
+                                                                .toString() ==
+                                                            "true") {
+                                                          Navigator.of(context)
+                                                              .push(
+                                                            MaterialPageRoute(
+                                                                builder: (_) =>
+                                                                    DashboardScreen(
+                                                                      newUser:
+                                                                          "false",
+                                                                    )),
+                                                          );
+                                                        } else {
+                                                          Navigator.pop(
+                                                              context);
+                                                        }
                                                       },
                                                       child: Text(
                                                         LanguageService
                                                             .getTranslated(
                                                                 context,
-                                                                "addlocation_cancel_button_text"),
+                                                                "cancel"),
                                                         style: typography
                                                                 .ButtonLarge
                                                             .copyWith(
@@ -1760,9 +2392,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "new": addToSOVCheck,
         "rented": rented,
         "leased": leased,
-        "latitude": _selectedLatLng!.latitude.toString(),
+        "latitude": _selectedLatLng?.latitude.toString() ?? _latitudeController,
         // markers.isNotEmpty ? markers.values.first.position.latitude : "0.0",
-        "longitude": _selectedLatLng!.latitude.toString(),
+        "longitude":
+            _selectedLatLng?.longitude.toString() ?? _longitudeController,
+
         // markers.isNotEmpty
         //     ? markers.values.first.position.longitude
         //     : "0.0",
@@ -1775,7 +2409,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         "account_name": widget.accountName,
         "sub_account_name": widget.subAccountName,
         if (widget.is_conflict == true) "is_conflict": widget.is_conflict,
-        if (widget.locationId.isNotEmpty) "location_id": widget.locationId,
+        if (isEditMode) "location_id": widget.locationId,
       }
     };
   }
@@ -1786,11 +2420,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         Provider.of<LocationListProvider>(context, listen: false);
     await locationListProvider.addLocation(
       context,
-      widget.accountId,
-      widget.subAccountId,
+      widget.accountId!,
+      widget.subAccountId!,
       widget.sovId,
-      widget.accountName,
-      widget.subAccountName,
+      widget.accountName!,
+      widget.subAccountName!,
       body,
     );
   }
@@ -1801,10 +2435,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         Provider.of<MyLocationListProvider>(context, listen: false);
     var success = await locationProfileProvider.updateLocationDetails(
       context,
-      widget.accountId,
-      widget.subAccountId,
+      widget.accountId!,
+      widget.subAccountId!,
       widget.sovId,
-      widget.locationId,
+      widget.locationId!,
       body,
     );
 
@@ -1814,26 +2448,26 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
-
+          Navigator.pop(context, true);
           // Navigate and wait for result
-          final result = await Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LocationProfile(
-                accountId: widget.accountId,
-                subAccountId: widget.subAccountId,
-                sovId: widget.sovId,
-                accountName: widget.accountName,
-                subAccountName: widget.subAccountName,
-                sovName: widget.sovName,
-                locationId: widget.locationId,
-                searchQuery: widget.searchQuery,
-                page: widget.page,
-                totalPages: widget.totalPages,
-              ),
-            ),
-            (route) => false,
-          );
+          // final result = await Navigator.pushAndRemoveUntil(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => LocationProfile(
+          //       accountId: widget.accountId!,
+          //       subAccountId: widget.subAccountId!,
+          //       sovId: widget.sovId,
+          //       accountName: widget.accountName!,
+          //       subAccountName: widget.subAccountName!,
+          //       sovName: widget.sovName,
+          //       locationId: widget.locationId,
+          //       searchQuery: widget.searchQuery,
+          //       page: widget.page!,
+          //       totalPages: widget.totalPages,
+          //     ),
+          //   ),
+          //   (route) => false,
+          // );
 
           // Reload the page when coming back
           if (mounted) {
@@ -1863,10 +2497,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       );
     } else {
       return Text(
-        widget.locationId.isEmpty
-            ? LanguageService.getTranslated(
-                context, "addlocation_create_button_text")
-            : "Update",
+        isEditMode
+            ? LanguageService.getTranslated(context, "update")
+            : LanguageService.getTranslated(context, "create"),
+        // widget.locationId?.isNotEmpty == true ? false : true ? LanguageService.getTranslated(context, "create")
+        //     : LanguageService.getTranslated(context, "update"),
         style: typography.ButtonLarge.copyWith(
           color: Colors.black,
         ),
@@ -1880,8 +2515,8 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     var locations = provider.trialInfo['locations'] ?? 0;
     var total = provider.trialInfo['maxLocations'] ?? 0;
     var hasanyPlan = hasAnyPlan;
-    bool isAdd = widget.locationId.isEmpty;
-    return trialStatus.isNotEmpty && locations < 1 && isAdd && !hasanyPlan;
+    bool isAddMode = !isEditMode;
+    return trialStatus.isNotEmpty && locations < 1 && isAddMode && !hasanyPlan;
   }
 
   String? getCountryCodeFromName(String countryName) {
@@ -2070,13 +2705,13 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
           color: isSelected ? Color(0xFF90CAF9) : Colors.black26,
           borderRadius: BorderRadius.only(
             topLeft:
-                !isSearchSelected ? Radius.circular(1) : Radius.circular(8),
+                !isSearchSelected ? Radius.circular(8) : Radius.circular(8),
             bottomLeft:
-                !isSearchSelected ? Radius.circular(1) : Radius.circular(8),
+                !isSearchSelected ? Radius.circular(8) : Radius.circular(8),
             topRight:
-                isSearchSelected ? Radius.circular(8) : Radius.circular(1),
+                isSearchSelected ? Radius.circular(8) : Radius.circular(8),
             bottomRight:
-                isSearchSelected ? Radius.circular(8) : Radius.circular(1),
+                isSearchSelected ? Radius.circular(8) : Radius.circular(8),
           ),
         ),
         child: Text(

@@ -1,9 +1,12 @@
 import '../../utils/global_imports.dart';
+import 'missing_parameter.dart';
 
 class ProcessSummaryPage extends StatefulWidget {
   final Map<String, dynamic>? summaryData;
+  final String? sovId;
 
-  ProcessSummaryPage({Key? key, required this.summaryData}) : super(key: key);
+  ProcessSummaryPage({Key? key, required this.summaryData, this.sovId})
+      : super(key: key);
 
   @override
   _ProcessSummaryPageState createState() => _ProcessSummaryPageState();
@@ -65,70 +68,98 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔹 Tab buttons section
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                          padding: EdgeInsets.only(left: 18),
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            size: 18,
+                          )),
+                    ),
+                    SizedBox(width: 10),
+                    Text("Location Insights",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600))
+                  ],
+                ),
+                SizedBox(height: 8),
                 Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 11, vertical: 2),
-                  padding: const EdgeInsets.all(4),
+                      const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                  // padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
-                        .withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                   child: TabBar(
                     controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: AppColors.primaryMain,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
-                    labelStyle: typography.Body1.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    tabs: const [
-                      Tab(text: 'Data Summary'),
-                      Tab(text: 'Recommendation'),
-                    ],
+                    indicator: const BoxDecoration(),
+                    // disable default indicator
+                    dividerColor: Colors.transparent,
+                    labelPadding: EdgeInsets.zero,
+                    tabs: List.generate(2, (index) {
+                      final bool isSelected = _tabController!.index == index;
+
+                      return Tab(
+                        child: Container(
+                          margin: EdgeInsets.only(right: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 26,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryMain // filled when selected
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected
+                                ? null
+                                : Border.all(
+                                    color: AppColors.primaryMain, // blue border
+                                    width: 1,
+                                  ),
+                          ),
+                          child: Text(
+                            index == 0
+                                ? LanguageService.getTranslated(
+                                    context, "data_summary")
+                                : LanguageService.getTranslated(
+                                    context, "recommendations"),
+                            style: typography.Body1.copyWith(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                              color: isSelected
+                                  ? Colors.black
+                                  : AppColors.primaryMain, // blue text
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    onTap: (_) {
+                      setState(() {});
+                    },
                   ),
                 ),
-
-                // 🔹 Tab content
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // 🧩 Tab 1: Data Summary
                       SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child:_dataSummary(
-
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: _dataSummary(
+                          context,
+                          widget.summaryData!,
                         ),
                       ),
-
-                      // 🧩 Tab 2: Recommendation tab
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Recommendations",
-                              style: typography.Body1.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
+                      MissingParameterScreen(sovId: widget.sovId!),
                     ],
                   ),
                 ),
@@ -142,27 +173,17 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
 
 // Make sure these two helper methods are static or top-level functions
 
-  Widget _dataSummary(){
-    return Container();
-  }
-
-  Widget _buildDynamicGeoRatingSummary(
-      BuildContext context, Map<String, dynamic> apiData,
+  Widget _dataSummary(BuildContext context, Map<String, dynamic> apiData,
       {bool isSubProcess = false}) {
-    // Map<String, int> aggregatedScores = {
-    //   "5": 0,
-    //   "4": 0,
-    //   "3": 0,
-    //   "2": 0,
-    //   "1": 0,
-    // };
-
     final result = apiData['geo_rating_summary'];
     print('Result section: $result');
 
     if (result == null) {
-      print('No "result" key found in apiData.');
-      return _buildGeoRatingSummary(context, result);
+      print('No geo_rating_summary found.');
+      return const Text(
+        "No rating summary available",
+        style: TextStyle(color: Colors.white70),
+      );
     }
 
     if (isSubProcess) {
@@ -179,8 +200,7 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
           }
         });
       } else {
-        // Fallback to use direct result scores if no subprocesses are present
-        print('No subprocess data, using direct scores from result.');
+        print('No subprocess data, using direct scores.');
         final Map<String, dynamic> directScores =
             result['total_score_counts'] ?? {};
         directScores.forEach((rating, count) {
@@ -196,55 +216,75 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
     }
 
     print('Final aggregated scores: $result');
-    return _buildGeoRatingSummary(context, result);
+
+    return _buildGeoRatingSummary(context, result,
+        hazardVendorSummary: apiData['hazard_rating_summary'] ?? {});
   }
 
   Widget _buildGeoRatingSummary(
-      BuildContext context, Map<String, dynamic> ratings) {
-    var typography = CustomTypography(context);
+      BuildContext context, Map<String, dynamic> ratings,
+      {required Map<String, dynamic> hazardVendorSummary}) {
+    final typography = CustomTypography(context);
 
     return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
+      decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant, width: 1.0)),
       margin: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Grid Layout for Star Ratings
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Row for 5 Star and 4 Star Locations
               Row(
                 children: [
                   Expanded(
-                      child: _buildRatingCard(context, "1 Star Locations",
-                          ratings['1'] ?? 0, typography)),
-                  SizedBox(width: 8), // Spacing between the two cards
-                  Expanded(
-                      child: _buildRatingCard(context, "2 Star Locations",
-                          ratings['2'] ?? 0, typography)),
-                ],
-              ),
-              SizedBox(height: 8), // Spacing between rows
-
-              // Row for 3 Star and 2 Star Locations
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildRatingCard(context, "3 Star Locations",
-                          ratings['3'] ?? 0, typography)),
+                    child: _buildRatingCard(context, "1 Star Locations",
+                        ratings['1'] ?? 0, typography),
+                  ),
                   SizedBox(width: 8),
                   Expanded(
-                      child: _buildRatingCard(context, "4 Star Locations",
-                          ratings['4'] ?? 0, typography)),
+                    child: _buildRatingCard(context, "2 Star Locations",
+                        ratings['2'] ?? 0, typography),
+                  ),
                 ],
               ),
+
               SizedBox(height: 8),
 
-              // Single expanded row for 1 Star Locations
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRatingCard(context, "3 Star Locations",
+                        ratings['3'] ?? 0, typography),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: _buildRatingCard(context, "4 Star Locations",
+                        ratings['4'] ?? 0, typography),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 8),
+
               _buildRatingCard(
                   context, "5 Star Locations", ratings['5'] ?? 0, typography),
+
+              SizedBox(height: 10),
+
+              // ⭐ Correct hazard vendor summary block
+              Container(
+                height: MediaQuery.of(context).size.height / 2.8,
+                child: _buildHazardVendorSummary(
+                    context, hazardVendorSummary, typography),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -281,16 +321,13 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
 
   Widget _buildHazardVendorSummary(BuildContext context,
       Map<dynamic, dynamic> hazardVendorData, CustomTypography typography) {
-    // if (hazardVendorData.isEmpty) {
-    //   return SizedBox.shrink();
-    // }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            "Hazard Rating Summary",
+            LanguageService.getTranslated(context, "hazard_rating_summary"),
             style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
@@ -399,7 +436,8 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                                 ),
                                 initiallyExpanded: false,
                                 title: Text(
-                                  "Hazard Risk Score Wise Locations",
+                                  LanguageService.getTranslated(
+                                      context, "hazard_rating_summary"),
                                   style: typography.Body2.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: Theme.of(context).disabledColor,

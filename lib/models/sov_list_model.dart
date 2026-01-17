@@ -4,7 +4,10 @@ class SovListModel {
   int? totalRecords;
   int? page;
   int? pageSize;
+  Filters? filters;
+  Cards? cards;
   List<Result>? result;
+  List<Results>? results;
   Settings? settings;
   List<Role>? role;
   TotalCountHeader? totalCountHeader;
@@ -13,7 +16,10 @@ class SovListModel {
     this.totalRecords,
     this.page,
     this.pageSize,
+    this.filters,
+    this.cards,
     this.result,
+    this.results,
     this.settings,
     this.role,
     this.totalCountHeader,
@@ -23,7 +29,9 @@ class SovListModel {
     totalRecords = json['totalRecords'] is int ? json['totalRecords'] : 0;
     page = json['page'] is int ? json['page'] : 1;
     pageSize = json['pageSize'] is int ? json['pageSize'] : 0;
-
+    filters =
+    json['filters'] != null ? new Filters.fromJson(json['filters']) : null;
+    cards = json['cards'] != null ? new Cards.fromJson(json['cards']) : null;
     // ✅ Safe 'result' parsing
     if (json['result'] is List) {
       result = (json['result'] as List)
@@ -33,7 +41,12 @@ class SovListModel {
     } else {
       result = [];
     }
-
+    if (json['results'] != null) {
+      results = <Results>[];
+      json['results'].forEach((v) {
+        results!.add(new Results.fromJson(v));
+      });
+    }
     // ✅ Safe 'settings' parsing
     settings = (json['settings'] is Map<String, dynamic>)
         ? Settings.fromJson(json['settings'])
@@ -70,8 +83,16 @@ class SovListModel {
     data['totalRecords'] = totalRecords ?? 0;
     data['page'] = page ?? 1;
     data['pageSize'] = pageSize ?? 0;
-
+    if (this.filters != null) {
+      data['filters'] = this.filters!.toJson();
+    }
+    if (this.cards != null) {
+      data['cards'] = this.cards!.toJson();
+    }
     data['result'] = result?.map((v) => v.toJson()).toList() ?? [];
+    if (this.results != null) {
+      data['results'] = this.results!.map((v) => v.toJson()).toList();
+    }
     if (settings != null) data['settings'] = settings!.toJson();
     data['role'] = role?.map((v) => v.toJson()).toList() ?? [];
     if (totalCountHeader != null) {
@@ -82,6 +103,129 @@ class SovListModel {
   }
 }
 
+class Results {
+  String? sovId;
+  String? name;
+  int? locationCount;
+  String? companyName;
+  String? date;
+  String? vendorName;
+  int? apisUsed;
+  int? totalCost;
+  Results({this.sovId, this.name, this.locationCount,
+
+    this.companyName,
+    this.date,
+    this.vendorName,
+    this.apisUsed,
+    this.totalCost
+
+  });
+
+  Results.fromJson(Map<String, dynamic> json) {
+    sovId = json['sov_id'];
+    name = json['name'];
+    locationCount = json['location_count'];
+    companyName = json['company_name'];
+    date = json['date'];
+    vendorName = json['vendor_name'];
+    apisUsed = json['apis_used'];
+    totalCost = json['total_cost'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['sov_id'] = this.sovId;
+    data['name'] = this.name;
+    data['location_count'] = this.locationCount;
+    data['company_name'] = this.companyName;
+    data['date'] = this.date;
+    data['vendor_name'] = this.vendorName;
+    data['apis_used'] = this.apisUsed;
+    data['total_cost'] = this.totalCost;
+    return data;
+  }
+}
+class Cards {
+  int? totalApisUsed;
+  int? totalApiCost;
+  int? avgCostPerApi;
+  int? activeVendors;
+
+  Cards(
+      {this.totalApisUsed,
+        this.totalApiCost,
+        this.avgCostPerApi,
+        this.activeVendors});
+
+  Cards.fromJson(Map<String, dynamic> json) {
+    totalApisUsed = json['total_apis_used'];
+    totalApiCost = json['total_api_cost'];
+    avgCostPerApi = json['avg_cost_per_api'];
+    activeVendors = json['active_vendors'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['total_apis_used'] = this.totalApisUsed;
+    data['total_api_cost'] = this.totalApiCost;
+    data['avg_cost_per_api'] = this.avgCostPerApi;
+    data['active_vendors'] = this.activeVendors;
+    return data;
+  }
+}
+class Filters {
+  String? startDate;
+  String? endDate;
+  String? vendorName;
+  String? groupBy;
+  String? dateView;
+  String? search;
+  String? sortBy;
+  String? sortOrder;
+  int? page;
+  int? pageSize;
+
+  Filters(
+      {this.startDate,
+        this.endDate,
+        this.vendorName,
+        this.groupBy,
+        this.dateView,
+        this.search,
+        this.sortBy,
+        this.sortOrder,
+        this.page,
+        this.pageSize});
+
+  Filters.fromJson(Map<String, dynamic> json) {
+    startDate = json['start_date'];
+    endDate = json['end_date'];
+    vendorName = json['vendor_name'];
+    groupBy = json['group_by'];
+    dateView = json['date_view'];
+    search = json['search'];
+    sortBy = json['sort_by'];
+    sortOrder = json['sort_order'];
+    page = json['page'];
+    pageSize = json['page_size'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['start_date'] = this.startDate;
+    data['end_date'] = this.endDate;
+    data['vendor_name'] = this.vendorName;
+    data['group_by'] = this.groupBy;
+    data['date_view'] = this.dateView;
+    data['search'] = this.search;
+    data['sort_by'] = this.sortBy;
+    data['sort_order'] = this.sortOrder;
+    data['page'] = this.page;
+    data['page_size'] = this.pageSize;
+    return data;
+  }
+}
 class Result {
   String? sovId;
   Owner? owner;
@@ -113,8 +257,8 @@ class Result {
       this.owner,
       this.companyId,
       this.subAccountId,
-        this.accountName,
-        this.subAccountName,
+      this.accountName,
+      this.subAccountName,
       this.accountId,
       this.name,
       this.createdAt,
@@ -127,8 +271,8 @@ class Result {
       this.role,
       this.companyName,
       this.status,
-        this.geocodeAvg,
-        this.overallAvg,
+      this.geocodeAvg,
+      this.overallAvg,
       this.sovGraphData,
       this.dataCompleteness});
 
@@ -137,8 +281,8 @@ class Result {
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     companyId = json['company_id'];
     subAccountId = json['sub_account_id'];
-    accountName= json['account_name'];
-    subAccountName=json['sub_account_name'];
+    accountName = json['account_name'];
+    subAccountName = json['sub_account_name'];
     accountId = json['account_id'];
     name = json['name'];
     createdAt = json['created_at'] != null
@@ -188,8 +332,8 @@ class Result {
     }
     data['company_id'] = this.companyId;
     data['sub_account_id'] = this.subAccountId;
-    data['account_name']=this.accountName;
-    data['sub_account_name']=this.subAccountName;
+    data['account_name'] = this.accountName;
+    data['sub_account_name'] = this.subAccountName;
     data['account_id'] = this.accountId;
     data['name'] = this.name;
     if (this.createdAt != null) {
@@ -207,7 +351,7 @@ class Result {
     data['is_shared'] = this.isShared;
     data['accessible_to'] = this.accessibleTo;
     if (this.sharingStatus != null) {
-      data['sharing_status'] = this.sharingStatus!.toJson();
+      data['sharing_status'] = this.sharingStatus;
     }
     data['location_count'] = this.locationCount;
     if (this.role != null) {
@@ -501,38 +645,29 @@ class CreatedAt {
 }
 
 class SharingStatus {
-  WyoNUpPF1DZbdKX3HCKIE7IGjyA3? wyoNUpPF1DZbdKX3HCKIE7IGjyA3;
-  Fkdol2eUvvN6HX0EPFQAClhDSgv1? fkdol2eUvvN6HX0EPFQAClhDSgv1;
+  final Map<String, SharingUser> users;
 
-  SharingStatus(
-      {this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3, this.fkdol2eUvvN6HX0EPFQAClhDSgv1});
+  SharingStatus({required this.users});
 
-  SharingStatus.fromJson(Map<String, dynamic> json) {
-    wyoNUpPF1DZbdKX3HCKIE7IGjyA3 = json['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'] != null
-        ? new WyoNUpPF1DZbdKX3HCKIE7IGjyA3.fromJson(
-            json['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'])
-        : null;
-    fkdol2eUvvN6HX0EPFQAClhDSgv1 = json['fkdol2eUvvN6HX0EPFQAClhDSgv1'] != null
-        ? new Fkdol2eUvvN6HX0EPFQAClhDSgv1.fromJson(
-            json['fkdol2eUvvN6HX0EPFQAClhDSgv1'])
-        : null;
+  factory SharingStatus.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return SharingStatus(users: {});
+    }
+
+    final map = <String, SharingUser>{};
+
+    json.forEach((key, value) {
+      map[key] = SharingUser.fromJson(value);
+    });
+
+    return SharingStatus(users: map);
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3 != null) {
-      data['WyoNUpPF1DZbdKX3HCKIE7IGjyA3'] =
-          this.wyoNUpPF1DZbdKX3HCKIE7IGjyA3!.toJson();
-    }
-    if (this.fkdol2eUvvN6HX0EPFQAClhDSgv1 != null) {
-      data['fkdol2eUvvN6HX0EPFQAClhDSgv1'] =
-          this.fkdol2eUvvN6HX0EPFQAClhDSgv1!.toJson();
-    }
-    return data;
-  }
+  /// ✅ Total count
+  int get count => users.length;
 }
 
-class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
+class SharingUser {
   String? userId;
   String? status;
   String? comment;
@@ -540,17 +675,21 @@ class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
   CreatedAt? updatedAt;
   String? updatedBy;
   String? user;
+  String? email;
 
-  WyoNUpPF1DZbdKX3HCKIE7IGjyA3(
+  SharingUser(
       {this.userId,
       this.status,
       this.comment,
       this.role,
       this.updatedAt,
       this.updatedBy,
-      this.user});
+      this.user,
+      this.email
 
-  WyoNUpPF1DZbdKX3HCKIE7IGjyA3.fromJson(Map<String, dynamic> json) {
+      });
+
+  SharingUser.fromJson(Map<String, dynamic> json) {
     userId = json['user_id'];
     status = json['status'];
     comment = json['comment'];
@@ -560,6 +699,7 @@ class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
         : null;
     updatedBy = json['updated_by'];
     user = json['user'];
+    email = json['email'];
   }
 
   Map<String, dynamic> toJson() {
@@ -575,6 +715,7 @@ class WyoNUpPF1DZbdKX3HCKIE7IGjyA3 {
     }
     data['updated_by'] = this.updatedBy;
     data['user'] = this.user;
+    data['email'] = this.email;
     return data;
   }
 }

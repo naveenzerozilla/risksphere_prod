@@ -8,25 +8,25 @@ import '../../../design_system/components/custom_button.dart';
 import '../../../service/language_service.dart';
 import '../../../providers/sov_list_provider.dart';
 
-class ExportDialog extends StatefulWidget {
+class ExportDialogSov extends StatefulWidget {
   final String accountId;
   final String subAccountId;
   final List<String> locationId;
   final String sovId;
 
-  const ExportDialog(
+  const ExportDialogSov(
       {Key? key,
-        required this.accountId,
-        required this.subAccountId,
-        required this.locationId,
-        this.sovId = ''})
+      required this.accountId,
+      required this.subAccountId,
+      required this.locationId,
+      this.sovId = ''})
       : super(key: key);
 
   @override
-  _ExportDialogState createState() => _ExportDialogState();
+  _ExportDialogSovState createState() => _ExportDialogSovState();
 }
 
-class _ExportDialogState extends State<ExportDialog> {
+class _ExportDialogSovState extends State<ExportDialogSov> {
   String _format = 'excel';
   ExportType _exportType = ExportType.Profile;
   bool _includeImagesAsUrl = true;
@@ -129,25 +129,25 @@ class _ExportDialogState extends State<ExportDialog> {
               },
               child: Text(
                   LanguageService.getTranslated(
-                      context, "export_dialog_cancel"),
+                      context, "cancel"),
                   style: typography.Body1),
             ),
             CustomButton(
               onPressed: () async {
-                // if (widget.locationId.isEmpty) {
-                //   // Example: we need to pass [{location_id: "1PJUQPcNET5O4zngoN2L"}]
-                //   ScaffoldMessenger.of(context).showSnackBar(
-                //     SnackBar(
-                //       content: Text("No location selected."),
-                //       backgroundColor: Colors.redAccent,
-                //     ),
-                //   );
-                //   return;
-                // }
+                if (widget.locationId.isEmpty) {
+                  // Example: we need to pass [{location_id: "1PJUQPcNET5O4zngoN2L"}]
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("No location selected."),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                  return;
+                }
 
                 // Prepare export data
                 List<Map<String, dynamic>> exportData =
-                widget.locationId.map((e) => {"location_id": e}).toList();
+                    widget.locationId.map((e) => {"location_id": e}).toList();
 
                 await provider.exportData(
                   context,
@@ -159,19 +159,19 @@ class _ExportDialogState extends State<ExportDialog> {
               },
               child: provider.isExportLoading
                   ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.black),
-              )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.black),
+                    )
                   : Text(
-                LanguageService.getTranslated(
-                    context, "export_dialog_download"),
-                style: typography.ButtonLarge.copyWith(
-                  color: Colors.black,
-                  fontSize: 14,
-                ),
-              ),
+                      LanguageService.getTranslated(
+                          context, "download"),
+                      style: typography.ButtonLarge.copyWith(
+                        color: Colors.black,
+                        fontSize: 14,
+                      ),
+                    ),
               type: ButtonType.elevated,
             )
           ],
@@ -184,7 +184,6 @@ class _ExportDialogState extends State<ExportDialog> {
     );
   }
 }
-
 
 // class ExportDialog1 extends StatefulWidget {
 //   final String accountId;

@@ -12,8 +12,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../design_system/primitives/app_colors.dart';
 import '../models/DataParameterModel.dart';
 import '../screens/listings/widgets/data_tab.dart';
+import '../service/language_service.dart';
 
 class ImpactDataCard extends StatefulWidget {
+  final String? accountId;
   final String? subAccountId;
   final String? locationId;
   final String? sovId;
@@ -21,10 +23,15 @@ class ImpactDataCard extends StatefulWidget {
   final String title;
   final Color titleColor;
   final List<ImpactDataElement> dataElements;
-  final String? selectedParameterList;final Future<void> Function()? onRefresh;
+  final String? selectedParameterList;
+  final Future<void> Function()? onRefresh;
+  final bool? showHeader;
+  final String? expandElementName;
+  final VoidCallback? onExpanded;
 
   const ImpactDataCard({
     Key? key,
+    this.accountId,
     this.subAccountId,
     this.locationId,
     this.sovId,
@@ -34,6 +41,9 @@ class ImpactDataCard extends StatefulWidget {
     required this.dataElements,
     required this.selectedParameterList,
     this.onRefresh,
+    this.showHeader,
+    this.expandElementName,
+    this.onExpanded,
   }) : super(key: key);
 
   @override
@@ -44,39 +54,82 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
   String? expandedElementName;
 
   @override
+  void didUpdateWidget(covariant ImpactDataCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // case: same element selected again → must force update
+    if (widget.expandElementName != null) {
+      // reset first so flutter detects change every time
+      if (expandedElementName == widget.expandElementName) {
+        expandedElementName = null;
+      }
+
+      setState(() {
+        expandedElementName = widget.expandElementName!;
+      });
+
+      // now call scroll after layout
+      // if (widget.onExpanded != null) {
+      //   WidgetsBinding.instance.addPostFrameCallback((_) {
+      //     widget.onExpanded!();
+      //   });
+      // }
+    }
+  }
+
+  bool isNullOrEmpty(dynamic value) {
+    if (value == null) return true;
+    if (value is String && value.trim().isEmpty) return true;
+    if (value is List && value.isEmpty) return true;
+    if (value is Map && value.isEmpty) return true;
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(4),
+          topRight: Radius.circular(4),
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ),
         side: BorderSide(color: Colors.grey, width: 0.5),
       ),
       elevation: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.only(left: 16, top: 15, bottom: 10),
-            child: Row(
-              children: [
-                Text(
-                  widget.title
-                      == "high"
-                      ? "High Impact Data Elements"
-                      : widget.title == "medium"
-                          ? "Medium Impact Data Element"
-                          : widget.title == "low"
-                              ? "Low Impact Data Elements"
-                              : widget.title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   decoration: BoxDecoration(
+          //     color: widget.titleColor,
+          //     borderRadius: BorderRadius.only(
+          //       topLeft: Radius.circular(8),
+          //       topRight: Radius.circular(8),
+          //     ),
+          //   ),
+          //   padding: const EdgeInsets.only(left: 16, top: 15, bottom: 10),
+          //   child: Row(
+          //     children: [
+          //       // Text(
+          //       //   widget.title == "high"
+          //       //       ? "High Impact  Parameter"
+          //       //       : widget.title == "medium"
+          //       //           ? "Medium Impact  Parameter"
+          //       //           : widget.title == "low"
+          //       //               ? "Low Impact  Parameter"
+          //       //               : widget.title,
+          //       //   style: TextStyle(
+          //       //     fontSize: 16,
+          //       //     fontWeight: FontWeight.w600,
+          //       //     color: Colors.white,
+          //       //   ),
+          //       // ),
+          //     ],
+          //   ),
+          // ),
 
           // Expandable List
           ...widget.dataElements.asMap().entries.map((entry) {
@@ -105,9 +158,16 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             expandedElementName =
                                 isExpanded ? null : element.name;
                           });
+
+                          if (!isExpanded && widget.onExpanded != null) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              widget.onExpanded!();
+                            });
+                          }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 3),
                           decoration: BoxDecoration(
                             border: Border(
                               bottom:
@@ -116,160 +176,359 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                            // crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              if (isExpanded) ...[
-                                Icon(
-                                  Icons.star,
-                                  color: Colors.orangeAccent,
-                                  size: 25,
-                                ),
-                                SizedBox(width: 5),
-                              ],
                               Expanded(
                                 child: Text(
                                   element.name,
                                   style: TextStyle(
-                                    color: isExpanded
-                                        ? Colors.lightBlueAccent
-                                        : widget.titleColor,
+                                    color: !isNullOrEmpty(
+                                            element.parameterValue.value)
+                                        ? Color(
+                                            0xFF66BB6A) // GREEN when value exists
+                                        : Colors.red,
+                                    // Default color when value is null/empty
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
-                              if (isExpanded) ...[
-                                InkWell(
-                                  onTap: () {
-                                    showVersionHistoryBottomSheet(
-                                        context,
-                                        element.result,
-                                        element.user,
-                                        element.result.version!);
-                                  },
-                                  child: Icon(
-                                    Icons.history,
-                                    color: Colors.white60,
-                                    size: 25,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                // element.result.helpDocumantion!.images!
-                                //             .isEmpty ||
-                                //         element.result.helpDocumantion!.docs!
-                                //             .isEmpty
-                                //     ? Container()
-                                //     :
-                                InkWell(
-                                  onTap: () async {
-                                    final images = element
-                                            .result.helpDocumantion?.images ??
-                                        [];
-                                    final docs =
-                                        element.result.helpDocumantion?.docs ??
-                                            [];
 
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          title: Text('Help Documentation'),
-                                          content: SingleChildScrollView(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Container(
-                                                  child: Text(
-                                                    "Documents",
-                                                    style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600),
-                                                  ),
+                              (element.parameterValue.value == null ||
+                                      element.parameterValue.value
+                                          .toString()
+                                          .trim()
+                                          .isEmpty)
+                                  ? Row(
+                                      children: [
+                                        if (!isExpanded) ...[
+                                          ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                                maxWidth: 100, maxHeight: 40),
+                                            child: TextFormField(
+                                              textAlign: TextAlign.center,
+                                              initialValue:
+                                                  element
+                                                                  .parameterValue
+                                                                  .reference !=
+                                                              null &&
+                                                          element
+                                                              .parameterValue!
+                                                              .reference!
+                                                              .isNotEmpty &&
+                                                          element
+                                                                  .parameterValue!
+                                                                  .reference!
+                                                                  .first
+                                                                  .url !=
+                                                              null &&
+                                                          element
+                                                              .parameterValue!
+                                                              .reference!
+                                                              .first
+                                                              .url!
+                                                              .any((u) =>
+                                                                  u != null &&
+                                                                  u
+                                                                      .toString()
+                                                                      .trim()
+                                                                      .isNotEmpty)
+                                                      ? ""
+                                                      : "---",
+                                              readOnly: true,
+                                              onTap: () {
+                                                setState(() {
+                                                  expandedElementName =
+                                                      isExpanded
+                                                          ? null
+                                                          : element.name;
+                                                });
+                                              },
+                                              // since screenshot looks non-editable; remove if needed
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor:
+                                                    const Color(0xFF2B0000),
+                                                // darker red background like screenshot
+                                                isDense: true,
+
+                                                // contentPadding:
+                                                //     const EdgeInsets.symmetric(
+                                                //         vertical: 10,
+                                                //         horizontal: 12),
+                                                prefixIcon:
+                                                    element.parameterValue
+                                                                    .reference !=
+                                                                null &&
+                                                            element
+                                                                .parameterValue!
+                                                                .reference!
+                                                                .isNotEmpty &&
+                                                            element
+                                                                    .parameterValue!
+                                                                    .reference!
+                                                                    .first
+                                                                    .url !=
+                                                                null &&
+                                                            element
+                                                                .parameterValue!
+                                                                .reference!
+                                                                .first
+                                                                .url!
+                                                                .any((u) =>
+                                                                    u != null &&
+                                                                    u
+                                                                        .toString()
+                                                                        .trim()
+                                                                        .isNotEmpty)
+                                                        ? Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 2,
+                                                                    right: 2),
+                                                            child: Icon(
+                                                              Icons.description,
+                                                              size: 18,
+                                                              color: Color(
+                                                                  0xFFFF6666),
+                                                            ),
+                                                          )
+                                                        : Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 0,
+                                                                    right: 0),
+                                                            child: Text(""),
+                                                          ),
+                                                enabledBorder:
+                                                    OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  borderSide: const BorderSide(
+                                                      color: Color(0xFFB00000),
+                                                      width: 0.6),
                                                 ),
-                                                SizedBox(height: 8),
-                                                if (docs.isNotEmpty) ...[
-                                                  Text("Documents",
-                                                      style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  SizedBox(height: 8),
-                                                  for (var doc in docs)
-                                                    FileRow(
-                                                        fileUrl: doc,
-                                                        isImage: false),
-                                                ] else ...[
-                                                  Container(
-                                                    child: Text(
-                                                        "No documents available."),
-                                                  ),
-                                                  SizedBox(height: 14),
-                                                  Container(
-                                                    child: Text(
-                                                      "Images",
-                                                      style: TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w600),
-                                                    ),
-                                                  ),
-                                                  SizedBox(height: 8),
-                                                  if (images.isNotEmpty) ...[
-                                                    Text("Images",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold)),
-                                                    SizedBox(height: 8),
-                                                    for (var image in images)
-                                                      FileRow(
-                                                          fileUrl: image,
-                                                          isImage: true),
-                                                    Divider(),
-                                                  ] else ...[
-                                                    Container(
-                                                      child: Text(
-                                                          "No valid images available."),
-                                                    )
-                                                  ],
-                                                  SizedBox(height: 8),
-                                                ],
-                                              ],
+
+                                                // Border (focused)
+                                                focusedBorder:
+                                                    OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  borderSide: const BorderSide(
+                                                      color: Color(0xFFFF3333),
+                                                      width: 0.6),
+                                                ),
+
+                                                // No label / clean field
+                                                hintText: null,
+                                              ),
+
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Color(0xFFFF9999),
+                                                // faint red text, similar to screenshot
+                                                letterSpacing:
+                                                    1.0, // gives that spaced “---” effect
+                                              ),
                                             ),
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              child: Text("Close"),
-                                              onPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                            )
+                                        ],
+                                        PopupMenuButton<String>(
+                                          icon: Icon(
+                                            Icons.more_vert_outlined,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          onSelected: (value) {
+                                            if (value == 'history') {
+                                              showVersionHistoryBottomSheet(
+                                                context,
+                                                element.result,
+                                                element.user,
+                                                element.result.version!,
+                                              );
+                                            } else if (value == 'help') {
+                                              _showHelpDialog(context, element);
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem(
+                                              value: 'history',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.history, size: 20),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    LanguageService
+                                                        .getTranslated(
+                                                            context, "history"),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'help',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_document,
+                                                      size: 20),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    LanguageService
+                                                        .getTranslated(context,
+                                                            "supporting_docs"),
+                                                  )
+                                                ],
+                                              ),
+                                            ),
                                           ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: Icon(
-                                    Icons.edit_document,
-                                    color: Colors.white60,
-                                    size: 25,
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                              ],
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      children: [
+                                        if (!isExpanded) ...[
+                                          ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                                maxWidth: 100, maxHeight: 40),
+                                            child: TextFormField(
+                                              initialValue: '',
+                                              // (element
+                                              //                 .parameterValue
+                                              //                 ?.reference ==
+                                              //             null ||
+                                              //         element.parameterValue!
+                                              //             .reference!.isEmpty)
+                                              //     ? element
+                                              //         .parameterValue.paramType
+                                              //     : '',
+                                              readOnly: true,
+                                              onTap: () {
+                                                setState(() {
+                                                  expandedElementName =
+                                                      isExpanded
+                                                          ? null
+                                                          : element.name;
+                                                });
+                                              },
+                                              decoration: InputDecoration(
+                                                  isDense: true,
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                    horizontal: 10,
+                                                  ),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5),
+                                                  ),
+                                                  prefixIcon: (element
+                                                                  .parameterValue?.reference !=
+                                                              null &&
+                                                          element
+                                                              .parameterValue!
+                                                              .reference!
+                                                              .isNotEmpty &&
+                                                          element
+                                                                  .parameterValue!
+                                                                  .reference!
+                                                                  .first
+                                                                  .url !=
+                                                              null &&
+                                                          element
+                                                              .parameterValue!
+                                                              .reference!
+                                                              .first
+                                                              .url!
+                                                              .any((u) =>
+                                                                  u != null &&
+                                                                  u
+                                                                      .toString()
+                                                                      .trim()
+                                                                      .isNotEmpty))
+                                                      ? Icon(
+                                                          Icons.description,
+                                                          size: 20,
+                                                          color: Colors.grey,
+                                                        )
+                                                      : Container(
+                                                          padding:
+                                                              EdgeInsets.all(6),
+                                                          child: Text(
+                                                            element.parameterValue
+                                                                        .paramType
+                                                                        .toString()
+                                                                        .toUpperCase() ==
+                                                                    "JSON"
+                                                                ? "JSON"
+                                                                : _extractCleanValue(
+                                                                    element
+                                                                        .parameterValue
+                                                                        ?.value),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        )),
+                                              style: TextStyle(fontSize: 14),
+                                            ),
+                                          )
+                                        ],
+                                        PopupMenuButton<String>(
+                                          icon: Icon(
+                                            Icons.more_vert_outlined,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          onSelected: (value) {
+                                            if (value == 'history') {
+                                              showVersionHistoryBottomSheet(
+                                                context,
+                                                element.result,
+                                                element.user,
+                                                element.result.version!,
+                                              );
+                                            } else if (value == 'help') {
+                                              _showHelpDialog(context, element);
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem(
+                                              value: 'history',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.history, size: 20),
+                                                  SizedBox(width: 10),
+                                                  Text("History"),
+                                                ],
+                                              ),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'help',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_document,
+                                                      size: 20),
+                                                  SizedBox(width: 10),
+                                                  Text("Helping Docs"),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+
                               Container(
                                 height: 50,
                                 width: 1,
-                                color: Colors.grey,
+                                color: Colors.transparent,
                               ),
-                              SizedBox(width: 10),
-                              Icon(
-                                isExpanded
-                                    ? Icons.remove_circle_outline
-                                    : Icons.add_circle_outline_outlined,
-                                color: Colors.white60,
-                                size: 25,
-                              ),
+                              // SizedBox(width: 10),
                             ],
                           ),
                         ),
@@ -278,21 +537,22 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           child: ImageUploadCard(
+                            accountId: widget.accountId!,
                             subAccountId: widget.subAccountId!,
-                            locationId: widget.locationId!,
+                            locationId: widget.locationId ?? '',
                             sovId: widget.sovId ?? '',
                             campusId: widget.campusId ?? '',
                             title: element.name,
                             user: element.user,
                             result: element.result,
                             parametertype: element.parameterType,
+                            parameterValue: element.parameterValue?.value,
                             onImagesUpdated: (images) {
                               print("Uploaded Images Count: ${images.length}");
                             },
                             selectedParameterList:
                                 widget.selectedParameterList!,
                             onRefresh: widget.onRefresh,
-
                           ),
                         ),
                     ],
@@ -306,199 +566,293 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
     );
   }
 
+  void _showHelpDialog(BuildContext context, element) {
+    final images = element.result.helpDocumantion?.images ?? [];
+    final docs = element.result.helpDocumantion?.docs ?? [];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Help Documentation'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Documents", style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              if (docs.isNotEmpty)
+                ...docs.map((doc) => FileRow(fileUrl: doc, isImage: false))
+              else
+                Text("No documents available."),
+              SizedBox(height: 16),
+              Text("Images", style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              if (images.isNotEmpty)
+                ...images.map((img) => FileRow(fileUrl: img, isImage: true))
+              else
+                Text("No images available."),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close"),
+          )
+        ],
+      ),
+    );
+  }
+
+  String _extractCleanValue(dynamic rv) {
+    if (rv == null) return "";
+
+    try {
+      dynamic current = rv;
+
+      if (current is String &&
+          current.trim().startsWith("{") &&
+          current.contains(":")) {
+        current = jsonDecode(current);
+      }
+
+      if (current is Map && current.containsKey("value")) {
+        current = current["value"];
+      }
+
+      if (current is Map &&
+          current.containsKey("_seconds") &&
+          current.containsKey("_nanoseconds")) {
+        int seconds = current["_seconds"];
+        DateTime dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+        return DateFormat("dd/MM/yyyy hh:mm a").format(dt);
+      }
+      if (current is Map) {
+        return jsonEncode(current);
+      }
+      return current.toString();
+    } catch (e) {
+      return rv.toString();
+    }
+  }
+
+  String formatDate(String isoDate) {
+    final date = DateTime.parse(isoDate);
+    return DateFormat('dd/MM/yyyy').format(date);
+  }
+
   void showVersionHistoryBottomSheet(
       BuildContext context, Result result, User user, Version version) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.black87,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      backgroundColor: Colors.black87,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Text("History",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                  Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  )
-                ],
-              ),
+        return FractionallySizedBox(
+          heightFactor: 0.7, // ← Bottom sheet max height (adjustable)
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ---------- HEADER ----------
+                Row(
+                  children: [
+                    Text("History",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  ],
+                ),
 
-              SizedBox(height: 5),
-              Row(
-                children: [
-                  Text(result.name.toString(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: Color.fromRGBO(144, 202, 249, 1),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  // CircleAvatar(
-                  //   backgroundImage: AssetImage('assets/user.jpg'),
-                  // ),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(user.name.toString(),
-                              style: TextStyle(
-                                  color: Colors.purpleAccent, fontSize: 16)),
-                          Text(' Created on ${"03/03/2025"}',
-                              style:
-                                  TextStyle(color: Colors.grey, fontSize: 14)),
-                        ],
+                SizedBox(height: 5),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        result.name.toString(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Color.fromRGBO(144, 202, 249, 1),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
                       ),
-                      Text('Last updated on 03/10/2025',
-                          style: TextStyle(
-                              color: Color.fromRGBO(102, 187, 106, 1),
-                              fontSize: 14)),
-                    ],
-                  ),
-                ],
-              ),
-              // Divider(color: Colors.white30),
-              Divider(),
-              SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Version Updates',
-                    style: TextStyle(color: Colors.white, fontSize: 14)),
-              ),
-              SizedBox(height: 12),
-              Container(
-                height: MediaQuery.of(context).size.height / 2.5,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  // Or remove this line for default
-                  itemCount: result.history?.length ?? 0,
-                  itemBuilder: (context, index) {
-                    final item = result.history![index];
+                    ),
+                  ],
+                ),
 
-                    if (item.value == null) return SizedBox();
+                SizedBox(height: 8),
 
-                    String formattedDate = '--';
-                    if (item.updatedAt?.iSeconds != null) {
-                      final dateTime = DateTime.fromMillisecondsSinceEpoch(
-                          item.updatedAt!.iSeconds! * 1000);
-                      formattedDate =
-                          DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
-                    }
-
-                    return TimelineTile(
-                      alignment: TimelineAlign.manual,
-                      lineXY: 0.1,
-                      isFirst: index == 0,
-                      isLast: index == result.history!.length - 1,
-                      indicatorStyle: IndicatorStyle(
-                        width: 14,
-                        color: Colors.blue,
-                        indicatorXY: 0.2,
-                        padding: EdgeInsets.all(6),
-                      ),
-                      beforeLineStyle: LineStyle(
-                        color: Colors.grey,
-                        thickness: 0.3,
-                      ),
-                      afterLineStyle: LineStyle(
-                        color: Colors.grey,
-                        thickness: 0.3,
-                      ),
-                      endChild: Container(
-                        margin: EdgeInsets.only(left: 16, bottom: 16),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Color(0xFF2C2C2E),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                // ---------- USER INFO ----------
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
+                            Text(user.name.toString(),
+                                style: TextStyle(
+                                    color: Colors.purpleAccent, fontSize: 16)),
+                            SizedBox(width: 8),
                             Text(
-                              formattedDate,
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 12),
-                            ),
-                            SizedBox(height: 6),
-                            buildValueWidget(item.value),
-                            if (item.paramType != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  "Value Type: ${item.paramType!}",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            SizedBox(height: 4),
-                            Divider(),
-                            SizedBox(height: 4),
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Colors.blueGrey,
-                                  backgroundImage: (item.reference != null &&
-                                          item.reference!.isNotEmpty &&
-                                          item.reference![0].url.isNotEmpty &&
-                                          item.reference![0].url[0].isNotEmpty)
-                                      ? NetworkImage(item.reference![0].url[0])
-                                      : null,
-                                  child: (item.reference == null ||
-                                          item.reference!.isEmpty ||
-                                          item.reference![0].url.isEmpty ||
-                                          item.reference![0].url[0].isEmpty)
-                                      ? Text(
-                                          (item.userName?.isNotEmpty ?? false)
-                                              ? item.userName![0].toUpperCase()
-                                              : "?",
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12),
-                                        )
-                                      : null,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  item.userName ?? "Unknown",
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 13),
-                                )
-                              ],
-                            ),
+                              'Created on ${formatDate(version.versionHistory![0].date.toString())}',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 14),
+                            )
                           ],
                         ),
-                      ),
-                    );
-                  },
+                        SizedBox(height: 4),
+                        Text(
+                          (result.history != null &&
+                                  result.history!.isNotEmpty &&
+                                  result.history![0].updatedAt?.iSeconds !=
+                                      null)
+                              ? 'Last updated on ${DateFormat('dd/MM/yyyy').format(DateTime.fromMillisecondsSinceEpoch(result.history![0].updatedAt!.iSeconds! * 1000))}'
+                              : 'Last updated on --',
+                          style: TextStyle(
+                            color: Color.fromRGBO(102, 187, 106, 1),
+                            fontSize: 14,
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
                 ),
-              ),
 
+                Divider(),
 
-              SizedBox(height: 20),
-            ],
+                SizedBox(height: 8),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Version Updates',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+
+                SizedBox(height: 12),
+
+                // ----------- DYNAMIC HEIGHT LIST ----------
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: result.history?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final item = result.history![index];
+
+                      if (item.value == null) return SizedBox();
+
+                      String formattedDate = '--';
+                      if (item.updatedAt?.iSeconds != null) {
+                        final dateTime = DateTime.fromMillisecondsSinceEpoch(
+                            item.updatedAt!.iSeconds! * 1000);
+                        formattedDate =
+                            DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
+                      }
+
+                      return TimelineTile(
+                        alignment: TimelineAlign.manual,
+                        lineXY: 0.1,
+                        isFirst: index == 0,
+                        isLast: index == result.history!.length - 1,
+                        indicatorStyle: IndicatorStyle(
+                          width: 14,
+                          color: Colors.blue,
+                          indicatorXY: 0.2,
+                        ),
+                        beforeLineStyle:
+                            LineStyle(color: Colors.grey, thickness: 0.3),
+                        afterLineStyle:
+                            LineStyle(color: Colors.grey, thickness: 0.3),
+                        endChild: Container(
+                          margin: EdgeInsets.only(left: 16, bottom: 16),
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF2C2C2E),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(formattedDate,
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 12)),
+                              SizedBox(height: 6),
+                              buildValueWidget(item.value),
+                              if (item.paramType != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    "Value Type: ${item.paramType!}",
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              SizedBox(height: 4),
+                              Divider(),
+                              SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: Colors.blueGrey,
+                                    backgroundImage: (item.reference != null &&
+                                            item.reference!.isNotEmpty &&
+                                            item.reference![0].url.isNotEmpty &&
+                                            item.reference![0].url[0]
+                                                .isNotEmpty)
+                                        ? NetworkImage(
+                                            item.reference![0].url[0])
+                                        : null,
+                                    child: (item.reference == null ||
+                                            item.reference!.isEmpty ||
+                                            item.reference![0].url.isEmpty ||
+                                            item.reference![0].url[0].isEmpty)
+                                        ? Text(
+                                            (item.userName?.isNotEmpty ?? false)
+                                                ? item.userName![0]
+                                                    .toUpperCase()
+                                                : "?",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12),
+                                          )
+                                        : null,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    item.userName ?? "Unknown",
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 13),
+                                  )
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },
@@ -550,10 +904,10 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
       }
 
       // Fallback
-      return Text("123456789" + value.toString(),
+      return Text("Added value -" + value.toString(),
           style: TextStyle(color: Colors.white));
     } catch (e) {
-      return Text("12345678" + value.toString(),
+      return Text("Added value -" + value.toString(),
           style: TextStyle(color: Colors.white));
     }
   }
@@ -710,7 +1064,8 @@ class _FileRowState extends State<FileRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

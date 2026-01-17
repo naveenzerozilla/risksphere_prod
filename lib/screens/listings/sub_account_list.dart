@@ -133,15 +133,24 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   @override
   void initState() {
     super.initState();
-    _checkFirstTime();
-    _getData();
-    var userProfileProvider =
-        Provider.of<UserProfileProvider>(context, listen: false);
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    int tabCount =
-        (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 4 : 3;
-    // (userProfileProvider.trialInfo['status']?.isEmpty ?? true) ? 5 : 4;
-    _tabController = TabController(length: tabCount, vsync: this);
+
+    Future.microtask(() => _getData());
+
+    // Delay until after first frame for Provider + TabController
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTime();
+
+      final userProfileProvider =
+          Provider.of<UserProfileProvider>(context, listen: false);
+
+      final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
+      int tabCount = trialStatus.isEmpty ? 2 : 2;
+      _scrollController = ScrollController();
+      // 🟢 Create TabController ONLY after UI is mounted
+      _tabController = TabController(length: tabCount, vsync: this);
+
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _checkFirstTime() async {
@@ -175,7 +184,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubAccountListProvider>(context, listen: false).page = 1;
       Provider.of<SubAccountListProvider>(context, listen: false)
-          .fetchSubAccountList(context, widget.accountId, "", 1, 6);
+          .fetchSubAccountList(context, widget.accountId, "", 1, 3);
     });
     setState(() {
       isPgAdmin = isPgAdmin;
@@ -279,39 +288,80 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
                                 // Header Row
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10.0),
-                                  child: Row(
-                                    children: [
-                                      InkWell(
-                                        onTap: () {
-                                          Navigator.pushAndRemoveUntil(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    AccountListScreen()),
-                                            (route) => false,
-                                          );
-                                        },
-                                        child: Text(
-                                          widget.accountName.toString(),
-                                          style: const TextStyle(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        InkWell(
+                                          onTap: () {
+                                            Navigator.pushAndRemoveUntil(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => AccountListScreen(),
+                                              ),
+                                                  (route) => false,
+                                            );
+                                          },
+                                          child: Text(
+                                            widget.accountName.toString(),
+                                            style: const TextStyle(
                                               fontSize: 14,
-                                              color: Colors.white70),
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                      Text(' > ', style: typography.InputLabel),
-                                      const Text("Sub Accounts",
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.white)),
-                                    ],
+                                        Text(
+                                          ' > ',
+                                          style: typography.InputLabel,
+                                        ),
+                                        Text(
+                                          LanguageService.getTranslated(context, "sub_accounts"),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
 
+                                // Padding(
+                                //   padding: const EdgeInsets.symmetric(
+                                //       horizontal: 10.0),
+                                //   child: Row(
+                                //     children: [
+                                //       InkWell(
+                                //         onTap: () {
+                                //           Navigator.pushAndRemoveUntil(
+                                //             context,
+                                //             MaterialPageRoute(
+                                //                 builder: (_) =>
+                                //                     AccountListScreen()),
+                                //             (route) => false,
+                                //           );
+                                //         },
+                                //         child: Text(
+                                //           widget.accountName.toString(),
+                                //           style: const TextStyle(
+                                //               fontSize: 14,
+                                //               color: Colors.white70),
+                                //         ),
+                                //       ),
+                                //       Text(' > ', style: typography.InputLabel),
+                                //       Text(
+                                //           LanguageService.getTranslated(
+                                //               context, "sub_accounts"),
+                                //           style: TextStyle(
+                                //               fontSize: 14,
+                                //               color: Colors.white)),
+                                //     ],
+                                //   ),
+                                // ),
+
                                 SizedBox(height: CustomSpacing.two),
 
-                                // TabBar Container
                                 Container(
                                   height: 50,
                                   decoration: BoxDecoration(
@@ -349,7 +399,16 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                 controller: _scrollController,
                                                 scrollDirection:
                                                     Axis.horizontal,
-                                                child: TabBar(
+                                                child:
+                                                TabBar(
+                                                  onTap: (index) {
+                                                    debugPrint(
+                                                        'Tab clicked: $index');
+
+                                                    if (index == 0) {
+                                                      _getData();
+                                                    }
+                                                  },
                                                   controller: _tabController,
                                                   isScrollable: true,
                                                   tabAlignment:
@@ -366,8 +425,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     Tab(
                                                       child: Row(
                                                         children: [
-                                                          const Text(
-                                                              'My Sub Accounts'),
+                                                          Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "my_sub_accounts"),
+                                                          ),
                                                           if (!isSubLoading &&
                                                               total > 0)
                                                             SizedBox(
@@ -399,15 +462,18 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         ],
                                                       ),
                                                     ),
-                                                    const Tab(text: 'Shared'),
+                                                    // const Tab(text: 'Shared'),
                                                     if (isSuperAdmin ||
                                                         isPgAdmin)
-                                                      const Tab(
-                                                          text:
-                                                              'Configuration'),
-                                                    const Tab(
-                                                        text:
-                                                            'Access Requested'),
+                                                      Tab(
+                                                        text: LanguageService
+                                                            .getTranslated(
+                                                                context,
+                                                                "configuration"),
+                                                      ),
+                                                    // const Tab(
+                                                    //     text:
+                                                    //         'Access Requested'),
                                                   ],
                                                 ),
                                               );
@@ -423,19 +489,23 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     ),
                                   ),
                                 ),
-
-                                // ✅ Tab content (only rebuilt when relevant provider data changes)
                                 Expanded(
-                                  child: TabBarView(
-                                    controller: _tabController,
-                                    children: [
-                                      _getSubAccountUI(),
-                                      _getComingSoonUI("shared"),
-                                      if (isSuperAdmin || isPgAdmin)
-                                        ConfigurationTab(
-                                            accountId: widget.accountId),
-                                      _getComingSoonUI("request"),
-                                    ],
+                                  child: Consumer<SubAccountListProvider>(
+                                    builder:
+                                        (context, subaccountlistprovider, _) {
+                                      return TabBarView(
+                                        controller: _tabController,
+                                        children: [
+                                          _getSubAccountUI(),
+                                          if (isSuperAdmin || isPgAdmin)
+                                            ConfigurationTab(
+                                              subAccountName:
+                                                  subaccountlistprovider
+                                                      .showAccountName,
+                                            ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
@@ -483,7 +553,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                 /// Play icon + logo area
                 InkWell(
                   onTap: () async {
-                    const url = 'https://www.youtube.com/watch?v=7kvdDtowGM0';
+                    const url = 'https://youtu.be/v11B3l3Fyuc';
                     if (await canLaunchUrl(Uri.parse(url))) {
                       await launchUrl(Uri.parse(url),
                           mode: LaunchMode.externalApplication);
@@ -745,7 +815,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                         LanguageService
                                                             .getTranslated(
                                                                 context,
-                                                                "sub_account_list_edit_sub_account_title"),
+                                                                "edit_sub_account"),
                                                         style: typography
                                                             .H5_Regular,
                                                       ),
@@ -763,7 +833,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                               labelText: LanguageService
                                                                   .getTranslated(
                                                                       context,
-                                                                      "sub_account_list_app_edit_label_text"),
+                                                                      "sub_account_name"),
                                                               labelStyle:
                                                                   typography
                                                                       .Body1,
@@ -795,7 +865,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                   child: Text(
                                                                     LanguageService.getTranslated(
                                                                         context,
-                                                                        "sub_account_list_app_edit_cancel_text"),
+                                                                        "cancel"),
                                                                     style: typography
                                                                         .ButtonLarge,
                                                                   ),
@@ -847,9 +917,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                           child:
                                                                               Text(
                                                                             LanguageService.getTranslated(context,
-                                                                                "sub_account_list_app_edit_update_text"),
+                                                                                "submit"),
                                                                             style:
-                                                                                typography.ButtonLarge,
+                                                                                typography.ButtonLargeBlack,
                                                                           ),
                                                                           type:
                                                                               ButtonType.elevated,
@@ -864,9 +934,19 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                   },
                                                 );
                                               },
-                                              child: Icon(
-                                                Icons.edit,
-                                                size: 16,
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(10.0),
+                                                child: Icon(
+                                                  Icons.edit,
+                                                  color: Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? AppColors.primaryMain
+                                                      : AppColors.primaryMain,
+                                                  size:
+                                                      16, // icon size stays same
+                                                ),
                                               ),
                                             ),
                                     ],
@@ -875,7 +955,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       ? SizedBox()
                                       : Row(
                                           children: [
-                                            Text("Location Count",
+                                            Text(
+                                                LanguageService.getTranslated(
+                                                    context, "locations_count"),
                                                 style: typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
@@ -889,55 +971,54 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                 style: typography.Caption),
                                           ],
                                         ),
-                                  !subAccountListProvider.showSovCount
-                                      ? SizedBox()
-                                      : Row(
-                                          children: [
-                                            Text(
-                                                subAccountListProvider
-                                                                .subAccountList[
-                                                                    index]
-                                                                .sovCount !=
-                                                            null &&
-                                                        subAccountListProvider
-                                                                .subAccountList[
-                                                                    index]
-                                                                .sovCount ==
-                                                            1
-                                                    ? LanguageService.getTranslated(
-                                                        context,
-                                                        "sub_account_list_app_sov_text")
-                                                    : subAccountListProvider
-                                                                .subAccountList[
-                                                                    index]
-                                                                .sovCount ==
-                                                            null
-                                                        ? ""
-                                                        : LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "sub_account_list_app_sovs_text"),
-                                                style: typography.Caption),
-                                            SizedBox(
-                                              width: CustomSpacing.two,
-                                            ),
-                                            Text(
-                                                subAccountListProvider
-                                                        .subAccountList[index]
-                                                        .sovCount
-                                                        ?.toString() ??
-                                                    "",
-                                                style: typography.Caption),
-                                          ],
-                                        ),
+                                  // !subAccountListProvider.showSovCount
+                                  //     ? SizedBox()
+                                  //     : Row(
+                                  //         children: [
+                                  //           Text(
+                                  //               subAccountListProvider
+                                  //                               .subAccountList[
+                                  //                                   index]
+                                  //                               .sovCount !=
+                                  //                           null &&
+                                  //                       subAccountListProvider
+                                  //                               .subAccountList[
+                                  //                                   index]
+                                  //                               .sovCount ==
+                                  //                           1
+                                  //                   ? LanguageService.getTranslated(
+                                  //                       context,
+                                  //                       "sub_account_list_app_sov_text")
+                                  //                   : subAccountListProvider
+                                  //                               .subAccountList[
+                                  //                                   index]
+                                  //                               .sovCount ==
+                                  //                           null
+                                  //                       ? ""
+                                  //                       : LanguageService
+                                  //                           .getTranslated(
+                                  //                               context,
+                                  //                               "sub_account_list_app_sovs_text"),
+                                  //               style: typography.Caption),
+                                  //           SizedBox(
+                                  //             width: CustomSpacing.two,
+                                  //           ),
+                                  //           Text(
+                                  //               subAccountListProvider
+                                  //                       .subAccountList[index]
+                                  //                       .sovCount
+                                  //                       ?.toString() ??
+                                  //                   "",
+                                  //               style: typography.Caption),
+                                  //         ],
+                                  //       ),
                                   !subAccountListProvider.showOwner
                                       ? SizedBox()
                                       : Row(
                                           children: [
                                             Text(
                                                 LanguageService.getTranslated(
-                                                    context,
-                                                    "sub_account_list_app_owner_text"),
+                                                    context, "owner"),
                                                 style: typography.Caption),
                                             SizedBox(
                                               width: CustomSpacing.two,
@@ -978,22 +1059,22 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                           child: Row(
                             children: [
                               // Icon with text
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Transfer account
-                                  _showTransferDialog(
-                                      context,
-                                      subAccountListProvider
-                                          .subAccountList[index]);
-                                },
-                                icon: const Icon(Symbols.share_windows),
-                                label: Text('Transfer',
-                                    style: typography.Caption.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? AppColors.white
-                                            : AppColors.black)),
-                              ),
+                              // TextButton.icon(
+                              //   onPressed: () {
+                              //     // Transfer account
+                              //     _showTransferDialog(
+                              //         context,
+                              //         subAccountListProvider
+                              //             .subAccountList[index]);
+                              //   },
+                              //   icon: const Icon(Symbols.share_windows),
+                              //   label: Text('Transfer',
+                              //       style: typography.Caption.copyWith(
+                              //           color: Theme.of(context).brightness ==
+                              //                   Brightness.dark
+                              //               ? AppColors.white
+                              //               : AppColors.black)),
+                              // ),
                               //SizedBox(),
                               const Spacer(),
                               /*IconButton(
@@ -1020,8 +1101,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     builder: (context) {
                                       return AlertDialog(
                                         title: Text(
-                                          LanguageService.getTranslated(context,
-                                              "sub_account_list_app_duplicate_title"),
+                                          LanguageService.getTranslated(
+                                              context, "duplicate_sub_account"),
                                           style: typography.H5_Regular,
                                         ),
                                         content: Column(
@@ -1030,7 +1111,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             Text(
                                               LanguageService.getTranslated(
                                                   context,
-                                                  "sub_account_list_app_duplicate_text"),
+                                                  "confirm_duplicate_sub_account"),
                                               style: typography.Body1,
                                             ),
                                             SizedBox(
@@ -1045,9 +1126,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       Navigator.pop(context);
                                                     },
                                                     child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "sub_account_list_app_duplicate_cancel"),
+                                                      LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "cancel"),
                                                       style: typography
                                                           .ButtonLarge,
                                                     ),
@@ -1118,7 +1200,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                           LanguageService
                                                               .getTranslated(
                                                             context,
-                                                            "sub_account_list_app_duplicate_duplicate",
+                                                            "duplicate",
                                                           ),
                                                         ),
                                                         type:
@@ -1149,14 +1231,17 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     builder: (context) {
                                       return AlertDialog(
                                         title: Text(
-                                          'Delete Account',
+                                          LanguageService.getTranslated(
+                                              context, "delete_account"),
                                           style: typography.H5_Regular,
                                         ),
                                         content: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              'Are you sure you want to delete the account?',
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "confirm_delete_account"),
                                               style: typography.Body1,
                                             ),
                                             SizedBox(
@@ -1171,9 +1256,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       Navigator.pop(context);
                                                     },
                                                     child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "account_list_app_duplicate_cancel"),
+                                                      LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "cancel"),
                                                       style: typography
                                                           .ButtonLarge,
                                                     ),
@@ -1265,8 +1351,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                                             .white,
                                                                       ),
                                                                     )
-                                                                  : Text(
-                                                                      "Delete"),
+                                                                  : Text(LanguageService
+                                                                      .getTranslated(
+                                                                          context,
+                                                                          "delete")),
                                                             );
                                                           },
                                                         ),
@@ -1310,7 +1398,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                     children: [
                       Text(
                         LanguageService.getTranslated(
-                            context, "sub_account_list_app_add_account_title"),
+                            context, "add_sub_account"),
                         style: typography.H5_Regular,
                       ),
                       SizedBox(height: 8.0),
@@ -1355,8 +1443,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                 },
                                 decoration: InputDecoration(
                                   labelText: LanguageService.getTranslated(
-                                      context,
-                                      "sub_account_list_app_account_name_field_label"),
+                                      context, "sub_account_name"),
                                   hintText: LanguageService.getTranslated(
                                       context,
                                       "sub_account_list_app_account_name_field_hint"),
@@ -1472,8 +1559,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           },
                                           child: Text(
                                             LanguageService.getTranslated(
-                                                context,
-                                                "sub_account_list_app_submit_text"),
+                                                context, "submit"),
                                             style: typography.ButtonLargeBlack,
                                           ),
                                           type: ButtonType.elevated,
@@ -1488,8 +1574,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                               Navigator.pop(context);
                             },
                             child: Text(
-                              LanguageService.getTranslated(
-                                  context, "sub_account_list_app_cancel_text"),
+                              LanguageService.getTranslated(context, "cancel"),
                               style: typography.ButtonLarge,
                             ),
                             type: ButtonType.text,
@@ -2042,7 +2127,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${LanguageService.getTranslated(context, "sub_account_list_app_title")} ',
+              '${LanguageService.getTranslated(context, "sub_account")} ',
               style: typography.Body1,
             ),
           ],
@@ -2069,13 +2154,28 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              hintText: LanguageService.getTranslated(
-                  context, "sub_account_list_search_hint"),
+              hintText: LanguageService.getTranslated(context, "search"),
               hintStyle: typography.Body2,
             ),
           ),
         ),
-        SizedBox(height: CustomSpacing.four),
+        SizedBox(height: CustomSpacing.two),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Consumer<SubAccountListProvider>(
+                builder: (context, subaccountlist, _) {
+              return Text(
+                  subaccountlist.showAccountName?.trim().isNotEmpty == true
+                      ? subaccountlist.showAccountName.toString() == "null"
+                          ? "Sub Account Name"
+                          : subaccountlist.showAccountName.toString()
+                      : 'Sub Account Name');
+            }),
+          ],
+        ),
+        SizedBox(height: CustomSpacing.two),
         // List of sub accounts
         Expanded(
           child: Consumer<SubAccountListProvider>(
@@ -2139,8 +2239,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       padding: const EdgeInsets.all(8.0),
                                       child: Center(
                                         child: Text(
-                                          LanguageService.getTranslated(context,
-                                              "sub_account_list_app_end_of_list_text"),
+                                          LanguageService.getTranslated(
+                                              context, "end_of_list"),
                                           style: typography.Body1,
                                         ),
                                       ),
@@ -2161,7 +2261,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                   _subAccountQuery,
                                   // Pass the search query if any
                                   subAccountListProvider.page,
-                                  6, // Page size
+                                  3, // Page size
                                 );
                                 return SizedBox();
                               }

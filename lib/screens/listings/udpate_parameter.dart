@@ -1,4 +1,6 @@
 import 'package:RiskSphere/screens/listings/widgets/auto_complete_options.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/global_imports.dart';
@@ -6,11 +8,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
 
 class UpdateParameterScreen extends StatefulWidget {
-  static const String routeName = '/updateparameter';
+  Data item;
 
-  const UpdateParameterScreen({
-    super.key,
-  });
+  UpdateParameterScreen({super.key, required this.item});
 
   @override
   State<UpdateParameterScreen> createState() => _UpdateParameterScreenState();
@@ -30,18 +30,18 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
   bool isLoading = false;
   String selectedFilter = "All";
   final TextEditingController _filePathController = TextEditingController();
-
+  final Map<String, TextEditingController> _valueControllers = {};
   String? _uploadedFileName;
+  final Map<String, bool> _fieldErrors = {};
+  final Map<String, Map<String, dynamic>> _initialValues = {};
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isSubmitting = false;
 
   bool showCheckbox = false;
 
   Timer? deBouncer;
 
-  TextEditingController _accountEditNameController = TextEditingController();
-
-  int _selectedAccountIndex = 0;
   Timer? _debounce;
   String _accountQuery = "";
   bool _accountAlreadyExists = false;
@@ -75,7 +75,7 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
       print("Query set to: $_accountQuery");
       var provider = Provider.of<AccountListProvider>(context, listen: false);
       provider.page = 1;
-      await provider.fetchAccountList(context, _accountQuery, provider.page, 5);
+      await provider.updateRecommendation(context, widget.item.locationId!);
     });
   }
 
@@ -93,7 +93,6 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
     if (query.isEmpty) {
       return;
     }
-    print("autoCompleteAccountsSearchClient called with query: $query");
     autoCompleteDebounce(() async {
       if (!mounted) return;
       var provider = Provider.of<AccountListProvider>(context, listen: false);
@@ -108,42 +107,65 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
     });
   }
 
-  GlobalKey keyFeature1 = GlobalKey();
-  GlobalKey keyFeature2 = GlobalKey();
-  GlobalKey keyFeature3 = GlobalKey();
-  List<TargetFocus> targets = [];
-  TutorialCoachMark? tutorialCoachMark;
   bool _showOverlay = false;
+
+  List<Accounts> parameterList = [];
 
   @override
   void initState() {
     super.initState();
-    _checkFirstTime();
-    var userProfileProvider =
-        Provider.of<UserProfileProvider>(context, listen: false);
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    int tabCount = (trialStatus.isEmpty) ? 4 : 3;
-    _tabController = TabController(length: tabCount, vsync: this);
-    Future.microtask(() => _getData());
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _getData();
-    // });
+
+    _tabController = TabController(length: 1, vsync: this);
+
+    _valueControllers.clear();
+    _initialValues.clear();
+    _fieldErrors.clear();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFreshData();
+    });
   }
 
-  Future<void> _checkFirstTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isFirstTime = prefs.getBool('isFirstTime') ?? true;
-    if (isFirstTime) {
-      setState(() => _showOverlay = true);
+  Future<void> _loadFreshData() async {
+    final provider = context.read<AccountListProvider>();
+
+    _valueControllers.clear();
+    _initialValues.clear();
+    _fieldErrors.clear();
+
+    provider.parameterList.clear();
+    provider.hasLoadedOnce = false;
+    provider.isLoading = true;
+    provider.notifyListeners();
+
+    await provider.updateRecommendation(
+      context,
+      widget.item.locationId!,
+    );
+
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  Future<void> _closeOverlay() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'isFirstTime', false); // 👈 save only when user closes it
-    setState(() => _showOverlay = false);
-  }
+  // Future<void> _loadFreshData() async {
+  //   final provider = context.read<AccountListProvider>();
+  //
+  //   // 🔥 CLEAR STATE BEFORE API
+  //   _valueControllers.clear();
+  //   _initialValues.clear();
+  //   _fieldErrors.clear();
+  //
+  //   provider.parameterList.clear();
+  //   provider.hasLoadedOnce = false;
+  //   provider.isLoading = true;
+  //   provider.notifyListeners();
+  //
+  //   await provider.updateRecommendation(
+  //     context,
+  //     widget.item.locationId!,
+  //   );
+  // }
 
   @override
   void dispose() {
@@ -152,96 +174,99 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
     super.dispose();
   }
 
-  _getData() async {
-    final futures = await Future.wait([
-      SharedPreferenceService.getHasAnyPlan(),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_PG_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.IS_SUPER_ADMIN),
-      SharedPreferenceService.getClaimForSubfeature(
-          SharedPreferenceService.Is_Indivudual),
-    ]);
+  Future<void> _getData() async {
+    final provider = Provider.of<AccountListProvider>(context, listen: false);
 
-    hasAnyPlan = futures[0] ?? false;
-    isPgAdmin = futures[1] ?? false;
-    isAdmin = futures[2] ?? false;
-    isSuperAdmin = futures[3] ?? false;
-    isIndivudual = futures[4] ?? false;
+    provider.hasLoadedOnce = false;
+    provider.isLoading = true;
+    provider.notifyListeners();
 
-    final accountListProvider =
-        Provider.of<AccountListProvider>(context, listen: false);
-
-    await accountListProvider.fetchAccountList(context, "", 1, 4);
-    setState(() => _selectedScreen = Screens.accountList);
+    await provider.updateRecommendation(
+      context,
+      widget.item.locationId!,
+    );
   }
 
   Widget _buildBottomActionBar({
     required VoidCallback onCancel,
-    required VoidCallback? onSubmit,
-    bool isSubmitEnabled = false,
+    required Future<void> Function()? onSubmit,
+    bool isSubmitEnabled = true,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E), // dark background
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E1E1E),
         border: Border(
-          top: BorderSide(color: const Color(0xFF2C2C2C), width: 1),
+          top: BorderSide(color: Color(0xFF2C2C2C), width: 1),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          /// Cancel Button
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(
-                color: AppColors.primaryMain,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.lightBlue,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
-              // blue border
-              foregroundColor: AppColors.primaryMain,
-              // blue text
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            onPressed: onCancel,
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              onPressed: (!_isSubmitting && isSubmitEnabled)
+                  ? () async {
+                      setState(() => _isSubmitting = true);
+
+                      try {
+                        await onSubmit?.call();
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isSubmitting = false);
+                        }
+                      }
+                    }
+                  : null,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
+                    )
+                  : Text(
+                      LanguageService.getTranslated(context, "submit"),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
-
-          const SizedBox(width: 10),
-
-          /// Submit Button (Disabled Style)
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isSubmitEnabled
-                  ? AppColors.primaryMain
-                  : AppColors.primaryMain,
-              foregroundColor: isSubmitEnabled
-                  ? AppColors.primaryMain
-                  : AppColors.primaryMain,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primaryMain),
+                foregroundColor: AppColors.primaryMain,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
-            ),
-            onPressed: onSubmit,
-            child: const Text(
-              "Submit",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
+              onPressed: _isSubmitting ? null : onCancel,
+              child: Text(
+                LanguageService.getTranslated(context, "cancel"),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -250,9 +275,103 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
     );
   }
 
+  Map<String, dynamic> buildSubmitPayload() {
+    final Map<String, Map<String, dynamic>> grouped = {};
+
+    _valueControllers.forEach((key, controller) {
+      final parts = key.split(':');
+      if (parts.length != 2) return;
+
+      final paramId = parts[0];
+      final field = parts[1];
+
+      final newValue = controller.text.trim();
+      final initialValue = _initialValues[paramId]?[field]?.toString() ?? "";
+
+      // ⛔ Skip only if unchanged
+      if (newValue == initialValue) return;
+
+      grouped.putIfAbsent(paramId, () => {});
+      grouped[paramId]![field] = newValue;
+    });
+
+    return {
+      "to_update_data_params": grouped.entries.map((entry) {
+        final data = entry.value;
+
+        return {
+          "data_category_id": entry.key,
+          "value": jsonEncode({
+            "value": data["value"] ?? "",
+            "unit": data["unit"] ?? "",
+            "value_a": data["value_a"] ?? "",
+            "value_b": data["value_b"] ?? "",
+            "currency": data["currency"] ?? "",
+            "valuation_date": _formatDateToISO(data["valuation_date"]),
+          }),
+        };
+      }).toList(),
+    };
+  }
+
+  String _formatDateToISO(String? date) {
+    if (date == null || date.isEmpty) return "";
+
+    final parsed = DateTime.tryParse(date);
+    if (parsed == null) return "";
+
+    // ✅ Return ONLY date (no time)
+    return DateFormat('yyyy-MM-dd').format(parsed);
+  }
+
+  // String _formatDateToISO(String? date) {
+  //   if (date == null || date.isEmpty) return "";
+  //
+  //   final parsed = DateTime.tryParse(date);
+  //   if (parsed == null) return "";
+  //
+  //   return parsed.toUtc().toIso8601String();
+  // }
+
+  // Map<String, dynamic> buildSubmitPayload() {
+  //   final Map<String, Map<String, dynamic>> grouped = {};
+  //
+  //   _valueControllers.forEach((key, controller) {
+  //     final parts = key.split(':');
+  //     if (parts.length != 2) return;
+  //
+  //     final paramId = parts[0];
+  //     final field = parts[1];
+  //
+  //     // 🚫 we only care about "value"
+  //     if (field != "value") return;
+  //
+  //     final newValue = controller.text.trim();
+  //     final initialValue =
+  //         _initialValues[paramId]?["value"]?.toString() ?? "";
+  //
+  //     // ⛔ skip ONLY if unchanged
+  //     if (newValue == initialValue) return;
+  //
+  //     grouped.putIfAbsent(paramId, () => {});
+  //     grouped[paramId]!["value"] = newValue; // can be empty
+  //   });
+  //
+  //   return {
+  //     "to_update_data_params": grouped.entries.map((entry) {
+  //       return {
+  //         "data_category_id": entry.key,
+  //         "value": jsonEncode({
+  //           "value": entry.value["value"] ?? "", // ✅ only this corrected
+  //         }),
+  //       };
+  //     }).toList(),
+  //   };
+  // }
+
   @override
   Widget build(BuildContext context1) {
-    var typography = CustomTypography(context);
+    final typography = CustomTypography(context);
     return SafeArea(
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
@@ -281,10 +400,39 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
             ),
             bottomNavigationBar: _buildBottomActionBar(
               onCancel: () => Navigator.pop(context),
-              onSubmit: () {
-                // handle submit
+              onSubmit: () async {
+                final provider =
+                    Provider.of<AccountListProvider>(context, listen: false);
+
+                try {
+                  await provider.updateRecommendationApi(
+                    context,
+                    widget.item.locationId!,
+                    buildSubmitPayload(), // ✅ payload map
+                  );
+
+                  if (mounted) {
+                    Navigator.pop(context, true); // optional result
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Failed to update parameters"),
+                    ),
+                  );
+                }
               },
-              isSubmitEnabled: false, // true to enable
+
+              // onSubmit: () async {
+              //   await Provider.of<AccountListProvider>(
+              //     context,
+              //     listen: false,
+              //   ).updateRecommendationApi(
+              //     context,
+              //     widget.item.locationId!,
+              //     buildSubmitPayload(), // ✅ CORRECT
+              //   );
+              // },
             ),
             body: Consumer<UserProfileProvider>(
                 builder: (context, userProfileProvider, child) {
@@ -316,38 +464,79 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                //
                                 SizedBox(height: CustomSpacing.two),
-
+                                Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                          6), // small radius
+                                      child: CachedNetworkImage(
+                                        imageUrl:
+                                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.item.latitude},${widget.item.longitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                widget.item.locationName ?? "-",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style:
+                                                    typography.Body2.copyWith(
+                                                        color: Colors.blue[300],
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 16),
+                                              ),
+                                              InkWell(
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: Icon(Icons.close))
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            widget.item.address ?? "",
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: typography.Body2.copyWith(
+                                                color: Colors.blue[300],
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 14),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            "${widget.item.totalUnfilledParameters} missing fields",
+                                            style: typography.Caption.copyWith(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: CustomSpacing.two),
                                 Expanded(
                                   child: TabBarView(
                                     controller: _tabController,
                                     children: [
                                       _getAccountUI(),
-                                      _getComingSoonUI("shared"),
-                                      if (isSuperAdmin || isPgAdmin) ...[
-                                        ConfigurationTab(),
-                                      ],
-                                      _getComingSoonUI("request"),
-                                      // Consumer<AccountListProvider>(
-                                      //   builder: (context, accountListProvider, _) {
-                                      //     final accountId = accountListProvider.accountList.isNotEmpty
-                                      //         ? accountListProvider.accountList[0].accountId ?? ""
-                                      //         : "";
-                                      //     return DataTab(
-                                      //       accountName: accountListProvider.accountList[0].accountName ?? "",
-                                      //       accountId: accountId,
-                                      //       subaccountId: accountId,
-                                      //     );
-                                      //   },
-                                      // ),
-                                      // DataTab(
-                                      //   accountId:"",
-                                      //   // userProfileProvider.accountList.isNotEmpty
-                                      //   //     ? userProfileProvider.accountList[0].accountId ?? ""
-                                      //   //     : "",
-                                      //   subaccountId: null,
-                                      // ),
                                     ],
                                   ),
                                 ),
@@ -422,7 +611,6 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 Row(
                   children: [
                     Container(
@@ -434,7 +622,7 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: _closeOverlay,
+                        onPressed: () {},
                         child:
                             const Text("Skip", style: TextStyle(fontSize: 14)),
                       ),
@@ -448,7 +636,6 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                         ),
                       ),
                       onPressed: () {
-                        _closeOverlay();
                         _showAddAccountDialog(context);
                       }, //_closeOverlay,
                       child: const Text("Add Account",
@@ -456,126 +643,11 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                     ),
                   ],
                 ),
-                // const SizedBox(height: 16),
-                // const Text(
-                //   "New Account",
-                //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                // ),
-                // const SizedBox(height: 8),
-                // const Text(
-                //   "Create a primary account to organize your sub accounts and locations.",
-                //   // textAlign: TextAlign.center,
-                // ),
-                // const SizedBox(height: 20),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //   children: [
-                //     TextButton(
-                //       onPressed: _closeOverlay,
-                //       child: const Text("Skip"),
-                //     ),
-                //     ElevatedButton(
-                //       onPressed: _closeOverlay,
-                //       child: const Text("Add Account"),
-                //     ),
-                //   ],
-                // ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildAccountCard(int index, AccountListProvider accountListProvider) {
-    final account = accountListProvider.accountList[index];
-    final typography = CustomTypography(context);
-    final isDisabled = account.disabled ?? false;
-
-    // you can make this stateful
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A), // dark background
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2C2C2C), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-
-          /// 🏷️ Field 1: Geocoding Type
-          _buildInputField("Geocoding Type", "Enter the field", typography),
-        ],
-      ),
-    );
-  }
-
-  /// 🔹 Reusable Filter Tab Widget
-  Widget _buildFilterTab(String title, bool isSelected, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryMain : Colors.transparent,
-          border: Border.all(
-            color: isSelected ? AppColors.primaryMain : AppColors.primaryMain,
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.black : AppColors.primaryMain,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 🏷️ Reusable Input Field
-  Widget _buildInputField(
-      String label, String hint, CustomTypography typography) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: typography.Body2.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 11),
-        TextField(
-          style: TextStyle(color: Colors.white, fontSize: 13),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: typography.Caption.copyWith(color: Colors.grey[300]),
-            filled: true,
-            fillColor: const Color(0xFF2A2A2A),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: Colors.white60, width: 0.5),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Colors.white60, width: 1),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -845,144 +917,387 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
   }
 
   Widget _getAccountUI() {
-    var typography = CustomTypography(context);
-    return Column(
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  'Zerozilla',
-                  style: typography.Body1,
-                ),
-                SizedBox(width: 5),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    "10".toString().padLeft(2, '0') ?? '00',
-                    style: typography.Caption.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                ),
-              ],
+    final typography = CustomTypography(context);
+
+    return Consumer<AccountListProvider>(
+      builder: (context, provider, _) {
+        if (!provider.hasLoadedOnce) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (provider.parameterList.isEmpty) {
+          return Center(
+            child: Text(
+              "No parameters to update",
+              style: typography.Body1,
             ),
-            InkWell(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => UpdateParameterScreen()));
-              },
-              borderRadius: BorderRadius.circular(6),
-              child: const Icon(Icons.edit,
-                  size: 16, color: AppColors.primaryMain),
-            ),
-          ],
-        ),
-        SizedBox(height: CustomSpacing.four),
+          );
+        }
 
-        /// 🔹 Filter Tabs ("All" and "Missing")
-        Row(
-          children: [
-            _buildFilterTab("All", selectedFilter == "All", () {
-              // handle "All" click
-            }),
-            const SizedBox(width: 8),
-            _buildFilterTab("Missing", selectedFilter == "Missing", () {
-              // handle "Missing" click
-            }),
-          ],
-        ),
-        SizedBox(height: CustomSpacing.four),
-        // List of accounts
-        Expanded(
-          child: Selector<AccountListProvider,
-              Tuple4<bool, bool, int, List<Accounts>>>(
-            selector: (_, provider) => Tuple4(
-              provider.isLoading,
-              provider.isNextPageLoading,
-              provider.page,
-              provider.accountList,
-            ),
-            builder: (context, data, _) {
-              final isLoading = data.item1;
-              final isNextPageLoading = data.item2;
-              final currentPage = data.item3;
-              final accountList = data.item4;
-
-              if (isLoading && accountList.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (accountList.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      "Looks like you don't have an account yet. No worries! Just create a new one and start adding your locations.",
-                      textAlign: TextAlign.center,
-                      style: CustomTypography(context).Body1,
-                    ),
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  await Provider.of<AccountListProvider>(context, listen: false)
-                      .fetchAccountList(context, _accountQuery, 1, 5);
-                },
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (scrollInfo) {
-                    if (!isNextPageLoading &&
-                        scrollInfo.metrics.pixels >=
-                            scrollInfo.metrics.maxScrollExtent - 200) {
-                      Provider.of<AccountListProvider>(context, listen: false)
-                          .fetchAccountList(
-                              context, _accountQuery, currentPage + 1, 5);
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    key: const PageStorageKey('accountListView'),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: accountList.length + (isNextPageLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= accountList.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      final account = accountList[index];
-                      return _buildAccountCard(
-                          index,
-                          Provider.of<AccountListProvider>(context,
-                              listen: false));
-
-                      // return _buildAccountCard(context, account, index);
-                    },
-                  ),
-                ),
+        return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: provider.parameterList.length +
+              (provider.isNextPageLoading ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == provider.parameterList.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
               );
+            }
+
+            final param = provider.parameterList[index];
+            return _buildParameterCard(param);
+          },
+        );
+      },
+    );
+  }
+
+  Map<String, dynamic> _extractInitialMap(Accounts param) {
+    final raw = param.parameterValue?.value;
+    if (raw == null || raw.toString().trim().isEmpty) return {};
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return {"value": raw.toString()};
+    }
+  }
+
+  String _getParamType(Accounts param) {
+    return param.parameterType?.name?.toLowerCase() ?? "";
+  }
+
+  Widget _buildParameterCard(Accounts param) {
+    final typography = CustomTypography(context);
+    final String baseKey = param.dataCategoryId!;
+    final String type = _getParamType(param);
+
+    /// Parse initial API value
+    Map<String, dynamic> initialData = {};
+    try {
+      if (param.parameterValue?.value != null &&
+          param.parameterValue!.value!.isNotEmpty) {
+        initialData = jsonDecode(param.parameterValue!.value!);
+      }
+    } catch (_) {}
+    _initialValues.putIfAbsent(
+      baseKey,
+      () => Map<String, dynamic>.from(initialData),
+    );
+
+    TextEditingController _getController(String field) {
+      final fullKey = "$baseKey:$field";
+
+      return _valueControllers.putIfAbsent(fullKey, () {
+        final c = TextEditingController();
+
+        final value = initialData[field]?.toString() ?? "";
+        c.text = value;
+
+        _fieldErrors[fullKey] = value.trim().isEmpty;
+
+        return c;
+      });
+    }
+
+    // bool _hasError(String field) => _fieldErrors["$baseKey:$field"] ?? false;
+    bool _hasError(String field) {
+      final key = "$baseKey:$field";
+
+      _fieldErrors.putIfAbsent(
+        key,
+        () => _getController(field).text.trim().isEmpty,
+      );
+
+      return _fieldErrors[key]!;
+    }
+
+    void _setError(String field, bool value) {
+      _fieldErrors["$baseKey:$field"] = value;
+    }
+
+    final existingDate = DateTime.tryParse(
+      _getController("valuation_date").text,
+    );
+    final bool hasCurrency = param.paramConfig?.enableCurrencySelection == true;
+    final bool hasValuationDate =
+        param.paramConfig?.enableValuationDateSelection == true;
+    final currencyController = _getController("currency");
+
+    List<Map<String, String>> currencyJson = [
+      {"code": "USD", "name": "US Dollar"},
+      {"code": "CAD", "name": "Canadian Dollar"},
+      {"code": "EUR", "name": "Euro"},
+      {"code": "AED", "name": "United Arab Emirates Dirham"},
+      {"code": "AFN", "name": "Afghan Afghani"},
+      {"code": "ALL", "name": "Albanian Lek"},
+      {"code": "AMD", "name": "Armenian Dram"},
+      {"code": "ARS", "name": "Argentine Peso"},
+      {"code": "AUD", "name": "Australian Dollar"},
+      {"code": "AZN", "name": "Azerbaijani Manat"},
+      {"code": "BAM", "name": "Bosnia-Herzegovina Convertible Mark"},
+      {"code": "BDT", "name": "Bangladeshi Taka"},
+      {"code": "BGN", "name": "Bulgarian Lev"},
+      {"code": "BHD", "name": "Bahraini Dinar"},
+      {"code": "BIF", "name": "Burundian Franc"},
+      {"code": "BND", "name": "Brunei Dollar"},
+      {"code": "BOB", "name": "Bolivian Boliviano"},
+      {"code": "BRL", "name": "Brazilian Real"},
+      {"code": "BWP", "name": "Botswanan Pula"},
+      {"code": "BYN", "name": "Belarusian Ruble"},
+      {"code": "BZD", "name": "Belize Dollar"},
+      {"code": "CDF", "name": "Congolese Franc"},
+      {"code": "CHF", "name": "Swiss Franc"},
+      {"code": "CLP", "name": "Chilean Peso"},
+      {"code": "CNY", "name": "Chinese Yuan"},
+      {"code": "COP", "name": "Colombian Peso"},
+      {"code": "CRC", "name": "Costa Rican Colón"},
+      {"code": "CVE", "name": "Cape Verdean Escudo"},
+      {"code": "CZK", "name": "Czech Republic Koruna"},
+      {"code": "DJF", "name": "Djiboutian Franc"},
+      {"code": "DKK", "name": "Danish Krone"},
+      {"code": "DOP", "name": "Dominican Peso"},
+      {"code": "DZD", "name": "Algerian Dinar"},
+      {"code": "EEK", "name": "Estonian Kroon"},
+      {"code": "EGP", "name": "Egyptian Pound"},
+      {"code": "ERN", "name": "Eritrean Nakfa"},
+      {"code": "ETB", "name": "Ethiopian Birr"},
+      {"code": "GBP", "name": "British Pound Sterling"},
+      {"code": "GEL", "name": "Georgian Lari"},
+      {"code": "GHS", "name": "Ghanaian Cedi"},
+      {"code": "GNF", "name": "Guinean Franc"},
+      {"code": "GTQ", "name": "Guatemalan Quetzal"},
+      {"code": "HKD", "name": "Hong Kong Dollar"},
+      {"code": "HNL", "name": "Honduran Lempira"},
+      {"code": "HRK", "name": "Croatian Kuna"},
+      {"code": "HUF", "name": "Hungarian Forint"},
+      {"code": "IDR", "name": "Indonesian Rupiah"},
+      {"code": "ILS", "name": "Israeli New Sheqel"},
+      {"code": "INR", "name": "Indian Rupee"},
+      {"code": "IQD", "name": "Iraqi Dinar"},
+      {"code": "IRR", "name": "Iranian Rial"},
+      {"code": "ISK", "name": "Icelandic Króna"},
+      {"code": "JMD", "name": "Jamaican Dollar"},
+      {"code": "JOD", "name": "Jordanian Dinar"},
+      {"code": "JPY", "name": "Japanese Yen"},
+      {"code": "KES", "name": "Kenyan Shilling"},
+      {"code": "KHR", "name": "Cambodian Riel"},
+      {"code": "KMF", "name": "Comorian Franc"},
+      {"code": "KRW", "name": "South Korean Won"},
+      {"code": "KWD", "name": "Kuwaiti Dinar"},
+      {"code": "KZT", "name": "Kazakhstani Tenge"},
+      {"code": "LBP", "name": "Lebanese Pound"},
+      {"code": "LKR", "name": "Sri Lankan Rupee"},
+      {"code": "LTL", "name": "Lithuanian Litas"},
+      {"code": "LVL", "name": "Latvian Lats"},
+      {"code": "LYD", "name": "Libyan Dinar"},
+      {"code": "MAD", "name": "Moroccan Dirham"},
+      {"code": "MDL", "name": "Moldovan Leu"},
+      {"code": "MGA", "name": "Malagasy Ariary"},
+      {"code": "MKD", "name": "Macedonian Denar"},
+      {"code": "MMK", "name": "Myanma Kyat"},
+      {"code": "MOP", "name": "Macanese Pataca"},
+      {"code": "MUR", "name": "Mauritian Rupee"},
+      {"code": "MXN", "name": "Mexican Peso"},
+      {"code": "MYR", "name": "Malaysian Ringgit"},
+      {"code": "MZN", "name": "Mozambican Metical"},
+      {"code": "NAD", "name": "Namibian Dollar"},
+      {"code": "NGN", "name": "Nigerian Naira"},
+      {"code": "NIO", "name": "Nicaraguan Córdoba"},
+      {"code": "NOK", "name": "Norwegian Krone"},
+      {"code": "NPR", "name": "Nepalese Rupee"},
+      {"code": "NZD", "name": "New Zealand Dollar"},
+      {"code": "OMR", "name": "Omani Rial"},
+      {"code": "PAB", "name": "Panamanian Balboa"},
+      {"code": "PEN", "name": "Peruvian Nuevo Sol"},
+      {"code": "PHP", "name": "Philippine Peso"},
+      {"code": "PKR", "name": "Pakistani Rupee"},
+      {"code": "PLN", "name": "Polish Zloty"},
+      {"code": "PYG", "name": "Paraguayan Guarani"},
+      {"code": "QAR", "name": "Qatari Rial"},
+      {"code": "RON", "name": "Romanian Leu"},
+      {"code": "RSD", "name": "Serbian Dinar"},
+      {"code": "RUB", "name": "Russian Ruble"},
+      {"code": "RWF", "name": "Rwandan Franc"},
+      {"code": "SAR", "name": "Saudi Riyal"},
+      {"code": "SDG", "name": "Sudanese Pound"},
+      {"code": "SEK", "name": "Swedish Krona"},
+      {"code": "SGD", "name": "Singapore Dollar"},
+      {"code": "SOS", "name": "Somali Shilling"},
+      {"code": "SYP", "name": "Syrian Pound"},
+      {"code": "THB", "name": "Thai Baht"},
+      {"code": "TND", "name": "Tunisian Dinar"},
+      {"code": "TOP", "name": "Tongan Paʻanga"},
+      {"code": "TRY", "name": "Turkish Lira"},
+      {"code": "TTD", "name": "Trinidad and Tobago Dollar"},
+      {"code": "TWD", "name": "New Taiwan Dollar"},
+      {"code": "TZS", "name": "Tanzanian Shilling"},
+      {"code": "UAH", "name": "Ukrainian Hryvnia"},
+      {"code": "UGX", "name": "Ugandan Shilling"},
+      {"code": "UYU", "name": "Uruguayan Peso"},
+      {"code": "UZS", "name": "Uzbekistan Som"},
+      {"code": "VEF", "name": "Venezuelan Bolívar"},
+      {"code": "VND", "name": "Vietnamese Dong"},
+      {"code": "XAF", "name": "CFA Franc BEAC"},
+      {"code": "XOF", "name": "CFA Franc BCEAO"},
+      {"code": "YER", "name": "Yemeni Rial"},
+      {"code": "ZAR", "name": "South African Rand"},
+      {"code": "ZMK", "name": "Zambian Kwacha"},
+      {"code": "ZWL", "name": "Zimbabwean Dollar"},
+    ];
+
+    final String? selectedCurrency = currencyJson.any(
+      (c) => c['code'] == currencyController.text,
+    )
+        ? currencyController.text
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _hasError("value") ? Colors.red : const Color(0xFF2C2C2C),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// TITLE
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  param.parameterNameA ?? "",
+                  style: typography.Body2.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (_hasError("value"))
+                Text(
+                  "Missing",
+                  style: typography.Body2.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          /// VALUE
+          TextField(
+            controller: _getController("value"),
+            decoration: _buildDecoration(
+              _hasError("value"),
+              param.parameterNameA ?? "Value",
+            ),
+            onChanged: (v) {
+              _setError("value", v.trim().isEmpty);
+              setState(() {});
             },
           ),
-        )
-      ],
+
+          const SizedBox(height: 14),
+          if (hasCurrency) ...[
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              // ✅ REQUIRED
+              value: selectedCurrency,
+              decoration: _buildDecoration(_hasError("currency"), "Currency"),
+              items: currencyJson.map((c) {
+                return DropdownMenuItem<String>(
+                  value: c['code'],
+                  child: Text(
+                    "${c['name']} (${c['code']})",
+                    overflow: TextOverflow.ellipsis, // ✅ prevent overflow
+                    maxLines: 1,
+                  ),
+                );
+              }).toList(),
+              onChanged: (v) {
+                currencyController.text = v ?? "";
+                _setError("currency", v == null);
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          if (hasValuationDate) ...[
+            GestureDetector(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime(1970),
+                  lastDate: DateTime(2100),
+                  initialDate: existingDate ?? DateTime.now(),
+                );
+                if (date != null) {
+                  _getController("valuation_date").text =
+                      DateFormat('yyyy-MM-dd').format(date);
+                  _setError("valuation_date", false);
+                  setState(() {});
+                }
+              },
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: _getController("valuation_date"),
+                  decoration: _buildDecoration(
+                    _hasError("valuation_date"),
+                    "Valuation Date",
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _updateValue(String key, String value) {
+    _valueControllers[key]!.text = value;
+    _fieldErrors[key] = value.trim().isEmpty;
+    setState(() {});
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required bool hasError,
+    required String hint,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: _buildDecoration(hasError, hint),
+      style: const TextStyle(color: Colors.white),
+    );
+  }
+
+  InputDecoration _buildDecoration(bool hasError, String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      labelText: hint,
+      fillColor: const Color(0xFF1E1E1E),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: BorderSide(
+          color: Colors.white60,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: BorderSide(
+          color: Colors.white,
+        ),
+      ),
     );
   }
 }

@@ -80,3 +80,74 @@ class _CountryPickerFlagNameState extends State<CountryPickerFlagName> {
     );
   }
 }
+
+
+
+class CountryPickerFlagNameCreate extends StatefulWidget {
+  final Function(Country)? onCountryChange;
+  final Country? initialValue;
+
+  const CountryPickerFlagNameCreate({super.key, required this.onCountryChange, this.initialValue});
+
+  @override
+  State<CountryPickerFlagNameCreate> createState() => _CountryPickerFlagNameCreateState();
+}
+
+class _CountryPickerFlagNameCreateState extends State<CountryPickerFlagNameCreate> {
+  late Country country;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set the initial country value
+    country = widget.initialValue ??
+        Country(
+          phoneCode: "+1",
+          countryCode: "US",
+          e164Sc: 1,
+          geographic: true,
+          level: 1,
+          name: "United States",
+          example: "+1 202-555-0191",
+          displayName: "United States (+1)",
+          displayNameNoCountryCode: "United States",
+          e164Key: "1-US-0",
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var typography = CustomTypography(context);
+    return GestureDetector(
+      onTap: () {
+        if (widget.onCountryChange != null) {
+          showCountryPicker(
+            context: context,
+            showPhoneCode: false,
+            onSelect: (Country selectedCountry) {
+              setState(() {
+                country = selectedCountry;
+              });
+
+              if (widget.onCountryChange != null) {
+                widget.onCountryChange!(selectedCountry);
+              }
+            },
+          );
+        }
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            backgroundImage: AssetImage(
+              CountryPickerUtils.getFlagImageAssetPath(country.countryCode),
+              package: 'country_pickers',
+            ),
+          ),
+
+        ],
+      ),
+    );
+  }
+}

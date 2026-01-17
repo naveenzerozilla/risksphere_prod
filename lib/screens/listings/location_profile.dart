@@ -49,16 +49,20 @@ import '../../design_system/components/custom_button.dart';
 import '../../models/location_profile_model.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/account_list_provider.dart';
+import '../../providers/data_list_parameters.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../providers/sub_account_list_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
+import '../../service/language_service.dart';
+import '../../service/shared_preference_service.dart';
 import '../../utils/toast.dart';
 
 class LocationProfile extends StatefulWidget {
-  const LocationProfile({
+  LocationProfile({
     super.key,
+    this.locationName,
     required this.accountId,
     required this.accountName,
     required this.subAccountId,
@@ -68,7 +72,7 @@ class LocationProfile extends StatefulWidget {
     required this.page,
     required this.totalPages,
     required this.searchQuery,
-    this.locationId = '',
+    this.locationId,
     this.reset = false,
     this.hazardProcess,
     this.onConfirmCallback,
@@ -76,6 +80,7 @@ class LocationProfile extends StatefulWidget {
     this.tab,
   });
 
+  final String? locationName;
   final String accountId;
   final String accountName;
   final String subAccountId;
@@ -85,7 +90,7 @@ class LocationProfile extends StatefulWidget {
   final String page;
   final String? totalPages;
   final String searchQuery;
-  final String locationId;
+  final String? locationId;
   final bool reset;
   final bool? hazardProcess;
   final VoidCallback? onConfirmCallback;
@@ -110,6 +115,10 @@ class _LocationProfileState extends State<LocationProfile>
   bool isLoadingAddToMultiple = false;
   bool showViewMore = true;
   final TextEditingController _commentController = TextEditingController();
+  bool is3DView = false;
+  LatLng? _focusedLocation;
+  late GoogleMapController mapController;
+  LatLng _currentCenter = LatLng(20.5937, 78.9629);
 
   late int tabIndex = widget.tab ?? 0;
   bool isLoading = false;
@@ -121,6 +130,8 @@ class _LocationProfileState extends State<LocationProfile>
   List<HazardData> mainHazards = [];
   int? _selectedScore;
   Set<Marker> _markers = {};
+
+  bool hasAnyPlan = false;
 
   // Google Maps
   bool _mapIsReady = false;
@@ -174,8 +185,10 @@ class _LocationProfileState extends State<LocationProfile>
 
   String _formatTimestamp(int? seconds) {
     if (seconds == null) return '';
+
     final dateTime = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
-    return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+
+    return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime).toLowerCase();
   }
 
   @override
@@ -198,6 +211,8 @@ class _LocationProfileState extends State<LocationProfile>
           tabIndex = _tabController!.index;
         });
       });
+      Provider.of<SubaccountParameterProvider>(context, listen: false)
+          .setUpdatedScore(0);
     }
   }
 
@@ -207,6 +222,26 @@ class _LocationProfileState extends State<LocationProfile>
       _initializeClusterManager(),
       _fetchMainHazardLayers(),
     ]);
+  }
+
+  Future<void> _toggle2D3DView() async {
+    // Use focused location when marker selected, else map center
+    final LatLng target = _focusedLocation ?? _currentCenter;
+
+    final zoom = await mapController.getZoomLevel();
+
+    await mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: target,
+          zoom: zoom,
+          tilt: is3DView ? 0 : 60,
+          bearing: is3DView ? 0 : 45,
+        ),
+      ),
+    );
+
+    setState(() => is3DView = !is3DView);
   }
 
   int? totalPages;
@@ -224,7 +259,7 @@ class _LocationProfileState extends State<LocationProfile>
         Provider.of<MyLocationListProvider>(context, listen: false);
     int currentPage = int.tryParse(widget.page) ?? 1;
 
-    totalPages = widget.locationId.isNotEmpty
+    totalPages = widget.locationId!.isNotEmpty
         ? int.parse(locationProvider.totalPages.toString())
         : int.tryParse(widget.totalPages!) ==
                 int.parse(locationProvider.totalPages.toString())
@@ -277,6 +312,7 @@ class _LocationProfileState extends State<LocationProfile>
             subAccountName: widget.subAccountName,
             sovName: widget.sovName,
             searchQuery: widget.searchQuery,
+            locationId: '',
             page: pageToNavigate.toString(),
             totalPages: totalPages.toString(),
           ),
@@ -305,7 +341,7 @@ class _LocationProfileState extends State<LocationProfile>
 
     final locationProvider =
         Provider.of<MyLocationListProvider>(context, listen: false);
-    int? totalPages = widget.locationId.isNotEmpty
+    int? totalPages = widget.locationId!.isNotEmpty
         ? int.parse(locationProvider.totalPages.toString())
         : int.tryParse(widget.totalPages!) ==
                 int.parse(locationProvider.totalPages.toString())
@@ -322,6 +358,7 @@ class _LocationProfileState extends State<LocationProfile>
           subAccountName: widget.subAccountName,
           sovName: widget.sovName,
           searchQuery: widget.searchQuery,
+          locationId: '',
           page: pageToNavigate.toString(),
           totalPages: totalPages.toString(),
         ),
@@ -448,6 +485,7 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _getData() async {
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
     await Provider.of<MyLocationListProvider>(context, listen: false)
         .fetchLocationListProfile(
       context,
@@ -461,6 +499,9 @@ class _LocationProfileState extends State<LocationProfile>
     );
     _addSubdestinationMarkers();
     _add();
+    setState(() {
+      hasAnyPlan = hasAnyPlans ?? false;
+    });
   }
 
   Future<BitmapDescriptor> _getClusterBitmap(int size,
@@ -747,7 +788,7 @@ class _LocationProfileState extends State<LocationProfile>
                           Builder(builder: (context) {
                             final int currentPage =
                                 int.tryParse(widget.page) ?? 1;
-                            final int totalPages = widget.locationId.isNotEmpty
+                            final int totalPages = widget.locationId!.isNotEmpty
                                 ? (locationProfileProvider.resetTotalPage ?? 1)
                                 : (int.tryParse(widget.totalPages ?? '1') ?? 1);
 
@@ -795,7 +836,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                   strokeWidth: 2),
                                             )
                                           : Text(
-                                              'Prev Locations',
+                                              LanguageService.getTranslated(
+                                                  context, "prev_locations"),
                                               style: typography.ButtonLarge
                                                   .copyWith(
                                                 color: canNavigatePrevious
@@ -841,7 +883,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                   strokeWidth: 2),
                                             )
                                           : Text(
-                                              'Next Locations',
+                                              LanguageService.getTranslated(
+                                                  context, "next_locations"),
                                               style: typography.ButtonLarge
                                                   .copyWith(
                                                 color: canNavigateNext
@@ -917,130 +960,318 @@ class _LocationProfileState extends State<LocationProfile>
                                               // SizedBox(width: 8),
                                               Expanded(
                                                 child: Container(
-                                                  alignment: Alignment.center,
+                                                  alignment:
+                                                      Alignment.centerLeft,
                                                   padding: const EdgeInsets
-                                                      .symmetric(
-                                                      vertical: 5.0,
-                                                      horizontal: 0),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.start,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                top: 5.0,
-                                                                bottom: 6),
-                                                        child: Row(
-                                                          children: [
-                                                            if(widget.sovId.isNotEmpty || widget.sovId.toString()=="null")...[
-                                                            // Text(widget.sovName),
-                                                            InkWell(
-                                                              onTap: () {
-                                                                if (!bottomsheetopened) {
-                                                                Navigator.pop(context);
-                                                                }
-                                                              },
-                                                              child: Text(
-                                                                widget
-                                                                    .sovName,
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                    14,
-                                                                    color: Colors
-                                                                        .white60),
+                                                      .symmetric(vertical: 5),
+                                                  child: SingleChildScrollView(
+                                                    scrollDirection:
+                                                        Axis.horizontal,
+                                                    // ✅ prevents overflow
+                                                    child: Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        // ---------- SOV FLOW ----------
+                                                        if (widget.sovId !=
+                                                                null &&
+                                                            widget.sovId!
+                                                                .isNotEmpty) ...[
+                                                          InkWell(
+                                                            onTap: () {
+                                                              if (!bottomsheetopened) {
+                                                                Navigator.pop(
+                                                                    context);
+                                                                Navigator.pop(
+                                                                    context);
+                                                              }
+                                                            },
+                                                            child: Text(
+                                                              widget.sovName ??
+                                                                  "",
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 14,
+                                                                color: Colors
+                                                                    .white60,
                                                               ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                            ] else ...[
-                                                            InkWell(
-                                                              onTap: () {
-                                                                if (!bottomsheetopened) {
-                                                                  Navigator
-                                                                      .pushAndRemoveUntil(
-                                                                    context,
-                                                                    MaterialPageRoute(
-                                                                        builder:
-                                                                            (context) =>
-                                                                                AccountListScreen()),
-                                                                    (route) =>
-                                                                        false,
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Text(
-                                                                widget
-                                                                    .accountName,
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .white70),
+                                                          ),
+                                                          const Text(
+                                                            ' > ',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                          InkWell(
+                                                            onTap: () {
+                                                              if (!bottomsheetopened) {
+                                                                Navigator.pop(
+                                                                    context);
+                                                              }
+                                                            },
+                                                            child: Text(
+                                                              widget.locationName ??
+                                                                  "",
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 14,
+                                                                color: Colors
+                                                                    .white60,
                                                               ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                            Text(' > ',
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .white70)),
-                                                            InkWell(
-                                                              onTap: () {
-                                                                if (!bottomsheetopened) {
-                                                                  Navigator
-                                                                      .pushAndRemoveUntil(
-                                                                    context,
-                                                                    MaterialPageRoute(
+                                                          ),
+                                                        ]
+
+                                                        // ---------- ACCOUNT FLOW ----------
+                                                        else ...[
+                                                          InkWell(
+                                                            onTap: () {
+                                                              if (!bottomsheetopened) {
+                                                                Navigator
+                                                                    .pushAndRemoveUntil(
+                                                                  context,
+                                                                  MaterialPageRoute(
                                                                       builder:
-                                                                          (context) =>
-                                                                              SubAccountListScreen(
-                                                                        accountId:
-                                                                            widget.accountId ??
-                                                                                "",
-                                                                        accountName:
-                                                                            widget.subAccountName ??
-                                                                                "",
-                                                                      ),
-                                                                    ),
-                                                                    (route) =>
-                                                                        false,
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Text(
-                                                                widget
-                                                                    .subAccountName,
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .white70),
+                                                                          (_) =>
+                                                                              AccountListScreen()),
+                                                                  (route) =>
+                                                                      false,
+                                                                );
+                                                              }
+                                                            },
+                                                            child: Text(
+                                                              widget.accountName ??
+                                                                  "",
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70,
                                                               ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                            ],
-                                                            Text(' > ',
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .white70)),
-                                                            Text(
-                                                              "Location Profile",
-                                                              style: TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                      .white),
+                                                          ),
+                                                          const Text(
+                                                            ' > ',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                          InkWell(
+                                                            onTap: () {
+                                                              if (!bottomsheetopened) {
+                                                                Navigator
+                                                                    .pushAndRemoveUntil(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        SubAccountListScreen(
+                                                                      accountId:
+                                                                          widget.accountId ??
+                                                                              "",
+                                                                      accountName:
+                                                                          widget.subAccountName ??
+                                                                              "",
+                                                                    ),
+                                                                  ),
+                                                                  (route) =>
+                                                                      false,
+                                                                );
+                                                              }
+                                                            },
+                                                            child: Text(
+                                                              widget.subAccountName ??
+                                                                  "",
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70,
+                                                              ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                          ],
+                                                          ),
+                                                        ],
+
+                                                        const Text(
+                                                          ' > ',
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors
+                                                                  .white70),
                                                         ),
-                                                      ),
-                                                    ],
+                                                        const Text(
+                                                          'Location Profile',
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color:
+                                                                  Colors.white),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
+                                              )
+
+                                              // Expanded(
+                                              //   child: Container(
+                                              //     alignment: Alignment.center,
+                                              //     padding: const EdgeInsets
+                                              //         .symmetric(
+                                              //         vertical: 5.0,
+                                              //         horizontal: 0),
+                                              //     child: Row(
+                                              //       mainAxisAlignment:
+                                              //           MainAxisAlignment.start,
+                                              //       crossAxisAlignment:
+                                              //           CrossAxisAlignment
+                                              //               .center,
+                                              //       children: [
+                                              //         Padding(
+                                              //           padding:
+                                              //               const EdgeInsets
+                                              //                   .only(
+                                              //                   top: 5.0,
+                                              //                   bottom: 6),
+                                              //           child: Row(
+                                              //             children: [
+                                              //               if (widget.sovId
+                                              //                       .isNotEmpty ||
+                                              //                   widget.sovId
+                                              //                           .toString() ==
+                                              //                       "null") ...[
+                                              //                 // Text(widget.sovName),
+                                              //                 InkWell(
+                                              //                   onTap: () {
+                                              //                     if (!bottomsheetopened) {
+                                              //                       Navigator.pop(
+                                              //                           context);
+                                              //                     }
+                                              //                   },
+                                              //                   child: Text(
+                                              //                     widget
+                                              //                         .sovName,
+                                              //                     style: TextStyle(
+                                              //                         fontSize:
+                                              //                         14,
+                                              //                         color: Colors
+                                              //                             .white60),
+                                              //                   ),
+                                              //                 ),
+                                              //                 InkWell(
+                                              //                   onTap: () {
+                                              //                     if (!bottomsheetopened) {
+                                              //                       Navigator.pop(
+                                              //                           context);
+                                              //                     }
+                                              //                   },
+                                              //                   child: Text(
+                                              //                     widget
+                                              //                         .sovName,
+                                              //                     style: TextStyle(
+                                              //                         fontSize:
+                                              //                             14,
+                                              //                         color: Colors
+                                              //                             .white60),
+                                              //                   ),
+                                              //                 ),
+                                              //               ] else ...[
+                                              //                 InkWell(
+                                              //                   onTap: () {
+                                              //                     if (!bottomsheetopened) {
+                                              //                       Navigator
+                                              //                           .pushAndRemoveUntil(
+                                              //                         context,
+                                              //                         MaterialPageRoute(
+                                              //                             builder: (context) =>
+                                              //                                 AccountListScreen()),
+                                              //                         (route) =>
+                                              //                             false,
+                                              //                       );
+                                              //                     }
+                                              //                   },
+                                              //                   child: Text(
+                                              //                     widget
+                                              //                         .accountName,
+                                              //                     style: TextStyle(
+                                              //                         fontSize:
+                                              //                             12,
+                                              //                         color: Colors
+                                              //                             .white70),
+                                              //                   ),
+                                              //                 ),
+                                              //                 Text(' > ',
+                                              //                     style: TextStyle(
+                                              //                         fontSize:
+                                              //                             12,
+                                              //                         color: Colors
+                                              //                             .white70)),
+                                              //                 InkWell(
+                                              //                   onTap: () {
+                                              //                     if (!bottomsheetopened) {
+                                              //                       Navigator
+                                              //                           .pushAndRemoveUntil(
+                                              //                         context,
+                                              //                         MaterialPageRoute(
+                                              //                           builder:
+                                              //                               (context) =>
+                                              //                                   SubAccountListScreen(
+                                              //                             accountId:
+                                              //                                 widget.accountId ?? "",
+                                              //                             accountName:
+                                              //                                 widget.subAccountName ?? "",
+                                              //                           ),
+                                              //                         ),
+                                              //                         (route) =>
+                                              //                             false,
+                                              //                       );
+                                              //                     }
+                                              //                   },
+                                              //                   child: Text(
+                                              //                     widget
+                                              //                         .subAccountName,
+                                              //                     style: TextStyle(
+                                              //                         fontSize:
+                                              //                             12,
+                                              //                         color: Colors
+                                              //                             .white70),
+                                              //                   ),
+                                              //                 ),
+                                              //               ],
+                                              //               Text(' > ',
+                                              //                   style: TextStyle(
+                                              //                       fontSize:
+                                              //                           12,
+                                              //                       color: Colors
+                                              //                           .white70)),
+                                              //               Text(
+                                              //                 "Location Profile",
+                                              //                 style: TextStyle(
+                                              //                     fontSize: 12,
+                                              //                     color: Colors
+                                              //                         .white),
+                                              //               ),
+                                              //             ],
+                                              //           ),
+                                              //         ),
+                                              //       ],
+                                              //     ),
+                                              //   ),
+                                              // ),
                                             ],
                                           ),
                                           Row(
@@ -1052,6 +1283,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                   children: [
                                                     Text(
                                                       '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
+                                                      // '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
                                                       style: typography.H6
                                                           .copyWith(
                                                               height: 1.0),
@@ -1081,19 +1313,106 @@ class _LocationProfileState extends State<LocationProfile>
                                                   ],
                                                 ),
                                               ),
+
                                               IconButton(
-                                                  splashRadius: 1,
-                                                  padding: EdgeInsets.zero,
-                                                  icon: Icon(Icons.edit,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .primary),
-                                                  onPressed: () {
-                                                    bottomsheetopened != true
-                                                        ? _editName(
-                                                            locationProfileProvider)
-                                                        : null;
-                                                  }),
+                                                icon: Icon(
+                                                  Icons.edit,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                ),
+                                                onPressed: () async {
+                                                  final locationProfile =
+                                                      locationProfileProvider
+                                                          .locationProfile;
+
+                                                  if (locationProfile == null)
+                                                    return;
+
+                                                  final score = locationProfile
+                                                      .finalAddress?.score;
+                                                  print(score);
+
+                                                  /// 🔹 CASE 1: Score == 5 → Edit name only
+                                                  if (score.toString() == "5") {
+                                                    _editName(
+                                                        locationProfileProvider);
+                                                    return;
+                                                  }
+
+                                                  /// 🔹 CASE 2: Full edit
+                                                  final value =
+                                                      await Navigator.of(
+                                                              context)
+                                                          .push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          AddLocationScreen(
+                                                        accountId:
+                                                            widget.accountId,
+                                                        subAccountId:
+                                                            widget.subAccountId,
+                                                        sovId: widget.sovId,
+                                                        accountName:
+                                                            widget.accountName,
+                                                        subAccountName: widget
+                                                            .subAccountName,
+                                                        sovName: widget.sovName,
+                                                        locationId:
+                                                            locationProfile.id,
+                                                        // nullable-safe
+                                                        locationName: locationProfile
+                                                                .finalAddress
+                                                                ?.locationName ??
+                                                            "",
+                                                        locationIdForRef:
+                                                            locationProfile
+                                                                    .finalAddress
+                                                                    ?.locationIdForRef ??
+                                                                "",
+                                                        searchQuery: widget
+                                                                .searchQuery ??
+                                                            "",
+                                                        page: widget.page,
+                                                        totalPages: widget
+                                                                    .locationId
+                                                                    ?.isNotEmpty ==
+                                                                true
+                                                            ? ((locationProfileProvider
+                                                                            .resetTotalPage ??
+                                                                        1) -
+                                                                    1)
+                                                                .toString()
+                                                            : widget.totalPages,
+                                                      ),
+                                                    ),
+                                                  );
+
+                                                  /// 🔹 Refresh profile after successful update
+                                                  if (value == true &&
+                                                      mounted) {
+                                                    await locationProfileProvider
+                                                        .fetchIndividualLocationProfile(
+                                                      context,
+                                                      locationProfile.id!,
+                                                    );
+                                                    setState(() {});
+                                                  }
+                                                },
+                                              ),
+                                              // IconButton(
+                                              //     splashRadius: 1,
+                                              //     padding: EdgeInsets.zero,
+                                              //     icon: Icon(Icons.edit,
+                                              //         color: Theme.of(context)
+                                              //             .colorScheme
+                                              //             .primary),
+                                              //     onPressed: () {
+                                              //       bottomsheetopened != true
+                                              //           ? _editName(
+                                              //               locationProfileProvider)
+                                              //           : null;
+                                              //     }),
                                             ],
                                           ),
                                         ],
@@ -1116,17 +1435,23 @@ class _LocationProfileState extends State<LocationProfile>
                                 padding: EdgeInsets.only(left: 16, right: 24),
                                 child: Row(
                                   children: [
-                                    Text("Rating"),
+                                    Text(
+                                      LanguageService.getTranslated(
+                                          context, "listing_maps_ratings"),
+                                    ),
                                     SizedBox(width: 3),
                                     InkWell(
                                         onTap: () {
                                           bottomsheetopened != true
                                               ? showDialog(
                                                   context: context,
-                                                  builder: (context) =>
-                                                      GeocodingDialog(
-                                                          title: 'Geocoding',
-                                                          status: true),
+                                                  builder: (context) => GeocodingDialog(
+                                                      title: tabIndex == 0
+                                                          ? "Geocoding Score Info"
+                                                          : tabIndex == 1
+                                                              ? "Hazard Score Info"
+                                                              : "Data Completeness Info",
+                                                      status: true),
                                                 )
                                               : null;
                                         },
@@ -1135,115 +1460,537 @@ class _LocationProfileState extends State<LocationProfile>
                                   ],
                                 ),
                               ),
-                              // Text(locationProfileProvider.locationProfile?.finalAddress?.campusId.toString()),
                               Padding(
                                 padding: EdgeInsets.only(left: 16, right: 24),
                                 child: Row(
                                   children: [
-                                    Consumer<MyLocationListProvider>(
-                                      builder: (context,
-                                          locationProfileProvider, child) {
-                                        int rating = 0;
-                                        try {
-                                          if (tabIndex == 0) {
-                                            final scoreStr =
-                                                locationProfileProvider
-                                                        .locationProfile
-                                                        ?.geocodingScore
-                                                        ?.toString() ??
-                                                    '0';
-                                            rating =
-                                                int.tryParse(scoreStr) ?? 0;
-                                          } else if (tabIndex == 1) {
-                                            final overallScoreStr =
-                                                locationProfileProvider
-                                                        .locationProfile
-                                                        ?.overallScore
-                                                        ?.toString() ??
-                                                    '0';
-                                            final parsedScore =
-                                                int.tryParse(overallScoreStr) ??
-                                                    0;
-                                            rating = parsedScore == 0
-                                                ? 5
-                                                : parsedScore;
-                                          } else {
-                                            final scorePdStr =
-                                                locationProfileProvider
-                                                        .locationProfile
-                                                        ?.dataCompleteness
-                                                        .toString() ??
-                                                    '0';
-                                            final parsedScore =
-                                                int.tryParse(scorePdStr) ?? 0;
-                                            rating = parsedScore == 0
-                                                ? 1
-                                                : parsedScore;
-                                          }
-                                          // } else {
-                                          //   final scorePdStr = locationProfileProvider.locationProfile?.dataCompleteness?.scorePd?.toString() ?? '0';
-                                          //   rating = int.tryParse(scorePdStr) ?? 0;
-                                          // }
-                                        } catch (e) {
-                                          rating = 0;
-                                        }
-                                        return Row(
-                                          children: [
-                                            VerticalBarIndicator(
-                                              score: rating,
-                                            ),
-                                            SizedBox(width: 8),
-                                            rating == 0
-                                                ? SizedBox.shrink()
-                                                : rating == 5
-                                                    ? SvgPicture.asset(
-                                                        'assets/images/certified_five.svg',
-                                                        width: 24,
-                                                        height: 24,
-                                                      )
-                                                    : Container(
-                                                        width: 22,
-                                                        height: 22,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: scoreColors[
-                                                              rating.clamp(
-                                                                  0,
-                                                                  scoreColors
-                                                                          .length -
-                                                                      1)],
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Text(
-                                                          rating.toString(),
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 13,
-                                                            // Automatically adjust text color for better contrast
-                                                            color: ThemeData
-                                                                        .estimateBrightnessForColor(
-                                                                      scoreColors[rating.clamp(
-                                                                          0,
-                                                                          scoreColors.length -
-                                                                              1)],
-                                                                    ) ==
-                                                                    Brightness
-                                                                        .dark
-                                                                ? Colors.white
-                                                                : Colors.black,
+                                    tabIndex == 0 || tabIndex == 1
+                                        ? Consumer2<MyLocationListProvider,
+                                            SubaccountParameterProvider>(
+                                            builder: (context,
+                                                locationProfileProvider,
+                                                provider,
+                                                child) {
+                                              dynamic rawScore;
+
+                                              try {
+                                                if (tabIndex == 0) {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.geocodingScore ??
+                                                          1;
+                                                } else if (tabIndex == 1) {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.overallScore ??
+                                                          5;
+                                                  if (rawScore == 0)
+                                                    rawScore = 5;
+                                                } else {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.dataCompleteness ??
+                                                          1;
+
+                                                  if (provider.updatedScore !=
+                                                      null) {
+                                                    rawScore =
+                                                        provider.updatedScore;
+                                                  }
+                                                }
+                                              } catch (_) {
+                                                rawScore = 1;
+                                              }
+                                              final int rating = normalizeScore(
+                                                  rawScore); // for color & bars
+                                              final String ratingText =
+                                                  formatScoreText(
+                                                      rawScore); // for text
+
+                                              return Row(
+                                                children: [
+                                                  VerticalBarIndicator(
+                                                    score: rawScore is num
+                                                        ? rawScore.toDouble()
+                                                        : double.tryParse(rawScore
+                                                                .toString()) ??
+                                                            rating.toDouble(),
+                                                  ),
+
+                                                  const SizedBox(width: 8),
+
+                                                  /// CERTIFIED OR SCORE BADGE
+                                                  rating == 5
+                                                      ? SvgPicture.asset(
+                                                          'assets/images/certified_five.svg',
+                                                          width: 24,
+                                                          height: 24,
+                                                        )
+                                                      : Container(
+                                                          width: 22,
+                                                          height: 22,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: scoreColors[
+                                                                rating],
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                          alignment:
+                                                              Alignment.center,
+                                                          child: Text(
+                                                            rating.toString(),
+                                                            // ✅ shows 3.5
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 11,
+                                                              color: ThemeData.estimateBrightnessForColor(
+                                                                          scoreColors[
+                                                                              rating]) ==
+                                                                      Brightness
+                                                                          .dark
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .black,
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                          ],
-                                        );
-                                      },
-                                    ),
+                                                  // (locationProfileProvider.locationProfile
+                                                  //     ?.finalAddress?.score ??
+                                                  //     0) ==
+                                                  //     5
+                                                  //     ? SizedBox.shrink()
+                                                  //     :
+                                                  // IconButton(
+                                                  //     icon: Icon(Icons.edit),
+                                                  //     tooltip: 'Edit Address',
+                                                  //     onPressed: () async {
+                                                  //       print(
+                                                  //           locationProfileProvider
+                                                  //               .locationProfile
+                                                  //               ?.finalAddress
+                                                  //               ?.locationName
+                                                  //               .toString());
+                                                  //       print(
+                                                  //           locationProfileProvider
+                                                  //               .locationProfile
+                                                  //               ?.id
+                                                  //               .toString());
+                                                  //       print("Edit Locations");
+                                                  //       var userProfileProvider =
+                                                  //           Provider.of<
+                                                  //                   UserProfileProvider>(
+                                                  //               context,
+                                                  //               listen: false);
+                                                  //       final trialStatus =
+                                                  //           userProfileProvider
+                                                  //                       .trialInfo[
+                                                  //                   'status'] ??
+                                                  //               '';
+                                                  //       final trialSubdestinations =
+                                                  //           userProfileProvider
+                                                  //                       .trialInfo[
+                                                  //                   'subDestinations'] ??
+                                                  //               0;
+                                                  //       if (trialStatus != '' &&
+                                                  //           trialSubdestinations <
+                                                  //               1) {
+                                                  //         showDialog(
+                                                  //           context: context,
+                                                  //           barrierColor: Theme
+                                                  //                   .of(context)
+                                                  //               .colorScheme
+                                                  //               .surfaceContainerLowest,
+                                                  //           builder:
+                                                  //               (BuildContext
+                                                  //                   context) {
+                                                  //             return Column(
+                                                  //               mainAxisAlignment:
+                                                  //                   MainAxisAlignment
+                                                  //                       .center,
+                                                  //               children: [
+                                                  //                 Row(
+                                                  //                   mainAxisAlignment:
+                                                  //                       MainAxisAlignment
+                                                  //                           .end,
+                                                  //                   children: [
+                                                  //                     IconButton(
+                                                  //                       icon: Icon(
+                                                  //                           Icons.close),
+                                                  //                       onPressed:
+                                                  //                           () {
+                                                  //                         Navigator.of(context)
+                                                  //                             .pop();
+                                                  //                       },
+                                                  //                     ),
+                                                  //                   ],
+                                                  //                 ),
+                                                  //                 MessageCard(
+                                                  //                   isUpgrade:
+                                                  //                       true,
+                                                  //                   messageTextSpans: [
+                                                  //                     TextSpan(
+                                                  //                       text:
+                                                  //                           'You\'ve reached your limit for ',
+                                                  //                       style: CustomTypography(context)
+                                                  //                           .Body1,
+                                                  //                     ),
+                                                  //                     TextSpan(
+                                                  //                       text:
+                                                  //                           '“editing locations”',
+                                                  //                       style: CustomTypography(context)
+                                                  //                           .Body1
+                                                  //                           .copyWith(
+                                                  //                             color: AppColors.warning,
+                                                  //                           ),
+                                                  //                     ),
+                                                  //                     TextSpan(
+                                                  //                       text:
+                                                  //                           '.  Consider upgrading your account to unlock more possibilities!',
+                                                  //                       style: CustomTypography(context)
+                                                  //                           .Body1,
+                                                  //                     ),
+                                                  //                   ],
+                                                  //                 ),
+                                                  //               ],
+                                                  //             );
+                                                  //           },
+                                                  //         );
+                                                  //         return;
+                                                  //       }
+                                                  //       // Store the necessary navigation data before pushing
+                                                  //       // final navigationData = {
+                                                  //       //   'accountId': widget.accountId,
+                                                  //       //   'subAccountId': widget.subAccountId,
+                                                  //       //   'sovId': widget.sovId,
+                                                  //       //   'accountName': widget.accountName,
+                                                  //       //   'subAccountName': widget.subAccountName,
+                                                  //       //   'sovName': widget.sovName,
+                                                  //       //   'locationId': locationProfileProvider
+                                                  //       //       .locationProfile?.id ??
+                                                  //       //       "",
+                                                  //       //   'searchQuery': widget.searchQuery,
+                                                  //       //   'page': widget.page,
+                                                  //       //   'totalPages': widget.totalPages,
+                                                  //       // };
+                                                  //       var value =
+                                                  //           await Navigator.of(
+                                                  //                   context)
+                                                  //               .push(
+                                                  //         MaterialPageRoute(
+                                                  //           builder: (_) =>
+                                                  //               AddLocationScreen(
+                                                  //             accountId: widget
+                                                  //                 .accountId,
+                                                  //             subAccountId: widget
+                                                  //                 .subAccountId,
+                                                  //             sovId:
+                                                  //                 widget.sovId,
+                                                  //             accountName: widget
+                                                  //                 .accountName,
+                                                  //             subAccountName: widget
+                                                  //                 .subAccountName,
+                                                  //             sovName: widget
+                                                  //                 .sovName,
+                                                  //             locationId:
+                                                  //                 locationProfileProvider
+                                                  //                         .locationProfile
+                                                  //                         ?.id ??
+                                                  //                     "",
+                                                  //             locationName: locationProfileProvider
+                                                  //                     .locationProfile
+                                                  //                     ?.finalAddress
+                                                  //                     ?.locationName ??
+                                                  //                 "",
+                                                  //             locationIdForRef:
+                                                  //                 locationProfileProvider
+                                                  //                         ?.locationProfile
+                                                  //                         ?.finalAddress
+                                                  //                         ?.locationIdForRef ??
+                                                  //                     "",
+                                                  //             searchQuery: widget
+                                                  //                     .searchQuery ??
+                                                  //                 "",
+                                                  //             page: widget.page,
+                                                  //             totalPages: widget
+                                                  //                     .locationId!
+                                                  //                     .isNotEmpty
+                                                  //                 ? (locationProfileProvider
+                                                  //                             .resetTotalPage! -
+                                                  //                         1)
+                                                  //                     .toString()
+                                                  //                 : widget
+                                                  //                     .totalPages!,
+                                                  //           ),
+                                                  //         ),
+                                                  //       );
+                                                  //       if (value == true) {
+                                                  //         // ✅ RELOAD CURRENT PAGE
+                                                  //         await locationProfileProvider
+                                                  //             .fetchIndividualLocationProfile(
+                                                  //           context,
+                                                  //           locationProfileProvider
+                                                  //               .locationProfile!
+                                                  //               .id!,
+                                                  //         );
+                                                  //
+                                                  //         setState(() {});
+                                                  //       }
+                                                  //     }),
+                                                ],
+                                              );
+                                            },
+                                          )
+                                        : Consumer2<MyLocationListProvider,
+                                            SubaccountParameterProvider>(
+                                            builder: (context,
+                                                locationProfileProvider,
+                                                provider,
+                                                child) {
+                                              dynamic rawScore;
+
+                                              try {
+                                                if (tabIndex == 0) {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.geocodingScore ??
+                                                          1;
+                                                } else if (tabIndex == 1) {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.overallScore ??
+                                                          5;
+                                                  if (rawScore == 0)
+                                                    rawScore = 5;
+                                                } else {
+                                                  rawScore =
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.dataCompleteness ??
+                                                          1;
+
+                                                  if (provider.updatedScore !=
+                                                      null) {
+                                                    rawScore =
+                                                        provider.updatedScore;
+                                                  }
+                                                }
+                                              } catch (_) {
+                                                rawScore = 1;
+                                              }
+
+                                              final int rating =
+                                                  scoreToColorIndex(rawScore);
+                                              final rawScore1 =
+                                                  locationProfileProvider
+                                                      .locationProfile
+                                                      ?.dataCompleteness;
+                                              final completeness =
+                                                  locationProfileProvider
+                                                          .locationProfile
+                                                          ?.dataCompleteness ??
+                                                      0;
+                                              final colorIndex =
+                                                  scoreToColorIndex(rawScore1);
+                                              return Row(
+                                                children: [
+                                                  /// BAR INDICATOR
+                                                  VerticalBarIndicator(
+                                                      score: locationProfileProvider
+                                                                  .locationProfile
+                                                                  ?.dataCompleteness
+                                                                  .toString() ==
+                                                              "0"
+                                                          ? 1
+                                                          : locationProfileProvider
+                                                              .locationProfile
+                                                              ?.dataCompleteness),
+
+                                                  const SizedBox(width: 8),
+
+                                                  /// CERTIFIED OR SCORE BADGE
+                                                  rating == 5
+                                                      ? SvgPicture.asset(
+                                                          'assets/images/certified_five.svg',
+                                                          width: 24,
+                                                          height: 24,
+                                                        )
+                                                      : Container(
+                                                          width: 22,
+                                                          height: 22,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: scoreColors[
+                                                                colorIndex],
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                          alignment:
+                                                              Alignment.center,
+                                                          child: Text(
+                                                            completeness == 0
+                                                                ? '1'
+                                                                : completeness
+                                                                    .toString(),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 11,
+                                                              color: ThemeData.estimateBrightnessForColor(
+                                                                          scoreColors[
+                                                                              colorIndex]) ==
+                                                                      Brightness
+                                                                          .dark
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .black,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+
+                                    // Consumer2<MyLocationListProvider,
+                                    //     SubaccountParameterProvider>(
+                                    //   builder: (context,
+                                    //       locationProfileProvider,
+                                    //       provider,
+                                    //       child) {
+                                    //     int rating = 0;
+                                    //     try {
+                                    //       if (tabIndex == 0) {
+                                    //         final scoreStr =
+                                    //             locationProfileProvider
+                                    //                     .locationProfile
+                                    //                     ?.geocodingScore
+                                    //                     ?.toString() ??
+                                    //                 '0';
+                                    //         rating =
+                                    //             int.tryParse(scoreStr) ?? 1;
+                                    //       } else if (tabIndex == 1) {
+                                    //         final overallScoreStr =
+                                    //             locationProfileProvider
+                                    //                     .locationProfile
+                                    //                     ?.overallScore
+                                    //                     ?.toString() ??
+                                    //                 '0';
+                                    //         final parsedScore =
+                                    //             int.tryParse(overallScoreStr) ??
+                                    //                 0;
+                                    //         rating = parsedScore == 0
+                                    //             ? 5
+                                    //             : parsedScore;
+                                    //       } else {
+                                    //         // -------- DATA COMPLETENESS SCORE --------
+                                    //         final data = locationProfileProvider
+                                    //             .locationProfile
+                                    //             ?.dataCompleteness;
+                                    //
+                                    //         int dataScore = 1;
+                                    //
+                                    //         if (data is int) {
+                                    //           dataScore = data;
+                                    //         } else if (data is double) {
+                                    //           dataScore = data!.round();
+                                    //         } else if (data is String) {
+                                    //           dataScore =
+                                    //               int.tryParse(data!) ?? 1;
+                                    //         }
+                                    //
+                                    //         // Ensure valid range
+                                    //         dataScore = dataScore.clamp(1, 5);
+                                    //
+                                    //         // -------- UPDATED SCORE FROM PROVIDER --------
+                                    //         final int updatedScore =
+                                    //             provider.updatedScore != null
+                                    //                 ? int.tryParse(provider
+                                    //                         .updatedScore
+                                    //                         .toString()) ??
+                                    //                     0
+                                    //                 : 0;
+                                    //
+                                    //         // -------- FINAL RATING DECISION --------
+                                    //         if (updatedScore > 0) {
+                                    //           rating = updatedScore.clamp(1, 5);
+                                    //         } else {
+                                    //           rating = dataScore;
+                                    //         }
+                                    //       }
+                                    //
+                                    //     } catch (e) {
+                                    //       rating = 1;
+                                    //     }
+                                    //     return Row(
+                                    //       children: [
+                                    //         VerticalBarIndicator(
+                                    //           score: rating,
+                                    //         ),
+                                    //         SizedBox(width: 8),
+                                    //         rating == 0
+                                    //             ? SizedBox.shrink()
+                                    //             : rating == 5
+                                    //                 ? SvgPicture.asset(
+                                    //                     'assets/images/certified_five.svg',
+                                    //                     width: 24,
+                                    //                     height: 24,
+                                    //                   )
+                                    //                 : Container(
+                                    //                     width: 22,
+                                    //                     height: 22,
+                                    //                     decoration:
+                                    //                         BoxDecoration(
+                                    //                       color: scoreColors[
+                                    //                           rating.clamp(
+                                    //                               0,
+                                    //                               scoreColors
+                                    //                                       .length -
+                                    //                                   1)],
+                                    //                       shape:
+                                    //                           BoxShape.circle,
+                                    //                     ),
+                                    //                     alignment:
+                                    //                         Alignment.center,
+                                    //                     child: Text(
+                                    //                       rating.toString(),
+                                    //                       textAlign:
+                                    //                           TextAlign.center,
+                                    //                       style: TextStyle(
+                                    //                         fontWeight:
+                                    //                             FontWeight.bold,
+                                    //                         fontSize: 13,
+                                    //                         // Automatically adjust text color for better contrast
+                                    //                         color: ThemeData
+                                    //                                     .estimateBrightnessForColor(
+                                    //                                   scoreColors[rating.clamp(
+                                    //                                       0,
+                                    //                                       scoreColors.length -
+                                    //                                           1)],
+                                    //                                 ) ==
+                                    //                                 Brightness
+                                    //                                     .dark
+                                    //                             ? Colors.white
+                                    //                             : Colors.black,
+                                    //                       ),
+                                    //                     ),
+                                    //                   ),
+                                    //       ],
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 ),
                               ),
@@ -1262,48 +2009,63 @@ class _LocationProfileState extends State<LocationProfile>
                                         alignment: Alignment.centerLeft,
                                         child: TabBar(
                                           controller: _tabController,
-                                          tabAlignment: TabAlignment.start,
                                           isScrollable: true,
-                                          padding: EdgeInsets.only(right: 40),
-                                          labelPadding: EdgeInsets.symmetric(
-                                              horizontal: 20),
-                                          indicatorPadding:
-                                              EdgeInsets.only(right: 10),
+                                          tabAlignment: TabAlignment.start,
+                                          labelPadding: EdgeInsets.zero,
+                                          indicatorPadding: EdgeInsets.zero,
+                                          indicatorSize:
+                                              TabBarIndicatorSize.label,
                                           onTap: (index) {
                                             if (bottomsheetopened || index >= 3)
                                               return;
                                             setState(() => tabIndex = index);
                                           },
                                           tabs: [
-                                            Tab(text: 'Geocoding'),
-                                            Tab(text: 'Hazard Score'),
-                                            Tab(text: 'Data Completeness'),
-                                            // Tab(text: 'Recommended'),
+                                            Tab(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 14),
+                                                // 👈 spacing here
+                                                child: Text(
+                                                  LanguageService.getTranslated(
+                                                      context, "geocoding"),
+                                                ),
+                                              ),
+                                            ),
+                                            Tab(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 14),
+                                                child: Text(
+                                                  LanguageService.getTranslated(
+                                                      context, "hazard_score"),
+                                                ),
+                                              ),
+                                            ),
+                                            Tab(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 14),
+                                                child: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "data_completeness"),
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                      Container(
-                                        height: tabIndex == 0
-                                            ? MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.65
-                                            : tabIndex == 1
-                                                ? MediaQuery.of(context)
-                                                        .size
-                                                        .height *
-                                                    0.70
-                                                : MediaQuery.of(context)
-                                                        .size
-                                                        .height *
-                                                    0.60,
+                                      Expanded(
                                         child: TabBarView(
                                           controller: _tabController,
                                           physics:
                                               NeverScrollableScrollPhysics(),
                                           children: [
                                             _geocodingScore(),
-                                            // _riskScore(),
                                             Consumer<MyLocationListProvider>(
                                               builder: (context,
                                                   locationProfileProvider,
@@ -1327,64 +2089,78 @@ class _LocationProfileState extends State<LocationProfile>
                                                 );
                                               },
                                             ),
-
                                             Consumer2<AccountListProvider,
                                                 SubAccountListProvider>(
                                               builder: (context,
                                                   accountListProvider,
                                                   subAccountListProvider,
                                                   _) {
-                                                final accountList =
-                                                    accountListProvider
-                                                        .accountList;
-                                                final subAccountList =
+                                                if (accountListProvider
+                                                        .isLoading ||
                                                     subAccountListProvider
-                                                        .subAccountList;
-                                                final accountId =
-                                                    accountList.isNotEmpty
-                                                        ? accountList[0]
-                                                                .accountId ??
-                                                            ""
-                                                        : "";
-                                                final accountName =
-                                                    accountList.isNotEmpty
-                                                        ? accountList[0]
-                                                                .accountName ??
-                                                            ""
-                                                        : "";
-                                                final subaccountId =
-                                                    subAccountList.isNotEmpty
-                                                        ? subAccountList[0]
-                                                                .subAccountId ??
-                                                            ""
-                                                        : "";
-                                                return DataTab(
-                                                    accountName: accountName,
-                                                    accountId: accountId,
-                                                    subaccountId: subaccountId,
-                                                    locationId:
-                                                        locationProfileProvider
-                                                            .locationProfile
-                                                            ?.finalAddress
-                                                            ?.locationId,
-                                                    sovId: widget.sovId,
-                                                    campusId: locationProfileProvider.locationProfile?.finalAddress?.campusId?.toString() ?? "",
+                                                        .isLoading) {
+                                                  return const Center(
+                                                      child:
+                                                          CircularProgressIndicator());
+                                                }
 
-                                                    campusStatus: (locationProfileProvider
-                                                                .locationProfile
-                                                                ?.finalAddress
-                                                                ?.placeTypes
-                                                                ?.contains(
-                                                                    'premise') ==
-                                                            true &&
-                                                        (locationProfileProvider
-                                                                .locationProfile
-                                                                ?.subdestinations
-                                                                ?.isNotEmpty ??
-                                                            false)));
+                                                if (locationProfileProvider
+                                                        .locationProfile ==
+                                                    null) {
+                                                  return const Center(
+                                                      child:
+                                                          CircularProgressIndicator());
+                                                }
+
+                                                return DataTab(
+                                                  accountName:
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.accountName ??
+                                                          "",
+                                                  accountId:
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.accountId ??
+                                                          "",
+                                                  subaccountId:
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.subAccountId
+                                                              ?.toString() ??
+                                                          "",
+                                                  locationId:
+                                                      locationProfileProvider
+                                                          .locationProfile
+                                                          ?.finalAddress
+                                                          ?.locationId
+                                                          ?.toString(),
+                                                  sovId: widget.sovId,
+                                                  campusId:
+                                                      locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.campusId
+                                                              ?.toString() ??
+                                                          "",
+                                                  campusStatus: (locationProfileProvider
+                                                              .locationProfile
+                                                              ?.finalAddress
+                                                              ?.placeTypes
+                                                              ?.contains(
+                                                                  'premise') ==
+                                                          true &&
+                                                      (locationProfileProvider
+                                                              .locationProfile
+                                                              ?.subdestinations
+                                                              ?.isNotEmpty ??
+                                                          false)),
+                                                );
                                               },
                                             ),
-                                            // StatusCardsPage(),
                                           ],
                                         ),
                                       ),
@@ -1437,6 +2213,48 @@ class _LocationProfileState extends State<LocationProfile>
         });
       }),
     );
+  }
+
+  int scoreToColorIndex(dynamic value) {
+    if (value == null) return 1;
+
+    final double score = value is num
+        ? value.toDouble()
+        : double.tryParse(value.toString()) ?? 1.0;
+
+    // RULE:
+    // 2.5 -> 3
+    // 3.5 -> 4
+    // 4.5 -> 5
+    final int colorIndex = score.ceil();
+
+    // Ensure it stays within 1–5
+    return colorIndex.clamp(1, 5);
+  }
+
+  /// Used for bars & color (ceil logic)
+  int normalizeScore(dynamic value) {
+    if (value == null) return 1;
+
+    final double parsed = value is num
+        ? value.toDouble()
+        : double.tryParse(value.toString()) ?? 1;
+
+    return parsed.ceil().clamp(1, 5);
+  }
+
+  /// Used for text display (shows 3.5, 2.4, etc.)
+  String formatScoreText(dynamic value) {
+    if (value == null) return '1';
+
+    final double? parsed =
+        value is num ? value.toDouble() : double.tryParse(value.toString());
+
+    if (parsed == null) return '1';
+
+    return parsed % 1 == 0
+        ? parsed.toInt().toString()
+        : parsed.toStringAsFixed(1);
   }
 
   Widget _buildCustomInfoWindow() {
@@ -1558,7 +2376,7 @@ class _LocationProfileState extends State<LocationProfile>
                     SizedBox(height: 20),
                     ListTile(
                       title: Text(
-                        "View info",
+                        LanguageService.getTranslated(context, "view_info"),
                         // '${widget.accountName}/${widget.subAccountName}-${widget.sovName}/${locationProfileProvider.locationProfile?.finalAddress?.locationIdForRef ?? ''}${formatLocationText((int.tryParse(widget.page) ?? 1) + 0, (int.tryParse(widget.totalPages!) ?? 1))}',
                         style: typography.Subtitle1.copyWith(
                             fontWeight: FontWeight.w800),
@@ -1665,27 +2483,23 @@ class _LocationProfileState extends State<LocationProfile>
                                 userProfileProvider.trialInfo['status'] ?? '';
                             return IconButton(
                               icon: Icon(Icons.download),
-                              onPressed: trialStatus.isNotEmpty
-                                  ? null
-                                  : () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return ExportDialog(
-                                            accountId: widget.accountId,
-                                            subAccountId: widget.subAccountId,
-                                            sovId: widget.sovId,
-                                            locationId: [
-                                              locationProfileProvider
-                                                      .locationProfile
-                                                      ?.finalAddress
-                                                      ?.locationId ??
-                                                  ''
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return ExportDialog(
+                                      accountId: widget.accountId,
+                                      subAccountId: widget.subAccountId,
+                                      sovId: widget.sovId,
+                                      locationId: [
+                                        locationProfileProvider.locationProfile
+                                                ?.finalAddress?.locationId ??
+                                            ''
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                             );
                           }),
                         ),
@@ -1744,16 +2558,20 @@ class _LocationProfileState extends State<LocationProfile>
                         },
                         tabs: [
                           Tab(
-                            text: 'Campus',
+                            text: LanguageService.getTranslated(
+                                context, "campus"),
                           ),
                           Tab(
-                            text: 'Gallery',
+                            text: LanguageService.getTranslated(
+                                context, "gallery"),
                           ),
                           Tab(
-                            text: 'Activity Log',
+                            text: LanguageService.getTranslated(
+                                context, "activity_log"),
                           ),
                           Tab(
-                            text: 'Comments',
+                            text: LanguageService.getTranslated(
+                                context, "comments"),
                           ),
                         ],
 
@@ -1900,8 +2718,10 @@ class _LocationProfileState extends State<LocationProfile>
                             child: Container(
                                 alignment: Alignment.center,
                                 height: MediaQuery.of(context).size.height / 2,
-                                child:
-                                    Text('No Campus', style: typography.Body1)))
+                                child: Text(
+                                    LanguageService.getTranslated(
+                                        context, "no_campus"),
+                                    style: typography.Body1)))
                         : Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -2880,7 +3700,8 @@ class _LocationProfileState extends State<LocationProfile>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Images',
+                                LanguageService.getTranslated(
+                                    context, "images"),
                                 style: typography.H6.copyWith(height: 1.2),
                               ),
                             ],
@@ -3107,7 +3928,8 @@ class _LocationProfileState extends State<LocationProfile>
                               height: MediaQuery.of(context).size.height / 3,
                               alignment: Alignment.center,
                               child: Text(
-                                'No Images',
+                                LanguageService.getTranslated(
+                                    context, "no_images"),
                                 style: typography.Body1,
                               ),
                             ),
@@ -3133,12 +3955,13 @@ class _LocationProfileState extends State<LocationProfile>
                           onPressed: _pickImage,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.upload_sharp,
                                   color: Colors.black, size: 20),
                               SizedBox(width: 10),
                               Text(
-                                'Upload relevant image(s)',
+                                LanguageService.getTranslated(
+                                    context, "upload_relevant_images"),
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w600,
@@ -3792,149 +4615,93 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Widget _activityLogWidget() {
-    var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
-      builder: (context, locationProfileProvider, child) {
-        return Builder(
-          builder: (context) {
-            return Stack(
-              children: [
-                if (_isBottomSheetExpanded)
-                  // Text(locationProfileProvider.)
-                  Scrollbar(
-                    thumbVisibility: true,
-                    child: ListView(
-                      children: [
-                        // SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.all(1.0),
-                          child: DottedBorder(
-                            options: RectDottedBorderOptions(
-                              padding: const EdgeInsets.all(21),
-                              color: Colors.white24,
-                              strokeWidth: 2,
-                              dashPattern: [0, 0],
-                            ),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                  vertical: 0, horizontal: 1),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: locationProfileProvider
-                                    .locationProfile!.allActivityLogs!.length,
-                                itemBuilder: (context, index) {
-                                  final log = locationProfileProvider
-                                      .locationProfile!.allActivityLogs![index];
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 16.0),
-                                    // spacing between logs
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundColor: Colors.grey[800],
-                                          child: Text(
-                                            "N",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 10),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Container(
-                                              width: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.7,
-                                              child: Text(
-                                                log.action.toString() ?? "",
-                                                maxLines: 3,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: Colors.white,
-                                                      fontSize: 14,
-                                                    ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Container(
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.7,
-                                                  child: Text(
-                                                    "Locations ." +
-                                                            log.targetId
-                                                                .toString() ??
-                                                        "",
-                                                    maxLines: 3,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    // Replace with your actual field
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.copyWith(
-                                                          color:
-                                                              Colors.grey[400],
-                                                          fontSize: 13,
-                                                        ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  _formatTimestamp(
-                                                      log.at!.iSeconds),
+      builder: (context, provider, child) {
+        final logs = provider.locationProfile?.allActivityLogs ?? [];
 
-                                                  // Replace with your actual field
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium
-                                                      ?.copyWith(
-                                                        color: Colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                ),
-                                              ],
-                                            )
-                                          ],
-                                        ),
-                                      ],
+        return _isBottomSheetExpanded
+            ? Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: DottedBorder(
+                      options: const RectDottedBorderOptions(
+                        padding: EdgeInsets.all(16),
+                        color: Colors.white24,
+                        strokeWidth: 2,
+                        dashPattern: [4, 4],
+                      ),
+                      child: Column(
+                        children: List.generate(logs.length, (index) {
+                          final log = logs[index];
+
+                          final action = log.action ?? "";
+                          final targetId = log.targetId?.toString() ?? "";
+                          final time = log.at?.iSeconds ?? 0;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.grey[800],
+                                  child: const Text(
+                                    "N",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        action,
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      // const SizedBox(height: 4),
+                                      // Text(
+                                      //   "Location • $targetId",
+                                      //   maxLines: 2,
+                                      //   overflow: TextOverflow.ellipsis,
+                                      //   style: TextStyle(
+                                      //     color: Colors.grey[400],
+                                      //     fontSize: 13,
+                                      //   ),
+                                      // ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        _formatTimestamp(time),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                      ],
+                          );
+                        }),
+                      ),
                     ),
                   ),
-              ],
-            );
-          },
-        );
+                ),
+              )
+            : const SizedBox();
       },
     );
   }
@@ -4061,7 +4828,8 @@ class _LocationProfileState extends State<LocationProfile>
                         controller: _commentController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "Enter message here",
+                          hintText: LanguageService.getTranslated(
+                              context, "enter_message_here"),
                           hintStyle: TextStyle(color: Colors.grey[400]),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
@@ -4153,65 +4921,6 @@ class _LocationProfileState extends State<LocationProfile>
                                         }
                                       }
                                     },
-
-                              // onPressed: _isSending
-                              //     ? null
-                              //     : () async {
-                              //         final commentText =
-                              //             _commentController.text.trim();
-                              //         if (commentText.isNotEmpty) {
-                              //           setState(() {
-                              //             _isSending = true; // start loader
-                              //           });
-                              //
-                              //           try {
-                              //             final response = await locationProfileProvider.addCommentsLocation(
-                              //               context,
-                              //               locationProfileProvider.locationProfile!.finalAddress!.locationId.toString(),
-                              //               commentText,
-                              //             );
-                              //
-                              //             if (response != null && response['location_comments'] != null) {
-                              //               // ✅ Map the updated comments directly to provider model
-                              //               final updatedComments = (response['location_comments'] as List)
-                              //                   .map((c) => LocationComment.fromJson(c))
-                              //                   .toList();
-                              //
-                              //               locationProfileProvider.locationProfile!.locationComments = updatedComments;
-                              //               locationProfileProvider.notifyListeners(); // rebuild UI
-                              //
-                              //               _commentController.clear();
-                              //             }
-                              //
-                              //             // await locationProfileProvider
-                              //             //     .addCommentsLocation(
-                              //             //   context,
-                              //             //   locationProfileProvider
-                              //             //       .locationProfile!
-                              //             //       .finalAddress!
-                              //             //       .locationId
-                              //             //       .toString(),
-                              //             //   commentText,
-                              //             // );
-                              //             //
-                              //             // _commentController.clear();
-                              //             //
-                              //             // // Reload your data after successful comment
-                              //             // await _getData();
-                              //           } catch (e) {
-                              //             ScaffoldMessenger.of(context)
-                              //                 .showSnackBar(
-                              //               const SnackBar(
-                              //                   content: Text(
-                              //                       "Failed to send comment")),
-                              //             );
-                              //           } finally {
-                              //             setState(() {
-                              //               _isSending = false; // stop loader
-                              //             });
-                              //           }
-                              //         }
-                              //       },
                             ),
                           ),
                         ),
@@ -4368,11 +5077,11 @@ class _LocationProfileState extends State<LocationProfile>
           locationId: location.finalAddress?.locationId ?? 'Unknown ID',
           geocodingScore: location.finalAddress?.score ?? 0,
           riskScore: location.overallScore ?? 5,
-        dataCompleteness: (location.dataCompleteness == null
-            ? ''
-            : (location.dataCompleteness! == 0
-                ? '1'
-                : location.dataCompleteness!.toString())),
+          dataCompleteness: (location.dataCompleteness == null
+              ? ''
+              : (location.dataCompleteness! == 0
+                  ? '1'
+                  : location.dataCompleteness!.toString())),
           // scoreToStar(
           //     location.dataCompleteness == 0 ? 1 : location.dataCompleteness),
           hazards: location.hazard ?? {},
@@ -4434,10 +5143,66 @@ class _LocationProfileState extends State<LocationProfile>
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.edit,
-                              color: Theme.of(context).colorScheme.primary),
-                          onPressed: () {
-                            _editName(locationProfileProvider);
+                          icon: Icon(
+                            Icons.edit,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          onPressed: () async {
+                            final locationProfile =
+                                locationProfileProvider.locationProfile;
+
+                            if (locationProfile == null) return;
+
+                            final score = locationProfile.finalAddress?.score;
+                            print(score);
+
+                            /// 🔹 CASE 1: Score == 5 → Edit name only
+                            if (score.toString() == "5") {
+                              _editName(locationProfileProvider);
+                              return;
+                            }
+
+                            /// 🔹 CASE 2: Full edit
+                            final value = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AddLocationScreen(
+                                  accountId: widget.accountId,
+                                  subAccountId: widget.subAccountId,
+                                  sovId: widget.sovId,
+                                  accountName: widget.accountName,
+                                  subAccountName: widget.subAccountName,
+                                  sovName: widget.sovName,
+                                  locationId: locationProfile.id,
+                                  // nullable-safe
+                                  locationName: locationProfile
+                                          .finalAddress?.locationName ??
+                                      "",
+                                  locationIdForRef: locationProfile
+                                          .finalAddress?.locationIdForRef ??
+                                      "",
+                                  searchQuery: widget.searchQuery ?? "",
+                                  page: widget.page,
+                                  totalPages:
+                                      widget.locationId?.isNotEmpty == true
+                                          ? ((locationProfileProvider
+                                                          .resetTotalPage ??
+                                                      1) -
+                                                  1)
+                                              .toString()
+                                          : widget.totalPages,
+                                ),
+                              ),
+                            );
+
+                            /// 🔹 Refresh profile after successful update
+                            if (value == true && mounted) {
+                              await locationProfileProvider
+                                  .fetchIndividualLocationProfile(
+                                context,
+                                locationProfile.id!,
+                              );
+                              setState(() {});
+                            }
                           },
                         ),
                       ],
@@ -4534,7 +5299,7 @@ class _LocationProfileState extends State<LocationProfile>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Address',
+                          LanguageService.getTranslated(context, "address"),
                           style: typography.H6.copyWith(height: 1.2),
                         ),
                         Row(
@@ -4568,7 +5333,6 @@ class _LocationProfileState extends State<LocationProfile>
                                       },
                               );
                             }),
-
                             // edit location
                             (locationProfileProvider.locationProfile
                                             ?.finalAddress?.score ??
@@ -4696,7 +5460,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                 widget.searchQuery ?? "",
                                             page: widget.page,
                                             totalPages: widget
-                                                    .locationId.isNotEmpty
+                                                    .locationId!.isNotEmpty
                                                 ? (locationProfileProvider
                                                             .resetTotalPage! -
                                                         1)
@@ -4797,7 +5561,7 @@ class _LocationProfileState extends State<LocationProfile>
                                       "",
                                   searchQuery: widget.searchQuery ?? "",
                                   page: widget.page,
-                                  totalPages: widget.locationId.isNotEmpty
+                                  totalPages: widget.locationId!.isNotEmpty
                                       ? (locationProfileProvider
                                                   .resetTotalPage! -
                                               1)
@@ -5123,7 +5887,7 @@ class _LocationProfileState extends State<LocationProfile>
                           style: typography.Body1),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: 18),
                 ],
               ),
             ),
@@ -5165,7 +5929,7 @@ class _LocationProfileState extends State<LocationProfile>
           : Stack(
               children: [
                 Container(
-                  height: MediaQuery.of(context).size.height * 0.5,
+                  height: MediaQuery.of(context).size.height / 2,
                   margin: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -5203,8 +5967,6 @@ class _LocationProfileState extends State<LocationProfile>
                                 onCameraIdle: () {
                                   _mapIsReady = true;
                                 },
-
-                                // ✅ Hide "Click here" when map is moved
                                 onCameraMove: (_) {
                                   if (showViewMore) {
                                     setState(() {
@@ -5213,7 +5975,6 @@ class _LocationProfileState extends State<LocationProfile>
                                     });
                                   }
                                 },
-
                                 gestureRecognizers: <Factory<
                                     OneSequenceGestureRecognizer>>{
                                   Factory<OneSequenceGestureRecognizer>(
@@ -5355,9 +6116,13 @@ class _LocationProfileState extends State<LocationProfile>
                         ),
                         SizedBox(width: 8),
                         if (locationProfileProvider
-                                .locationProfile?.finalAddress?.placeTypes
-                                ?.contains('premise') ==
-                            true)
+                                    .locationProfile?.finalAddress?.placeTypes
+                                    ?.contains('premise') ==
+                                true ||
+                            locationProfileProvider
+                                    .locationProfile?.finalAddress?.placeTypes
+                                    ?.contains('subpremise') ==
+                                true)
                           if (filteredSubdestinations.length > 0)
                             FloatingActionButton.small(
                               elevation: 0,
@@ -5372,18 +6137,21 @@ class _LocationProfileState extends State<LocationProfile>
                               tooltip: 'Add Campus',
                             )
                           else
-                            FloatingActionButton.small(
-                              elevation: 0,
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.brightness ==
-                                          Brightness.light
-                                      ? AppColors.paperElevation2Light
-                                      : AppColors.paperElevation2,
-                              onPressed: _handleSubDestinationTap,
-                              child: Icon(Icons.add_location_alt,
-                                  color: Colors.white),
-                              tooltip: 'Add Campus',
-                            )
+                            hasAnyPlan
+                                ? FloatingActionButton.small(
+                                    elevation: 0,
+                                    backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .brightness ==
+                                            Brightness.light
+                                        ? AppColors.paperElevation2Light
+                                        : AppColors.paperElevation2,
+                                    onPressed: _handleSubDestinationTap,
+                                    child: Icon(Icons.add_location_alt,
+                                        color: Colors.white),
+                                    tooltip: 'Add Campus',
+                                  )
+                                : Container()
                       ],
                     ),
                   ),
@@ -5392,6 +6160,452 @@ class _LocationProfileState extends State<LocationProfile>
             );
     });
   }
+
+  // Widget _geocodingScore() {
+  //   return Consumer<MyLocationListProvider>(
+  //       builder: (context, locationProfileProvider, child) {
+  //     final screenWidth = MediaQuery.of(context).size.width;
+  //     final screenHeight = MediaQuery.of(context).size.height;
+  //     final dynamicTop = screenHeight * 0.17;
+  //     final dynamicLeft = screenWidth * 0.37;
+  //     double latitude =
+  //         locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
+  //     double longitude =
+  //         locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
+  //
+  //     List<Subdestination> filteredSubdestinations =
+  //         (locationProfileProvider.locationProfile?.subdestinations ?? [])
+  //             .where((sub) {
+  //       final status = (sub.status ?? '').toLowerCase();
+  //       return isSwitched ? status == 'added' : status != 'added';
+  //     }).toList();
+  //
+  //     return locationProfileProvider.isLoading
+  //         ? Center(child: CircularProgressIndicator())
+  //         : Stack(
+  //             children: [
+  //               Container(
+  //                 height: MediaQuery.of(context).size.height * 0.4,
+  //                 margin: EdgeInsets.all(16),
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white,
+  //                   borderRadius: BorderRadius.circular(20),
+  //                   boxShadow: [
+  //                     BoxShadow(
+  //                       color: Colors.black.withOpacity(0.1),
+  //                       blurRadius: 10,
+  //                       offset: Offset(0, 5),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 child: ClipRRect(
+  //                   borderRadius: BorderRadius.circular(20),
+  //                   child: Screenshot(
+  //                     controller: _geocodingScreenshotController,
+  //                     child: RepaintBoundary(
+  //                         key: _mapKey,
+  //                         child: Stack(
+  //                           children: [
+  //                             // GoogleMap(
+  //                             //   key: ValueKey('${latitude}_${longitude}_${_currentMapType.name}'),
+  //                             //   mapType: _currentMapType,
+  //                             //   mapToolbarEnabled: true,
+  //                             //   myLocationEnabled: true,
+  //                             //   markers: Set<Marker>.of(markers.values),
+  //                             //   zoomControlsEnabled: false,
+  //                             //
+  //                             //   initialCameraPosition: CameraPosition(
+  //                             //     target: LatLng(latitude, longitude),
+  //                             //     zoom: 18,
+  //                             //   ),
+  //                             //
+  //                             //   onMapCreated: (GoogleMapController controller) {
+  //                             //     mapController = controller;
+  //                             //     clusterManager.setMapId(controller.mapId);
+  //                             //     // ⭐ Detect when map finishes rendering
+  //                             //     Future.delayed(const Duration(milliseconds: 300), () {
+  //                             //       if (mounted) {
+  //                             //         setState(() => _mapIsReady = true);
+  //                             //       }
+  //                             //     });
+  //                             //   },
+  //                             //
+  //                             //   // ⭐ Required for "map is ready"
+  //                             //   // onMapLoaded: () {
+  //                             //   //   if (mounted) {
+  //                             //   //     setState(() => _mapIsReady = true);
+  //                             //   //   }
+  //                             //   // },
+  //                             //
+  //                             //   onCameraIdle: () {
+  //                             //     clusterManager.updateMap();
+  //                             //   },
+  //                             //
+  //                             //   onCameraMove: (position) {
+  //                             //     _currentCenter = position.target;
+  //                             //     clusterManager.onCameraMove(position);
+  //                             //
+  //                             //     if (showViewMore) {
+  //                             //       setState(() {
+  //                             //         showViewMore = false; // hide once map moved
+  //                             //       });
+  //                             //     }
+  //                             //   },
+  //                             //
+  //                             //   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+  //                             //     Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+  //                             //   },
+  //                             //
+  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                             // ),
+  //
+  //                             GoogleMap(
+  //                               key: ValueKey(
+  //                                   '${latitude}_${longitude}_${_currentMapType.name}'),
+  //                               mapType: _currentMapType,
+  //                               mapToolbarEnabled: true,
+  //                               myLocationEnabled: true,
+  //                               markers: Set<Marker>.of(markers.values),
+  //                               zoomControlsEnabled: false,
+  //
+  //                               initialCameraPosition: CameraPosition(
+  //                                 target: LatLng(latitude, longitude),
+  //                                 zoom: 18,
+  //                               ),
+  //
+  //                               onMapCreated: (GoogleMapController controller) {
+  //                                 mapController = controller;
+  //                                 clusterManager.setMapId(controller.mapId);
+  //                               },
+  //
+  //                               // ⭐ ADD THIS — MOST IMPORTANT FIX
+  //
+  //                               onCameraIdle: () {
+  //                                 // optional fallback
+  //                                 if (!_mapIsReady) {
+  //                                   setState(() => _mapIsReady = true);
+  //                                 }
+  //
+  //                               },
+  //
+  //                               onCameraMove: (position) {
+  //                                 _currentCenter = position.target;
+  //                                 clusterManager.onCameraMove(position);
+  //
+  //                                 if (showViewMore) {
+  //                                   setState(() {
+  //                                     showViewMore = !_mapIsReady;
+  //                                   });
+  //                                 }
+  //                               },
+  //
+  //                               gestureRecognizers: <Factory<
+  //                                   OneSequenceGestureRecognizer>>{
+  //                                 Factory<OneSequenceGestureRecognizer>(
+  //                                     () => EagerGestureRecognizer()),
+  //                               },
+  //
+  //                               onTap: _isAddingMarker ? _handleMapTap : null,
+  //                             ),
+  //
+  //                             // GoogleMap(
+  //                             //   key: ValueKey('${latitude}_${longitude}_${_currentMapType.name}'),
+  //                             //   mapType: _currentMapType,
+  //                             //   mapToolbarEnabled: true,
+  //                             //   myLocationEnabled: true,
+  //                             //   markers: Set<Marker>.of(markers.values),
+  //                             //   zoomControlsEnabled: false,
+  //                             //
+  //                             //   initialCameraPosition: CameraPosition(
+  //                             //     target: LatLng(latitude, longitude),
+  //                             //     zoom: 18,
+  //                             //   ),
+  //                             //
+  //                             //   onMapCreated: (GoogleMapController controller) {
+  //                             //     mapController = controller;
+  //                             //     clusterManager.setMapId(controller.mapId);
+  //                             //   },
+  //                             //
+  //                             //
+  //                             //   // ⭐ BEST place to mark map fully ready
+  //                             //   // onMapLoaded: () {
+  //                             //   //   if (mounted) {
+  //                             //   //     setState(() => _mapIsReady = true);
+  //                             //   //   }
+  //                             //   // },
+  //                             //
+  //                             //   onCameraIdle: () {
+  //                             //     // optional fallback if needed
+  //                             //     if (!_mapIsReady) {
+  //                             //       setState(() => _mapIsReady = true);
+  //                             //     }
+  //                             //   },
+  //                             //
+  //                             //   onCameraMove: (position) {
+  //                             //     _currentCenter = position.target;
+  //                             //     clusterManager.onCameraMove(position);
+  //                             //
+  //                             //     if (showViewMore) {
+  //                             //       setState(() {
+  //                             //         showViewMore = !_mapIsReady;
+  //                             //       });
+  //                             //     }
+  //                             //   },
+  //                             //
+  //                             //   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+  //                             //     Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+  //                             //   },
+  //                             //
+  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                             // ),
+  //
+  //                             // GoogleMap(
+  //                             //   key: ValueKey(
+  //                             //       '${latitude}_${longitude}_${_currentMapType.name}'),
+  //                             //   mapType: _currentMapType,
+  //                             //   mapToolbarEnabled: true,
+  //                             //   myLocationEnabled: true,
+  //                             //   markers: Set<Marker>.of(markers.values),
+  //                             //   zoomControlsEnabled: false,
+  //                             //   initialCameraPosition: CameraPosition(
+  //                             //     target: LatLng(latitude, longitude),
+  //                             //     zoom: 18,
+  //                             //   ),
+  //                             //   onMapCreated: (GoogleMapController controller) {
+  //                             //     mapController = controller;
+  //                             //     // _mapReady = true; // ⭐ REQUIRED FIX
+  //                             //     clusterManager.setMapId(controller.mapId);
+  //                             //     // mapController.setMapStyle(_mapStyle);
+  //                             //
+  //                             //     // _tryAttachMarkers(); // ⭐ Attach markers once map is ready
+  //                             //   },
+  //                             //   // onMapCreated: (GoogleMapController controller) {
+  //                             //   //   _mapController = controller;
+  //                             //   // },
+  //                             //   onCameraIdle: () {
+  //                             //     _mapIsReady = true;
+  //                             //   },
+  //                             //
+  //                             //   // ✅ Hide "Click here" when map is moved
+  //                             //   onCameraMove: (position) {
+  //                             //     _currentCenter = position
+  //                             //         .target; // ⭐ KEEP TRACK OF CURRENT MAP LOCATION
+  //                             //     clusterManager.onCameraMove(position);
+  //                             //     if (showViewMore) {
+  //                             //       setState(() {
+  //                             //         showViewMore =
+  //                             //             _mapIsReady == true ? false : true;
+  //                             //       });
+  //                             //     }
+  //                             //   },
+  //                             //
+  //                             //   gestureRecognizers: <Factory<
+  //                             //       OneSequenceGestureRecognizer>>{
+  //                             //     Factory<OneSequenceGestureRecognizer>(
+  //                             //         () => EagerGestureRecognizer()),
+  //                             //   },
+  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
+  //                             // ),
+  //                             Positioned(
+  //                                 bottom: 70,
+  //                                 right: 8,
+  //                                 child: InkWell(
+  //                                   onTap: _toggle2D3DView,
+  //                                   child: Container(
+  //                                     padding: EdgeInsets.symmetric(
+  //                                         horizontal: 12, vertical: 6),
+  //                                     decoration: BoxDecoration(
+  //                                       color: Colors.white,
+  //                                       borderRadius: BorderRadius.circular(8),
+  //                                       boxShadow: [
+  //                                         BoxShadow(
+  //                                           color:
+  //                                               Colors.black.withOpacity(0.1),
+  //                                           blurRadius: 6,
+  //                                           offset: Offset(0, 3),
+  //                                         ),
+  //                                       ],
+  //                                     ),
+  //                                     child: Text(
+  //                                       is3DView ? "3D " : "2D ",
+  //                                       style: TextStyle(
+  //                                         fontSize: 14,
+  //                                         fontWeight: FontWeight.bold,
+  //                                         color: Colors.black,
+  //                                       ),
+  //                                     ),
+  //                                   ),
+  //                                 )),
+  //                             // ✅ Show this only when `showViewMore == true`
+  //                             if (showViewMore)
+  //                               Positioned(
+  //                                 top: dynamicTop,
+  //                                 left: dynamicLeft,
+  //                                 child: Container(
+  //                                   alignment: Alignment.center,
+  //                                   padding: EdgeInsets.symmetric(
+  //                                       horizontal: 10, vertical: 5),
+  //                                   decoration: BoxDecoration(
+  //                                     color: Colors.black.withOpacity(0.8),
+  //                                     borderRadius: BorderRadius.circular(8),
+  //                                   ),
+  //                                   child: Text(
+  //                                     "Click here",
+  //                                     style: TextStyle(
+  //                                         color: Colors.white, fontSize: 14),
+  //                                   ),
+  //                                 ),
+  //                               ),
+  //                           ],
+  //                         )),
+  //                   ),
+  //                 ),
+  //               ),
+  //
+  //               Positioned(
+  //                 bottom: MediaQuery.of(context).size.height / 4.5,
+  //                 left: 16,
+  //                 child: Container(
+  //                   margin: EdgeInsets.all(12),
+  //                   decoration: BoxDecoration(
+  //                     color: Theme.of(context).colorScheme.brightness ==
+  //                             Brightness.light
+  //                         ? AppColors.paperElevation2Light
+  //                         : AppColors.paperElevation2,
+  //                     borderRadius: BorderRadius.circular(12),
+  //                     boxShadow: [
+  //                       BoxShadow(
+  //                         color: Colors.black.withOpacity(0.1),
+  //                         blurRadius: 10,
+  //                         offset: Offset(0, 5),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   child: Row(
+  //                     children: [
+  //                       FloatingActionButton.small(
+  //                         elevation: 0,
+  //                         backgroundColor:
+  //                             Theme.of(context).colorScheme.brightness ==
+  //                                     Brightness.light
+  //                                 ? AppColors.paperElevation2Light
+  //                                 : AppColors.paperElevation2,
+  //                         onPressed: () {
+  //                           setState(() {
+  //                             _currentMapType =
+  //                                 _currentMapType == MapType.normal
+  //                                     ? MapType.satellite
+  //                                     : MapType.normal;
+  //                           });
+  //                         },
+  //                         child: Icon(Icons.layers,
+  //                             color: Theme.of(context).colorScheme.onSurface),
+  //                         tooltip: 'Change Map Type',
+  //                       ),
+  //                       SizedBox(width: 8),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ),
+  //
+  //               // Screenshot & Add Location Button
+  //               Positioned(
+  //                 top: 16,
+  //                 right: 16,
+  //                 child: Container(
+  //                   margin: EdgeInsets.all(12),
+  //                   decoration: BoxDecoration(
+  //                     color: Theme.of(context).colorScheme.brightness ==
+  //                             Brightness.light
+  //                         ? AppColors.paperElevation2Light
+  //                         : AppColors.paperElevation2,
+  //                     borderRadius: BorderRadius.circular(12),
+  //                     boxShadow: [
+  //                       BoxShadow(
+  //                         color: Colors.black.withOpacity(0.1),
+  //                         blurRadius: 10,
+  //                         offset: Offset(0, 5),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   child: Row(
+  //                     children: [
+  //                       FloatingActionButton.small(
+  //                         elevation: 0,
+  //                         onPressed: () async {
+  //                           if (_isLoading) return;
+  //
+  //                           try {
+  //                             if (mounted) {
+  //                               setState(() => _isLoading = true);
+  //                             }
+  //
+  //                             await _captureAndUploadMapScreenshot();
+  //                           } finally {
+  //                             if (mounted) {
+  //                               setState(() => _isLoading = false);
+  //                             }
+  //                           }
+  //                         },
+  //                         backgroundColor:
+  //                             Theme.of(context).colorScheme.brightness ==
+  //                                     Brightness.light
+  //                                 ? AppColors.paperElevation2Light
+  //                                 : AppColors.paperElevation2,
+  //                         child: _isLoading
+  //                             ? SizedBox(
+  //                                 width: 20,
+  //                                 height: 20,
+  //                                 child: CircularProgressIndicator(
+  //                                   color:
+  //                                       Theme.of(context).colorScheme.onSurface,
+  //                                   strokeWidth: 2.0,
+  //                                 ),
+  //                               )
+  //                             : Icon(Icons.camera_alt,
+  //                                 color:
+  //                                     Theme.of(context).colorScheme.onSurface),
+  //                         tooltip: 'Capture and Upload Screenshot',
+  //                       ),
+  //                       SizedBox(width: 8),
+  //                       if (locationProfileProvider
+  //                               .locationProfile?.finalAddress?.placeTypes
+  //                               ?.contains('premise') ==
+  //                           true)
+  //                         if (filteredSubdestinations.length > 0)
+  //                           FloatingActionButton.small(
+  //                             elevation: 0,
+  //                             backgroundColor:
+  //                                 Theme.of(context).colorScheme.brightness ==
+  //                                         Brightness.light
+  //                                     ? AppColors.paperElevation2Light
+  //                                     : AppColors.paperElevation2,
+  //                             onPressed: null,
+  //                             child: Icon(Icons.add_location_alt,
+  //                                 color: Colors.grey),
+  //                             tooltip: 'Add Campus',
+  //                           )
+  //                         else
+  //                           FloatingActionButton.small(
+  //                             elevation: 0,
+  //                             backgroundColor:
+  //                                 Theme.of(context).colorScheme.brightness ==
+  //                                         Brightness.light
+  //                                     ? AppColors.paperElevation2Light
+  //                                     : AppColors.paperElevation2,
+  //                             onPressed: _handleSubDestinationTap,
+  //                             child: Icon(Icons.add_location_alt,
+  //                                 color: Colors.white),
+  //                             tooltip: 'Add Campus',
+  //                           )
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           );
+  //   });
+  // }
 
   Future<void> _captureAndUploadMapScreenshot() async {
     // Early exit if conditions aren't met
@@ -5476,8 +6690,6 @@ class _LocationProfileState extends State<LocationProfile>
       }
     }
   }
-
-
 
   /// Returns tile overlays with safe null checks
   Set<TileOverlay> _getTileOverlays() {
@@ -6134,14 +7346,17 @@ class _LocationProfileState extends State<LocationProfile>
               onWillPop: () async => !isLoading,
               // Prevent back button while loading
               child: AlertDialog(
-                title: Text('Create Campus', style: typography.H6),
+                title: Text(
+                    LanguageService.getTranslated(context, "create_campus"),
+                    style: typography.H6),
                 content: Container(
                   width: double.maxFinite, // Ensure dialog takes full width
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Do you want to get campus for this location?',
+                        LanguageService.getTranslated(
+                            context, "confirm_create_campus"),
                         style: typography.Body1,
                       ),
                     ],
@@ -6161,7 +7376,7 @@ class _LocationProfileState extends State<LocationProfile>
                             ),
                           )
                         : Text(
-                            'Cancel',
+                            LanguageService.getTranslated(context, "cancel"),
                             style: typography.Body1.copyWith(
                               color: isLoading ? Colors.grey : null,
                             ),
@@ -6178,7 +7393,7 @@ class _LocationProfileState extends State<LocationProfile>
                             ),
                           )
                         : Text(
-                            'Add',
+                            LanguageService.getTranslated(context, "add"),
                             style: typography.Body1.copyWith(
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -6204,7 +7419,8 @@ class _LocationProfileState extends State<LocationProfile>
         return Consumer<MyLocationListProvider>(
             builder: (context, locationProfileProvider, child) {
           return AlertDialog(
-            title: Text('Edit Name', style: typography.H6),
+            title: Text(LanguageService.getTranslated(context, "edit_name"),
+                style: typography.H6),
             content: Container(
               margin: EdgeInsets.only(top: 16),
               child: TextField(
@@ -6222,7 +7438,8 @@ class _LocationProfileState extends State<LocationProfile>
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel', style: typography.Body1),
+                child: Text(LanguageService.getTranslated(context, "cancel"),
+                    style: typography.Body1),
               ),
               TextButton(
                 onPressed: () {
@@ -6244,7 +7461,8 @@ class _LocationProfileState extends State<LocationProfile>
                 },
                 child: locationProfileProvider.isLoading
                     ? const CircularProgressIndicator()
-                    : Text('Save', style: typography.Body1),
+                    : Text(LanguageService.getTranslated(context, "save"),
+                        style: typography.Body1),
               ),
             ],
           );
@@ -6495,7 +7713,7 @@ class _LocationProfileState extends State<LocationProfile>
     if (total == 0) {
       return '';
     }
-    if (widget.locationId.isNotEmpty) {
+    if (widget.locationId!.isNotEmpty) {
       return '';
     }
     return ' (${getOrdinal(location)} / $_totalPages)';

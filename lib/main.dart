@@ -50,6 +50,7 @@ void main() async {
 
   try {
     Stripe.publishableKey =
+        // 'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
         'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
     await Stripe.instance.applySettings();
   } catch (e, stackTrace) {
@@ -61,7 +62,13 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('en')],
+      supportedLocales: const [
+        Locale('en'), // US
+        Locale('es'), // Spain
+        Locale('fr'), // France
+        Locale('ja'), // Japan
+        Locale('zh'), // China
+      ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
       child: AppLifecycleManager(),
@@ -270,13 +277,11 @@ Future<void> initFCM(String userId) async {
           await SharedPreferenceService.getNotificationSubscription();
 
       await _subscribeToNotifications(userId, token);
-
     }
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
 
       print("📩 Foreground message received: ${notification?.title}");
-
 
       Fluttertoast.showToast(
         msg: notification?.title ?? "Notification",
@@ -349,4 +354,3 @@ class CustomToast {
     }
   }
 }
-

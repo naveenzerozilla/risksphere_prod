@@ -12,26 +12,30 @@ class ProfileImageWidget extends StatelessWidget {
           backgroundColor: Colors.grey.shade200,
           child: (userProfile.userData.displayImageUrl ?? "").isNotEmpty
               ? ClipOval(
-            child: Image.network(
-              userProfile.userData.displayImageUrl ?? '',
-              height: 40.0,
-              width: 40.0,
-              fit: BoxFit.cover,
-              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
-                        : null,
+                  child: Image.network(
+                    userProfile.userData.displayImageUrl ?? '',
+                    height: 40.0,
+                    width: 40.0,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (BuildContext context, Widget child,
+                        ImageChunkEvent? loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  (loadingProgress.expectedTotalBytes ?? 1)
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (BuildContext context, Object error,
+                        StackTrace? stackTrace) {
+                      return FallbackAvatar(
+                          name: userProfile.userData.name ?? 'A');
+                    },
                   ),
-                );
-              },
-              errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-                return FallbackAvatar(name: userProfile.userData.name ?? 'A');
-              },
-            ),
-          )
+                )
               : FallbackAvatar(name: userProfile.userData.name ?? 'A'),
         );
       },

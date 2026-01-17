@@ -18,6 +18,7 @@ import '../../design_system/components/custom_drawer.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import 'maintainance_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -2088,7 +2089,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            "Hazard Rating Summary",
+            LanguageService.getTranslated(context,
+                "hazard_rating_summary"),
             style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
@@ -2179,7 +2181,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         ),
                         initiallyExpanded: false,
                         title: Text(
-                          "Hazard Risk Score Wise Locations",
+                          LanguageService.getTranslated(context,
+                              "hazard_risk_score_wise_locations"),
                           style: typography.Body2.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).disabledColor,
@@ -3178,7 +3181,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 childrenPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: Text(
-                  "Hazard Risk Score Wise Locations",
+                  LanguageService.getTranslated(context,
+                      "hazard_risk_score_wise_locations"),
                   style: typography.Body2.copyWith(
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).disabledColor,

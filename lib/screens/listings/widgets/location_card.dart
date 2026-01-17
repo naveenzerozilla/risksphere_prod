@@ -12,9 +12,13 @@ import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../providers/location_list_provider.dart';
+import '../../../service/language_service.dart';
 import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
+
+  final String? locationName;
+  final String? hasAnyPlan;
   final Map<String, HazardDetails>? hazards;
   final bool? isConflict;
   final String imageUrl;
@@ -26,7 +30,7 @@ class MyLocationCard extends StatefulWidget {
   final double percentage;
   final int geocodingScore;
   final int riskScore;
-  final int dataCompletenessScore;
+  final dynamic dataCompletenessScore;
   final bool isAutoCertified; // To show the certificate if score is 5.
   final List<String> tags;
   final void Function(String)? onDelete;
@@ -57,6 +61,8 @@ class MyLocationCard extends StatefulWidget {
 
   MyLocationCard({
     super.key,
+    this.locationName,
+    this.hasAnyPlan,
     this.hazards,
     this.isConflict,
     required this.imageUrl,
@@ -93,7 +99,7 @@ class MyLocationCard extends StatefulWidget {
     this.onNavigateBack,
     this.conflict,
     this.isHazardCanStart,
-    this.role,
+    this.role, required,
   });
 
   @override
@@ -102,12 +108,12 @@ class MyLocationCard extends StatefulWidget {
 
 class _MyLocationCardState extends State<MyLocationCard> {
   List<Color> scoreColors = [
-    Colors.grey[300]!, // Default color for unfilled bars
-    Colors.red[900]!, // Dark Red for 1
-    Colors.red[300]!, // Light Red for 2
-    Colors.yellow[300]!, // Light Yellow for 3
-    Colors.green[300]!, // Light Green for 4
-    Colors.green[600]!, // Green for 5
+    Colors.grey[300]!,
+    Colors.red[900]!,
+    Colors.red[300]!,
+    Colors.yellow[300]!,
+    Colors.green[300]!,
+    Colors.green[600]!,
   ];
 
   ScrollController _scrollController = ScrollController();
@@ -117,9 +123,14 @@ class _MyLocationCardState extends State<MyLocationCard> {
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
-    selectionMode = Provider.of<MyLocationListProvider>(context)
-        .selectedLocations
-        .isNotEmpty;
+    final provider = Provider.of<MyLocationListProvider>(context);
+
+    selectionMode =
+        provider.isGlobalSelectAll || provider.selectedLocationIds.isNotEmpty;
+
+    // selectionMode = Provider.of<MyLocationListProvider>(context)
+    //     .selectedLocations
+    //     .isNotEmpty;
     MyLocation? myLocation;
     if (widget.isCertified) {
       myLocation = Provider.of<MyLocationListProvider>(context, listen: false)
@@ -129,128 +140,144 @@ class _MyLocationCardState extends State<MyLocationCard> {
           .getLocationById(widget.locationId);
     }
     // Check if the location is selected
-    final isSelected = Provider.of<MyLocationListProvider>(context)
-        .selectedLocations
-        .contains(myLocation);
+    // final isSelected = provider.selectedLocationIds.contains(widget.locationId);
+    final isSelected = provider.isSelected(widget.locationId);
+    // final isSelected = Provider.of<MyLocationListProvider>(context)
+    //     .selectedLocations
+    //     .contains(myLocation);
     // final image = widget.imageUrl;
     return GestureDetector(
       onTap: () {
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
 
-        // In selection mode, toggle the selection if its last selection getting unselected we remove the selection mode
+        // In selection mode, toggle the selection
         if (selectionMode) {
-          setState(() {
-            if (isSelected) {
-              Provider.of<MyLocationListProvider>(context, listen: false)
-                  .removeFromSelection(myLocation);
-            } else {
-              Provider.of<MyLocationListProvider>(context, listen: false)
-                  .addToSelection(myLocation);
-            }
-            if (Provider.of<MyLocationListProvider>(context, listen: false)
-                .selectedLocations
-                .isEmpty) {
-              selectionMode = false;
-            }
-          });
-        } else {
-          var locationListProvider =
-              Provider.of<MyLocationListProvider>(context, listen: false);
+          provider.toggleItem(widget.locationId);
+
+          if (provider.selectedCount == 0) {
+            provider.clearSelection();
+          }
+        }
+        // if (selectionMode) {
+        //   if (isSelected) {
+        //     locationListProvider.removeIdFromSelection(widget.locationId);
+        //   } else {
+        //     locationListProvider.addIdToSelection(widget.locationId);
+        //   }
+        //
+        //   // Check if we should exit selection mode
+        //   if (locationListProvider.selectedLocationIds.isEmpty &&
+        //       !locationListProvider.isGlobalSelectAll) {
+        //     setState(() {
+        //       selectionMode = false;
+        //     });
+        //   }
+        // }
+        else {
           // Open location details screen
+          if (widget.isConflict == true) {
+            Navigator.of(context)
+                .push(
+              MaterialPageRoute(
+                builder: (_) => ConflictsTab(
+                  processId: widget.accountId ?? "",
+                  accountId: widget.accountId ?? "",
+                  subAccountId: widget.subAccountId ?? "",
+                  accountName: widget.accountName ?? "",
+                  subAccountName: widget.subAccountName ?? "",
+                  tempId: "tempId",
+                  startHazard: widget.isHazardCanStart,
+                  lat: widget.lat,
+                  long: widget.long,
+                  geocodingAddress: widget.address,
+                  conflict: widget.conflict,
+                  sovId: "",
+                ),
+              ),
+            )
+                .then((result) {
+              if (result == true) {
+                widget.onNavigateBack?.call();
+              }
+            });
+          } else {
+            Navigator.of(context)
+                .push(
+              MaterialPageRoute(
+                builder: (_) => LocationProfile(
+                  locationName: widget.locationName,
+                  accountId: widget.accountId ?? "",
+                  accountName: widget.accountName ?? "",
+                  subAccountId: widget.subAccountId ?? "",
+                  subAccountName: widget.subAccountName ?? "",
+                  sovId: widget.sovId ?? "",
+                  sovName: widget.sovName ?? "",
+                  searchQuery: widget.locationQuery ?? "",
+                  locationId: '',
+                  // Should this be widget.locationId?
+                  page: (widget.index + 1).toString(),
+                  totalPages: locationListProvider.locationHits.toString(),
+                  hazardProcess: widget.hazardProcess,
+                  onConfirmCallback: widget.getData,
+                  onNavigateBack: widget.onNavigateBack,
+                ),
+              ),
+            )
+                .then((result) {
+              if (result == true) {
+                widget.onNavigateBack?.call();
+              }
+            });
+          }
 
-          widget.isConflict == true
-              ? Navigator.of(context)
-                  .push(MaterialPageRoute(
-                      builder: (_) => ConflictsTab(
-                            processId: widget.accountId ?? "",
-                            accountId: widget.accountId ?? "",
-                            subAccountId: widget.subAccountId ?? "",
-                            accountName: widget.accountName ?? "",
-                            subAccountName: widget.subAccountName ?? "",
-                            tempId: "tempId",
-                            startHazard: widget.isHazardCanStart,
-                            lat: widget.lat,
-                            long: widget.long,
-                            geocodingAddress: widget.address,
-                            conflict: widget.conflict,
-                            sovId: "",
-                          )))
-                  .then((result) {
-                  if (result == true) {
-                    widget.onNavigateBack!.call();
-                  }
-                })
-              : Navigator.of(context)
-                  .push(MaterialPageRoute(
-                  builder: (_) => LocationProfile(
-                    accountId: widget.accountId ?? "",
-                    accountName: widget.accountName ?? "",
-                    subAccountId: widget.subAccountId ?? "",
-                    subAccountName: widget.subAccountName ?? "",
-                    sovId: widget.sovId ?? "",
-                    sovName: widget.sovName ?? "",
-                    searchQuery: widget.locationQuery ?? "",
-                    page: (widget.index + 1).toString(),
-                    totalPages: locationListProvider.locationHits.toString(),
-                    hazardProcess: widget.hazardProcess,
-                    onConfirmCallback: widget.getData,
-                    onNavigateBack: widget.onNavigateBack,
-                  ),
-                ))
-                  .then((result) {
-                  // widget.getData!();
-                  if (result == true) {
-                    // widget.getData!();
-                    // widget.onNavigateStart?.call();
-                    // widget.getData?.call();
-                    // widget.onNavigateBack?.call();
-                  } else {
-                    // widget.getData!();
-                    // widget.getData?.call();
-                  }
-                  // widget.onNavigateStart?.call();
-                  // widget.getData?.call();
-                });
-
-          // ))
-          //     . then((_) {
-          //   widget.getData!();
-          //   // Call getData after pop
-          //   widget.onNavigateStart?.call();
-          // });
           widget.onNavigateStart?.call();
-          // widget.onNavigateBack?.call(); // ✅ Restore debouncer & timer
-          // widget.getData?.call();
-          /*.then((_) {
-            // Call getData after pop
-            _getData();
-          });*/
         }
       },
       onLongPress: () {
-        // Handle the long press event
-        MyLocation? myLocation;
-        if (widget.isCertified) {
-          myLocation =
-              Provider.of<MyLocationListProvider>(context, listen: false)
-                  .getCertifiedLocationById(widget.locationId);
-        } else {
-          myLocation =
-              Provider.of<MyLocationListProvider>(context, listen: false)
-                  .getLocationById(widget.locationId);
-        }
+        var locationListProvider =
+            Provider.of<MyLocationListProvider>(context, listen: false);
+
+        // Toggle selection mode
         setState(() {
-          selectionMode = !selectionMode;
-          if (selectionMode) {
-            Provider.of<MyLocationListProvider>(context, listen: false)
-                .addToSelection(myLocation);
-          } else {
-            Provider.of<MyLocationListProvider>(context, listen: false)
-                .removeFromSelection(myLocation);
-          }
+          selectionMode = true;
         });
+
+        // Toggle selection for this item
+        if (locationListProvider.isSelected(widget.locationId)) {
+          locationListProvider.removeIdFromSelection(widget.locationId);
+        } else {
+          locationListProvider.addIdToSelection(widget.locationId);
+        }
       },
+      // onLongPress: () {
+      //   // Handle the long press event
+      //   MyLocation? myLocation;
+      //   if (widget.isCertified) {
+      //     myLocation =
+      //         Provider.of<MyLocationListProvider>(context, listen: false)
+      //             .getCertifiedLocationById(widget.locationId);
+      //   } else {
+      //     myLocation =
+      //         Provider.of<MyLocationListProvider>(context, listen: false)
+      //             .getLocationById(widget.locationId);
+      //   }
+      //   setState(() {
+      //     selectionMode = !selectionMode;
+      //     if (selectionMode) {
+      //       Provider.of<MyLocationListProvider>(context, listen: false)
+      //           .addIdToSelection(widget.locationId);
+      //
+      //       // Provider.of<MyLocationListProvider>(context, listen: false)
+      //       //     .addToSelection(myLocation);
+      //     } else {
+      //       Provider.of<MyLocationListProvider>(context, listen: false)
+      //           .removeIdFromSelection(widget.locationId);
+      //       // Provider.of<MyLocationListProvider>(context, listen: false)
+      //       //     .removeFromSelection(myLocation);
+      //     }
+      //   });
+      // },
       child: Container(
         color: Colors.grey.withOpacity(0.1),
         child: Card(
@@ -313,38 +340,39 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 8),
-                  // RichText(
-                  //   text: TextSpan(
-                  //     children: [
-                  //       TextSpan(
-                  //         text: "Company : ",
-                  //         style: typography.Body2.copyWith(
-                  //           color:
-                  //               Theme.of(context).brightness == Brightness.dark
-                  //                   ? AppColors.white
-                  //                   : AppColors.black,
-                  //           fontSize: 14,
-                  //           fontWeight: FontWeight.w500,
-                  //         ),
-                  //       ),
-                  //       TextSpan(
-                  //         text: widget.companyName ?? "",
-                  //         style: typography.Body2.copyWith(
-                  //           color:
-                  //               Theme.of(context).brightness == Brightness.dark
-                  //                   ? AppColors.white
-                  //                   : AppColors.black,
-                  //           fontSize: 14,
-                  //           // Different font size for owner name
-                  //           fontWeight: FontWeight.bold,
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  //   overflow: TextOverflow.ellipsis,
-                  // ),
-                  // SizedBox(height: 8),
-                  if (widget.role != null && widget.role.toString() !="null"&&
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Company : ",
+                          style: typography.Body2.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.companyName ?? "",
+                          style: typography.Body2.copyWith(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.white
+                                    : AppColors.black,
+                            fontSize: 14,
+                            // Different font size for owner name
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 8),
+                  if (widget.role != null &&
+                      widget.role.toString() != "null" &&
                       widget.role!.trim().isNotEmpty) ...[
                     RichText(
                       text: TextSpan(
@@ -379,6 +407,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   ]
                 ],
                 SizedBox(height: 8),
+
                 _buildScrollableScores(context),
               ],
             ),
@@ -466,10 +495,23 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 4),
-                  // Overflowed address
+                  if (widget.sovId == null || widget.sovId!.isEmpty) ...[
+                    Container()
+                  ] else ...[
+                    Text(
+                      widget.locationName.toString(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primaryMain,
+                      ),
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   Text(
-                    widget.address,
-                    style: TextStyle(
+                    widget.address.replaceFirst(RegExp(r'^\s*,\s*'), ''),
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: AppColors.primaryMain,
@@ -477,6 +519,17 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     maxLines: 6,
                     overflow: TextOverflow.ellipsis,
                   ),
+
+                  // Text(
+                  //   widget.address,
+                  //   style: TextStyle(
+                  //     fontSize: 14,
+                  //     fontWeight: FontWeight.w500,
+                  //     color: AppColors.primaryMain,
+                  //   ),
+                  //   maxLines: 6,
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
                 ],
               ),
             ),
@@ -511,6 +564,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               onDelete: widget.onDelete,
               onAddToSOV: widget.onAddToSOV,
               onAddTag: widget.onAddTag,
+              hasAnyPlan: widget.hasAnyPlan.toString(),
             ),
           ],
         ),
@@ -591,6 +645,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => LocationProfile(
+                      locationName: widget.locationName,
                       accountId: widget.accountId!,
                       accountName: widget.accountName,
                       subAccountId: widget.subAccountId!,
@@ -598,6 +653,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                       sovId: widget.sovId ?? "",
                       sovName: widget.sovName ?? "",
                       searchQuery: widget.locationQuery ?? "",
+                      locationId: '',
                       page: (widget.index + 1).toString(),
                       totalPages: Provider.of<MyLocationListProvider>(context,
                               listen: false)
@@ -612,7 +668,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             },
             child: _buildScoreCard(
               context,
-              'Geocoding',
+              LanguageService.getTranslated(context, "geocoding"),
               widget.address,
               widget.geocodingScore,
               widget.accountId!,
@@ -633,6 +689,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                       sovId: widget.sovId ?? "",
                       sovName: widget.sovName ?? "",
                       searchQuery: widget.locationQuery ?? "",
+                      locationId: '',
                       page: (widget.index + 1).toString(),
                       totalPages: Provider.of<MyLocationListProvider>(context,
                               listen: false)
@@ -647,7 +704,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
             },
             child: _buildScoreCard(
                 context,
-                'Hazard Score',
+                LanguageService.getTranslated(context, "hazard_score"),
                 widget.address,
                 widget.riskScore, // == 0 ? 5 : widget.riskScore,
                 widget.accountId!,
@@ -667,6 +724,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                       sovId: widget.sovId ?? "",
                       sovName: widget.sovName ?? "",
                       searchQuery: widget.locationQuery ?? "",
+                      locationId: '',
                       page: (widget.index + 1).toString(),
                       totalPages: Provider.of<MyLocationListProvider>(context,
                               listen: false)
@@ -679,13 +737,13 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     ),
                   ));
             },
-            child: _buildScoreCard(
+            child: _buildScoreCardcompleteness(
               context,
-              'Completeness',
+              LanguageService.getTranslated(context, "completeness"),
+
               widget.address,
-              widget.dataCompletenessScore == 0
-                  ? 1
-                  : widget.dataCompletenessScore,
+              widget.dataCompletenessScore,
+              // normalizeScore(widget.dataCompletenessScore),
               widget.accountId!,
               widget.subAccountId!,
             ),
@@ -695,8 +753,25 @@ class _MyLocationCardState extends State<MyLocationCard> {
     );
   }
 
+  double normalizeScore(num score) {
+    if (score <= 0) return 1.0;
+    final double value = double.parse(score.toStringAsFixed(2));
+
+    final int whole = value.floor();
+    final double decimal = value - whole;
+
+    if (decimal < 0.25) {
+      return whole.toDouble();
+    } else if (decimal < 0.75) {
+      return whole + 0.5;
+    } else {
+      return whole + 1.0;
+    }
+  }
+
   Widget _buildScoreCard(BuildContext context, String title, String address,
-      int score, String accountId, String subAccountId) {
+      dynamic scoreInt, String accountId, String subAccountId) {
+    final int score = scoreInt.toInt();
     bool isCertified = score == 5; // Logic to check if it shows a certificate.
     List<Color> scoreColors = [
       Colors.grey[300]!, // Default color for unfilled bars
@@ -746,12 +821,35 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   ),
                 ),
                 SizedBox(width: 8),
-                if (title == 'Hazard Score' || title == 'Geocoding') ...[
+                if (title == 'Geocoding') ...[
                   InkWell(
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (context) => GeocodingDialog(title: title),
+                        builder: (context) =>
+                            GeocodingDialog(title: "Geocoding Rating"),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
+                ] else if (title == 'Hazard Score') ...[
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            HazardDialog(title: "Hazard Score"),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
+                ] else if (title == 'Completeness') ...[
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            CompletenessDialog(title: "Data Completeness"),
                       );
                     },
                     child: Icon(Icons.info),
@@ -825,7 +923,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                 scoreColors[score].withOpacity(0.6),
                             child: Center(
                               child: Text(
-                                score == 0 ? '1' : score.toString(),
+                                score.toString(),
                                 style: typography.Body1.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -839,6 +937,203 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             ),
                           ),
                         ),
+                ] else ...[
+                  Container(child: Text("Processing"))
+                ]
+              ],
+            ),
+          ),
+          SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  int toCeilScore(dynamic value) {
+    if (value == null) return 1;
+
+    final double number = value is num
+        ? value.toDouble()
+        : double.tryParse(value.toString()) ?? 1.0;
+
+    return number.ceil().clamp(1, 5);
+  }
+
+  Widget _buildScoreCardcompleteness(BuildContext context, String title,
+      String address, dynamic scoreInt, String accountId, String subAccountId) {
+    // final int score = scoreInt.toInt();
+    // final dynamic rawScore = (scoreInt).toDouble();
+    // final int displayScore = rawScore.ceil().clamp(1, 5);
+    // bool isCertified = score == 5; // Logic to check if it shows a certificate.
+    List<Color> scoreColors = [
+      Colors.grey[300]!, // 0 (unused / empty)
+      Colors.red[900]!, // 1
+      Colors.red[300]!, // 2
+      Colors.yellow[300]!, // 3
+      Colors.green[300]!, // 4
+      Colors.green[600]!, // 5
+    ];
+    final int displayScore = toCeilScore(scoreInt);
+
+    var typography = CustomTypography(context);
+    return Container(
+      margin: EdgeInsets.only(right: 5),
+      padding: EdgeInsets.all(8),
+      width: MediaQuery.of(context).size.width < 400 ? 165 : 190,
+      height: MediaQuery.of(context).size.height < 400 ? 80 : 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryMain,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: MediaQuery.of(context).size.width < 400
+                        ? TextAlign.center
+                        : TextAlign.left,
+                  ),
+                ),
+                SizedBox(width: 8),
+                if (title == 'Geocoding') ...[
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            GeocodingDialog(title: "Geocoding Rating"),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
+                ] else if (title == 'Hazard Score') ...[
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            HazardDialog(title: "Hazard Score"),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
+                ] else if (title == 'Completeness') ...[
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) =>
+                            CompletenessDialog(title: "Data Completeness"),
+                      );
+                    },
+                    child: Icon(Icons.info),
+                  ),
+                ] else ...[
+                  Icon(Icons.info, color: Colors.transparent),
+                ]
+              ],
+            ),
+          ),
+          SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                //check the processing status
+                if (widget.hazardProcess == true ||
+                    title == 'Geocoding' ||
+                    title == 'Completeness') ...[
+                  title == 'Hazard Score'
+                      ? SvgPicture.asset('assets/images/hazard_icon.svg',
+                          width: 24, height: 24)
+                      : title == 'Completeness'
+                          ? SvgPicture.asset(
+                              'assets/images/data_completeness_icon.svg',
+                              width: 24,
+                              height: 24)
+                          : title == 'Geocoding'
+                              ? SvgPicture.asset(
+                                  'assets/images/geocoding_icon.svg',
+                                  width: 24,
+                                  height: 24)
+                              : const SizedBox(),
+                  SizedBox(width: 4),
+                  InkWell(
+                    onTap: () {
+                      if (title == 'Geocoding') {
+                        showLocationDetailsPopup(
+                            context,
+                            widget.lat,
+                            widget.long!,
+                            widget.imageUrl,
+                            widget.address,
+                            widget.locationId,
+                            widget.geocodingScore,
+                            widget.overallScore!,
+                            widget.dataCompletenessScore,
+                            widget.hazards,
+                            "MAc",
+                            widget.accountId!,
+                            widget.subAccountId!,
+                            "widget.sovId!",
+                            widget.accountName,
+                            widget.subAccountName!,
+                            widget.hazardProcess!,
+                            widget.rented);
+                      }
+                    },
+                    child: VerticalBarIndicator(
+                        score: scoreInt.toString() == "0" ? "1" : scoreInt),
+                  ),
+                  SizedBox(width: 1),
+                  // isCertified
+                  //     ? SvgPicture.asset('assets/images/certified_five.svg',
+                  //         width: 24, height: 24)
+                  //     :
+                  Container(
+                    margin: EdgeInsets.only(left: 4),
+                    child: CircleAvatar(
+                      radius: 10,
+                      backgroundColor:
+                          scoreColors[displayScore].withOpacity(0.6),
+
+                      // backgroundColor:
+                      // scoreColors[score].withOpacity(0.6),
+                      child: Center(
+                        child: Text(
+                          scoreInt.toString()=="0"?"1":scoreInt.toString(),
+                          style: typography.Body1.copyWith(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: MediaQuery.of(context).size.width < 400
+                              ? TextAlign.center
+                              : TextAlign.left,
+                        ),
+                      ),
+                    ),
+                  ),
                 ] else ...[
                   Container(child: Text("Processing"))
                 ]
@@ -919,9 +1214,14 @@ class CustomPopupMenuButton extends StatelessWidget {
   final void Function(String locationId)? onDelete;
   final void Function(String locationId)? onAddToSOV;
   final void Function(String locationId)? onAddTag;
+  final String? hasAnyPlan;
 
   const CustomPopupMenuButton(
-      {this.onAddToSOV, this.locationId = '', this.onDelete, this.onAddTag});
+      {this.onAddToSOV,
+      this.locationId = '',
+      this.onDelete,
+      this.onAddTag,
+      this.hasAnyPlan});
 
   @override
   Widget build(BuildContext context) {
@@ -930,7 +1230,7 @@ class CustomPopupMenuButton extends StatelessWidget {
       final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
       return GestureDetector(
         onTapDown: (details) {
-          _showCustomMenu(context, details.globalPosition, trialStatus);
+          _showCustomMenu(context, details.globalPosition, hasAnyPlan);
         },
         child: Icon(
           Icons.more_vert,
@@ -954,26 +1254,35 @@ class CustomPopupMenuButton extends StatelessWidget {
           ? [
               PopupMenuItem<String>(
                 value: 'delete',
-                child: Text('Delete Location', style: typography.Body1),
+                child: Text(
+                    LanguageService.getTranslated(context, "delete_location"),
+                    style: typography.Body1),
               ),
               PopupMenuItem<String>(
                 value: 'add_tag',
-                child: Text('Add Tag', style: typography.Body1),
+                child: Text(LanguageService.getTranslated(context, "add_tag"),
+                    style: typography.Body1),
               ),
             ]
           : [
               PopupMenuItem<String>(
                 value: 'delete',
-                child: Text('Delete Location', style: typography.Body1),
+                child: Text(
+                    LanguageService.getTranslated(context, "delete_location"),
+                    style: typography.Body1),
               ),
-              if (trialStatus.isEmpty)
+              if (hasAnyPlan.toString() == "true") ...[
                 PopupMenuItem<String>(
                   value: 'add_sov',
-                  child: Text('Add to SOV', style: typography.Body1),
+                  child: Text(
+                      LanguageService.getTranslated(context, "add_to_sov"),
+                      style: typography.Body1),
                 ),
+              ],
               PopupMenuItem<String>(
                 value: 'add_tag',
-                child: Text('Add Tag', style: typography.Body1),
+                child: Text(LanguageService.getTranslated(context, "add_tag"),
+                    style: typography.Body1),
               ),
             ],
       elevation: 8.0,
@@ -995,6 +1304,683 @@ class CustomPopupMenuButton extends StatelessWidget {
         onAddTag?.call(locationId ?? "");
       }
     }
+  }
+}
+
+class HazardDialog extends StatefulWidget {
+  final String? title;
+  final bool? status;
+
+  HazardDialog({super.key, this.title, this.status});
+
+  @override
+  State<HazardDialog> createState() => _HazardDialogState();
+}
+
+class _HazardDialogState extends State<HazardDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.black,
+      child: Consumer<MyLocationListProvider>(
+          builder: (context, locationProfileProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.status == true) ...[
+                Text(
+                  'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '${locationProfileProvider.locationProfile?.finalAddress?.description ?? ""}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+              ] else ...[
+                SizedBox(height: 10),
+              ],
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white12,
+                  // Keep background transparent if needed
+                  shadowColor: Colors.white12,
+                  // Remove button shadow
+                  minimumSize: Size(double.infinity, 35),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Define button action here
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  // To ensure minimal button width
+                  children: [
+                    widget.title == 'Geocoding'
+                        ? SvgPicture.asset('assets/images/geocoding_icon.svg',
+                            width: 24, height: 24)
+                        : SvgPicture.asset('assets/images/hazard_icon.svg',
+                            width: 24, height: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      widget.title.toString(),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                    maxHeight: widget.status == true ? 350 : 500),
+                // Set max height
+                child: Scrollbar(
+                  // Add scrollbar
+                  thumbVisibility: true,
+                  // Always show the scrollbar
+                  trackVisibility: true,
+                  // Show the scrollbar track
+                  thickness: widget.status == true ? 1 : 0,
+                  // Adjust scrollbar thickness
+                  radius: Radius.circular(10),
+                  // Optional: Round scrollbar edges
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 10),
+                        _buildRatingItem(
+                          5,
+                          "Not Susceptible to Hazard: This means the area is very unlikely to face any hazard.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          4,
+                          "Less Likely Susceptible to Hazard: This means the area has a lower chance of experiencing a hazard.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          3,
+                          "Likely Susceptible to Hazard: This means the area is likely to face a hazard.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          2,
+                          "Highly Susceptible to Hazard: This means the area has a high likelihood of facing a hazard.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          1,
+                          "Susceptible to Catastrophic Hazard: This means the area is extremely likely to face severe hazards with potentially disastrous consequences.",
+                          "",
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  minimumSize: Size(double.infinity, 40),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Understood! Take me back.",
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildRatingItem(int rating, String title, String description) {
+    Color getColor(int rating) {
+      switch (rating) {
+        case 5:
+          return Colors.green;
+        case 4:
+          return Colors.lightGreen;
+        case 3:
+          return Colors.orange;
+        case 2:
+          return Colors.redAccent;
+        case 1:
+          return Colors.red;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    return Container(
+      alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Divider(),
+          rating == 5
+              ? SvgPicture.asset('assets/images/certified_five.svg',
+                  width: 24, height: 24)
+              : CircleAvatar(
+                  radius: 12,
+                  backgroundColor: getColor(rating),
+                  child: Text(
+                    rating.toString(),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                  ),
+                ),
+          SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CompletenessDialog extends StatefulWidget {
+  final String? title;
+  final bool? status;
+
+  CompletenessDialog({super.key, this.title, this.status});
+
+  @override
+  State<CompletenessDialog> createState() => _CompletenessDialogState();
+}
+
+class _CompletenessDialogState extends State<CompletenessDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.black,
+      child: Consumer<MyLocationListProvider>(
+          builder: (context, locationProfileProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.status == true) ...[
+                Text(
+                  'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '${locationProfileProvider.locationProfile?.finalAddress?.description ?? ""}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+              ] else ...[
+                SizedBox(height: 10),
+              ],
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white12,
+                  // Keep background transparent if needed
+                  shadowColor: Colors.white12,
+                  // Remove button shadow
+                  minimumSize: Size(double.infinity, 35),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Define button action here
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  // To ensure minimal button width
+                  children: [
+                    widget.title == 'Geocoding'
+                        ? SvgPicture.asset('assets/images/geocoding_icon.svg',
+                            width: 24, height: 24)
+                        : SvgPicture.asset('assets/images/hazard_icon.svg',
+                            width: 24, height: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      widget.title.toString(),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                    maxHeight: widget.status == true ? 350 : 500),
+                // Set max height
+                child: Scrollbar(
+                  // Add scrollbar
+                  thumbVisibility: true,
+                  // Always show the scrollbar
+                  trackVisibility: true,
+                  // Show the scrollbar track
+                  thickness: widget.status == true ? 1 : 0,
+                  // Adjust scrollbar thickness
+                  radius: Radius.circular(10),
+                  // Optional: Round scrollbar edges
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 10),
+                        _buildRatingItem(
+                          5,
+                          "Complete & Verified: All critical and supporting parameters are fully populated, validated, and up to date. Data quality is high and suitable for accurate risk assessment.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          4,
+                          "Largely Complete: Most critical parameters are available with minimal gaps in secondary data. Overall data quality remains reliable for analysis.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          3,
+                          "Moderately Complete: Key parameters are present, but several supporting fields are missing or incomplete, which may affect risk precision.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          2,
+                          "Poorly Complete: Multiple critical parameters are missing or partially filled, significantly limiting confidence in risk evaluation.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          1,
+                          "Insufficient Data: Data coverage is minimal or inconsistent. Risk analysis cannot be performed reliably.",
+                          "",
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  minimumSize: Size(double.infinity, 40),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Understood! Take me back.",
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildRatingItem(int rating, String title, String description) {
+    Color getColor(int rating) {
+      switch (rating) {
+        case 5:
+          return Colors.green;
+        case 4:
+          return Colors.lightGreen;
+        case 3:
+          return Colors.orange;
+        case 2:
+          return Colors.redAccent;
+        case 1:
+          return Colors.red;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    return Container(
+      alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Divider(),
+          rating == 5
+              ? SvgPicture.asset('assets/images/certified_five.svg',
+                  width: 24, height: 24)
+              : CircleAvatar(
+                  radius: 12,
+                  backgroundColor: getColor(rating),
+                  child: Text(
+                    rating.toString(),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                  ),
+                ),
+          SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GeocodingDialogProfile extends StatefulWidget {
+  final String? title;
+  final bool? status;
+
+  GeocodingDialogProfile({super.key, this.title, this.status});
+
+  @override
+  State<GeocodingDialogProfile> createState() => _GeocodingDialogProfileState();
+}
+
+class _GeocodingDialogProfileState extends State<GeocodingDialogProfile> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.black,
+      child: Consumer<MyLocationListProvider>(
+          builder: (context, locationProfileProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.status == true) ...[
+                Text(
+                  'Geocode Type: ${locationProfileProvider.locationProfile?.finalAddress?.locationType ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Property Type: ${locationProfileProvider.locationProfile?.finalAddress?.placeTypes?.join(', ') ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '${locationProfileProvider.locationProfile?.finalAddress?.description ?? ""}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+              ] else ...[
+                SizedBox(height: 10),
+              ],
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white12,
+                  // Keep background transparent if needed
+                  shadowColor: Colors.white12,
+                  // Remove button shadow
+                  minimumSize: Size(double.infinity, 35),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Define button action here
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  // To ensure minimal button width
+                  children: [
+                    widget.title == 'Geocoding Rating'
+                        ? SvgPicture.asset('assets/images/geocoding_icon.svg',
+                            width: 24, height: 24)
+                        : SvgPicture.asset('assets/images/hazard_icon.svg',
+                            width: 24, height: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      widget.title.toString(),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(
+                    maxHeight: widget.status == true ? 350 : 500),
+                // Set max height
+                child: Scrollbar(
+                  // Add scrollbar
+                  thumbVisibility: true,
+                  // Always show the scrollbar
+                  trackVisibility: true,
+                  // Show the scrollbar track
+                  thickness: widget.status == true ? 1 : 0,
+                  // Adjust scrollbar thickness
+                  radius: Radius.circular(10),
+                  // Optional: Round scrollbar edges
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 10),
+                        _buildRatingItem(
+                          5,
+                          widget.title == 'Geocoding Rating'
+                              ? "Exact Match: Indicates pinpoint precision, accurately identifying a specific building."
+                              : widget.title == 'Hazard Score'
+                                  ? "Not Susceptible to Hazard: This means the area is very unlikely to face any hazard."
+                                  : "Complete & Verified: All critical and supporting parameters are fully populated, validated, and up to date. Data quality is high and suitable for accurate risk assessment.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          4,
+                          widget.title == 'Geocoding Rating'
+                              ? "Geometric Center: Represents the center of a complex of buildings or small area and is less precise than a specific building address."
+                              : widget.title == 'Hazard Score'
+                                  ? "Less Likely Susceptible to Hazard: This means the area has a lower chance of experiencing a hazard."
+                                  : " Largely Complete: Most critical parameters are available with minimal gaps in secondary data. Overall data quality remains reliable for analysis.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          3,
+                          widget.title == 'Geocoding Rating'
+                              ? "Range Interpolated: Represents an address located along a street. Lacking to pinpoint a single building."
+                              : widget.title == 'Hazard Score'
+                                  ? "Likely Susceptible to Hazard: This means the area is likely to face a hazard."
+                                  : "Moderately Complete: Key parameters are present, but several supporting fields are missing or incomplete, which may affect risk precision.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          2,
+                          widget.title == 'Geocoding Rating'
+                              ? "Sub Locality: The location is located in a sub locality like a small town or neighborhood and difficult to specify the building."
+                              : widget.title == 'Hazard Score'
+                                  ? "Highly Susceptible to Hazard: This means the area has a high likelihood of facing a hazard."
+                                  : "Poorly Complete: Multiple critical parameters are missing or partially filled, significantly limiting confidence in risk evaluation.",
+                          "",
+                        ),
+                        Divider(),
+                        _buildRatingItem(
+                          1,
+                          widget.title == 'Geocoding Rating'
+                              ? "Approximate: The location is located within a large region like a country, state or locality."
+                              : widget.title == 'Hazard Score'
+                                  ? "Susceptible to Catastrophic Hazard: This means the area is extremely likely to face severe hazards with potentially disastrous consequences."
+                                  : "Insufficient Data: Data coverage is minimal or inconsistent. Risk analysis cannot be performed reliably.",
+                          "",
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMain,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  minimumSize: Size(double.infinity, 40),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Understood! Take me back.",
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildRatingItem(int rating, String title, String description) {
+    Color getColor(int rating) {
+      switch (rating) {
+        case 5:
+          return Colors.green;
+        case 4:
+          return Colors.lightGreen;
+        case 3:
+          return Colors.orange;
+        case 2:
+          return Colors.redAccent;
+        case 1:
+          return Colors.red;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    return Container(
+      alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Divider(),
+          rating == 5
+              ? SvgPicture.asset('assets/images/certified_five.svg',
+                  width: 24, height: 24)
+              : CircleAvatar(
+                  radius: 12,
+                  backgroundColor: getColor(rating),
+                  child: Text(
+                    rating.toString(),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                  ),
+                ),
+          SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1074,9 +2060,7 @@ class _GeocodingDialogState extends State<GeocodingDialog> {
                             width: 24, height: 24),
                     SizedBox(width: 8),
                     Text(
-                      widget.title == 'Geocoding'
-                          ? "Geocoding Rating"
-                          : "Hazard Rating",
+                      widget.title.toString(),
                       style: TextStyle(
                           color: Colors.white, fontWeight: FontWeight.bold),
                     ),
@@ -1104,7 +2088,10 @@ class _GeocodingDialogState extends State<GeocodingDialog> {
                         SizedBox(height: 10),
                         _buildRatingItem(
                           5,
-                          "Exact Match: Indicates pinpoint precision, accurately identifying a specific building.",
+                          widget.title == 'Geocoding Rating' ||
+                                  widget.title == 'Hazard Score'
+                              ? "Exact Match: Indicates pinpoint precision, accurately identifying a specific building."
+                              : "Complete & Verified: All critical and supporting parameters are fully populated, validated, and up to date. Data quality is high and suitable for accurate risk assessment.",
                           "",
                         ),
                         Divider(),

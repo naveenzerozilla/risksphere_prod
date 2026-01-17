@@ -29,7 +29,10 @@ class VerificationProvider with ChangeNotifier {
       notifyListeners();
     });
   }
-
+  void setAcceptLoading(bool value) {
+    isCorporateAcceptLoading = value;
+    notifyListeners();
+  }
   bool _isUserLoading = false;
 
   bool get isUserLoading => _isUserLoading;

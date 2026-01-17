@@ -6,11 +6,20 @@ class SharedPreferenceService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
   }
+
   static const String _kSovUploadState = 'sov_upload_state';
   static const String _kSovUploadTempId = 'sov_upload_temp_id';
   static const String _kSovAccountId = 'sov_account_id';
   static const String _kSovSubAccountId = 'sov_sub_account_id';
   static const String _kSovUploadProcessId = 'sov_upload_process_id';
+  static const String _firstRunKey = 'first_run';
+
+  // Read a boolean, return null if not set
+  static Future<bool?> getBool(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey(key)) return null;
+    return prefs.getBool(key);
+  }
 
 // --- NEW: clear helpers
   static Future<void> clearSovUploadState() async {
@@ -37,7 +46,9 @@ class SharedPreferenceService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kSovUploadProcessId);
   }
+
   static const String CAMCL = 'CAMCL'; // Corporate-List
+  static const String INTERNAL = 'internal'; // Corporate-List
   static const String CAMUL = 'CAMUL'; // User-List
   static const String CAMCC = 'CAMCC'; // Create-Corporate
   static const String CAMEC =
@@ -92,6 +103,12 @@ class SharedPreferenceService {
   static const String FCMTK = 'FCMTK'; // FCM Token
   static const String SCHEDULE_INPROGRESS = 'SCHEDULE_INPROGRESS';
   static const String SCHEDULE_STARTTIME = 'SCHEDULE_STARTTIME';
+
+  static const String DEFAULT_ACCOUNTID = 'DEFAULT_ACCOUNTID';
+  static const String DEFAULT_SUBACCOUNTID = 'DEFAULT_SUBACCOUNTID';
+  static const String DEFAULT_ACCOUNTNAME = 'DEFAULT_ACCOUNTNAME';
+  static const String DEFAULT_SUBACCOUNTNAME = 'DEFAULT_SUBACCOUNTNAME';
+
   static const String TRAIL_USER = 'TRAIL_USER';
   static const String TRAIL_LOCATION_COUNT = 'TRAIL_LOCATION_COUNT';
   static const String USER_LICENSE = 'USER_LICENSE';
@@ -185,6 +202,7 @@ class SharedPreferenceService {
     prefs.setBool(NCMMT, false);
     prefs.setBool(EMPMT, false);
     prefs.setBool(IS_PG_ADMIN, false);
+    prefs.setBool(INTERNAL, false);
     prefs.setBool(IS_ADMIN, false);
     prefs.setBool(IS_SUPER_ADMIN, false);
     prefs.setBool(Is_Indivudual, false);
@@ -241,6 +259,7 @@ class SharedPreferenceService {
         case NCMMT:
         case EMPMT:
         case IS_PG_ADMIN:
+        case INTERNAL:
         case IS_ADMIN:
         case IS_SUPER_ADMIN:
         case Is_Indivudual:
@@ -316,6 +335,7 @@ class SharedPreferenceService {
       NCMMT,
       EMPMT,
       IS_PG_ADMIN,
+      INTERNAL,
       IS_ADMIN,
       IS_SUPER_ADMIN,
       Is_Indivudual
@@ -324,7 +344,7 @@ class SharedPreferenceService {
       bool value = prefs.getBool(key) ?? false;
       if (value != null) {
         claims[key] = value;
-        print('Retrieved claim $key with value $value');
+        //print('Retrieved claim $key with value $value');
       }
     }
     return claims;
@@ -335,7 +355,7 @@ class SharedPreferenceService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool? value = prefs.getBool(subfeature);
       if (value != null) {
-        print('Retrieved claim for $subfeature with value $value');
+        //print('Retrieved claim for $subfeature with value $value');
         return value;
       } else {
         print('Claim for $subfeature not found');
@@ -356,8 +376,6 @@ class SharedPreferenceService {
   //   final prefs = await SharedPreferences.getInstance();
   //   return prefs.getString('schedule_in_progress'); // Now returns a String
   // }
-
-
 
   static Future<void> setUpcomingScheduleEndTime(String? value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -385,7 +403,6 @@ class SharedPreferenceService {
   //   return value == '' ? null : value;
   // }
 
-
   static Future<void> setScheduleInProgress(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SCHEDULE_INPROGRESS, value);
@@ -398,6 +415,7 @@ class SharedPreferenceService {
     print('Schedule in progress $value');
     return value;
   }
+
   static Future<void> setUpcomingScheduleStartTime(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SCHEDULE_STARTTIME, value);
@@ -411,6 +429,45 @@ class SharedPreferenceService {
     return value;
   }
 
+  static Future<void> setDefaultAccountID(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(DEFAULT_ACCOUNTID, value);
+  }
+
+  static Future<String?> getDefaultAccountID() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(DEFAULT_ACCOUNTID);
+  }
+
+  static Future<void> setDefaultSUBAccountID(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(DEFAULT_SUBACCOUNTID, value); // ✅ fixed
+  }
+
+  static Future<String?> getDefaultSubAccountID() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(DEFAULT_SUBACCOUNTID);
+  }
+
+  static Future<void> setDefaultAccountName(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(DEFAULT_ACCOUNTNAME, value);
+  }
+
+  static Future<String?> GetDefaultAccountName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(DEFAULT_ACCOUNTNAME);
+  }
+
+  static Future<void> setDefaultSUBAccountName(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(DEFAULT_SUBACCOUNTNAME, value);
+  }
+
+  static Future<String?> GetDefaultSUBAccountName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(DEFAULT_SUBACCOUNTNAME);
+  }
 
   static Future<void> setTrialUser(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -424,6 +481,7 @@ class SharedPreferenceService {
     print('Schedule in progress $value');
     return value;
   }
+
   static Future<void> setTrailLocation(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(TRAIL_LOCATION_COUNT, value);
@@ -446,9 +504,10 @@ class SharedPreferenceService {
   static Future<String?> getUserLicense() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(USER_LICENSE);
-    print('Retrieved user license with value $value');
+    //print('Retrieved user license with value $value');
     return value;
   }
+
   // Save Notification Subscription Status
   static Future<void> saveHasAnyPlan(bool hasanyplan) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -463,6 +522,18 @@ class SharedPreferenceService {
   }
 
 
+  // Save Notification Subscription Status
+  static Future<void> saveHasNewUser(bool hasnewuser) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isnewaccount', hasnewuser);
+    print('Notification Subscription saved: $hasnewuser');
+  }
+
+// Get Notification Subscription Status
+  static Future<bool> getHasNewUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('isnewaccount') ?? false;
+  }
 
   static Future<void> setGeocodingLicense(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -473,7 +544,7 @@ class SharedPreferenceService {
   static Future<String?> getGeocodingLicense() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString('geocoding_license');
-    print('Retrieved geocoding license with value $value');
+    //print('Retrieved geocoding license with value $value');
     return value;
   }
 
@@ -486,7 +557,21 @@ class SharedPreferenceService {
   static Future<String?> getHazardLicense() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString('hazard_license');
-    print('Retrieved hazard license with value $value');
+    //print('Retrieved hazard license with value $value');
+    return value;
+  }
+
+
+  static Future<void> setHazardHubLicense(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('hazard_hub_license', value);
+    print('Set hazard hub license to $value');
+  }
+
+  static Future<String?> getHazardHubLicense() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('hazard_hub_license');
+    //print('Retrieved hazard license with value $value');
     return value;
   }
 
@@ -499,98 +584,98 @@ class SharedPreferenceService {
   // static Future<bool?> getScheduleInProgress() async {
   //   SharedPreferences prefs = await SharedPreferences.getInstance();
   //   bool? value = prefs.getBool(SCHEDULE_INPROGRESS);
-  //   print('Retrieved Schedule In Progress with value $value');
+  //   //print('Retrieved Schedule In Progress with value $value');
   //   return value;
   // }
 
   static Future<void> setSovUploadTempId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_TEMP_ID, value);
-    // print('Set SOV upload id to $value');
+    // //print('Set SOV upload id to $value');
   }
 
   static Future<String?> getSovUploadTempId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_UPLOAD_TEMP_ID);
-    print('Retrieved Schedule In Progress with value $value');
+    //print('Retrieved Schedule In Progress with value $value');
     return value;
   }
 
   static Future<void> setSovUploadProcessId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_PROCESS_ID, value);
-    // print('Set SOV upload id to $value');
+    // //print('Set SOV upload id to $value');
   }
 
   static Future<String?> getSovUploadProcessId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_UPLOAD_PROCESS_ID);
-    print('Retrieved Schedule In Progress with value $value');
+    //print('Retrieved Schedule In Progress with value $value');
     return value;
   }
 
   static Future<void> setSovUploadState(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_STATE, value);
-    // print('Set SOV upload state to $value');
+    // //print('Set SOV upload state to $value');
   }
 
   static Future<String?> getSovUploadState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_UPLOAD_STATE);
-    print('Retrieved SOV upload state with value $value');
+    //print('Retrieved SOV upload state with value $value');
     return value;
   }
 
   static Future<void> setSovAccountId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_ACCOUNT_ID, value);
-    print('Set SOV account id to $value');
+    //print('Set SOV account id to $value');
   }
 
   static Future<String?> getSovAccountId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_ACCOUNT_ID);
-    print('Retrieved SOV account id with value $value');
+    //print('Retrieved SOV account id with value $value');
     return value;
   }
 
   static Future<void> setSovSubAccountId(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_SUB_ACCOUNT_ID, value);
-    print('Set SOV sub account id to $value');
+    //print('Set SOV sub account id to $value');
   }
 
   static Future<String?> getSovSubAccountId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_SUB_ACCOUNT_ID);
-    print('Retrieved SOV sub account id with value $value');
+    //print('Retrieved SOV sub account id with value $value');
     return value;
   }
 
   static Future<void> setSovAccountName(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_ACCOUNT_NAME, value);
-    print('Set SOV account name to $value');
+    //print('Set SOV account name to $value');
   }
 
   static Future<String?> getSovAccountName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_ACCOUNT_NAME);
-    print('Retrieved SOV account name with value $value');
+    //print('Retrieved SOV account name with value $value');
     return value;
   }
 
   static Future<void> setSovSubAccountName(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_SUB_ACCOUNT_NAME, value);
-    print('Set SOV sub account name to $value');
+    //print('Set SOV sub account name to $value');
   }
 
   static Future<String?> getSovSubAccountName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_SUB_ACCOUNT_NAME);
-    print('Retrieved SOV sub account name with value $value');
+    //print('Retrieved SOV sub account name with value $value');
     return value;
   }
 

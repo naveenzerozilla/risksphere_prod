@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../design_system/components/custom_toast.dart';
 import '../design_system/primitives/custom_typography.dart';
 import '../models/DataParameterModel.dart';
 import '../service/api_service.dart';
@@ -21,6 +24,13 @@ class SubaccountParameterProvider with ChangeNotifier {
 
   void setImageUrls(List<String> urls) {
     _imageUrls = urls;
+    notifyListeners();
+  }
+
+  int? updatedScore = 1;
+
+  void setUpdatedScore(int score) {
+    updatedScore = score;
     notifyListeners();
   }
 
@@ -111,6 +121,57 @@ class SubaccountParameterProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> deleteParameterImage({
+    required BuildContext context,
+    required String selectedParameterList,
+    required String locationId,
+    required String sovId,
+    required String campusId,
+    required String subaccountId,
+    required String parameterId,
+    required Map<String, dynamic> imageObject,
+  }) async {
+    try {
+      // isLoading = true;
+      notifyListeners();
+      print("object");
+      print(parameterId);
+      // -------- BUILD URL --------
+      String url = selectedParameterList.toLowerCase() == 'location'
+          ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
+          : selectedParameterList.toLowerCase() == 'sov'
+              ? "${AppConstant.DELETE_SOV_IMAGE}$sovId/$parameterId"
+              : selectedParameterList.toLowerCase() == 'campus'
+                  ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
+                  : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
+
+      ApiService apiService = ApiService(url);
+
+      // -------- EXECUTE DELETE WITH BODY --------
+      final response = await apiService.delete(imageObject);
+
+      log("DELETE RESPONSE: $response");
+
+      CustomToast.success(
+          context, response['message'] ?? "Image deleted successfully");
+
+      return true;
+    } on BackendException catch (e, stack) {
+      log("Backend error: ${e.message}");
+      log(stack.toString());
+      CustomToast.error(context, e.message);
+      return false;
+    } catch (e, stack) {
+      log("Unexpected error: $e");
+      log(stack.toString());
+      CustomToast.error(context, "Something went wrong");
+      return false;
+    } finally {
+      // isDeleteLocationLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> submitParameterUpdate({
     required BuildContext context,
     required String subaccountId,
@@ -124,8 +185,6 @@ class SubaccountParameterProvider with ChangeNotifier {
     var typography = CustomTypography(context);
 
     try {
-      print(AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId);
-      print("Sovparameter");
       ApiService apiService = ApiService(
         selectedParameterList.toLowerCase() == 'location'
             ? AppConstant.GET_LOCATION_PARAMETERS +
@@ -144,17 +203,25 @@ class SubaccountParameterProvider with ChangeNotifier {
                         '/' +
                         parameterId,
       );
-      // ApiService apiService = ApiService(
-      //
-      //     selectedParameterList
-      //     AppConstant.GET_DATA_PARAMETERS + subaccountId + '/' + parameterId);
 
       final response = await apiService.patch(updatedFields);
 
+      // ⭐ Extract and store score
+      if (response != null && response['score'] != null) {
+        final score = response['score'];
+
+        // ⭐ Correct way inside provider
+        setUpdatedScore(score);
+
+        print("Stored score globally: $score");
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Parameter updated successfully",
-              style: typography.ButtonLargeBlack),
+          content: Text(
+            "Parameter updated successfully",
+            style: typography.ButtonLargeBlack,
+          ),
         ),
       );
     } on BackendException catch (e) {
@@ -162,10 +229,66 @@ class SubaccountParameterProvider with ChangeNotifier {
         SnackBar(content: Text(e.message, style: typography.Body1)),
       );
     } catch (e, stackTrace) {
-      debugPrint(" Error: $e");
+      debugPrint("Error: $e");
       debugPrint(stackTrace.toString());
     }
   }
+
+// Future<void> submitParameterUpdate({
+//   required BuildContext context,
+//   required String subaccountId,
+//   required String locationId,
+//   required String sovId,
+//   required String campusId,
+//   required String parameterId,
+//   required Map<String, dynamic> updatedFields,
+//   required String selectedParameterList,
+// }) async {
+//   var typography = CustomTypography(context);
+//
+//   try {
+//     print(AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId);
+//     print("Sovparameter");
+//     ApiService apiService = ApiService(
+//       selectedParameterList.toLowerCase() == 'location'
+//           ? AppConstant.GET_LOCATION_PARAMETERS +
+//               locationId +
+//               '/' +
+//               parameterId
+//           : selectedParameterList.toLowerCase() == 'sov'
+//               ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
+//               : selectedParameterList.toLowerCase() == 'campus'
+//                   ? AppConstant.GET_CAMPUS_PARAMETERS +
+//                       campusId +
+//                       '/' +
+//                       parameterId
+//                   : AppConstant.GET_DATA_PARAMETERS +
+//                       subaccountId +
+//                       '/' +
+//                       parameterId,
+//     );
+//     // ApiService apiService = ApiService(
+//     //
+//     //     selectedParameterList
+//     //     AppConstant.GET_DATA_PARAMETERS + subaccountId + '/' + parameterId);
+//
+//     final response = await apiService.patch(updatedFields);
+//
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text("Parameter updated successfully",
+//             style: typography.ButtonLargeBlack),
+//       ),
+//     );
+//   } on BackendException catch (e) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(e.message, style: typography.Body1)),
+//     );
+//   } catch (e, stackTrace) {
+//     debugPrint(" Error: $e");
+//     debugPrint(stackTrace.toString());
+//   }
+// }
 }
 
 class Hazard {

@@ -1,57 +1,33 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:RiskSphere/models/my_location_list_model.dart';
-import 'package:RiskSphere/providers/location_list_provider.dart';
-import 'package:RiskSphere/providers/my_location_list_provider.dart';
-import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
-import 'package:RiskSphere/screens/listings/widgets/listings_filter_screen.dart';
-import 'package:RiskSphere/screens/listings/widgets/location_card.dart';
+import 'package:RiskSphere/screens/listings/processing_summary.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
-import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
-import 'package:RiskSphere/screens/listings/widgets/overall_score_table.dart';
-import 'package:lottie/lottie.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import 'package:provider/provider.dart';
-import 'package:remixicon/remixicon.dart';
-import '../../constants/enums.dart';
-import '../../design_system/components/custom_appbar.dart';
-import '../../design_system/components/custom_button.dart';
-import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/primitives/app_colors.dart';
-import '../../design_system/primitives/custom_typography.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../providers/theme_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:RiskSphere/models/my_location_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
-import '../../providers/upload_sov_provider.dart';
-import '../../service/language_service.dart';
-import '../processMonitoringScreen/process_monitoring_system.dart';
-import 'missing_parameter.dart';
+import '../../utils/global_imports.dart';
 
 class SovLocationList extends StatefulWidget {
+
+  final String? status;
   final String? accountID;
   final String? subAccountID;
-  final String accountName;
-  final String subAccountName;
+  final String? accountName;
+  final String? subAccountName;
   final String? sovID;
-  final String sovName;
+  final String? sovName;
   final String? initialProcessId;
   final String? initialSubProcessId;
 
   const SovLocationList({
     super.key,
+    this.status,
     this.accountID,
     this.subAccountID,
-    this.accountName = '',
-    this.subAccountName = '',
+    this.accountName,
+    this.subAccountName,
     this.sovID,
-    this.sovName = '',
+    this.sovName,
     this.initialProcessId,
     this.initialSubProcessId,
   });
@@ -70,7 +46,7 @@ class _SovLocationListState extends State<SovLocationList>
   Screens _selectedScreen = Screens.sovList;
   TextEditingController _locationSearchController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
-
+  bool isLoading = false;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String selectedDropdown = 'TPV';
   int? touchedIndex; // For showing overlay info
@@ -79,7 +55,10 @@ class _SovLocationListState extends State<SovLocationList>
   String selectedMetric = 'PD Value';
   String selectedMetric_pie = 'PD Value';
   String selectedView = "Geocoding";
-  String selectedView1 = "Geocoding";
+  String selectedViewChart = "Geocoding"; // For Pie Chart
+  String selectedViewCritical = "Geocoding"; // For Critical Missing Parameters
+
+  // String selectedView = "Geocoding";
 
   PieColorData getPieColorsByPercent(dynamic pct) {
     if (pct == null) {
@@ -191,20 +170,61 @@ class _SovLocationListState extends State<SovLocationList>
   @override
   void initState() {
     super.initState();
+    _initializeData();
     _scrollController = ScrollController();
     _scrollController!.addListener(_scrollListener);
     _mainTabController = TabController(length: 3, vsync: this);
-    _mainTabController?.addListener(() {
+    _mainTabController!.addListener(() {
+      if (_mainTabController!.indexIsChanging) return;
+
+      // 0 = Location List tab selected
+      if (_mainTabController!.index == 0) {
+        print("Reloading Location List (coming back from other tabs)");
+
+        var locationListProvider =
+            Provider.of<MyLocationListProvider>(context, listen: false);
+
+        locationListProvider.page = 1;
+
+        locationListProvider.fetchLocationList(
+          context,
+          "",
+          1,
+          10,
+          widget.accountID,
+          widget.subAccountID,
+          widget.initialProcessId,
+          widget.initialSubProcessId,
+          widget.sovID,
+        );
+
+        locationListProvider.fetchAllLocationList(
+          context,
+          widget.accountID!,
+          widget.subAccountID!,
+          processId: widget.initialProcessId,
+          subProcessId: widget.initialSubProcessId,
+        );
+      }
+
+      // 2 = MapView tapped → load map
+      if (_mainTabController!.index == 2) {
+        print(" Loading Map View");
+        // if you have specific map refresh function call here
+      }
+
       setState(() {
-        selectedMainTab = _mainTabController?.index ?? 0;
-      }); // This ensures that the widget rebuilds when the tab changes
+        selectedMainTab = _mainTabController!.index;
+      });
     });
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController?.addListener(() {
       setState(() {
         selectedTab = _tabController?.index ?? 0;
       });
       if (_tabController?.index == 0) {
+        print("tan1");
         _selectedScreen = Screens.sovList;
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
@@ -222,6 +242,14 @@ class _SovLocationListState extends State<SovLocationList>
               widget.sovID,
             )
             .then((value) => setState(() {}));
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .fetchAllLocationList(
+          context,
+          widget.accountID!,
+          widget.subAccountID!,
+          processId: widget.initialProcessId,
+          subProcessId: widget.initialSubProcessId,
+        );
       } else {
         _selectedScreen = Screens.certifiedLocationList;
         var locationListProvider =
@@ -245,6 +273,93 @@ class _SovLocationListState extends State<SovLocationList>
       setState(() {});
     });
     _getData();
+  }
+
+  void _initializeData() {
+    _setClaims();
+    // getdata(widget.accountID!, widget.subAccountID!);
+    // _startRefreshTimer(widget.accountID!, widget.subAccountID!);
+    // _getSovUploadStatus();
+    // _getMaintainancePeriod();
+
+    // final locationListProvider =
+    //     Provider.of<MyLocationListProvider>(context, listen: false);
+    // locationListProvider.clearAllFilters();
+    // locationListProvider.page = 1;
+    //
+    // Provider.of<LocationListProvider>(context, listen: false)
+    //     .fetchLocationSummary(
+    //   widget.accountID!,
+    //   widget.subAccountID!,
+    //   "widget.sovId!",
+    // );
+    // _fetchTabData(0); // Load default tab data
+  }
+
+  Future<void> _setClaims() async {
+    final results = await Future.wait([
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTC),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASTU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCR),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASCO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASUO),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMLL),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.CAMVU),
+      SharedPreferenceService.getClaimForSubfeature(
+          SharedPreferenceService.DASVR),
+    ]);
+
+    print(results.toString());
+
+    print("results.toString()");
+
+    bool showCorporateVerificationRequests = results[5] ?? false;
+    bool showUserVerificationRequests = results[6] ?? false;
+
+    _getData1();
+    // _getMaintainancePeriod();
+    setState(() {});
+  }
+
+  Future<void> _getData1() async {
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
+    final userProfileProvider =
+        Provider.of<UserProfileProvider>(context, listen: false);
+    final configurationProvider =
+        Provider.of<ConfigurationProvider>(context, listen: false);
+
+    try {
+      final results = await Future.wait([
+        dashboardProvider.getDashboardData(context),
+        userProfileProvider.getAllUserData(context, "", ""),
+        configurationProvider.getConfiguration(
+            accountId: null, subAccountId: null),
+        configurationProvider.getVendors(),
+      ]);
+
+      userProfileProvider.fetchTrialInfo();
+
+      var config = configurationProvider.configurations['result'] ?? {};
+      // subscriptions = config['subscribe'] ?? {};
+
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            // vendorList = configurationProvider.vendors['result'] ?? [];
+          });
+        });
+      }
+    } catch (error) {
+      // print("Error fetching data: $error");
+    }
   }
 
   void _scrollListener() {
@@ -325,9 +440,8 @@ class _SovLocationListState extends State<SovLocationList>
 
   void searchNetworks(String query) async => debounce(() async {
         if (!mounted) return;
-        /*await Provider.of<ConnectionsProvider>(context, listen: false)
-        .getUserSuggestions(context, query);*/
       });
+  List<String> selectedIds = [];
 
   @override
   Widget build(BuildContext context1) {
@@ -363,12 +477,208 @@ class _SovLocationListState extends State<SovLocationList>
                 Consumer<MyLocationListProvider>(
                     builder: (context, myLocationListProvider, child) {
                   final isSelectionMode =
-                      myLocationListProvider.selectedLocations.isNotEmpty;
+                      myLocationListProvider.selectedLocationIds.isNotEmpty ||
+                          myLocationListProvider.isGlobalSelectAll;
+
+                  // final isSelectionMode =
+                  //     myLocationListProvider.selectedLocations.isNotEmpty;
 
                   var typography = CustomTypography(context);
                   return Column(
                     children: [
-                      SizedBox(height: CustomSpacing.two),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text(
+                                      widget.sovName.toString() + " > " ,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    "Location Listing"?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Consumer<MyLocationListProvider>(
+                            builder: (context, myLocationListProvider, _) {
+                              if (myLocationListProvider
+                                  .myLocationList.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return IconButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () async {
+                                        if (!mounted) return;
+
+                                        setState(() => isLoading = true);
+
+                                        final jobProvider = context
+                                            .read<JobMonitoringProvider>();
+
+                                        try {
+                                          final summaryData = await jobProvider
+                                              .fetchLocationSummary(
+                                            widget.accountID!,
+                                            widget.subAccountID!,
+                                            widget.sovID!,
+                                          );
+
+                                          if (!mounted) return;
+
+                                          if (summaryData != null) {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    ProcessSummaryPage(
+                                                  summaryData: summaryData,
+                                                  sovId: widget.sovID,
+                                                ),
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to fetch summary',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                          color: Colors.white),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error: $e',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                          color: Colors.white),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() => isLoading = false);
+                                          }
+                                        }
+                                      },
+                                icon: isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : SvgPicture.asset(
+                                        'assets/images/contract.svg',
+                                        height: 22,
+                                        width: 22,
+                                      ),
+                              );
+                            },
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return Consumer2<AccountListProvider,
+                                        SubAccountListProvider>(
+                                      builder: (context, accountListProvider,
+                                          subAccountListProvider, _) {
+                                        final accountList =
+                                            accountListProvider.accountList;
+                                        final subAccountList =
+                                            subAccountListProvider
+                                                .subAccountList;
+
+                                        final accountId = accountList.isNotEmpty
+                                            ? accountList[0].accountId ?? ""
+                                            : "";
+
+                                        final accountName = accountList
+                                                .isNotEmpty
+                                            ? accountList[0].accountName ?? ""
+                                            : "";
+
+                                        final subaccountId = subAccountList
+                                                .isNotEmpty
+                                            ? subAccountList[0].subAccountId ??
+                                                ""
+                                            : "";
+
+                                        return DataTab(
+                                            accountId: accountId,
+                                            accountName: accountName,
+                                            subaccountId: subaccountId,
+                                            sovId: widget.sovID,
+                                            campusStatus: false,
+                                            status: "sov",
+                                            showAppBar: true,
+                                            sovName: widget.sovName);
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: AppColors.primaryMain,
+                                  // outline color
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Text(
+                                "Data",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.primaryMain,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
                       Container(
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         padding: isSelectionMode
@@ -386,10 +696,13 @@ class _SovLocationListState extends State<SovLocationList>
                         ),
                         child: Consumer<MyLocationListProvider>(
                             builder: (context, locationListProvider, child) {
+                          final provider = Provider.of<MyLocationListProvider>(
+                              context,
+                              listen: false);
+
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Text(userRoleName.toString()),
                               if (isSelectionMode) ...[
                                 // Show selection count and select all button
                                 SizedBox(width: CustomSpacing.two),
@@ -403,62 +716,151 @@ class _SovLocationListState extends State<SovLocationList>
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    "${locationListProvider.selectedLocations.length}",
+                                    locationListProvider.selectedCount.toString(),
+                                    // locationListProvider.isGlobalSelectAll
+                                    //     ? locationListProvider
+                                    //         .totalLocationCount
+                                    //         .toString()
+                                    //     : locationListProvider
+                                    //         .selectedLocationIds.length
+                                    //         .toString(),
+
+                                    // "${locationListProvider.selectedLocations.length}",
                                     style: typography.Body1.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
                                 SizedBox(width: 8),
-
                                 InkWell(
                                   onTap: () {
-                                    if (_selectedScreen == Screens.sovList) {
-                                      print("Locationlist");
-                                      if (locationListProvider
-                                              .selectedLocations.length <
-                                          locationListProvider
-                                              .myLocationList.length) {
-                                        locationListProvider
-                                            .selectAllLocations(true);
-                                      } else {
-                                        locationListProvider.clearSelection();
-                                      }
-                                    } else if (_selectedScreen ==
-                                        Screens.certifiedLocationList) {
-                                      print("certifiedLocationlist");
-                                      if (locationListProvider
-                                              .selectedLocations.length <
-                                          locationListProvider
-                                              .certifiedLocationList.length) {
-                                        locationListProvider
-                                            .selectAllLocations(true);
-                                      } else {
-                                        locationListProvider.clearSelection();
-                                      }
+                                    final provider =
+                                    Provider.of<MyLocationListProvider>(context, listen: false);
+
+                                    if (provider.isGlobalSelectAll) {
+                                      // ✅ DESELECT ALL
+                                      provider.clearSelection();
+                                    } else {
+                                      // ✅ SELECT ALL (GLOBAL)
+                                      provider.selectAllGlobal(
+                                        totalCount: _selectedScreen == Screens.certifiedLocationList
+                                            ? provider.certifiedLocationHits
+                                            : provider.locationHits,
+                                      );
                                     }
                                   },
                                   child: Text(
-                                    _selectedScreen == Screens.sovList
-                                        ? locationListProvider
-                                                    .selectedLocations.length <
-                                                locationListProvider
-                                                    .myLocationList.length
-                                            ? 'Select All'
-                                            : 'Deselect All'
-                                        : locationListProvider
-                                                    .selectedLocations.length <
-                                                locationListProvider
-                                                    .certifiedLocationList
-                                                    .length
-                                            ? 'Select All'
-                                            : 'Deselect All',
+                                    provider.isGlobalSelectAll ? 'Deselect All' : 'Select All',
                                     style: typography.Body1.copyWith(
                                       fontSize: 16,
                                       color: AppColors.primaryMain,
                                     ),
                                   ),
                                 ),
+
+                                // InkWell(
+                                //   onTap: () {
+                                //     final provider =
+                                //         Provider.of<MyLocationListProvider>(
+                                //             context,
+                                //             listen: false);
+                                //
+                                //     if (provider.isGlobalSelectAll) {
+                                //       // ✅ DESELECT ALL
+                                //       provider.clearSelection();
+                                //     } else {
+                                //       // ✅ SELECT ALL (GLOBAL)
+                                //       // provider.selectAllGlobal(
+                                //       //   isCertified: _selectedScreen ==
+                                //       //       Screens.certifiedLocationList,
+                                //       //   totalCount: _selectedScreen ==
+                                //       //           Screens.certifiedLocationList
+                                //       //       ? provider.certifiedLocationHits
+                                //       //       : provider.locationHits,
+                                //       // );
+                                //     }
+                                //   },
+                                //   child: Text(
+                                //     provider.isGlobalSelectAll
+                                //         ? 'Deselect All'
+                                //         : 'Select All',
+                                //     style: typography.Body1.copyWith(
+                                //       fontSize: 16,
+                                //       color: AppColors.primaryMain,
+                                //     ),
+                                //   ),
+                                // ),
+
+                                // InkWell(
+                                //   onTap: () {
+                                //     final locationListProvider =
+                                //         Provider.of<MyLocationListProvider>(
+                                //             context,
+                                //             listen: false);
+                                //     final isCertifiedTab = _selectedScreen ==
+                                //         Screens.certifiedLocationList;
+                                //
+                                //     if (isCertifiedTab) {
+                                //       // Handle certified tab
+                                //       if (locationListProvider
+                                //               .selectedLocations.length <
+                                //           locationListProvider
+                                //               .certifiedLocationList.length) {
+                                //         locationListProvider.selectAllGlobal(
+                                //           isCertified: _selectedScreen ==
+                                //               Screens.certifiedLocationList,
+                                //           totalCount: _selectedScreen ==
+                                //                   Screens.certifiedLocationList
+                                //               ? locationListProvider
+                                //                   .certifiedLocationHits
+                                //               : locationListProvider
+                                //                   .locationHits,
+                                //         );
+                                //         // locationListProvider
+                                //         //     .selectAllLocations(true);
+                                //       } else {
+                                //         locationListProvider.clearSelection();
+                                //       }
+                                //     } else {
+                                //       // Handle regular tab
+                                //       if (locationListProvider
+                                //               .selectedLocations.length <
+                                //           locationListProvider
+                                //               .myLocationList.length) {
+                                //         locationListProvider.selectAllGlobal(
+                                //           isCertified: _selectedScreen ==
+                                //               Screens.certifiedLocationList,
+                                //           totalCount: _selectedScreen ==
+                                //                   Screens.certifiedLocationList
+                                //               ? locationListProvider
+                                //                   .certifiedLocationHits
+                                //               : locationListProvider
+                                //                   .locationHits,
+                                //         );
+                                //         // locationListProvider
+                                //         //     .selectAllLocations(false);
+                                //       } else {
+                                //         locationListProvider.clearSelection();
+                                //       }
+                                //     }
+                                //   },
+                                //   child: Text(
+                                //     locationListProvider
+                                //                 .selectedLocations.length <
+                                //             (_mainTabController!.indexIsChanging
+                                //                 ? locationListProvider
+                                //                     .certifiedLocationList
+                                //                     .length
+                                //                 : locationListProvider
+                                //                     .myLocationList.length)
+                                //         ? 'Select All'
+                                //         : 'Deselect All',
+                                //     style: typography.Body1.copyWith(
+                                //       fontSize: 16,
+                                //       color: AppColors.primaryMain,
+                                //     ),
+                                //   ),
+                                // ),
                                 Spacer(),
                                 SizedBox(width: 10),
                                 //next release
@@ -472,152 +874,195 @@ class _SovLocationListState extends State<SovLocationList>
                                 //     },
                                 //     child: Icon(Icons.edit_outlined)),
                                 // SizedBox(width: 10),
+                                // InkWell(
+                                //   onTap: () {
+                                //     final selectedIds = locationListProvider
+                                //         .selectedLocations
+                                //         .map((loc) => loc.id!)
+                                //         .toList();
+                                //
+                                //     if (selectedIds.isEmpty) {
+                                //       ScaffoldMessenger.of(context)
+                                //           .showSnackBar(
+                                //         SnackBar(
+                                //             content: Text(
+                                //                 "Please select at least one location")),
+                                //       );
+                                //       return;
+                                //     }
+                                //
+                                //     locationListProvider.addSelectedToSOV1(
+                                //       context,
+                                //       widget.accountID!,
+                                //       widget.subAccountID!,
+                                //       widget.accountName ?? "",
+                                //       widget.subAccountName ?? "",
+                                //       _mainTabController,
+                                //       selectedIds,
+                                //     );
+                                //   },
+                                //   child: const Icon(
+                                //     Icons.ballot,
+                                //   ),
+                                // ),
                                 InkWell(
                                   onTap: () {
-                                    // Implement bulk export
+                                    final provider =
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
+
+                                    final isGlobal = provider.isGlobalSelectAll;
+
+                                    final ids = isGlobal
+                                        ? <String>[]
+                                        : provider.selectedLocationIds.toList();
+
+                                    if (ids.isEmpty && !isGlobal) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Please select at least one location"),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    provider.addSelectedToSOV1(
+                                      context,
+                                      widget.accountID!,
+                                      widget.subAccountID!,
+                                      widget.accountName ?? "",
+                                      widget.subAccountName ?? "",
+                                      _mainTabController,
+                                      ids, // ✅ correct IDs
+                                      // isGlobal: isGlobal, // add this param IF your API supports it
+                                    );
+                                  },
+                                  child: const Icon(Icons.ballot),
+                                ),
+
+                                SizedBox(width: 10),
+                                InkWell(
+                                  onTap: () {
+                                    final provider =
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
+
+                                    // 🌍 GLOBAL SELECT ALL
+                                    if (provider.isGlobalSelectAll) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => ExportDialog(
+                                          accountId: widget.accountID!,
+                                          subAccountId: widget.subAccountID!,
+                                          locationId: const [],
+                                          // backend handles GLOBAL
+                                          sovId: 'GLOBAL_SELECT_ALL',
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    final selectedIds =
+                                        provider.selectedLocationIds.toList();
+
+                                    if (selectedIds.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Please select at least one location")),
+                                      );
+                                      return;
+                                    }
+
                                     showDialog(
                                       context: context,
-                                      builder: (context) => AlertDialog(
-                                        title:
-                                            Text('Export Selected Locations'),
-                                        content: Text(
-                                            'Are you sure you want to export ${locationListProvider.selectedLocations.length} locations?'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              if (_selectedScreen ==
-                                                  Screens.locationList) {
-                                                // On export button click
-                                                List<String> selectedSovIds =
-                                                    Provider.of<MyLocationListProvider>(
-                                                            context,
-                                                            listen: false)
-                                                        .myLocationList
-                                                        .where((location) =>
-                                                            location
-                                                                .isSelected ??
-                                                            false)
-                                                        .map((sov) => sov.id!)
-                                                        .toList();
-
-                                                if (selectedSovIds.isNotEmpty) {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder:
-                                                        (BuildContext context) {
-                                                      return ExportDialog(
-                                                        accountId:
-                                                            widget.accountID!,
-                                                        subAccountId: widget
-                                                            .subAccountID!,
-                                                        locationId:
-                                                            selectedSovIds,
-                                                      );
-                                                    },
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(SnackBar(
-                                                    content: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "no_items_selected_error"),
-                                                      style: typography.Body1,
-                                                    ),
-                                                  ));
-                                                }
-                                              } else if (_selectedScreen ==
-                                                  Screens
-                                                      .certifiedLocationList) {
-                                                // On export button click
-                                                List<String>
-                                                    selectedLoactionIds =
-                                                    Provider.of<MyLocationListProvider>(
-                                                            context,
-                                                            listen: false)
-                                                        .certifiedLocationList
-                                                        .where((location) =>
-                                                            location
-                                                                .isSelected ??
-                                                            false)
-                                                        .map((sov) => sov.id!)
-                                                        .toList();
-
-                                                if (selectedLoactionIds
-                                                    .isNotEmpty) {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder:
-                                                        (BuildContext context) {
-                                                      return ExportDialog(
-                                                        accountId:
-                                                            widget.accountID!,
-                                                        subAccountId: widget
-                                                            .subAccountID!,
-                                                        locationId:
-                                                            selectedLoactionIds,
-                                                      );
-                                                    },
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(SnackBar(
-                                                    content: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "no_items_selected_error"),
-                                                      style: typography.Body1,
-                                                    ),
-                                                  ));
-                                                }
-                                              }
-                                            },
-                                            child: Text('Export'),
-                                          ),
-                                        ],
+                                      builder: (_) => ExportDialog(
+                                        accountId: widget.accountID!,
+                                        subAccountId: widget.subAccountID!,
+                                        locationId: selectedIds,
                                       ),
                                     );
                                   },
+
                                   child: Icon(Icons.download),
                                   // tooltip: 'Export Selected',
                                 ),
                                 SizedBox(width: 10),
                                 InkWell(
                                   onTap: () {
-                                    // Implement bulk add to SOV
-                                    locationListProvider
-                                        .addTagsToSelectedLocations(
+                                    final provider =
+                                        Provider.of<MyLocationListProvider>(
                                             context,
-                                            widget.accountID!,
-                                            widget.subAccountID!);
+                                            listen: false);
+
+                                    final ids = provider.isGlobalSelectAll
+                                        ? <String>[] // backend handles global
+                                        : provider.selectedLocationIds.toList();
+
+                                    if (ids.isEmpty &&
+                                        !provider.isGlobalSelectAll) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Please select at least one location")),
+                                      );
+                                      return;
+                                    }
+
+                                    provider.addTagsToSelectedLocations(
+                                      context,
+                                      widget.accountID!,
+                                      widget.subAccountID!,
+                                    );
                                   },
+
+                                  // onTap: () {
+                                  //   // Implement bulk add to SOV
+                                  //   locationListProvider
+                                  //       .addTagsToSelectedLocations(
+                                  //           context,
+                                  //           widget.accountID!,
+                                  //           widget.subAccountID!);
+                                  // },
                                   child: Icon(Symbols.note_stack_add),
                                 ),
                                 SizedBox(width: 10),
                                 InkWell(
                                   onTap: () async {
+                                    final provider =
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
+
+                                    // Show loader
                                     setState(() {
-                                      // Show loader
-                                      locationListProvider.isLoading = true;
+                                      provider.isLoading = true;
                                     });
-                                    await locationListProvider
-                                        .markAsCompleteSov(
+
+                                    await provider.markAsCompleteSov(
                                       context,
                                       widget.accountID!,
                                       widget.subAccountID!,
                                       widget.sovID!,
                                     );
+
+                                    provider.clearSelection();
+
                                     setState(() {
-                                      // Hide loader
                                       locationListProvider.isLoading = false;
                                     });
-                                    // Refresh the page
-                                    locationListProvider.fetchLocationList(
+
+                                    setState(() {
+                                      provider.isLoading = false;
+                                    });
+
+                                    provider.fetchLocationList(
                                       context,
                                       locationQuery,
                                       1,
@@ -630,48 +1075,139 @@ class _SovLocationListState extends State<SovLocationList>
                                     );
                                   },
                                   child: locationListProvider.isLoading
-                                      ? CircularProgressIndicator()
-                                      : Icon(Symbols.done_all_rounded,
-                                          color: Colors.green),
-                                  // tooltip: 'Mark as Complete',
+                                      ? const SizedBox(
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : const Icon(
+                                          Symbols.done_all_rounded,
+                                          color: Colors.green,
+                                        ),
                                 ),
-                                SizedBox(width: 10),
 
+                                SizedBox(width: 10),
                                 InkWell(
                                   onTap: () {
-                                    // Show delete confirmation dialog
+                                    final provider =
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
+
+                                    final bool isGlobal =
+                                        provider.isGlobalSelectAll;
+
+                                    final List<String> ids = isGlobal
+                                        ? <String>[]
+                                        : provider.selectedLocationIds.toList();
+
+                                    if (ids.isEmpty && !isGlobal) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Please select at least one location"),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    // ✅ CONFIRMATION POPUP
                                     showDialog(
                                       context: context,
                                       builder: (context) => AlertDialog(
-                                        title:
-                                            Text('Delete Selected Locations'),
+                                        title: const Text(
+                                            'Delete Selected Locations'),
                                         content: Text(
-                                            'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
+                                          isGlobal
+                                              ? 'Are you sure you want to delete ${provider.totalLocationCount} locations?'
+                                              : 'Are you sure you want to delete ${ids.length} locations?',
+                                        ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context),
-                                            child: Text('Cancel'),
+                                            child: const Text('Cancel'),
                                           ),
                                           TextButton(
-                                            onPressed: () {
-                                              locationListProvider
+                                            onPressed: () async {
+                                              Navigator.pop(context);
+
+                                              await provider
                                                   .deleteSelectedLocations(
                                                 context,
                                                 widget.accountID!,
                                                 widget.subAccountID!,
+                                                // 🔥 backend already knows:
+                                                // - empty list = GLOBAL
+                                                // - non-empty list = MANUAL
                                               );
-                                              Navigator.pop(context);
+
+                                              // ✅ CLEAR UI STATE AFTER DELETE
+                                              provider.clearSelection();
+
+                                              // ✅ REFRESH LIST
+                                              provider.fetchLocationList(
+                                                context,
+                                                locationQuery,
+                                                1,
+                                                11,
+                                                widget.accountID,
+                                                widget.subAccountID,
+                                                widget.initialProcessId,
+                                                widget.initialSubProcessId,
+                                                widget.sovID,
+                                              );
                                             },
-                                            child: Text('Delete'),
+                                            child: const Text(
+                                              'Delete',
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
                                           ),
                                         ],
                                       ),
                                     );
                                   },
-                                  child: Icon(Icons.delete_outline),
-                                  // tooltip: 'Delete Selected',
+                                  child: const Icon(Icons.delete_outline),
                                 ),
+
+                                // InkWell(
+                                //   onTap: () {
+                                //     // Show delete confirmation dialog
+                                //     showDialog(
+                                //       context: context,
+                                //       builder: (context) => AlertDialog(
+                                //         title:
+                                //             Text('Delete Selected Locations'),
+                                //         content: Text(
+                                //             'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
+                                //         actions: [
+                                //           TextButton(
+                                //             onPressed: () =>
+                                //                 Navigator.pop(context),
+                                //             child: Text('Cancel'),
+                                //           ),
+                                //           TextButton(
+                                //             onPressed: () {
+                                //               locationListProvider
+                                //                   .deleteSelectedLocations(
+                                //                 context,
+                                //                 widget.accountID!,
+                                //                 widget.subAccountID!,
+                                //               );
+                                //               Navigator.pop(context);
+                                //             },
+                                //             child: Text('Delete'),
+                                //           ),
+                                //         ],
+                                //       ),
+                                //     );
+                                //   },
+                                //   child: Icon(Icons.delete_outline),
+                                //   // tooltip: 'Delete Selected',
+                                // ),
                                 SizedBox(width: 10),
                               ] else ...[
                                 SizedBox(
@@ -682,7 +1218,8 @@ class _SovLocationListState extends State<SovLocationList>
                                     children: [
                                       //SizedBox(width: CustomSpacing.two),
                                       Text(
-                                        "SOV Locations",
+                                        LanguageService.getTranslated(
+                                            context, "sov_locations"),
                                         style: typography.Body1,
                                       ),
                                       /*
@@ -836,7 +1373,8 @@ class _SovLocationListState extends State<SovLocationList>
                                         icon: _buildTabIcon(
                                             context,
                                             'assets/images/location_list_icon.svg',
-                                            'Location List',
+                                            LanguageService.getTranslated(
+                                                context, "location_list"),
                                             0,
                                             18),
                                       ),
@@ -844,7 +1382,8 @@ class _SovLocationListState extends State<SovLocationList>
                                         icon: _buildTabIcon(
                                             context,
                                             'assets/images/overall_tab_icon.svg',
-                                            'Hazard Score',
+                                            LanguageService.getTranslated(
+                                                context, "overall_score"),
                                             1,
                                             30),
                                       ),
@@ -852,7 +1391,8 @@ class _SovLocationListState extends State<SovLocationList>
                                         icon: _buildTabIcon(
                                             context,
                                             'assets/images/map_view_icon.svg',
-                                            'Map View',
+                                            LanguageService.getTranslated(
+                                                context, "map_view"),
                                             2,
                                             18),
                                       ),
@@ -865,12 +1405,13 @@ class _SovLocationListState extends State<SovLocationList>
                         ),
                       ),
                       SizedBox(height: CustomSpacing.two),
+
                       Expanded(
                         child: TabBarView(
-                          // physics: NeverScrollableScrollPhysics(),
                           controller: _mainTabController,
+                          physics: NeverScrollableScrollPhysics(),
                           children: [
-                            // Location List
+                            // First Tab: List View with Nested Tabs
                             Column(
                               children: [
                                 Consumer<MyLocationListProvider>(
@@ -882,81 +1423,56 @@ class _SovLocationListState extends State<SovLocationList>
                                           .BottomNavigationActiveLabel,
                                       tabs: [
                                         Tab(
-                                          child: InkWell(
-                                            onTap: () {
-                                              _tabController?.animateTo(0);
-                                            },
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Tab(
-                                                  text: LanguageService
-                                                      .getTranslated(context,
-                                                          "locationlist_app_connections_tab_all"),
-                                                ),
-                                                SizedBox(
-                                                    width: CustomSpacing.two),
-                                                SizedBox(
-                                                  height: 25,
-                                                  child: Chip(
-                                                    labelPadding:
-                                                        EdgeInsets.all(0),
-                                                    materialTapTargetSize:
-                                                        MaterialTapTargetSize
-                                                            .shrinkWrap,
-                                                    label: Text(
-                                                      locationListProvider
-                                                              .isLoading
-                                                          ? "0"
-                                                          : locationListProvider
-                                                              .locationHits
-                                                              .toString(),
-                                                      // locationListProvider
-                                                      //     .locationHits
-                                                      //     .toString(),
-                                                      style: typography
-                                                              .BottomNavigationActiveLabel
-                                                          .copyWith(
-                                                              height: -0.6),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        InkWell(
-                                          onTap: () {
-                                            if (locationListProvider
-                                                .isCertifiedTabAllowed()) {
-                                              _tabController?.animateTo(1);
-                                            } else {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(SnackBar(
-                                                content: Text(
-                                                  "Please include a rating of 5 in filter to view certified locations.",
-                                                  style: typography.Body1,
-                                                ),
-                                              ));
-                                            }
-                                          },
                                           child: Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              Tab(
-                                                text: LanguageService.getTranslated(
-                                                    context,
-                                                    "locationlist_app_connections_tab_certified"),
-                                              ),
+                                              Text(
+                                                  LanguageService.getTranslated(
+                                                context,
+                                                "all",
+                                              )),
                                               SizedBox(
                                                   width: CustomSpacing.two),
                                               SizedBox(
                                                 height: 25,
                                                 child: Chip(
-                                                  labelPadding:
-                                                      EdgeInsets.all(0),
+                                                  labelPadding: EdgeInsets.zero,
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  label: Text(
+                                                    locationListProvider
+                                                            .isLoading
+                                                        ? "0"
+                                                        : locationListProvider
+                                                            .locationHits
+                                                            .toString(),
+                                                    style: typography
+                                                            .BottomNavigationActiveLabel
+                                                        .copyWith(height: -0.6),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Tab(
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                  LanguageService.getTranslated(
+                                                context,
+                                                "certified",
+                                              )),
+                                              SizedBox(
+                                                  width: CustomSpacing.two),
+                                              SizedBox(
+                                                height: 25,
+                                                child: Chip(
+                                                  labelPadding: EdgeInsets.zero,
                                                   materialTapTargetSize:
                                                       MaterialTapTargetSize
                                                           .shrinkWrap,
@@ -980,10 +1496,11 @@ class _SovLocationListState extends State<SovLocationList>
                                     );
                                   },
                                 ),
-                                SizedBox(height: CustomSpacing.two),
+                                SizedBox(height: CustomSpacing.four),
                                 Expanded(
                                   child: TabBarView(
                                     controller: _tabController,
+                                    physics: NeverScrollableScrollPhysics(),
                                     children: [
                                       _getLocationListAllUI(),
                                       _getLocationListCertifiedUI(),
@@ -992,31 +1509,178 @@ class _SovLocationListState extends State<SovLocationList>
                                 ),
                               ],
                             ),
-                            // Overall Score
-                            Consumer<MyLocationListProvider>(
-                              builder: (context, locationListProvider, child) {
-                                return LocationTable(
-                                  accountID: widget.accountID!,
-                                  subAccountID: widget.subAccountID!,
-                                  initialProcessId: widget.initialProcessId,
-                                  initialSubProcessId:
-                                      widget.initialSubProcessId,
-                                  sovId: widget.sovID!,
-                                );
-
-                                // LocationTable(
-                                //     locations: locationListProvider
-                                //         .myLocationList);
-                              },
+                            LocationTable(
+                              // locations:
+                              accountID: widget.accountID!,
+                              subAccountID: widget.subAccountID!,
+                              initialProcessId: widget.initialProcessId,
+                              initialSubProcessId: widget.initialSubProcessId,
                             ),
-                            // Map View
+
                             LocationListMapView(
                               accountId: widget.accountID!,
                               subAccountId: widget.subAccountID!,
+                              sovId: widget.sovID,
+                              // accountName: widget.accountName,
+                              // subAccountName: widget.subAccountName,
+                              // sovName:"",
                             ),
                           ],
                         ),
                       ),
+                      // Expanded(
+                      //   child: TabBarView(
+                      //     // physics: NeverScrollableScrollPhysics(),
+                      //     controller: _mainTabController,
+                      //     children: [
+                      //       // Location List
+                      //       Column(
+                      //         children: [
+                      //           Consumer<MyLocationListProvider>(
+                      //             builder:
+                      //                 (context, locationListProvider, child) {
+                      //               return TabBar(
+                      //                 controller: _tabController,
+                      //                 labelStyle: typography
+                      //                     .BottomNavigationActiveLabel,
+                      //                 tabs: [
+                      //                   Tab(
+                      //                     child: InkWell(
+                      //                       onTap: () {
+                      //                         _tabController?.animateTo(0);
+                      //                       },
+                      //                       child: Row(
+                      //                         mainAxisAlignment:
+                      //                             MainAxisAlignment.center,
+                      //                         children: [
+                      //                           Tab(
+                      //                             text: LanguageService
+                      //                                 .getTranslated(context,
+                      //                                     "locationlist_app_connections_tab_all"),
+                      //                           ),
+                      //                           SizedBox(
+                      //                               width: CustomSpacing.two),
+                      //                           SizedBox(
+                      //                             height: 25,
+                      //                             child: Chip(
+                      //                               labelPadding:
+                      //                                   EdgeInsets.all(0),
+                      //                               materialTapTargetSize:
+                      //                                   MaterialTapTargetSize
+                      //                                       .shrinkWrap,
+                      //                               label: Text(
+                      //                                 locationListProvider
+                      //                                         .isLoading
+                      //                                     ? "0"
+                      //                                     : locationListProvider
+                      //                                         .locationHits
+                      //                                         .toString(),
+                      //                                 // locationListProvider
+                      //                                 //     .locationHits
+                      //                                 //     .toString(),
+                      //                                 style: typography
+                      //                                         .BottomNavigationActiveLabel
+                      //                                     .copyWith(
+                      //                                         height: -0.6),
+                      //                               ),
+                      //                             ),
+                      //                           ),
+                      //                         ],
+                      //                       ),
+                      //                     ),
+                      //                   ),
+                      //                   InkWell(
+                      //                     onTap: () {
+                      //                       if (locationListProvider
+                      //                           .isCertifiedTabAllowed()) {
+                      //                         _tabController?.animateTo(1);
+                      //                       } else {
+                      //                         ScaffoldMessenger.of(context)
+                      //                             .showSnackBar(SnackBar(
+                      //                           content: Text(
+                      //                             "Please include a rating of 5 in filter to view certified locations.",
+                      //                             style: typography.Body1,
+                      //                           ),
+                      //                         ));
+                      //                       }
+                      //                     },
+                      //                     child: Row(
+                      //                       mainAxisAlignment:
+                      //                           MainAxisAlignment.center,
+                      //                       children: [
+                      //                         Tab(
+                      //                           text: LanguageService.getTranslated(
+                      //                               context,
+                      //                               "locationlist_app_connections_tab_certified"),
+                      //                         ),
+                      //                         SizedBox(
+                      //                             width: CustomSpacing.two),
+                      //                         SizedBox(
+                      //                           height: 25,
+                      //                           child: Chip(
+                      //                             labelPadding:
+                      //                                 EdgeInsets.all(0),
+                      //                             materialTapTargetSize:
+                      //                                 MaterialTapTargetSize
+                      //                                     .shrinkWrap,
+                      //                             label: Text(
+                      //                               locationListProvider
+                      //                                       .isLoading
+                      //                                   ? "0"
+                      //                                   : locationListProvider
+                      //                                       .certifiedLocationHits
+                      //                                       .toString(),
+                      //                               style: typography
+                      //                                       .BottomNavigationActiveLabel
+                      //                                   .copyWith(height: -0.6),
+                      //                             ),
+                      //                           ),
+                      //                         ),
+                      //                       ],
+                      //                     ),
+                      //                   ),
+                      //                 ],
+                      //               );
+                      //             },
+                      //           ),
+                      //           SizedBox(height: CustomSpacing.two),
+                      //           Expanded(
+                      //             child: TabBarView(
+                      //               controller: _tabController,
+                      //               children: [
+                      //                 _getLocationListAllUI(),
+                      //                 _getLocationListCertifiedUI(),
+                      //               ],
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       ),
+                      //       // Overall Score
+                      //       Consumer<MyLocationListProvider>(
+                      //         builder: (context, locationListProvider, child) {
+                      //           return LocationTable(
+                      //             accountID: widget.accountID!,
+                      //             subAccountID: widget.subAccountID!,
+                      //             initialProcessId: widget.initialProcessId,
+                      //             initialSubProcessId:
+                      //                 widget.initialSubProcessId,
+                      //             sovId: widget.sovID!,
+                      //           );
+                      //
+                      //           // LocationTable(
+                      //           //     locations: locationListProvider
+                      //           //         .myLocationList);
+                      //         },
+                      //       ),
+                      //       // Map View
+                      //       LocationListMapView(
+                      //         accountId: widget.accountID!,
+                      //         subAccountId: widget.subAccountID!,
+                      //         sovId: widget.sovID,
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   );
                 }),
@@ -1077,91 +1741,6 @@ class _SovLocationListState extends State<SovLocationList>
     );
   }
 
-  Widget _getLiveUI() {
-    var typography = CustomTypography(context);
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('sov')
-          .doc(widget.sovID)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // Display a loading indicator while waiting for data
-          return SizedBox(); // Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          // Handle error case
-          return SizedBox();
-        }
-
-        if (snapshot.hasData && snapshot.data != null) {
-          // Check if 'heatmap_status' field exists
-          var data = snapshot.data!.data();
-          var heatmapStatus = data != null && data.containsKey('heatmap_status')
-              ? data['heatmap_status']
-              : null;
-
-          if (heatmapStatus != null) {
-            print('Heatmap status: $heatmapStatus');
-            return heatmapStatus.toString().toLowerCase() == 'initiated'
-                ? Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => ProcessMonitoringScreen(
-                                        accountId: widget.accountID,
-                                        subAccountId: widget.subAccountID,
-                                      )),
-                            );
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                child: Row(
-                                  children: [
-                                    Lottie.asset(
-                                      'assets/lottie/loading.json',
-                                      // Lottie file for 'in-progress' animation
-                                      width: 24,
-                                      height: 24,
-                                    ),
-                                    SizedBox(width: 8.0),
-                                    Text(
-                                      'Generating Heatmap',
-                                      style: typography.Body2.copyWith(
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: CustomSpacing.two),
-                      ],
-                    ),
-                  )
-                : SizedBox();
-          } else {
-            print("Field 'heatmap_status' does not exist in the document.");
-          }
-        }
-
-        // Return an empty widget if no data is available or the field is missing
-        return SizedBox();
-      },
-    );
-  }
-
   _getLocationListAllUI() {
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
@@ -1172,10 +1751,9 @@ class _SovLocationListState extends State<SovLocationList>
                 child: CircularProgressIndicator(),
               ))
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 child: Column(
                   children: [
-                    // Filter chips row
                     Row(
                       children: [
                         Expanded(
@@ -1186,7 +1764,7 @@ class _SovLocationListState extends State<SovLocationList>
                                 if (locationListProvider.countries.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0),
+                                        horizontal: 11.0),
                                     child: Chip(
                                       label: Text(
                                           "Country: ${locationListProvider.countries.join(', ')}"),
@@ -1377,727 +1955,555 @@ class _SovLocationListState extends State<SovLocationList>
                               child: Container(
                                 height: 430,
                                 child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Consumer<MyLocationListProvider>(
-                                        builder: (context, provider, _) {
-                                          final pdValues = provider
-                                              .grapDataProfile?.pdValues;
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Consumer<MyLocationListProvider>(
+                                          builder: (context, provider, _) {
+                                            final pdValues = provider
+                                                .grapDataProfile?.pdValues;
 
-                                          // 🔥 Correct mapping for all 3 tabs
-                                          Map<String, dynamic> sourceData = {};
+                                            Map<String, dynamic> sourceData =
+                                                {};
 
-                                          if (pdValues != null) {
-                                            if (selectedView == "Hazard") {
-                                              sourceData =
-                                                  pdValues.byOverallScore ?? {};
-                                            } else if (selectedView ==
-                                                "Geocoding") {
-                                              sourceData =
-                                                  pdValues.byGeocodeScore ?? {};
-                                            } else if (selectedView ==
-                                                "Completeness") {
-                                              sourceData = pdValues
-                                                      .byDataCompletenessScore ??
-                                                  {}; // ✅ ADDED
-                                            }
-                                          }
-
-                                          // 🔥 FIX LABEL + DATA EXTRACTION (Unified for all views)
-                                          final chartEntries =
-                                              sourceData.entries.map((entry) {
-                                            final data = entry.value;
-
-                                            String label = "";
-                                            if (selectedView == "Hazard") {
-                                              label = "Score ${entry.key}";
-                                            } else if (selectedView ==
-                                                "Geocoding") {
-                                              label = "Geocode ${entry.key}";
-                                            } else {
-                                              label =
-                                                  "Completeness ${entry.key}";
+                                            // FIXED: using selectedViewChart instead of selectedView
+                                            if (pdValues != null) {
+                                              if (selectedViewChart ==
+                                                  "Hazard") {
+                                                sourceData =
+                                                    pdValues.byOverallScore ??
+                                                        {};
+                                              } else if (selectedViewChart ==
+                                                  "Geocoding") {
+                                                sourceData =
+                                                    pdValues.byGeocodeScore ??
+                                                        {};
+                                              } else if (selectedViewChart ==
+                                                  "Completeness") {
+                                                sourceData = pdValues
+                                                        .byDataCompletenessScore ??
+                                                    {};
+                                              }
                                             }
 
-                                            return {
-                                              'label': label,
-                                              'value': data.totalPdValue ?? 0.0,
-                                              'pct': data.pctOfTotal ?? 0.0,
-                                              'rawKey': entry.key.toString(),
-                                            };
-                                          }).toList();
+                                            final chartEntries =
+                                                sourceData.entries.map((entry) {
+                                              final data = entry.value;
 
-                                          // 🔥 FIX TOTAL CALCULATION
-                                          double total = chartEntries.fold(
-                                            0.0,
-                                            (sum, item) =>
-                                                sum + (item['value'] as double),
-                                          );
+                                              String label = "";
+                                              if (selectedViewChart ==
+                                                  "Hazard") {
+                                                label = "Score ${entry.key}";
+                                              } else if (selectedViewChart ==
+                                                  "Geocoding") {
+                                                label = "Geocode ${entry.key}";
+                                              } else {
+                                                label =
+                                                    "Completeness ${entry.key}";
+                                              }
 
-                                          // 🔥 Chart sections
-                                          final sections = chartEntries
-                                              .asMap()
-                                              .entries
-                                              .map((entry) {
-                                            final idx = entry.key;
-                                            final value =
-                                                entry.value['value'] as double;
-                                            final pct = total > 0
-                                                ? (value / total) * 100
-                                                : 0;
-                                            final selected =
-                                                idx == touchedIndex;
+                                              return {
+                                                'label': label,
+                                                'value':
+                                                    data.totalPdValue ?? 0.0,
+                                                'pct': data.pctOfTotal ?? 0.0,
+                                                'rawKey': entry.key.toString(),
+                                              };
+                                            }).toList();
 
-                                            return PieChartSectionData(
-                                              color: _getPieColorByKey(
-                                                entry.value['rawKey']
-                                                        ?.toString() ??
-                                                    "0",
-                                              ),
-                                              value: value,
-                                              radius: selected ? 120 : 100,
-                                              title:
-                                                  "${pct.toStringAsFixed(1)}%",
-                                              titleStyle: TextStyle(
-                                                fontSize: selected ? 14 : 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
+                                            // FIXED
+                                            double total = chartEntries.fold(
+                                              0.0,
+                                              (sum, item) =>
+                                                  sum +
+                                                  (item['value'] as double),
                                             );
-                                          }).toList();
 
-                                          return Container(
-                                            margin: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF111111),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                  color: Colors.white10),
-                                            ),
-                                            padding: const EdgeInsets.all(16),
-                                            child: Column(
-                                              children: [
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    const Text(
-                                                      "Weighted Distribution (PD Value)",
-                                                      style: TextStyle(
-                                                        color:
-                                                            Color(0xFF90CAF9),
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                            // -----------------------------------------
+                                            // ✅ NEW FIX: remove 0-value slices completely
+                                            // -----------------------------------------
+                                            final filteredEntries = chartEntries
+                                                .where((e) =>
+                                                    (e['pct'] as double) >
+                                                    0.2) // 0.1% threshold
+                                                .toList();
+                                            // -----------------------------------------
+
+                                            final sections = filteredEntries
+                                                .asMap()
+                                                .entries
+                                                .map((entry) {
+                                              final idx = entry.key;
+                                              final value = entry.value['value']
+                                                  as double;
+                                              final pct = entry.value['pct']
+                                                  as double; // correct percentage
+                                              final isSelected =
+                                                  idx == touchedIndex;
+
+                                              final sliceColor =
+                                                  _getPieColorByKey(
+                                                      entry.value['rawKey'] ??
+                                                          "0");
+
+                                              final textColor = (sliceColor ==
+                                                          Colors.red ||
+                                                      sliceColor ==
+                                                          Colors.green ||
+                                                      sliceColor ==
+                                                          Colors.greenAccent)
+                                                  ? Colors.white
+                                                  : Colors.black;
+
+                                              return PieChartSectionData(
+                                                color: sliceColor,
+                                                value: value,
+                                                radius: isSelected ? 110 : 100,
+                                                title:
+                                                    "${pct.toStringAsFixed(2)}%",
+                                                titleStyle: TextStyle(
+                                                  fontSize:
+                                                      isSelected ? 14 : 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: textColor,
+                                                ),
+                                              );
+                                            }).toList();
+
+                                            return Container(
+                                              margin: const EdgeInsets.all(12),
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF111111),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                    color: Colors.white10),
+                                              ),
+                                              child: Column(
+                                                children: [
+                                                  // Header Row
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      const Text(
+                                                        "Weighted Distribution (PD Value)",
+                                                        style: TextStyle(
+                                                          color:
+                                                              Color(0xFF90CAF9),
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    SizedBox(width: 5),
-                                                    Container(
-                                                      height: 45,
-                                                      constraints:
-                                                          BoxConstraints(
-                                                              minWidth: 130),
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                            color:
-                                                                Colors.white24),
-                                                        color: Colors.black87,
-                                                      ),
-                                                      child:
-                                                          DropdownButtonHideUnderline(
-                                                        child: DropdownButton2<
-                                                            String>(
-                                                          isExpanded: true,
-                                                          value: selectedMetric,
-                                                          items: const [
-                                                            DropdownMenuItem(
-                                                              value: 'PD Value',
-                                                              child: Text(
-                                                                  'PD Value'),
-                                                            ),
-                                                          ],
-                                                          onChanged: (value) {
-                                                            if (value != null) {
-                                                              setState(() {
-                                                                selectedMetric =
-                                                                    value;
-                                                              });
-                                                            }
-                                                          },
-                                                          buttonStyleData:
-                                                              ButtonStyleData(
-                                                            height: 45,
-                                                            width: 105,
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        12),
-                                                            decoration:
-                                                                BoxDecoration(
+                                                      SizedBox(width: 5),
+                                                      Container(
+                                                        height: 40,
+                                                        constraints:
+                                                            BoxConstraints(
+                                                                minWidth: 130),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(6),
+                                                          border: Border.all(
                                                               color: Colors
-                                                                  .transparent,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                            ),
-                                                          ),
-                                                          iconStyleData:
-                                                              const IconStyleData(
-                                                            icon: Icon(
-                                                                Icons
-                                                                    .arrow_drop_down,
+                                                                  .white24),
+                                                          color: Colors.black87,
+                                                        ),
+                                                        child:
+                                                            DropdownButtonHideUnderline(
+                                                          child:
+                                                              DropdownButton2<
+                                                                  String>(
+                                                            isExpanded: true,
+                                                            value:
+                                                                selectedMetric,
+                                                            items: const [
+                                                              DropdownMenuItem(
+                                                                value:
+                                                                    'PD Value',
+                                                                child: Text(
+                                                                    'PD Value'),
+                                                              ),
+                                                            ],
+                                                            onChanged: (value) {
+                                                              if (value !=
+                                                                  null) {
+                                                                setState(() {
+                                                                  selectedMetric =
+                                                                      value;
+                                                                });
+                                                              }
+                                                            },
+                                                            buttonStyleData:
+                                                                ButtonStyleData(
+                                                              height: 45,
+                                                              width: 105,
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12),
+                                                              decoration:
+                                                                  BoxDecoration(
                                                                 color: Colors
-                                                                    .white),
-                                                          ),
-                                                          dropdownStyleData:
-                                                              DropdownStyleData(
-                                                            maxHeight: 200,
-                                                            width: 120,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors
-                                                                  .black87,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
+                                                                    .transparent,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                              ),
                                                             ),
-                                                            offset:
-                                                                const Offset(
-                                                                    0, 0),
-                                                          ),
-                                                          menuItemStyleData:
-                                                              const MenuItemStyleData(
-                                                            height: 40,
+                                                            iconStyleData:
+                                                                const IconStyleData(
+                                                              icon: Icon(
+                                                                  Icons
+                                                                      .arrow_drop_down,
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                            dropdownStyleData:
+                                                                DropdownStyleData(
+                                                              maxHeight: 200,
+                                                              width: 120,
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: Colors
+                                                                    .black87,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                              ),
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, 0),
+                                                            ),
+                                                            menuItemStyleData:
+                                                                const MenuItemStyleData(
+                                                              height: 40,
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Container(
-                                                  height: 40,
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  child: ToggleButtons(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    borderColor: Colors.white24,
-                                                    selectedBorderColor:
-                                                        AppColors.primaryMain,
-                                                    fillColor: AppColors
-                                                        .primaryMain
-                                                        .withOpacity(0.16),
-                                                    selectedColor:
-                                                        AppColors.primaryMain,
-                                                    color: Colors.white,
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            minHeight: 36,
-                                                            minWidth: 110),
-                                                    isSelected: [
-                                                      selectedView ==
-                                                          "Geocoding",
-                                                      selectedView == "Hazard",
-                                                      selectedView ==
-                                                          "Completeness",
-                                                    ],
-                                                    onPressed: (index) {
-                                                      setState(() {
-                                                        if (index == 0)
-                                                          selectedView =
-                                                              "Geocoding";
-                                                        if (index == 1)
-                                                          selectedView =
-                                                              "Hazard";
-
-                                                        if (index == 2)
-                                                          selectedView =
-                                                              "Completeness";
-                                                      });
-                                                    },
-                                                    children: const [
-                                                      Text("Geocode"),
-                                                      Text("Hazard"),
-                                                      Text("Completeness"),
                                                     ],
                                                   ),
-                                                ),
-                                                const SizedBox(height: 25),
-                                                if (chartEntries.isEmpty ||
-                                                    total == 0) ...[
-                                                  Center(
-                                                    child: Container(
-                                                      height: 100,
+                                                  const SizedBox(height: 6),
+
+                                                  // TOGGLE BUTTONS
+                                                  Container(
+                                                    height: 40,
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    child: ToggleButtons(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      borderColor:
+                                                          Colors.white24,
+                                                      selectedBorderColor:
+                                                          AppColors.primaryMain,
+                                                      fillColor: AppColors
+                                                          .primaryMain
+                                                          .withOpacity(0.16),
+                                                      selectedColor:
+                                                          AppColors.primaryMain,
+                                                      color: Colors.white,
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                        minHeight: 36,
+                                                        minWidth: 110,
+                                                      ),
+                                                      isSelected: [
+                                                        selectedViewChart ==
+                                                            "Geocoding",
+                                                        selectedViewChart ==
+                                                            "Hazard",
+                                                        selectedViewChart ==
+                                                            "Completeness",
+                                                      ],
+                                                      onPressed: (index) {
+                                                        setState(() {
+                                                          if (index == 0)
+                                                            selectedViewChart =
+                                                                "Geocoding";
+                                                          if (index == 1)
+                                                            selectedViewChart =
+                                                                "Hazard";
+                                                          if (index == 2)
+                                                            selectedViewChart =
+                                                                "Completeness";
+                                                        });
+                                                      },
+                                                      children: const [
+                                                        Text("Geocode"),
+                                                        Text("Hazard"),
+                                                        Text("Completeness"),
+                                                      ],
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(height: 25),
+
+                                                  // No Data
+                                                  if (filteredEntries.isEmpty ||
+                                                      total == 0.0)
+                                                    Container(
                                                       alignment:
                                                           Alignment.center,
-                                                      margin:
-                                                          const EdgeInsets.all(
-                                                              12),
-                                                      child: const Text(
+                                                      width: 180,
+                                                      height: 200,
+                                                      child: Text(
                                                         "No data found",
                                                         style: TextStyle(
                                                             color:
                                                                 Colors.white70,
                                                             fontSize: 16),
                                                       ),
-                                                    ),
-                                                  ),
-                                                ] else ...[
-                                                  Center(
-                                                    child: Column(
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            SizedBox(
-                                                              width: 180,
-                                                              height: 200,
-                                                              child: PieChart(
-                                                                PieChartData(
-                                                                  centerSpaceRadius:
-                                                                      0,
-                                                                  sectionsSpace:
-                                                                      0.3,
-                                                                  sections:
-                                                                      sections,
-                                                                  pieTouchData:
-                                                                      PieTouchData(
-                                                                    touchCallback:
-                                                                        (event,
-                                                                            res) {
-                                                                      setState(
-                                                                          () {
+                                                    )
+                                                  else
+                                                    Center(
+                                                      child: Column(
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              SizedBox(
+                                                                width: 180,
+                                                                height: 200,
+                                                                child: PieChart(
+                                                                  PieChartData(
+                                                                    centerSpaceRadius:
+                                                                        0,
+                                                                    sectionsSpace:
+                                                                        0.3,
+                                                                    sections:
+                                                                        sections,
+                                                                    pieTouchData:
+                                                                        PieTouchData(
+                                                                      touchCallback:
+                                                                          (event,
+                                                                              res) {
                                                                         if (!event.isInterestedForInteractions ||
                                                                             res?.touchedSection ==
                                                                                 null)
                                                                           return;
 
-                                                                        final idx = res!
-                                                                            .touchedSection!
-                                                                            .touchedSectionIndex;
-
-                                                                        touchedIndex = touchedIndex ==
-                                                                                idx
-                                                                            ? -1
-                                                                            : idx;
-                                                                      });
-                                                                    },
+                                                                        setState(
+                                                                            () {
+                                                                          final idx = res!
+                                                                              .touchedSection!
+                                                                              .touchedSectionIndex;
+                                                                          touchedIndex = touchedIndex == idx
+                                                                              ? -1
+                                                                              : idx;
+                                                                        });
+                                                                      },
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               ),
-                                                            ),
-
-                                                            const SizedBox(
-                                                                width: 30),
-
-                                                            // Legends
-                                                            Column(
-                                                              children: [
-                                                                _buildLegendBox(
-                                                                    '1',
-                                                                    '0–20%',
-                                                                    Colors.red),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '2',
-                                                                    '21–40%',
-                                                                    Colors
-                                                                        .yellow),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '3',
-                                                                    '41–60%',
-                                                                    Colors
-                                                                        .blue),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '4',
-                                                                    '61–80%',
-                                                                    Colors
-                                                                        .greenAccent),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '5',
-                                                                    '81–100%',
-                                                                    Colors
-                                                                        .green),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        const SizedBox(
-                                                            height: 25),
-                                                        AnimatedSwitcher(
-                                                          duration:
-                                                              const Duration(
-                                                                  milliseconds:
-                                                                      250),
-                                                          child: (touchedIndex !=
-                                                                      null &&
-                                                                  touchedIndex! >=
-                                                                      0 &&
-                                                                  touchedIndex! <
-                                                                      chartEntries
-                                                                          .length)
-                                                              ? _buildInfoCard(
-                                                                  chartEntries[
-                                                                      touchedIndex!])
-                                                              : const SizedBox
-                                                                  .shrink(),
-                                                        ),
-                                                      ],
+                                                              const SizedBox(
+                                                                  width: 30),
+                                                              Column(
+                                                                children: [
+                                                                  _buildLegendBox(
+                                                                      '1',
+                                                                      '0–20%',
+                                                                      Colors
+                                                                          .red),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '2',
+                                                                      '21–40%',
+                                                                      Colors
+                                                                          .yellow),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '3',
+                                                                      '41–60%',
+                                                                      Colors
+                                                                          .blue),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '4',
+                                                                      '61–80%',
+                                                                      Colors
+                                                                          .greenAccent),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '5',
+                                                                      '81–100%',
+                                                                      Colors
+                                                                          .green),
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 25),
+                                                          AnimatedSwitcher(
+                                                            duration:
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        250),
+                                                            child: (touchedIndex !=
+                                                                        null &&
+                                                                    touchedIndex! >=
+                                                                        0 &&
+                                                                    touchedIndex! <
+                                                                        filteredEntries
+                                                                            .length)
+                                                                ? _buildInfoCard(
+                                                                    filteredEntries[
+                                                                        touchedIndex!])
+                                                                : SizedBox
+                                                                    .shrink(),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
                                                 ],
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      Container(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.9,
-                                        child: Consumer<MyLocationListProvider>(
-                                          builder: (context,
-                                              locationListProvider, child) {
-                                            if (locationListProvider
-                                                        .grapDataProfile ==
-                                                    null ||
-                                                locationListProvider
-                                                        .grapDataProfile
-                                                        ?.pdValues ==
-                                                    null) {
-                                              return Container();
-                                            }
-                                            if (selectedView == 'Geocoding') {
-                                              final geocodingData =
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        Container(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.9,
+                                          child:
+                                              Consumer<MyLocationListProvider>(
+                                            builder: (context,
+                                                locationListProvider, child) {
+                                              if (locationListProvider
+                                                          .grapDataProfile ==
+                                                      null ||
+                                                  locationListProvider
+                                                          .grapDataProfile
+                                                          ?.pdValues ==
+                                                      null) {
+                                                return Container();
+                                              }
+
+                                              // ======== GEOCODE DATA =========
+                                              List<Map<String, dynamic>>
+                                                  geocodeList = [];
+                                              double geocodeMin = 0,
+                                                  geocodeMax = 0,
+                                                  geocodeTotal = 0;
+
+                                              final geoData =
                                                   locationListProvider
                                                       .grapDataProfile
                                                       ?.geocodeCounts;
+                                              if (geoData != null) {
+                                                final geoMap = geoData.toJson();
+                                                geocodeList = geoMap.entries
+                                                    .map((e) => {
+                                                          'name':
+                                                              'Geocode ${e.key}',
+                                                          'count': (e.value
+                                                                      as num?)
+                                                                  ?.toDouble() ??
+                                                              0.0,
+                                                        })
+                                                    .toList()
+                                                  ..sort((a, b) =>
+                                                      (b['count'] as double)
+                                                          .compareTo(a['count']
+                                                              as double));
 
-                                              if (geocodingData == null) {
-                                                return const Center(
-                                                    child: Text(
-                                                        'No geocoding data'));
+                                                if (geocodeList.isNotEmpty) {
+                                                  final values = geocodeList
+                                                      .map((e) =>
+                                                          e['count'] as double)
+                                                      .toList();
+                                                  geocodeMin = values.reduce(
+                                                      (a, b) => a < b ? a : b);
+                                                  geocodeMax = values.reduce(
+                                                      (a, b) => a > b ? a : b);
+                                                  geocodeTotal = values.fold(
+                                                      0.0, (sum, v) => sum + v);
+                                                }
                                               }
 
-                                              // Convert to usable map
-                                              final Map<String, dynamic>
-                                                  geocodingMap =
-                                                  geocodingData.toJson();
+                                              List<Map<String, dynamic>>
+                                                  paramList = [];
+                                              double paramMax = 0;
+                                              double paramTotalMissing = 0;
 
-                                              // Sort descending by count
-                                              final List<Map<String, dynamic>>
-                                                  dataList = geocodingMap
-                                                      .entries
-                                                      .map((e) => {
-                                                            'name':
-                                                                'Geocode ${e.key}',
-                                                            'count': e.value ==
-                                                                    null
-                                                                ? 0.0
-                                                                : (e.value
-                                                                        as num)
-                                                                    .toDouble(),
-                                                          })
-                                                      .toList()
-                                                    ..sort((a, b) => (b['count']
-                                                            as double)
-                                                        .compareTo(a['count']
-                                                            as double));
-
-                                              if (dataList.isEmpty) {
-                                                return const Center(
-                                                    child:
-                                                        Text('No data found'));
-                                              }
-                                              final values = dataList
-                                                  .map((e) =>
-                                                      e['count'] as double)
-                                                  .toList();
-                                              final minValue = values.reduce(
-                                                  (a, b) => a < b ? a : b);
-                                              final maxValue = values.reduce(
-                                                  (a, b) => a > b ? a : b);
-                                              final total = values.fold<double>(
-                                                  0.0, (sum, v) => sum + v);
-
-                                              return Container(
-                                                height: dataList.isEmpty
-                                                    ? 160
-                                                    : 400,
-                                                margin:
-                                                    const EdgeInsets.all(12),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF111111),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                      color: Colors.white10),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.all(16),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Expanded(
-                                                          child: Text(
-                                                            "Critical Missing Parameters (Geocoding)",
-                                                            maxLines: 2,
-                                                            style:
-                                                                const TextStyle(
-                                                              color: Color(
-                                                                  0xFF90CAF9),
-                                                              fontSize: 14,
-                                                            ),
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ),
-                                                        SizedBox(width: 12),
-                                                        Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color:
-                                                                Colors.black87,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                            border: Border.all(
-                                                                color: Colors
-                                                                    .white24),
-                                                          ),
-                                                          child:
-                                                              DropdownButtonHideUnderline(
-                                                            child:
-                                                                DropdownButton2<
-                                                                    String>(
-                                                              value:
-                                                                  selectedView,
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white),
-                                                              items: const [
-                                                                DropdownMenuItem(
-                                                                  value:
-                                                                      'Geocoding',
-                                                                  child: Text(
-                                                                      'Geocoding'),
-                                                                ),
-                                                                DropdownMenuItem(
-                                                                  value:
-                                                                      'Parameter',
-                                                                  child: Text(
-                                                                      'Parameter'),
-                                                                ),
-                                                              ],
-                                                              onChanged:
-                                                                  (value) {
-                                                                if (value !=
-                                                                    null) {
-                                                                  setState(() {
-                                                                    selectedView =
-                                                                        value;
-                                                                  });
-                                                                }
-                                                              },
-                                                              buttonStyleData:
-                                                                  ButtonStyleData(
-                                                                height: 45,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                padding: const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        11),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                  border: Border.all(
-                                                                      color: Colors
-                                                                          .white24),
-                                                                ),
-                                                              ),
-                                                              iconStyleData:
-                                                                  const IconStyleData(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              dropdownStyleData:
-                                                                  DropdownStyleData(
-                                                                maxHeight: 200,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                ),
-                                                              ),
-                                                              menuItemStyleData:
-                                                                  const MenuItemStyleData(
-                                                                height: 40,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 5),
-                                                    Expanded(
-                                                      child: ListView.builder(
-                                                        physics:
-                                                            const NeverScrollableScrollPhysics(),
-                                                        shrinkWrap: true,
-                                                        itemCount:
-                                                            dataList.length,
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final item =
-                                                              dataList[index];
-                                                          final name =
-                                                              item['name']
-                                                                  as String;
-                                                          final value =
-                                                              item['count']
-                                                                  as double;
-                                                          final percent = total >
-                                                                  0
-                                                              ? (value /
-                                                                      total) *
-                                                                  100
-                                                              : 0.0;
-
-                                                          final color =
-                                                              getColorByValue(
-                                                                  value,
-                                                                  minValue,
-                                                                  maxValue,
-                                                                  dataList
-                                                                      .length);
-
-                                                          return _buildBarItem1(
-                                                              name,
-                                                              value,
-                                                              percent,
-                                                              maxValue,
-                                                              color);
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
                                               final parameterData =
                                                   locationListProvider
                                                       .grapDataProfile
                                                       ?.globalSovPerilCounts;
 
-                                              // Convert the parameter data to usable format
-                                              final Map<String, dynamic>
-                                                  parameterMap =
-                                                  parameterData?.toJson() ?? {};
+                                              if (parameterData != null) {
+                                                final pMap =
+                                                    parameterData.toJson();
+                                                paramList = pMap.entries
+                                                    .map((e) {
+                                                  final peril =
+                                                      Map<String, dynamic>.from(
+                                                          e.value);
+                                                  final total =
+                                                      (peril['total'] as num?)
+                                                              ?.toDouble() ??
+                                                          0.0;
+                                                  final completed =
+                                                      (peril['completed_data_locations']
+                                                                  as num?)
+                                                              ?.toDouble() ??
+                                                          0.0;
+                                                  final missing =
+                                                      total - completed;
+                                                  return {
+                                                    'name': e.key,
+                                                    'missing': missing,
+                                                    'completed': completed,
+                                                  };
+                                                }).toList()
+                                                  ..sort((a, b) => (b['missing']
+                                                          as double)
+                                                      .compareTo(a['missing']
+                                                          as double));
 
-                                              // Sort by missing descending so highest is first
-                                              final List<Map<String, dynamic>>
-                                                  dataList =
-                                                  parameterMap.entries.map((e) {
-                                                final perilData = e.value is Map
-                                                    ? Map<String, dynamic>.from(
-                                                        e.value)
-                                                    : {};
-                                                final total =
-                                                    (perilData['total'] as num?)
-                                                            ?.toDouble() ??
-                                                        0.0;
-                                                final completed =
-                                                    (perilData['completed_data']
-                                                                as num?)
-                                                            ?.toDouble() ??
-                                                        0.0;
-                                                final missing =
-                                                    total - completed;
+                                                paramMax = paramList.fold(
+                                                    0.0,
+                                                    (prev, e) =>
+                                                        e['missing'] > prev
+                                                            ? e['missing']
+                                                            : prev);
 
-                                                return {
-                                                  'name': e.key,
-                                                  'missing': missing,
-                                                  'total': total,
-                                                  'completed_data': completed,
-                                                };
-                                              }).toList()
-                                                    ..sort((a, b) =>
-                                                        (b['missing'] as double)
-                                                            .compareTo(
-                                                                a['missing']
-                                                                    as double));
+                                                paramTotalMissing =
+                                                    paramList.fold(
+                                                        0.0,
+                                                        (sum, e) =>
+                                                            sum +
+                                                            (e['missing']
+                                                                as double));
+                                              }
 
-                                              final maxValue =
-                                                  dataList.fold<double>(
-                                                0.0,
-                                                (prev, e) => e['missing'] > prev
-                                                    ? e['missing']
-                                                    : prev,
-                                              );
-
-                                              final total =
-                                                  dataList.fold<double>(
-                                                0.0,
-                                                (sum, e) =>
-                                                    sum +
-                                                    (e['missing'] as double),
-                                              );
-
+                                              // ========= UI BLOCK =========
                                               return Container(
-                                                height: dataList.isEmpty
-                                                    ? 160
-                                                    : 400,
                                                 margin:
                                                     const EdgeInsets.all(12),
+                                                padding:
+                                                    const EdgeInsets.all(16),
                                                 decoration: BoxDecoration(
                                                   color:
                                                       const Color(0xFF111111),
@@ -2106,8 +2512,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                   border: Border.all(
                                                       color: Colors.white10),
                                                 ),
-                                                padding:
-                                                    const EdgeInsets.all(16),
                                                 child: Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
@@ -2117,24 +2521,30 @@ class _SovLocationListState extends State<SovLocationList>
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
+                                                        // Dynamic Title
                                                         Expanded(
                                                           child: Text(
-                                                            "Critical Missing Parameters (Parameter)",
-                                                            maxLines: 2,
+                                                            "Critical Missing Parameters – ${selectedViewCritical == "Geocoding" ? "Geocoding" : "Parameter"}",
                                                             style:
                                                                 const TextStyle(
                                                               color: Color(
                                                                   0xFF90CAF9),
-                                                              fontSize: 14,
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
                                                             ),
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
                                                           ),
                                                         ),
-                                                        const SizedBox(
-                                                            width: 12),
+
+                                                        // Dropdown
                                                         Container(
+                                                          height: 42,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      10),
                                                           decoration:
                                                               BoxDecoration(
                                                             color:
@@ -2142,7 +2552,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        12),
+                                                                        10),
                                                             border: Border.all(
                                                                 color: Colors
                                                                     .white24),
@@ -2150,31 +2560,28 @@ class _SovLocationListState extends State<SovLocationList>
                                                           child:
                                                               DropdownButtonHideUnderline(
                                                             child:
-                                                                DropdownButton2<
+                                                                DropdownButton<
                                                                     String>(
                                                               value:
-                                                                  selectedView1,
+                                                                  selectedViewCritical,
+                                                              dropdownColor:
+                                                                  Colors
+                                                                      .black87,
                                                               style: const TextStyle(
                                                                   color: Colors
                                                                       .white),
                                                               items: const [
                                                                 DropdownMenuItem(
                                                                   value:
-                                                                      'Geocoding',
+                                                                      "Geocoding",
                                                                   child: Text(
-                                                                      'Geocoding',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
+                                                                      "Geocoding"),
                                                                 ),
                                                                 DropdownMenuItem(
                                                                   value:
-                                                                      'Parameter',
+                                                                      "Parameter",
                                                                   child: Text(
-                                                                      'Parameter',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
+                                                                      "Parameter"),
                                                                 ),
                                                               ],
                                                               onChanged:
@@ -2182,130 +2589,40 @@ class _SovLocationListState extends State<SovLocationList>
                                                                 if (value !=
                                                                     null) {
                                                                   setState(() {
-                                                                    selectedView =
+                                                                    selectedViewCritical =
                                                                         value;
                                                                   });
                                                                 }
                                                               },
-                                                              buttonStyleData:
-                                                                  ButtonStyleData(
-                                                                height: 45,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                padding: const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        11),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                  border: Border.all(
-                                                                      color: Colors
-                                                                          .white24),
-                                                                ),
-                                                              ),
-                                                              iconStyleData:
-                                                                  const IconStyleData(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              dropdownStyleData:
-                                                                  DropdownStyleData(
-                                                                maxHeight: 200,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                ),
-                                                              ),
-                                                              menuItemStyleData:
-                                                                  const MenuItemStyleData(
-                                                                height: 40,
-                                                              ),
                                                             ),
                                                           ),
                                                         ),
                                                       ],
                                                     ),
-                                                    const SizedBox(height: 10),
+                                                    const SizedBox(height: 20),
                                                     Expanded(
-                                                      child: dataList.isEmpty
-                                                          ? Container(
-                                                              alignment:
-                                                                  Alignment
-                                                                      .center,
-                                                              child: const Text(
-                                                                'No data found',
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .white70,
-                                                                    fontSize:
-                                                                        14),
-                                                              ),
+                                                      child: selectedViewCritical ==
+                                                              "Geocoding"
+                                                          ? _buildCriticalGeocodeSection(
+                                                              geocodeList,
+                                                              geocodeMin,
+                                                              geocodeMax,
+                                                              geocodeTotal,
                                                             )
-                                                          : ListView.builder(
-                                                              physics:
-                                                                  const NeverScrollableScrollPhysics(),
-                                                              shrinkWrap: true,
-                                                              itemCount:
-                                                                  parameterMap
-                                                                      .length,
-                                                              itemBuilder:
-                                                                  (context,
-                                                                      index) {
-                                                                final item =
-                                                                    dataList[
-                                                                        index];
-                                                                final name =
-                                                                    item['name']
-                                                                        as String;
-                                                                final value =
-                                                                    item['completed_data']
-                                                                        as double;
-                                                                final percent =
-                                                                    total > 0
-                                                                        ? (value /
-                                                                                total) *
-                                                                            100
-                                                                        : 0.0;
-                                                                return _buildBarItem(
-                                                                    name,
-                                                                    value,
-                                                                    percent,
-                                                                    maxValue);
-                                                              },
+                                                          : _buildCriticalParameterSection(
+                                                              paramList,
+                                                              paramMax,
+                                                              paramTotalMissing,
                                                             ),
                                                     ),
                                                   ],
                                                 ),
                                               );
-                                            }
-                                          },
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                      ],
+                                    )),
                               ),
                             ),
                             SliverList(
@@ -2412,20 +2729,157 @@ class _SovLocationListState extends State<SovLocationList>
     );
   }
 
+  Widget _buildCriticalGeocodeSection(
+    List<Map<String, dynamic>> dataList,
+    double minValue,
+    double maxValue,
+    double total,
+  ) {
+    return Container(
+      height: dataList.isEmpty ? 160 : 400,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // const SizedBox(height: 10),
+          Expanded(
+            child: ListView.builder(
+              // physics: const NeverScrollableScrollPhysics(),
+              itemCount: dataList.length,
+              itemBuilder: (context, index) {
+                final item = dataList[index];
+                final name = item['name'];
+                final value = item['count'];
+                final percent = total > 0 ? (value / total) * 100 : 0.0;
+
+                final color = getColorByValue(
+                  value,
+                  minValue,
+                  maxValue,
+                  dataList.length,
+                );
+
+                return _buildBarItem1(name, value, percent, maxValue, color);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCriticalParameterSection(
+    List<Map<String, dynamic>> dataList,
+    double maxValue,
+    double total,
+  ) {
+    dataList.sort((a, b) {
+      return (b['completed'] as num).compareTo(a['completed'] as num);
+    });
+    return Container(
+      height: dataList.isEmpty ? 160 : 400,
+      child: dataList.isEmpty
+          ? Center(
+              child: Text(
+                "No data found",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: dataList.length,
+                    itemBuilder: (context, index) {
+                      final item = dataList[index];
+
+                      final name = item['name'];
+                      final completed = item['completed'];
+
+                      // STEP 1: find MAX value
+                      final maxCompleted = dataList
+                          .map((e) => e['completed'] as num)
+                          .reduce((a, b) => a > b ? a : b);
+
+                      // STEP 2: calculate % based on max
+                      double pct = maxCompleted > 0
+                          ? (completed / maxCompleted) * 100
+                          : 0;
+
+                      // STEP 3: bucket
+                      int bucket;
+                      if (pct >= 80) {
+                        bucket = 5;
+                      } else if (pct >= 60) {
+                        bucket = 4;
+                      } else if (pct >= 40) {
+                        bucket = 3;
+                      } else if (pct >= 20) {
+                        bucket = 2;
+                      } else {
+                        bucket = 1;
+                      }
+
+                      // STEP 4: color from bucket
+                      Color barColor;
+                      switch (bucket) {
+                        case 5:
+                          barColor = const Color(0xFF2E7D32);
+                          break;
+                        case 4:
+                          barColor = const Color(0xFF81C784);
+                          break;
+                        case 3:
+                          barColor = const Color(0xFF90CAF9); // blue
+                          break;
+                        case 2:
+                          barColor = const Color(0xFFFFF176); // yellow
+                          break;
+                        default:
+                          barColor = const Color(0xFFEF5350); // red
+                      }
+
+                      return _buildBarItem(
+                        name,
+                        completed,
+                        pct,
+                        100,
+                        barColor,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Color getColorForPercentage(double pct) {
+    if (pct >= 80) return Colors.green;
+    if (pct >= 60) return Colors.lightGreen;
+    if (pct >= 40) return Colors.yellow;
+    if (pct >= 20) return Colors.orange;
+    return Colors.red;
+  }
+
   _getLocationListCertifiedUI() {
     var typography = CustomTypography(context);
     return Consumer<MyLocationListProvider>(
       builder: (context, locationListProvider, child) {
-        return locationListProvider.isLoading
+        return locationListProvider.isCertifiedLoading
             ? Center(
                 child: Container(
                 child: CircularProgressIndicator(),
               ))
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 child: Column(
                   children: [
-                    // Filter chips row
+
                     Row(
                       children: [
                         Expanded(
@@ -2624,733 +3078,555 @@ class _SovLocationListState extends State<SovLocationList>
                                 height: 430,
                                 // Set a fixed height for the scrollable row
                                 child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Consumer<MyLocationListProvider>(
-                                        builder: (context, provider, _) {
-                                          final pdValues = provider
-                                              .grapDataProfile?.pdValues;
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Consumer<MyLocationListProvider>(
+                                          builder: (context, provider, _) {
+                                            final pdValues = provider
+                                                .grapDataProfile?.pdValues;
 
-                                          // 🔥 Correct mapping for all 3 tabs
-                                          Map<String, dynamic> sourceData = {};
+                                            Map<String, dynamic> sourceData =
+                                                {};
 
-                                          if (pdValues != null) {
-                                            if (selectedView == "Hazard") {
-                                              sourceData =
-                                                  pdValues.byOverallScore ?? {};
-                                            } else if (selectedView ==
-                                                "Geocoding") {
-                                              sourceData =
-                                                  pdValues.byGeocodeScore ?? {};
-                                            } else if (selectedView ==
-                                                "Completeness") {
-                                              sourceData = pdValues
-                                                      .byDataCompletenessScore ??
-                                                  {}; // ✅ ADDED
-                                            }
-                                          }
-
-                                          // 🔥 FIX LABEL + DATA EXTRACTION (Unified for all views)
-                                          final chartEntries =
-                                              sourceData.entries.map((entry) {
-                                            final data = entry.value;
-
-                                            String label = "";
-                                            if (selectedView == "Hazard") {
-                                              label = "Score ${entry.key}";
-                                            } else if (selectedView ==
-                                                "Geocoding") {
-                                              label = "Geocode ${entry.key}";
-                                            } else {
-                                              label =
-                                                  "Completeness ${entry.key}";
+                                            // FIXED: using selectedViewChart instead of selectedView
+                                            if (pdValues != null) {
+                                              if (selectedViewChart ==
+                                                  "Hazard") {
+                                                sourceData =
+                                                    pdValues.byOverallScore ??
+                                                        {};
+                                              } else if (selectedViewChart ==
+                                                  "Geocoding") {
+                                                sourceData =
+                                                    pdValues.byGeocodeScore ??
+                                                        {};
+                                              } else if (selectedViewChart ==
+                                                  "Completeness") {
+                                                sourceData = pdValues
+                                                        .byDataCompletenessScore ??
+                                                    {};
+                                              }
                                             }
 
-                                            return {
-                                              'label': label,
-                                              'value': data.totalPdValue ?? 0.0,
-                                              'pct': data.pctOfTotal ?? 0.0,
-                                              'rawKey': entry.key.toString(),
-                                            };
-                                          }).toList();
+                                            final chartEntries =
+                                                sourceData.entries.map((entry) {
+                                              final data = entry.value;
 
-                                          double total = chartEntries.fold(
-                                            0.0,
-                                            (sum, item) =>
-                                                sum + (item['value'] as double),
-                                          );
+                                              String label = "";
+                                              if (selectedViewChart ==
+                                                  "Hazard") {
+                                                label = "Score ${entry.key}";
+                                              } else if (selectedViewChart ==
+                                                  "Geocoding") {
+                                                label = "Geocode ${entry.key}";
+                                              } else {
+                                                label =
+                                                    "Completeness ${entry.key}";
+                                              }
 
-                                          final sections = chartEntries
-                                              .asMap()
-                                              .entries
-                                              .map((entry) {
-                                            final idx = entry.key;
-                                            final value =
-                                                entry.value['value'] as double;
-                                            final pct = total > 0
-                                                ? (value / total) * 100
-                                                : 0;
-                                            final selected =
-                                                idx == touchedIndex;
+                                              return {
+                                                'label': label,
+                                                'value':
+                                                    data.totalPdValue ?? 0.0,
+                                                'pct': data.pctOfTotal ?? 0.0,
+                                                'rawKey': entry.key.toString(),
+                                              };
+                                            }).toList();
 
-                                            return PieChartSectionData(
-                                              color: _getPieColorByKey(
-                                                entry.value['rawKey']
-                                                        ?.toString() ??
-                                                    "0",
-                                              ),
-                                              value: value,
-                                              radius: selected ? 120 : 100,
-                                              title:
-                                                  "${pct.toStringAsFixed(1)}%",
-                                              titleStyle: TextStyle(
-                                                fontSize: selected ? 14 : 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
+                                            // FIXED
+                                            double total = chartEntries.fold(
+                                              0.0,
+                                              (sum, item) =>
+                                                  sum +
+                                                  (item['value'] as double),
                                             );
-                                          }).toList();
 
-                                          return Container(
-                                            margin: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF111111),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                  color: Colors.white10),
-                                            ),
-                                            padding: const EdgeInsets.all(16),
-                                            child: Column(
-                                              // crossAxisAlignment:
-                                              //     CrossAxisAlignment.s,
-                                              children: [
-                                                // ===== HEADER =====
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    const Text(
-                                                      "Weighted Distribution (PD Value)",
-                                                      style: TextStyle(
-                                                        color:
-                                                            Color(0xFF90CAF9),
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                            // -----------------------------------------
+                                            // ✅ NEW FIX: remove 0-value slices completely
+                                            // -----------------------------------------
+                                            final filteredEntries = chartEntries
+                                                .where((e) =>
+                                                    (e['pct'] as double) >
+                                                    0.2) // 0.1% threshold
+                                                .toList();
+                                            // -----------------------------------------
+
+                                            final sections = filteredEntries
+                                                .asMap()
+                                                .entries
+                                                .map((entry) {
+                                              final idx = entry.key;
+                                              final value = entry.value['value']
+                                                  as double;
+                                              final pct = entry.value['pct']
+                                                  as double; // correct percentage
+                                              final isSelected =
+                                                  idx == touchedIndex;
+
+                                              final sliceColor =
+                                                  _getPieColorByKey(
+                                                      entry.value['rawKey'] ??
+                                                          "0");
+
+                                              final textColor = (sliceColor ==
+                                                          Colors.red ||
+                                                      sliceColor ==
+                                                          Colors.green ||
+                                                      sliceColor ==
+                                                          Colors.greenAccent)
+                                                  ? Colors.white
+                                                  : Colors.black;
+
+                                              return PieChartSectionData(
+                                                color: sliceColor,
+                                                value: value,
+                                                radius: isSelected ? 110 : 100,
+                                                title:
+                                                    "${pct.toStringAsFixed(2)}%",
+                                                titleStyle: TextStyle(
+                                                  fontSize:
+                                                      isSelected ? 14 : 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: textColor,
+                                                ),
+                                              );
+                                            }).toList();
+
+                                            return Container(
+                                              margin: const EdgeInsets.all(12),
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF111111),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                    color: Colors.white10),
+                                              ),
+                                              child: Column(
+                                                children: [
+                                                  // Header Row
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      const Text(
+                                                        "Weighted Distribution (PD Value)",
+                                                        style: TextStyle(
+                                                          color:
+                                                              Color(0xFF90CAF9),
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    SizedBox(width: 5),
-                                                    Container(
-                                                      height: 45,
-                                                      constraints:
-                                                          BoxConstraints(
-                                                              minWidth: 130),
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                            color:
-                                                                Colors.white24),
-                                                        color: Colors.black87,
-                                                      ),
-                                                      child:
-                                                          DropdownButtonHideUnderline(
-                                                        child: DropdownButton2<
-                                                            String>(
-                                                          isExpanded: true,
-                                                          value: selectedMetric,
-                                                          items: const [
-                                                            DropdownMenuItem(
-                                                              value: 'PD Value',
-                                                              child: Text(
-                                                                  'PD Value'),
-                                                            ),
-                                                          ],
-                                                          onChanged: (value) {
-                                                            if (value != null) {
-                                                              setState(() {
-                                                                selectedMetric =
-                                                                    value;
-                                                              });
-                                                            }
-                                                          },
-                                                          buttonStyleData:
-                                                              ButtonStyleData(
-                                                            height: 45,
-                                                            width: 105,
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        12),
-                                                            decoration:
-                                                                BoxDecoration(
+                                                      SizedBox(width: 5),
+                                                      Container(
+                                                        height: 40,
+                                                        constraints:
+                                                            BoxConstraints(
+                                                                minWidth: 130),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(6),
+                                                          border: Border.all(
                                                               color: Colors
-                                                                  .transparent,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                            ),
-                                                          ),
-                                                          iconStyleData:
-                                                              const IconStyleData(
-                                                            icon: Icon(
-                                                                Icons
-                                                                    .arrow_drop_down,
+                                                                  .white24),
+                                                          color: Colors.black87,
+                                                        ),
+                                                        child:
+                                                            DropdownButtonHideUnderline(
+                                                          child:
+                                                              DropdownButton2<
+                                                                  String>(
+                                                            isExpanded: true,
+                                                            value:
+                                                                selectedMetric,
+                                                            items: const [
+                                                              DropdownMenuItem(
+                                                                value:
+                                                                    'PD Value',
+                                                                child: Text(
+                                                                    'PD Value'),
+                                                              ),
+                                                            ],
+                                                            onChanged: (value) {
+                                                              if (value !=
+                                                                  null) {
+                                                                setState(() {
+                                                                  selectedMetric =
+                                                                      value;
+                                                                });
+                                                              }
+                                                            },
+                                                            buttonStyleData:
+                                                                ButtonStyleData(
+                                                              height: 45,
+                                                              width: 105,
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          12),
+                                                              decoration:
+                                                                  BoxDecoration(
                                                                 color: Colors
-                                                                    .white),
-                                                          ),
-                                                          dropdownStyleData:
-                                                              DropdownStyleData(
-                                                            maxHeight: 200,
-                                                            width: 120,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors
-                                                                  .black87,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
+                                                                    .transparent,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                              ),
                                                             ),
-                                                            offset:
-                                                                const Offset(
-                                                                    0, 0),
-                                                          ),
-                                                          menuItemStyleData:
-                                                              const MenuItemStyleData(
-                                                            height: 40,
+                                                            iconStyleData:
+                                                                const IconStyleData(
+                                                              icon: Icon(
+                                                                  Icons
+                                                                      .arrow_drop_down,
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                            dropdownStyleData:
+                                                                DropdownStyleData(
+                                                              maxHeight: 200,
+                                                              width: 120,
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: Colors
+                                                                    .black87,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                              ),
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, 0),
+                                                            ),
+                                                            menuItemStyleData:
+                                                                const MenuItemStyleData(
+                                                              height: 40,
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
-                                                ),
-
-                                                const SizedBox(height: 6),
-
-                                                // ===== Toggle Buttons (FIXED 3 ITEMS) =====
-                                                Container(
-                                                  height: 40,
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  child: ToggleButtons(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    borderColor: Colors.white24,
-                                                    selectedBorderColor:
-                                                        AppColors.primaryMain,
-                                                    fillColor: AppColors
-                                                        .primaryMain
-                                                        .withOpacity(0.16),
-                                                    selectedColor:
-                                                        AppColors.primaryMain,
-                                                    color: Colors.white,
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            minHeight: 36,
-                                                            minWidth: 110),
-
-                                                    // 🔥 MUST BE 3 ITEMS
-                                                    isSelected: [
-                                                      selectedView ==
-                                                          "Geocoding",
-                                                      selectedView == "Hazard",
-                                                      selectedView ==
-                                                          "Completeness",
-                                                    ],
-
-                                                    onPressed: (index) {
-                                                      setState(() {
-                                                        if (index == 0)
-                                                          selectedView =
-                                                              "Geocoding";
-                                                        if (index == 1)
-                                                          selectedView =
-                                                              "Hazard";
-
-                                                        if (index == 2)
-                                                          selectedView =
-                                                              "Completeness";
-                                                      });
-                                                    },
-
-                                                    children: const [
-                                                      Text("Geocode"),
-                                                      Text("Hazard"),
-                                                      Text("Completeness"),
                                                     ],
                                                   ),
-                                                ),
-                                                if (chartEntries.isEmpty ||
-                                                    total == 0) ...[
-                                                  Center(
-                                                    child: Container(
-                                                      height: 100,
+                                                  const SizedBox(height: 6),
+
+                                                  // TOGGLE BUTTONS
+                                                  Container(
+                                                    height: 40,
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    child: ToggleButtons(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      borderColor:
+                                                          Colors.white24,
+                                                      selectedBorderColor:
+                                                          AppColors.primaryMain,
+                                                      fillColor: AppColors
+                                                          .primaryMain
+                                                          .withOpacity(0.16),
+                                                      selectedColor:
+                                                          AppColors.primaryMain,
+                                                      color: Colors.white,
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                        minHeight: 36,
+                                                        minWidth: 110,
+                                                      ),
+                                                      isSelected: [
+                                                        selectedViewChart ==
+                                                            "Geocoding",
+                                                        selectedViewChart ==
+                                                            "Hazard",
+                                                        selectedViewChart ==
+                                                            "Completeness",
+                                                      ],
+                                                      onPressed: (index) {
+                                                        setState(() {
+                                                          if (index == 0)
+                                                            selectedViewChart =
+                                                                "Geocoding";
+                                                          if (index == 1)
+                                                            selectedViewChart =
+                                                                "Hazard";
+                                                          if (index == 2)
+                                                            selectedViewChart =
+                                                                "Completeness";
+                                                        });
+                                                      },
+                                                      children: const [
+                                                        Text("Geocode"),
+                                                        Text("Hazard"),
+                                                        Text("Completeness"),
+                                                      ],
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(height: 25),
+
+                                                  // No Data
+                                                  if (filteredEntries.isEmpty ||
+                                                      total == 0.0)
+                                                    Container(
                                                       alignment:
                                                           Alignment.center,
-                                                      margin:
-                                                          const EdgeInsets.all(
-                                                              12),
-                                                      child: const Text(
+                                                      width: 180,
+                                                      height: 200,
+                                                      child: Text(
                                                         "No data found",
                                                         style: TextStyle(
                                                             color:
                                                                 Colors.white70,
                                                             fontSize: 16),
                                                       ),
-                                                    ),
-                                                  ),
-                                                ] else ...[
-                                                  const SizedBox(height: 25),
-                                                  Center(
-                                                    child: Column(
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            SizedBox(
-                                                              width: 180,
-                                                              height: 200,
-                                                              child: PieChart(
-                                                                PieChartData(
-                                                                  centerSpaceRadius:
-                                                                      0,
-                                                                  sectionsSpace:
-                                                                      0.3,
-                                                                  sections:
-                                                                      sections,
-                                                                  pieTouchData:
-                                                                      PieTouchData(
-                                                                    touchCallback:
-                                                                        (event,
-                                                                            res) {
-                                                                      setState(
-                                                                          () {
+                                                    )
+                                                  else
+                                                    Center(
+                                                      child: Column(
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              SizedBox(
+                                                                width: 180,
+                                                                height: 200,
+                                                                child: PieChart(
+                                                                  PieChartData(
+                                                                    centerSpaceRadius:
+                                                                        0,
+                                                                    sectionsSpace:
+                                                                        0.3,
+                                                                    sections:
+                                                                        sections,
+                                                                    pieTouchData:
+                                                                        PieTouchData(
+                                                                      touchCallback:
+                                                                          (event,
+                                                                              res) {
                                                                         if (!event.isInterestedForInteractions ||
                                                                             res?.touchedSection ==
                                                                                 null)
                                                                           return;
 
-                                                                        final idx = res!
-                                                                            .touchedSection!
-                                                                            .touchedSectionIndex;
-
-                                                                        touchedIndex = touchedIndex ==
-                                                                                idx
-                                                                            ? -1
-                                                                            : idx;
-                                                                      });
-                                                                    },
+                                                                        setState(
+                                                                            () {
+                                                                          final idx = res!
+                                                                              .touchedSection!
+                                                                              .touchedSectionIndex;
+                                                                          touchedIndex = touchedIndex == idx
+                                                                              ? -1
+                                                                              : idx;
+                                                                        });
+                                                                      },
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               ),
-                                                            ),
-
-                                                            const SizedBox(
-                                                                width: 30),
-
-                                                            // Legends
-                                                            Column(
-                                                              children: [
-                                                                _buildLegendBox(
-                                                                    '1',
-                                                                    '0–20%',
-                                                                    Colors.red),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '2',
-                                                                    '21–40%',
-                                                                    Colors
-                                                                        .yellow),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '3',
-                                                                    '41–60%',
-                                                                    Colors
-                                                                        .blue),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '4',
-                                                                    '61–80%',
-                                                                    Colors
-                                                                        .greenAccent),
-                                                                const SizedBox(
-                                                                    height: 8),
-                                                                _buildLegendBox(
-                                                                    '5',
-                                                                    '81–100%',
-                                                                    Colors
-                                                                        .green),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-
-                                                        const SizedBox(
-                                                            height: 25),
-
-                                                        // ===== Info Card =====
-                                                        AnimatedSwitcher(
-                                                          duration:
-                                                              const Duration(
-                                                                  milliseconds:
-                                                                      250),
-                                                          child: (touchedIndex !=
-                                                                      null &&
-                                                                  touchedIndex! >=
-                                                                      0 &&
-                                                                  touchedIndex! <
-                                                                      chartEntries
-                                                                          .length)
-                                                              ? _buildInfoCard(
-                                                                  chartEntries[
-                                                                      touchedIndex!])
-                                                              : const SizedBox
-                                                                  .shrink(),
-                                                        ),
-                                                      ],
+                                                              const SizedBox(
+                                                                  width: 30),
+                                                              Column(
+                                                                children: [
+                                                                  _buildLegendBox(
+                                                                      '1',
+                                                                      '0–20%',
+                                                                      Colors
+                                                                          .red),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '2',
+                                                                      '21–40%',
+                                                                      Colors
+                                                                          .yellow),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '3',
+                                                                      '41–60%',
+                                                                      Colors
+                                                                          .blue),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '4',
+                                                                      '61–80%',
+                                                                      Colors
+                                                                          .greenAccent),
+                                                                  SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  _buildLegendBox(
+                                                                      '5',
+                                                                      '81–100%',
+                                                                      Colors
+                                                                          .green),
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 25),
+                                                          AnimatedSwitcher(
+                                                            duration:
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        250),
+                                                            child: (touchedIndex !=
+                                                                        null &&
+                                                                    touchedIndex! >=
+                                                                        0 &&
+                                                                    touchedIndex! <
+                                                                        filteredEntries
+                                                                            .length)
+                                                                ? _buildInfoCard(
+                                                                    filteredEntries[
+                                                                        touchedIndex!])
+                                                                : SizedBox
+                                                                    .shrink(),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                ]
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      Container(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.9,
-                                        child: Consumer<MyLocationListProvider>(
-                                          builder: (context,
-                                              locationListProvider, child) {
-                                            if (selectedView1 == 'Geocoding') {
-                                              final geocodingData =
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        Container(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.9,
+                                          child:
+                                              Consumer<MyLocationListProvider>(
+                                            builder: (context,
+                                                locationListProvider, child) {
+                                              if (locationListProvider
+                                                          .grapDataProfile ==
+                                                      null ||
+                                                  locationListProvider
+                                                          .grapDataProfile
+                                                          ?.pdValues ==
+                                                      null) {
+                                                return Container();
+                                              }
+
+                                              // ======== GEOCODE DATA =========
+                                              List<Map<String, dynamic>>
+                                                  geocodeList = [];
+                                              double geocodeMin = 0,
+                                                  geocodeMax = 0,
+                                                  geocodeTotal = 0;
+
+                                              final geoData =
                                                   locationListProvider
                                                       .grapDataProfile
                                                       ?.geocodeCounts;
+                                              if (geoData != null) {
+                                                final geoMap = geoData.toJson();
+                                                geocodeList = geoMap.entries
+                                                    .map((e) => {
+                                                          'name':
+                                                              'Geocode ${e.key}',
+                                                          'count': (e.value
+                                                                      as num?)
+                                                                  ?.toDouble() ??
+                                                              0.0,
+                                                        })
+                                                    .toList()
+                                                  ..sort((a, b) =>
+                                                      (b['count'] as double)
+                                                          .compareTo(a['count']
+                                                              as double));
 
-                                              if (geocodingData == null) {
-                                                return const Center(
-                                                    child: Text(
-                                                        'No geocoding data'));
+                                                if (geocodeList.isNotEmpty) {
+                                                  final values = geocodeList
+                                                      .map((e) =>
+                                                          e['count'] as double)
+                                                      .toList();
+                                                  geocodeMin = values.reduce(
+                                                      (a, b) => a < b ? a : b);
+                                                  geocodeMax = values.reduce(
+                                                      (a, b) => a > b ? a : b);
+                                                  geocodeTotal = values.fold(
+                                                      0.0, (sum, v) => sum + v);
+                                                }
                                               }
 
-                                              // Convert to usable map
-                                              final Map<String, dynamic>
-                                                  geocodingMap =
-                                                  geocodingData.toJson();
+                                              List<Map<String, dynamic>>
+                                                  paramList = [];
+                                              double paramMax = 0;
+                                              double paramTotalMissing = 0;
 
-                                              // Sort descending by count
-                                              final List<Map<String, dynamic>>
-                                                  dataList = geocodingMap
-                                                      .entries
-                                                      .map((e) => {
-                                                            'name':
-                                                                'Geocode ${e.key}',
-                                                            'count': e.value ==
-                                                                    null
-                                                                ? 0.0
-                                                                : (e.value
-                                                                        as num)
-                                                                    .toDouble(),
-                                                          })
-                                                      .toList()
-                                                    ..sort((a, b) => (b['count']
-                                                            as double)
-                                                        .compareTo(a['count']
-                                                            as double));
-
-                                              final values = dataList
-                                                  .map((e) =>
-                                                      e['count'] as double)
-                                                  .toList();
-                                              final minValue = values.reduce(
-                                                  (a, b) => a < b ? a : b);
-                                              final maxValue = values.reduce(
-                                                  (a, b) => a > b ? a : b);
-                                              final total = values.fold<double>(
-                                                  0.0, (sum, v) => sum + v);
-
-                                              return Container(
-                                                height: dataList.isEmpty
-                                                    ? 160
-                                                    : 400,
-                                                margin:
-                                                    const EdgeInsets.all(12),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF111111),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                      color: Colors.white10),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.all(16),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Expanded(
-                                                          child: Text(
-                                                            "Critical Missing Parameters (Geocoding)",
-                                                            maxLines: 2,
-                                                            style:
-                                                                const TextStyle(
-                                                              color: Color(
-                                                                  0xFF90CAF9),
-                                                              fontSize: 14,
-                                                            ),
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 12),
-                                                        Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color:
-                                                                Colors.black87,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                            border: Border.all(
-                                                                color: Colors
-                                                                    .white24),
-                                                          ),
-                                                          child:
-                                                              DropdownButtonHideUnderline(
-                                                            child:
-                                                                DropdownButton2<
-                                                                    String>(
-                                                              value:
-                                                                  selectedView1,
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white),
-                                                              items: const [
-                                                                DropdownMenuItem(
-                                                                  value:
-                                                                      'Geocoding',
-                                                                  child: Text(
-                                                                      'Geocoding',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
-                                                                ),
-                                                                DropdownMenuItem(
-                                                                  value:
-                                                                      'Parameter',
-                                                                  child: Text(
-                                                                      'Parameter',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
-                                                                ),
-                                                              ],
-                                                              onChanged:
-                                                                  (value) {
-                                                                if (value !=
-                                                                    null) {
-                                                                  setState(() {
-                                                                    selectedView1 =
-                                                                        value;
-                                                                  });
-                                                                }
-                                                              },
-                                                              buttonStyleData:
-                                                                  ButtonStyleData(
-                                                                height: 45,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                padding: const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        11),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                  border: Border.all(
-                                                                      color: Colors
-                                                                          .white24),
-                                                                ),
-                                                              ),
-                                                              iconStyleData:
-                                                                  const IconStyleData(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              dropdownStyleData:
-                                                                  DropdownStyleData(
-                                                                maxHeight: 200,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                ),
-                                                              ),
-                                                              menuItemStyleData:
-                                                                  const MenuItemStyleData(
-                                                                height: 40,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 10),
-                                                    Expanded(
-                                                      child: ListView.builder(
-                                                        physics:
-                                                            const NeverScrollableScrollPhysics(),
-                                                        shrinkWrap: true,
-                                                        itemCount:
-                                                            dataList.length,
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final item =
-                                                              dataList[index];
-                                                          final name =
-                                                              item['name']
-                                                                  as String;
-                                                          final value =
-                                                              item['count']
-                                                                  as double;
-                                                          final percent = total >
-                                                                  0
-                                                              ? (value /
-                                                                      total) *
-                                                                  100
-                                                              : 0.0;
-                                                          final color =
-                                                              getColorByValue(
-                                                                  value,
-                                                                  minValue,
-                                                                  maxValue,
-                                                                  dataList
-                                                                      .length);
-
-                                                          return _buildBarItem1(
-                                                              name,
-                                                              value,
-                                                              percent,
-                                                              maxValue,
-                                                              color);
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            }
-
-                                            // Handle Parameter view
-                                            else {
                                               final parameterData =
                                                   locationListProvider
                                                       .grapDataProfile
                                                       ?.globalSovPerilCounts;
 
-                                              // Convert the parameter data to usable format
-                                              final Map<String, dynamic>
-                                                  parameterMap =
-                                                  parameterData?.toJson() ?? {};
+                                              if (parameterData != null) {
+                                                final pMap =
+                                                    parameterData.toJson();
+                                                paramList = pMap.entries
+                                                    .map((e) {
+                                                  final peril =
+                                                      Map<String, dynamic>.from(
+                                                          e.value);
+                                                  final total =
+                                                      (peril['total'] as num?)
+                                                              ?.toDouble() ??
+                                                          0.0;
+                                                  final completed =
+                                                      (peril['completed_data_locations']
+                                                                  as num?)
+                                                              ?.toDouble() ??
+                                                          0.0;
+                                                  final missing =
+                                                      total - completed;
+                                                  return {
+                                                    'name': e.key,
+                                                    'missing': missing,
+                                                    'completed': completed,
+                                                  };
+                                                }).toList()
+                                                  ..sort((a, b) => (b['missing']
+                                                          as double)
+                                                      .compareTo(a['missing']
+                                                          as double));
 
-                                              // Sort by missing descending so highest is first
-                                              final List<Map<String, dynamic>>
-                                                  dataList =
-                                                  parameterMap.entries.map((e) {
-                                                final perilData = e.value is Map
-                                                    ? Map<String, dynamic>.from(
-                                                        e.value)
-                                                    : {};
-                                                final total =
-                                                    (perilData['total'] as num?)
-                                                            ?.toDouble() ??
-                                                        0.0;
-                                                final completed =
-                                                    (perilData['completed_data']
-                                                                as num?)
-                                                            ?.toDouble() ??
-                                                        0.0;
-                                                final missing =
-                                                    total - completed;
+                                                paramMax = paramList.fold(
+                                                    0.0,
+                                                    (prev, e) =>
+                                                        e['missing'] > prev
+                                                            ? e['missing']
+                                                            : prev);
 
-                                                return {
-                                                  'name': e.key,
-                                                  'missing': missing,
-                                                  'total': total,
-                                                  'completed_data': completed,
-                                                };
-                                              }).toList()
-                                                    ..sort((a, b) =>
-                                                        (b['missing'] as double)
-                                                            .compareTo(
-                                                                a['missing']
-                                                                    as double));
+                                                paramTotalMissing =
+                                                    paramList.fold(
+                                                        0.0,
+                                                        (sum, e) =>
+                                                            sum +
+                                                            (e['missing']
+                                                                as double));
+                                              }
 
-                                              final maxValue =
-                                                  dataList.fold<double>(
-                                                0.0,
-                                                (prev, e) => e['missing'] > prev
-                                                    ? e['missing']
-                                                    : prev,
-                                              );
-
-                                              final total =
-                                                  dataList.fold<double>(
-                                                0.0,
-                                                (sum, e) =>
-                                                    sum +
-                                                    (e['missing'] as double),
-                                              );
-
+                                              // ========= UI BLOCK =========
                                               return Container(
-                                                height: dataList.isEmpty
-                                                    ? 160
-                                                    : 400,
                                                 margin:
                                                     const EdgeInsets.all(12),
+                                                padding:
+                                                    const EdgeInsets.all(16),
                                                 decoration: BoxDecoration(
                                                   color:
                                                       const Color(0xFF111111),
@@ -3359,8 +3635,6 @@ class _SovLocationListState extends State<SovLocationList>
                                                   border: Border.all(
                                                       color: Colors.white10),
                                                 ),
-                                                padding:
-                                                    const EdgeInsets.all(16),
                                                 child: Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
@@ -3370,24 +3644,30 @@ class _SovLocationListState extends State<SovLocationList>
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
+                                                        // Dynamic Title
                                                         Expanded(
                                                           child: Text(
-                                                            "Critical Missing Parameters (Parameter)",
-                                                            maxLines: 2,
+                                                            "Critical Missing Parameters – ${selectedViewCritical == "Geocoding" ? "Geocoding" : "Parameter"}",
                                                             style:
                                                                 const TextStyle(
                                                               color: Color(
                                                                   0xFF90CAF9),
-                                                              fontSize: 14,
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
                                                             ),
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
                                                           ),
                                                         ),
-                                                        const SizedBox(
-                                                            width: 12),
+
+                                                        // Dropdown
                                                         Container(
+                                                          height: 42,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      10),
                                                           decoration:
                                                               BoxDecoration(
                                                             color:
@@ -3395,7 +3675,7 @@ class _SovLocationListState extends State<SovLocationList>
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        12),
+                                                                        10),
                                                             border: Border.all(
                                                                 color: Colors
                                                                     .white24),
@@ -3403,31 +3683,28 @@ class _SovLocationListState extends State<SovLocationList>
                                                           child:
                                                               DropdownButtonHideUnderline(
                                                             child:
-                                                                DropdownButton2<
+                                                                DropdownButton<
                                                                     String>(
                                                               value:
-                                                                  selectedView1,
+                                                                  selectedViewCritical,
+                                                              dropdownColor:
+                                                                  Colors
+                                                                      .black87,
                                                               style: const TextStyle(
                                                                   color: Colors
                                                                       .white),
                                                               items: const [
                                                                 DropdownMenuItem(
                                                                   value:
-                                                                      'Geocoding',
+                                                                      "Geocoding",
                                                                   child: Text(
-                                                                      'Geocoding',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
+                                                                      "Geocoding"),
                                                                 ),
                                                                 DropdownMenuItem(
                                                                   value:
-                                                                      'Parameter',
+                                                                      "Parameter",
                                                                   child: Text(
-                                                                      'Parameter',
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis),
+                                                                      "Parameter"),
                                                                 ),
                                                               ],
                                                               onChanged:
@@ -3435,219 +3712,128 @@ class _SovLocationListState extends State<SovLocationList>
                                                                 if (value !=
                                                                     null) {
                                                                   setState(() {
-                                                                    selectedView1 =
+                                                                    selectedViewCritical =
                                                                         value;
                                                                   });
                                                                 }
                                                               },
-                                                              buttonStyleData:
-                                                                  ButtonStyleData(
-                                                                height: 45,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                padding: const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        11),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                  border: Border.all(
-                                                                      color: Colors
-                                                                          .white24),
-                                                                ),
-                                                              ),
-                                                              iconStyleData:
-                                                                  const IconStyleData(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              dropdownStyleData:
-                                                                  DropdownStyleData(
-                                                                maxHeight: 200,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width /
-                                                                    3.2,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: Colors
-                                                                      .black87,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                ),
-                                                              ),
-                                                              menuItemStyleData:
-                                                                  const MenuItemStyleData(
-                                                                height: 40,
-                                                              ),
                                                             ),
                                                           ),
                                                         ),
                                                       ],
                                                     ),
-                                                    const SizedBox(height: 3),
+                                                    const SizedBox(height: 20),
                                                     Expanded(
-                                                      child: dataList.isEmpty
-                                                          ? Container(
-                                                              height: 50,
-                                                              alignment:
-                                                                  Alignment
-                                                                      .center,
-                                                              child: const Text(
-                                                                'No data found',
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .white70,
-                                                                    fontSize:
-                                                                        14),
-                                                              ),
+                                                      child: selectedViewCritical ==
+                                                              "Geocoding"
+                                                          ? _buildCriticalGeocodeSection(
+                                                              geocodeList,
+                                                              geocodeMin,
+                                                              geocodeMax,
+                                                              geocodeTotal,
                                                             )
-                                                          : ListView.builder(
-                                                              physics:
-                                                                  const NeverScrollableScrollPhysics(),
-                                                              shrinkWrap: true,
-                                                              itemCount:
-                                                                  parameterMap
-                                                                      .length,
-                                                              itemBuilder:
-                                                                  (context,
-                                                                      index) {
-                                                                final item =
-                                                                    dataList[
-                                                                        index];
-                                                                final name =
-                                                                    item['name']
-                                                                        as String;
-                                                                final value =
-                                                                    item['completed_data']
-                                                                        as double;
-                                                                final percent =
-                                                                    total > 0
-                                                                        ? (value /
-                                                                                total) *
-                                                                            100
-                                                                        : 0.0;
-                                                                return _buildBarItem(
-                                                                    name,
-                                                                    value,
-                                                                    percent,
-                                                                    maxValue);
-                                                              },
+                                                          : _buildCriticalParameterSection(
+                                                              paramList,
+                                                              paramMax,
+                                                              paramTotalMissing,
                                                             ),
                                                     ),
                                                   ],
                                                 ),
                                               );
-                                            }
-                                          },
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                      ],
+                                    )),
                               ),
                             ),
 
-                            // Location list
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  if (locationListProvider.isCertifiedLoading &&
-                                      index == 0) {
-                                    return const Column(
-                                      children: [
-                                        SizedBox(height: 100),
-                                        Center(
-                                            child: CircularProgressIndicator()),
-                                      ],
-                                    );
-                                  }
+                                  (context, index) {
+                                if (locationListProvider.isCertifiedLoading &&
+                                    index == 0) {
+                                  return const Column(
+                                    children: [
+                                      SizedBox(height: 100),
+                                      Center(
+                                          child: CircularProgressIndicator()),
+                                    ],
+                                  );
+                                }
 
+                                if (locationListProvider
+                                    .certifiedLocationList.isEmpty) {
+                                  return Center(
+                                    child: Text(
+                                      LanguageService.getTranslated(context,
+                                          "location_list_app_no_accounts_text"),
+                                      style: typography.Body1,
+                                    ),
+                                  );
+                                }
+
+                                if (index >=
+                                    locationListProvider
+                                        .certifiedLocationList.length) {
                                   if (locationListProvider
-                                      .certifiedLocationList.isEmpty) {
-                                    return Center(
-                                      child: Text(
-                                        LanguageService.getTranslated(context,
-                                            "location_list_app_no_accounts_text"),
-                                        style: typography.Body1,
+                                      .isNextPageCertifiedLoading) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Center(
+                                          child: CircularProgressIndicator()),
+                                    );
+                                  } else if (locationListProvider
+                                              .certifiedPage >=
+                                          locationListProvider
+                                              .certifiedTotalPages &&
+                                      locationListProvider
+                                          .certifiedLocationList.isNotEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          LanguageService.getTranslated(context,
+                                              "location_list_end_of_list"),
+                                          style: typography.Body1,
+                                        ),
                                       ),
                                     );
-                                  }
-
-                                  if (index >=
+                                  } else {
+                                    // Trigger next page load
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
                                       locationListProvider
-                                          .certifiedLocationList.length) {
-                                    if (locationListProvider
-                                        .isNextPageCertifiedLoading) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Center(
-                                            child: CircularProgressIndicator()),
+                                          .fetchCertifiedLocationList(
+                                        context,
+                                        locationQuery,
+                                        locationListProvider.certifiedPage + 1,
+                                        10,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                        widget.sovID,
                                       );
-                                    } else if (locationListProvider
-                                                .certifiedPage >=
-                                            locationListProvider
-                                                .certifiedTotalPages &&
-                                        locationListProvider
-                                            .certifiedLocationList.isNotEmpty) {
-                                      return Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Center(
-                                          child: Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "location_list_end_of_list"),
-                                            style: typography.Body1,
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      // Trigger next page load
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                        locationListProvider
-                                            .fetchCertifiedLocationList(
-                                          context,
-                                          locationQuery,
-                                          locationListProvider.certifiedPage +
-                                              1,
-                                          11,
-                                          widget.accountID,
-                                          widget.subAccountID,
-                                          widget.initialProcessId,
-                                          widget.initialSubProcessId,
-                                          widget.sovID,
-                                        );
-                                      });
-                                      return const SizedBox();
-                                    }
+                                    });
+                                    return const SizedBox();
                                   }
+                                }
 
-                                  return myLocationCertifiedCard(
-                                      locationListProvider, index, context);
-                                },
-                                childCount: locationListProvider
-                                        .certifiedLocationList.isEmpty
-                                    ? 1
-                                    : locationListProvider
-                                            .certifiedLocationList.length +
-                                        1,
-                              ),
+                                return myLocationCertifiedCard(
+                                    locationListProvider, index, context);
+                              },
+                                  childCount: locationListProvider
+                                          .certifiedLocationList.isEmpty
+                                      ? 1 // For empty state
+                                      : locationListProvider
+                                              .certifiedLocationList.length +
+                                          (locationListProvider.certifiedPage <
+                                                  locationListProvider
+                                                      .certifiedTotalPages
+                                              ? 1 // For loading indicator
+                                              : 0)),
                             ),
                           ],
                         ),
@@ -3733,6 +3919,9 @@ class _SovLocationListState extends State<SovLocationList>
       int index,
       BuildContext context) {
     return MyLocationCard(
+      locationName:
+      locationListProvider.certifiedLocationList[index].finalAddress?.locationName ??
+              '',
       imageUrl: locationListProvider
                   .certifiedLocationList[index].screenshots?.isNotEmpty ==
               true
@@ -3783,7 +3972,7 @@ class _SovLocationListState extends State<SovLocationList>
           0,
       dataCompletenessScore:
           locationListProvider.certifiedLocationList[index].dataCompleteness ??
-              0,
+              1,
       isAutoCertified: true,
       tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
       onDelete: (locationId) {
@@ -3818,11 +4007,22 @@ class _SovLocationListState extends State<SovLocationList>
       },
       onAddToSOV: null,
       onAddTag: (locationId) {
-        // Show add tag dialog
-        // Implement bulk add tag
-        locationListProvider.addTagsToSelectedLocations(
-            context, widget.accountID!, widget.subAccountID!, locationId);
+        // ✅ SINGLE LOCATION TAG
+        locationListProvider.showAddTagDialog(
+          context,
+          widget.accountID!,
+          widget.subAccountID!,
+          [locationId], // ⬅️ wrap in list
+          isGlobal: false, // ⬅️ explicitly NOT global
+        );
       },
+
+      // onAddTag: (locationId) {
+      //   // Show add tag dialog
+      //   // Implement bulk add tag
+      //   locationListProvider.addTagsToSelectedLocations(
+      //       context, widget.accountID!, widget.subAccountID!, locationId);
+      // },
       getData: () {
         locationListProvider.fetchLocationList(
           context,
@@ -3844,6 +4044,7 @@ class _SovLocationListState extends State<SovLocationList>
   MyLocationCard myLocationlist(MyLocationListProvider locationListProvider,
       int index, BuildContext context) {
     return MyLocationCard(
+      locationName: locationListProvider.myLocationList[index].finalAddress?.locationName ?? '',
       imageUrl:
           locationListProvider.myLocationList[index].screenshots?.isNotEmpty ==
                   true
@@ -3922,9 +4123,20 @@ class _SovLocationListState extends State<SovLocationList>
       },
       onAddToSOV: null,
       onAddTag: (locationId) {
-        locationListProvider.addTagsToSelectedLocations(
-            context, widget.accountID!, widget.subAccountID!, locationId);
+        // ✅ SINGLE LOCATION TAG
+        locationListProvider.showAddTagDialog(
+          context,
+          widget.accountID!,
+          widget.subAccountID!,
+          [locationId], // ⬅️ wrap in list
+          isGlobal: false, // ⬅️ explicitly NOT global
+        );
       },
+
+      // onAddTag: (locationId) {
+      //   locationListProvider.addTagsToSelectedLocations(
+      //       context, widget.accountID!, widget.subAccountID!, locationId);
+      // },
       getData: () {
         locationListProvider.fetchLocationList(
           context,
@@ -4332,43 +4544,32 @@ class _SovLocationListState extends State<SovLocationList>
 }
 
 Widget _buildBarItem(
-    String name, double value, double percent, double maxValue) {
-  // Normalize value width safely
+  String name,
+  double displayValue, // completed (10)
+  double barPercent, // 100%
+  double maxValue,
+  Color barColor,
+) {
   final normalizedWidth =
-      maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
-  Color barColor;
-  if (percent <= 20) {
-    barColor = Colors.red[900]!; // Darker red
-  } else if (percent <= 40) {
-    barColor = Colors.redAccent; //Colors.yellowAccent;
-  } else if (percent <= 60) {
-    barColor = Colors.orangeAccent;
-  } else if (percent <= 80) {
-    barColor = Colors.yellowAccent;
-  } else if (percent <= 85) {
-    barColor = Colors.greenAccent;
-  } else {
-    barColor = Colors.green;
-  }
+      maxValue > 0 ? (barPercent / maxValue).clamp(0.0, 1.0) : 0.0;
+
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(
       children: [
-        // Name + percentage
+        // Left label
         Expanded(
           flex: 2,
           child: Text(
-            "$name",
+            name,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
           ),
         ),
 
+        // Progress Bar
         Expanded(
-          flex: 5,
+          flex: 3,
           child: Stack(
             children: [
               Container(
@@ -4378,8 +4579,9 @@ Widget _buildBarItem(
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
+
               FractionallySizedBox(
-                widthFactor: normalizedWidth,
+                widthFactor: normalizedWidth, // 1.0 → 100%
                 child: Container(
                   height: 35,
                   decoration: BoxDecoration(
@@ -4388,17 +4590,16 @@ Widget _buildBarItem(
                   ),
                 ),
               ),
-              Positioned(
-                width: 100,
-                top: 10,
+
+              // Center text (10 | 100%)
+              Positioned.fill(
                 child: Center(
                   child: Text(
-                    value == 0 ? "" : value.toStringAsFixed(0),
-                    textAlign: TextAlign.right,
+                    displayValue.toStringAsFixed(0),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -4406,10 +4607,6 @@ Widget _buildBarItem(
             ],
           ),
         ),
-
-        const SizedBox(width: 8),
-
-        // Value text (right-aligned)
       ],
     ),
   );
@@ -4439,7 +4636,7 @@ Widget _buildBarItem1(
           ),
         ),
         Expanded(
-          flex: 5,
+          flex: 4,
           child: Stack(
             children: [
               Container(

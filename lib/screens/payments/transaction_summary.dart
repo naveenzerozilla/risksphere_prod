@@ -156,56 +156,23 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                     indicatorColor: Colors.lightBlueAccent,
                     indicatorWeight: 1,
                     tabs: [
-                      Tab(text: 'Payment Transactions'),
-                      Tab(text: 'Invoice History'),
+                      Tab(text:
+                      LanguageService.getTranslated(
+                          context,
+                          "payment_transactions")),
+
+
+                      Tab(text:
+
+
+                LanguageService.getTranslated(
+                context,
+                "invoice_history")),
+
                     ],
                   ),
                 ),
                 const SizedBox(height: 14),
-                // if (trialStatus.contains('Expired')) ...[
-                //   Container(
-                //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                //     decoration: BoxDecoration(
-                //       color: Theme.of(context)
-                //           .colorScheme
-                //           .surface
-                //           .withOpacity(0.95),
-                //     ),
-                //     child: Column(
-                //       mainAxisAlignment: MainAxisAlignment.center,
-                //       children: [
-                //         SizedBox(height: CustomSpacing.four),
-                //         Padding(
-                //           padding: const EdgeInsets.all(8.0),
-                //           child: MessageCard(
-                //             messageTextSpans: [
-                //               TextSpan(
-                //                 text:
-                //                     'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
-                //                 style: typography.Body1,
-                //               ),
-                //               // tappable
-                //               TextSpan(
-                //                 text: ' Upgrade Now!',
-                //                 style: typography.Body1.copyWith(
-                //                   color: AppColors.primaryMain,
-                //                 ),
-                //                 recognizer: TapGestureRecognizer()
-                //                   ..onTap = () {
-                //                     Navigator.of(context).push(
-                //                         MaterialPageRoute(
-                //                             builder: (_) =>
-                //                                 PurchaseLicensePage()));
-                //                   },
-                //               ),
-                //             ],
-                //             isError: true,
-                //           ),
-                //         ),
-                //       ],
-                //     ),
-                //   )
-                // ] else ...[
                 Consumer2<PaymentProvider, InvoiceProvider>(
                   builder: (context, paymentProvider, invoiceProvider, child) {
                     return Padding(
@@ -215,152 +182,147 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                         // 👈 makes it scrollable horizontally
                         child: Row(
                           children: [
-                            Container(
-                              padding:
-                                  const EdgeInsets.only(right: 3, left: 10),
-                              decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Colors.blue, width: 1.0),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: DropdownButton2<String>(
-                                value: _selectedValue,
+                        Container(
+                        padding: const EdgeInsets.only(right: 3, left: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.blue, width: 1.0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButton2<String>(
+                          value: _selectedValue,
 
-                                dropdownStyleData: DropdownStyleData(
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1E1E1E),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                style: const TextStyle(color: Colors.white),
-                                items: [
-                                  'All License',
-                                  'Event Count Cost',
-                                  'Location Count(Geocoding)',
-                                  'Location Count(Geocoding & Hazard)',
-                                  'Location Improvement Cost',
-                                  'User License'
-                                ].map<DropdownMenuItem<String>>((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  if (newValue != null) {
-                                    setState(() {
-                                      _selectedValue = newValue;
-                                    });
+                          buttonStyleData: ButtonStyleData(
+                            // width: 200, // 👈 WIDTH OF THE BUTTON (adjust as needed)
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                          ),
 
-                                    final valueMap = {
-                                      'All License': '',
-                                      'Event Count Cost': 'event_cost',
-                                      'Location Count(Geocoding)':
-                                          'location_geocoding',
-                                      'Location Count(Geocoding & Hazard)':
-                                          'location_hazard',
-                                      'Location Improvement Cost':
-                                          'location_improvement_cost',
-                                      'User License': 'user_cost',
-                                    };
-                                    setState(() {
-                                      filterItem = valueMap[newValue] ?? '';
-                                    });
-
-                                    if (_tabController.index == 0) {
-                                      paymentProvider.fetchTransactionList(
-                                        context,
-                                        valueMap[newValue] ?? '',
-                                        '',
-                                      );
-                                    } else {
-                                      invoiceProvider.fetchInvoiceList(
-                                        context,
-                                        valueMap[newValue] ?? '',
-                                      );
-                                    }
-                                  }
-                                },
-                                underline:
-                                    const SizedBox(), // 👈 hides the underline
-                                // dropdownColor: const Color(0xFF1E1E1E),
-                              ),
-
-                              // DropdownButton2<String>(
-                              //   value: _selectedValue,
-                              //
-                              //   buttonStyleData: ButtonStyleData(
-                              //     decoration: BoxDecoration(
-                              //       border: Border.all(color: Colors.blue),
-                              //       borderRadius: BorderRadius.circular(8),
-                              //     ),
-                              //   ),
-                              //   dropdownStyleData: DropdownStyleData(
-                              //     decoration: BoxDecoration(
-                              //       color: const Color(0xFF1E1E1E),
-                              //       borderRadius: BorderRadius.circular(8),
-                              //     ),
-                              //   ),
-                              //   style: const TextStyle(color: Colors.white),
-                              //
-                              //
-                              //   items: [
-                              //     'All License',
-                              //     'Event Count Cost',
-                              //     'Location Count(Geocoding)',
-                              //     'Location Count(Geocoding & Hazard)',
-                              //     'Location Improvement Cost',
-                              //     'User License'
-                              //   ].map<DropdownMenuItem<String>>((String value) {
-                              //     return DropdownMenuItem<String>(
-                              //       value: value,
-                              //       child: Text(value),
-                              //     );
-                              //   }).toList(),
-                              //   onChanged: (String? newValue) {
-                              //     if (newValue != null) {
-                              //       setState(() {
-                              //         _selectedValue = newValue;
-                              //       });
-                              //
-                              //       final valueMap = {
-                              //         'All License': '',
-                              //         'Event Count Cost': 'event_cost',
-                              //         'Location Count(Geocoding)':
-                              //             'location_geocoding',
-                              //         'Location Count(Geocoding & Hazard)':
-                              //             'location_hazard',
-                              //         'Location Improvement Cost':
-                              //             'location_improvement_cost',
-                              //         'User License': 'user_cost',
-                              //       };
-                              //       setState(() {
-                              //         filterItem = valueMap[newValue] ?? '';
-                              //       });
-                              //
-                              //       if (_tabController.index == 0) {
-                              //         paymentProvider.fetchTransactionList(
-                              //           context,
-                              //           valueMap[newValue] ?? '',
-                              //           '',
-                              //         );
-                              //       } else if (_tabController.index == 1) {
-                              //         invoiceProvider.fetchInvoiceList(
-                              //           context,
-                              //           valueMap[newValue] ?? '',
-                              //         );
-                              //       } else {
-                              //         invoiceProvider.fetchInvoiceList(
-                              //           context,
-                              //           valueMap[newValue] ?? '',
-                              //         );
-                              //       }
-                              //     }
-                              //   },
-                              //   underline: const SizedBox(),
-                              //   dropdownColor: const Color(0xFF1E1E1E),
-                              // ),
+                          dropdownStyleData: DropdownStyleData(
+                            width: 300, // 👈 WIDTH OF DROPDOWN MENU (set your custom width)
+                            decoration: BoxDecoration(
+                              color: Color(0xFF1E1E1E),
+                              borderRadius: BorderRadius.circular(8),
                             ),
+                          ),
+
+                          style: const TextStyle(color: Colors.white),
+
+                          items: [
+                            'All License',
+                            'Location Count(Geocoding & Hazard)',
+                            'Location Improvement Cost',
+                            'User License'
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedValue = newValue;
+                              });
+
+                              final valueMap = {
+                                'All License': '',
+                                'Location Count(Geocoding & Hazard)': 'location_hazard',
+                                'Location Improvement Cost': 'location_improvement_cost',
+                                'User License': 'user_cost',
+                              };
+
+                              filterItem = valueMap[newValue] ?? '';
+
+                              if (_tabController.index == 0) {
+                                paymentProvider.fetchTransactionList(
+                                  context,
+                                  filterItem,
+                                  '',
+                                );
+                              } else {
+                                invoiceProvider.fetchInvoiceList(
+                                  context,
+                                  filterItem,
+                                );
+                              }
+                            }
+                          },
+
+                          underline: const SizedBox(),
+                        ),
+                      ),
+
+                        // Container(
+                            //   padding:
+                            //       const EdgeInsets.only(right: 3, left: 10),
+                            //   decoration: BoxDecoration(
+                            //     border:
+                            //         Border.all(color: Colors.blue, width: 1.0),
+                            //     borderRadius: BorderRadius.circular(8),
+                            //   ),
+                            //   child: DropdownButton2<String>(
+                            //     value: _selectedValue,
+                            //
+                            //     dropdownStyleData: DropdownStyleData(
+                            //       decoration: BoxDecoration(
+                            //         color: const Color(0xFF1E1E1E),
+                            //         borderRadius: BorderRadius.circular(8),
+                            //       ),
+                            //     ),
+                            //     style: const TextStyle(color: Colors.white),
+                            //     items: [
+                            //       'All License',
+                            //       // 'Event Count Cost',
+                            //       // 'Location Count(Geocoding)',
+                            //       'Location Count(Geocoding & Hazard)',
+                            //       'Location Improvement Cost',
+                            //       'User License'
+                            //     ].map<DropdownMenuItem<String>>((String value) {
+                            //       return DropdownMenuItem<String>(
+                            //         value: value,
+                            //         child: Text(value),
+                            //       );
+                            //     }).toList(),
+                            //     onChanged: (String? newValue) {
+                            //       if (newValue != null) {
+                            //         setState(() {
+                            //           _selectedValue = newValue;
+                            //         });
+                            //
+                            //         final valueMap = {
+                            //           'All License': '',
+                            //           // 'Event Count Cost': 'event_cost',
+                            //           // 'Location Count(Geocoding)':
+                            //           //     'location_geocoding',
+                            //           'Location Count(Geocoding & Hazard)':
+                            //               'location_hazard',
+                            //           'Location Improvement Cost':
+                            //               'location_improvement_cost',
+                            //           'User License': 'user_cost',
+                            //         };
+                            //         setState(() {
+                            //           filterItem = valueMap[newValue] ?? '';
+                            //         });
+                            //
+                            //         if (_tabController.index == 0) {
+                            //           paymentProvider.fetchTransactionList(
+                            //             context,
+                            //             valueMap[newValue] ?? '',
+                            //             '',
+                            //           );
+                            //         } else {
+                            //           invoiceProvider.fetchInvoiceList(
+                            //             context,
+                            //             valueMap[newValue] ?? '',
+                            //           );
+                            //         }
+                            //       }
+                            //     },
+                            //     underline:
+                            //         const SizedBox(), // 👈 hides the underline
+                            //     // dropdownColor: const Color(0xFF1E1E1E),
+                            //   ),
+                            // ),
                             const SizedBox(width: 10),
                             Container(
                               width: 130,
@@ -384,7 +346,6 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                     );
                   },
                 ),
-
                 const SizedBox(height: 8),
                 Expanded(
                   child: TabBarView(

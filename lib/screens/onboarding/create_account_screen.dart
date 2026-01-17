@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
@@ -40,6 +41,10 @@ class CreateAccountScreen extends StatefulWidget {
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
   SignUpOptions? _selectedOption;
+  Roles? selectedRole;
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _dropdownOverlay;
+  bool _isDropdownOpen = false;
 
   /// Individual account UI
   TextEditingController nameController = TextEditingController();
@@ -119,6 +124,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       TextEditingController();
   dynamic? selectedCompanyType;
   String? selectedCompanyType1 = "";
+  String? selectedCompanyId = ""; // <-- This will store company ID
+  String? selectedCompanyTypeId;
+
   Roles? selectedCompanyRole;
   bool _showRoles = true;
   bool _showCompanyType = true;
@@ -559,7 +567,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                     selectedCompanyType?.id)
                                                 .first
                                                 .isApplicableForTrial ??
-                                            false;
+                                            true;
                                         int trialPeriodDays = authNotifier
                                                 .companyTypeList
                                                 ?.where((companyType) =>
@@ -567,35 +575,106 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                     selectedCompanyType?.id)
                                                 .first
                                                 .trialPeriodDays ??
-                                            0;
+                                            7;
+
+                                        print(
+                                            "=========== SIGN UP CORPORATE INPUT LOG ===========");
+
+                                        print("company_id: $selectedCompanyId");
+                                        print(
+                                            "companyLegalName: ${companyName.trim()}");
+                                        print(
+                                            "companyTypeName: $selectedCompanyType1");
+                                        print(
+                                            "companyDisplayName: ${companyDisplayNameController.text.trim()}");
+
+                                        print(
+                                            "adminName: ${adminNameController.text.trim()}");
+                                        print(
+                                            "adminEmail: ${adminEmailController.text.trim()}");
+
+                                        print(
+                                            "adminCountryCode: +${mobileController.value?.countryCode ?? ""}");
+                                        print(
+                                            "adminPhone: ${mobileController.value?.nsn ?? ""}");
+
+                                        print(
+                                            "adminPassword: ${adminPasswordController.text.trim()}");
+
+                                        print(
+                                            "roles: ${selectedCompanyRole?.toJson()}");
+
+                                        print(
+                                            "selectedCompany: ${jsonEncode(selectedCompany?.toJson())}");
+
+                                        print(
+                                            "isApplicableForTrial: $isApplicableForTrial");
+                                        print(
+                                            "trialPeriodDays: $trialPeriodDays");
+
+                                        print(
+                                            "selectedCorporateCountryName: $_selectedCorporateCountryName");
+                                        print(
+                                            "companyTypeId: $selectedCompanyTypeId");
+
+                                        print(
+                                            "====================================================");
+
                                         authNotifier
                                             .signUpCorporateWithEmailAndPassword(
-                                          companyId,
-                                          companyName,
-                                          selectedCompanyType!,
-                                          companyDisplayNameController.text,
-                                          adminNameController.text,
-                                          adminEmailController.text,
-                                          mobileController.value?.countryCode ??
-                                              "",
+                                          selectedCompanyId,
+                                          // company_id
+                                          companyName.trim(),
+                                          // companyLegalName
+                                          selectedCompanyType1!,
+                                          // companyTypeName
+                                          companyDisplayNameController.text
+                                              .trim(),
+                                          // companyDisplayName
+                                          adminNameController.text.trim(),
+                                          // adminName
+                                          adminEmailController.text.trim(),
+                                          // adminEmail
+                                          "+${mobileController.value?.countryCode ?? ""}",
+                                          // adminCountryCode
                                           mobileController.value?.nsn ?? "",
-                                          adminPasswordController.text,
-                                          !_enableCompanyTypeDropdown
-                                              ? selectedCompanyRole
-                                              : Roles(
-                                                  isForIndividual: true,
-                                                  isApplicableForTrial: false,
-                                                  role: "admin",
-                                                  name: "Admin",
-                                                  isMultipleRoleEnabled: false,
-                                                  id: "admin",
-                                                ),
+                                          // adminPhone
+                                          adminPasswordController.text.trim(),
+                                          // password
+                                          selectedCompanyRole,
+                                          // roles
                                           context,
                                           selectedCompany,
+                                          // selected company object
                                           isApplicableForTrial,
                                           trialPeriodDays,
                                           _selectedCorporateCountryName,
+                                          // selected country
+                                          selectedCompanyTypeId, // companyTypeId
                                         );
+
+                                        // authNotifier
+                                        //     .signUpCorporateWithEmailAndPassword(
+                                        //   selectedCompanyId,
+                                        //   // companyName,
+                                        //   companyDisplayNameController.text
+                                        //       .trim(),
+                                        //   selectedCompanyType1!,
+                                        //   // <-- correct name
+                                        //   companyDisplayNameController.text,
+                                        //   adminNameController.text,
+                                        //   adminEmailController.text,
+                                        //   "+${mobileController.value?.countryCode ?? ""}",
+                                        //   mobileController.value?.nsn ?? "",
+                                        //   adminPasswordController.text,
+                                        //   selectedCompanyRole,
+                                        //   context,
+                                        //   selectedCompany,
+                                        //   isApplicableForTrial,
+                                        //   trialPeriodDays,
+                                        //   _selectedCorporateCountryName,
+                                        //   selectedCompanyTypeId, // <-- THE MISSING ONE
+                                        // );
                                       }
                                     }
                                   },
@@ -696,41 +775,91 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ),
           SizedBox(height: CustomSpacing.eight),
+          // In your _createAccountForm() method, update the radio buttons section:
+
           Row(
             children: [
               Expanded(
-                child: RadioListTile<SignUpOptions>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(LanguageService.getTranslated(
-                      context, "register_non_corporate_radio_Individual")),
-                  value: SignUpOptions.individual,
-                  groupValue: _selectedOption,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedOption = value;
-                      _removeAllChips();
-                    });
-                  },
-                ),
-              ),
-              if (Platform.isAndroid)
-                Expanded(
+                child: Container(
+                  // decoration: BoxDecoration(
+                  //   border: Border.all(
+                  //     color: _selectedOption == SignUpOptions.individual
+                  //         ? AppColors.primaryMain
+                  //         : Colors.grey,
+                  //     width: 2,
+                  //   ),
+                  //   borderRadius: BorderRadius.circular(8),
+                  // ),
                   child: RadioListTile<SignUpOptions>(
+                    tileColor: _selectedOption == SignUpOptions.individual
+                        ? AppColors.primaryMain.withOpacity(0.1)
+                        : Colors.transparent,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(LanguageService.getTranslated(
-                        context, "register_non_corporate_radio_Corporate")),
-                    value: SignUpOptions.corporate,
+                    title: Text(
+                      LanguageService.getTranslated(
+                          context, "register_non_corporate_radio_Individual"),
+                      style: TextStyle(
+                        fontWeight: _selectedOption == SignUpOptions.individual
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    value: SignUpOptions.individual,
                     groupValue: _selectedOption,
                     onChanged: (value) {
                       setState(() {
                         _selectedOption = value;
-                        _removeAllChips();
+                        _clearIndividualForm();
+                        _resetRoles();
                       });
                     },
                   ),
                 ),
+              ),
+              SizedBox(width: 8),
+              Platform.isAndroid
+                  ? Expanded(
+                      child: Container(
+                        // decoration: BoxDecoration(
+                        //   border: Border.all(
+                        //     color: _selectedOption == SignUpOptions.corporate
+                        //         ? AppColors.primaryMain
+                        //         : Colors.grey,
+                        //     width: 2,
+                        //   ),
+                        //   borderRadius: BorderRadius.circular(8),
+                        // ),
+                        child: RadioListTile<SignUpOptions>(
+                          tileColor: _selectedOption == SignUpOptions.corporate
+                              ? AppColors.primaryMain.withOpacity(0.1)
+                              : Colors.transparent,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            LanguageService.getTranslated(context,
+                                "register_non_corporate_radio_Corporate"),
+                            style: TextStyle(
+                              fontWeight:
+                                  _selectedOption == SignUpOptions.corporate
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                          value: SignUpOptions.corporate,
+                          groupValue: _selectedOption,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOption = value;
+                              _clearCorporateForm();
+                              _resetRoles();
+                            });
+                          },
+                        ),
+                      ),
+                    )
+                  : SizedBox(),
             ],
           ),
+
           SizedBox(height: CustomSpacing.four),
           _selectedOption == SignUpOptions.individual
               ? _individualAccountUI()
@@ -738,6 +867,54 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ],
       ),
     );
+  }
+
+// Add these methods to your State class
+
+  void _clearIndividualForm() {
+    nameController.clear();
+    displayNameController.clear();
+    emailController.clear();
+    mobileController =
+        PhoneController(PhoneNumber(nsn: '', isoCode: IsoCode.US));
+    passwordController.clear();
+    confirmPasswordController.clear();
+    _selectedRoles = [];
+    _textEditingController.clear();
+  }
+
+  void _clearCorporateForm() {
+    companyLegalNameController.clear();
+    companyTypeController.clear();
+    companyDisplayNameController.clear();
+    adminNameController.clear();
+    adminEmailController.clear();
+    adminMobileController.clear();
+    adminPasswordController.clear();
+    adminConfirmPasswordController.clear();
+    selectedCompanyType = null;
+    selectedCompanyType1 = "";
+    selectedCompanyRole = null;
+    selectedCompany = null;
+    companyName = '';
+    companyId = "";
+    _selectedRoles = [];
+    _textEditingController.clear();
+
+    // Reset manual entry mode
+    isManualEntry = false;
+    selectedManualCompanyType = null;
+    selectedManualRole = null;
+    selectedAdminDropDownRole = null;
+    showAdminDropdown = false;
+    _enableCompanyTypeDropdown = true;
+  }
+
+  void _resetRoles() {
+    setState(() {
+      _selectedRoles.clear();
+      _textEditingController.clear();
+    });
   }
 
   _almostThereForm() {
@@ -924,6 +1101,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ],
         // Name
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             label: RichText(
               text: TextSpan(
@@ -964,9 +1142,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: nameController,
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Display Name
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "usermanagement_display_name_field_label"),
@@ -1011,9 +1190,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: displayNameController,
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Email
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             // labelText: LanguageService.getTranslated(
             //     context, "register_non_corporate_emailfield_label"),
@@ -1055,12 +1235,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: emailController,
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // mobile (optional)
         Row(
           children: [
             Expanded(
               child: FormField<String>(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 validator: (value) {
                   if (mobileController.value!.nsn.isEmpty) {
                     return 'Mobile number is required.';
@@ -1209,9 +1390,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //     ),
         //   ],
         // ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Password
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: _showPasswordIndividual
@@ -1262,10 +1444,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
           controller: passwordController,
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
 
         // Confirm Password
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: _showPasswordConfirmationIndividual
@@ -1322,7 +1505,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           controller: confirmPasswordController,
         ),
 
-        // TextFormField(
+        // TextFormField(       autovalidateMode: AutovalidateMode.onUserInteraction,
         //   decoration: InputDecoration(
         //     suffixIcon: IconButton(
         //       icon: _showPasswordConfirmationIndividual
@@ -1351,7 +1534,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //   },
         //   controller: confirmPasswordController,
         // ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         Row(
           children: [
             Text(
@@ -1368,106 +1551,155 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
           ],
         ),
-        SizedBox(height: CustomSpacing.two),
+        SizedBox(height: CustomSpacing.four),
         // Text(context.read<AuthNotifier>().roles.length.toString()),
-        Stack(
-          children: [
-            TextField(
-              readOnly: true,
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  useSafeArea: true,
-                  isScrollControlled: true,
-                  builder: (BuildContext context) {
-                    return RolesBottomSheet(
-                      showCorporateSwitch: false,
-                      // options: roles,
-                      options: context.read<AuthNotifier>().roles,
-                      selectedRoles: _selectedRoles,
-                      addChip: _addChip,
-                      removeChip: _removeChip,
-                      removeAllChips: _removeAllChips,
-                      selectedOption:
-                          _selectedOption ?? SignUpOptions.individual,
-                      onOptionChanged: (SignUpOptions option) {
-                        setState(() {
-                          _selectedOption = option;
-                        });
-                      },
-                    );
-                  },
-                );
-              },
-              controller: _textEditingController,
-              onChanged: (value) {
-                // Handle input changes
-              },
-              decoration: InputDecoration(
-                labelText: LanguageService.getTranslated(
-                    context, "usermanagement_roles_label"),
-                hintText: _selectedRoles.isEmpty
-                    ? LanguageService.getTranslated(
-                        context, "usermanagement_cuser_roles_placeholder")
-                    : "",
-                border: OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_drop_down),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      useSafeArea: true,
-                      isScrollControlled: true,
-                      builder: (BuildContext context) {
-                        return RolesBottomSheet(
-                          showCorporateSwitch: false,
-                          // options: roles,
-                          options: context.read<AuthNotifier>().roles,
-                          selectedRoles: _selectedRoles,
-                          addChip: _addChip,
-                          removeChip: _removeChip,
-                          removeAllChips: _removeAllChips,
-                          selectedOption:
-                              _selectedOption ?? SignUpOptions.individual,
-                          onOptionChanged: (SignUpOptions signUpOptions) {
-                            setState(() {
-                              _selectedOption = signUpOptions;
-                            });
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+        CompositedTransformTarget(
+          link: _layerLink,
+          child: GestureDetector(
+            onTap: () => _toggleDropdown(context),
+            child: Container(
+              height: 58,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.grey),
               ),
-            ),
-            Positioned(
-              top: 4.0,
-              left: 10.0,
-              right: 10.0,
-              child: Container(
-                margin: const EdgeInsets.only(right: 32.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _selectedRoles
-                        .map(
-                          (value) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(value.name!),
-                              deleteIcon: Icon(Icons.cancel),
-                              onDeleted: () => _removeChip(value),
-                            ),
-                          ),
-                        )
-                        .toList(),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _selectedRoles.isEmpty
+                            ? [
+                                Text(
+                                  "Select Roles",
+                                  style: TextStyle(color: Colors.grey),
+                                )
+                              ]
+                            : _selectedRoles
+                                .map(
+                                  (role) => Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Chip(
+                                      label: Text(role.name ?? ""),
+                                      onDeleted: () => _removeRole(role),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
                   ),
-                ),
+                  Icon(
+                    _isDropdownOpen
+                        ? Icons.arrow_drop_up
+                        : Icons.arrow_drop_down,
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
+
+        // Stack(
+        //   children: [
+        //     TextField(
+        //       readOnly: true,
+        //       onTap: () {
+        //         showModalBottomSheet(
+        //           context: context,
+        //           useSafeArea: true,
+        //           isScrollControlled: true,
+        //           builder: (BuildContext context) {
+        //             return RolesBottomSheet(
+        //               showCorporateSwitch: false,
+        //               // options: roles,
+        //               options: context.read<AuthNotifier>().roles,
+        //               selectedRoles: _selectedRoles,
+        //               addChip: _addChip,
+        //               removeChip: _removeChip,
+        //               removeAllChips: _removeAllChips,
+        //               selectedOption:
+        //                   _selectedOption ?? SignUpOptions.individual,
+        //               onOptionChanged: (SignUpOptions option) {
+        //                 setState(() {
+        //                   _selectedOption = option;
+        //                 });
+        //               },
+        //             );
+        //           },
+        //         );
+        //       },
+        //       controller: _textEditingController,
+        //       onChanged: (value) {
+        //         // Handle input changes
+        //       },
+        //       decoration: InputDecoration(
+        //         labelText: LanguageService.getTranslated(
+        //             context, "usermanagement_roles_label"),
+        //         hintText: _selectedRoles.isEmpty
+        //             ? LanguageService.getTranslated(
+        //                 context, "usermanagement_cuser_roles_placeholder")
+        //             : "",
+        //         border: OutlineInputBorder(),
+        //         suffixIcon: IconButton(
+        //           icon: Icon(Icons.arrow_drop_down),
+        //           onPressed: () {
+        //             showModalBottomSheet(
+        //               context: context,
+        //               useSafeArea: true,
+        //               isScrollControlled: true,
+        //               builder: (BuildContext context) {
+        //                 return RolesBottomSheet(
+        //                   showCorporateSwitch: false,
+        //                   // options: roles,
+        //                   options: context.read<AuthNotifier>().roles,
+        //                   selectedRoles: _selectedRoles,
+        //                   addChip: _addChip,
+        //                   removeChip: _removeChip,
+        //                   removeAllChips: _removeAllChips,
+        //                   selectedOption:
+        //                       _selectedOption ?? SignUpOptions.individual,
+        //                   onOptionChanged: (SignUpOptions signUpOptions) {
+        //                     setState(() {
+        //                       _selectedOption = signUpOptions;
+        //                     });
+        //                   },
+        //                 );
+        //               },
+        //             );
+        //           },
+        //         ),
+        //       ),
+        //     ),
+        //     Positioned(
+        //       top: 4.0,
+        //       left: 10.0,
+        //       right: 10.0,
+        //       child: Container(
+        //         margin: const EdgeInsets.only(right: 32.0),
+        //         child: SingleChildScrollView(
+        //           scrollDirection: Axis.horizontal,
+        //           child: Row(
+        //             children: _selectedRoles
+        //                 .map(
+        //                   (value) => Padding(
+        //                     padding: const EdgeInsets.only(right: 8.0),
+        //                     child: Chip(
+        //                       label: Text(value.name!),
+        //                       deleteIcon: Icon(Icons.cancel),
+        //                       onDeleted: () => _removeChip(value),
+        //                     ),
+        //                   ),
+        //                 )
+        //                 .toList(),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
         // Stack(
         //   children: [
         //     FormField<String>(
@@ -2004,6 +2236,136 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
+  void _toggleDropdown(BuildContext context) {
+    if (_isDropdownOpen) {
+      _closeDropdown();
+    } else {
+      _openDropdown(context);
+    }
+  }
+
+  void _openDropdown(BuildContext context) {
+    final allRoles = context.read<AuthNotifier>().roles;
+
+    // Filter only unselected roles
+    final roles = allRoles.where((roleModel) {
+      final role = Categories.fromJson(roleModel.toJson());
+      return !_selectedRoles.any((r) => r.id == role.id);
+    }).toList();
+
+    if (roles.isEmpty) return;
+
+    // 🔥 Dynamic height calculation
+    double tileHeight = 50;
+    double maxHeight = 250;
+    double dropdownHeight = (roles.length * tileHeight).clamp(50, maxHeight);
+
+    _dropdownOverlay = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          width: MediaQuery.of(context).size.width - 48,
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            offset: const Offset(0, 60),
+            showWhenUnlinked: false,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(8),
+              child: StatefulBuilder(
+                builder: (context, overlaySetState) {
+                  return Container(
+                    height: dropdownHeight, // 🔥 DYNAMIC HEIGHT APPLIED
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: roles.map((roleModel) {
+                        final role = Categories.fromJson(roleModel.toJson());
+
+                        return ListTile(
+                          title: Text(role.name ?? "",
+                              style: TextStyle(color: Colors.white)),
+                          onTap: () {
+                            setState(() {
+                              _selectedRoles.add(role);
+                            });
+
+                            _closeDropdown();
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_dropdownOverlay!);
+    setState(() => _isDropdownOpen = true);
+  }
+
+  void _closeDropdown() {
+    _dropdownOverlay?.remove();
+    _dropdownOverlay = null;
+    setState(() => _isDropdownOpen = false);
+  }
+
+  void _openRolesDropdown(BuildContext context) {
+    final roles = context.read<AuthNotifier>().roles;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Select Roles"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: roles.length,
+              itemBuilder: (context, index) {
+                final role = Categories.fromJson(roles[index].toJson());
+                final isSelected = _selectedRoles.any((r) => r.id == role.id);
+
+                return CheckboxListTile(
+                  value: isSelected,
+                  title: Text(role.name ?? ""),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedRoles.add(role);
+                      } else {
+                        _selectedRoles.removeWhere((r) => r.id == role.id);
+                      }
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _removeRole(Categories role) {
+    setState(() {
+      _selectedRoles.removeWhere((r) => r.id == role.id);
+    });
+  }
+
   _signUpAdditionFields() {
     var typography = CustomTypography(context);
     return Column(
@@ -2093,11 +2455,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.two),
-        // Text(context.read<AuthNotifier>().roles.length.toString()),
         Stack(
           children: [
             TextField(
               readOnly: true,
+              controller: _textEditingController,
               onTap: () {
                 showModalBottomSheet(
                   context: context,
@@ -2106,7 +2468,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   builder: (BuildContext context) {
                     return RolesBottomSheet(
                       showCorporateSwitch: false,
-                      // options: roles,
                       options: context.read<AuthNotifier>().roles,
                       selectedRoles: _selectedRoles,
                       addChip: _addChip,
@@ -2123,93 +2484,234 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   },
                 );
               },
-              controller: _textEditingController,
-              onChanged: (value) {
-                // Handle input changes
-              },
               decoration: InputDecoration(
                 labelText: LanguageService.getTranslated(
                     context, "usermanagement_roles_label"),
+                floatingLabelBehavior: FloatingLabelBehavior.always,
                 hintText: _selectedRoles.isEmpty
                     ? LanguageService.getTranslated(
                         context, "usermanagement_cuser_roles_placeholder")
-                    : "",
-                border: OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_drop_down),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      useSafeArea: true,
-                      isScrollControlled: true,
-                      builder: (BuildContext context) {
-                        return RolesBottomSheet(
-                          showCorporateSwitch: false,
-                          // options: roles,
-                          options: context.read<AuthNotifier>().roles,
-                          selectedRoles: _selectedRoles,
-                          addChip: _addChip,
-                          removeChip: _removeChip,
-                          removeAllChips: _removeAllChips,
-                          selectedOption:
-                              _selectedOption ?? SignUpOptions.individual,
-                          onOptionChanged: (SignUpOptions signUpOptions) {
-                            setState(() {
-                              _selectedOption = signUpOptions;
-                            });
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+                    : null,
+                contentPadding: const EdgeInsets.fromLTRB(12, 40, 48, 12),
+                border: const OutlineInputBorder(),
+                suffixIcon: const Icon(Icons.arrow_drop_down),
               ),
             ),
-            Positioned(
-              top: 10.0,
-              left: 10.0,
-              right: 10.0,
-              child: Container(
-                margin: const EdgeInsets.only(right: 32.0),
+            if (_selectedRoles.isNotEmpty)
+              Positioned(
+                top: 18,
+                left: 12,
+                right: 48,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: _selectedRoles
-                        .map(
-                          (value) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(value.name!),
-                              deleteIcon: Icon(Icons.cancel),
-                              onDeleted: () => _removeChip(value),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                    children: _selectedRoles.map((value) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Chip(
+                          label: Text(value.name!),
+                          onDeleted: () => _removeChip(value),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
-            ),
           ],
         ),
+
+        // Stack(
+        //   children: [
+        //     TextField(
+        //       readOnly: true,
+        //       onTap: () {
+        //         showModalBottomSheet(
+        //           context: context,
+        //           useSafeArea: true,
+        //           isScrollControlled: true,
+        //           builder: (BuildContext context) {
+        //             return RolesBottomSheet(
+        //               showCorporateSwitch: false,
+        //               // options: roles,
+        //               options: context.read<AuthNotifier>().roles,
+        //               selectedRoles: _selectedRoles,
+        //               addChip: _addChip,
+        //               removeChip: _removeChip,
+        //               removeAllChips: _removeAllChips,
+        //               selectedOption:
+        //                   _selectedOption ?? SignUpOptions.individual,
+        //               onOptionChanged: (SignUpOptions option) {
+        //                 setState(() {
+        //                   _selectedOption = option;
+        //                 });
+        //               },
+        //             );
+        //           },
+        //         );
+        //       },
+        //       controller: _textEditingController,
+        //       onChanged: (value) {
+        //         // Handle input changes
+        //       },
+        //       // decoration: InputDecoration(
+        //       //   labelText: LanguageService.getTranslated(
+        //       //       context, "usermanagement_roles_label"),
+        //       //   hintText: _selectedRoles.isEmpty
+        //       //       ? LanguageService.getTranslated(
+        //       //           context, "usermanagement_cuser_roles_placeholder")
+        //       //       : "",
+        //       //   border: OutlineInputBorder(),
+        //       //   suffixIcon: IconButton(
+        //       //     icon: Icon(Icons.arrow_drop_down),
+        //       //     onPressed: () {
+        //       //       showModalBottomSheet(
+        //       //         context: context,
+        //       //         useSafeArea: true,
+        //       //         isScrollControlled: true,
+        //       //         builder: (BuildContext context) {
+        //       //           return RolesBottomSheet(
+        //       //             showCorporateSwitch: false,
+        //       //             // options: roles,
+        //       //             options: context.read<AuthNotifier>().roles,
+        //       //             selectedRoles: _selectedRoles,
+        //       //             addChip: _addChip,
+        //       //             removeChip: _removeChip,
+        //       //             removeAllChips: _removeAllChips,
+        //       //             selectedOption:
+        //       //                 _selectedOption ?? SignUpOptions.individual,
+        //       //             onOptionChanged: (SignUpOptions signUpOptions) {
+        //       //               setState(() {
+        //       //                 _selectedOption = signUpOptions;
+        //       //               });
+        //       //             },
+        //       //           );
+        //       //         },
+        //       //       );
+        //       //     },
+        //       //   ),
+        //       // ),
+        //     ),
+        //     Positioned(
+        //       top: 10.0,
+        //       left: 10.0,
+        //       right: 10.0,
+        //       child: Container(
+        //         margin: const EdgeInsets.only(right: 32.0),
+        //         child: SingleChildScrollView(
+        //           scrollDirection: Axis.horizontal,
+        //           child: Row(
+        //             children: _selectedRoles
+        //                 .map(
+        //                   (value) => Padding(
+        //                     padding: const EdgeInsets.only(right: 8.0),
+        //                     child: Chip(
+        //                       label: Text(value.name!),
+        //                       deleteIcon: Icon(Icons.cancel),
+        //                       onDeleted: () => _removeChip(value),
+        //                     ),
+        //                   ),
+        //                 )
+        //                 .toList(),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
 
-  _corporateAccountUI() {
-    var typography = CustomTypography(context);
-    print('Corporate Country: $_selectedCorporateCountryName');
+  // Put these inside your State<_...> class (top of the class)
+  final List<String> _fixedAdminRoles = [
+    "Admin",
+    "Broker",
+    "Insurance Buyer",
+  ];
+
+  final List<String> _manualCompanyTypes = [
+    // deduped & normalized from your provided list
+    "Insurance Broker",
+    "Insurance",
+    "Risk Manager",
+    "Service Provider",
+    "Broker",
+    "Reinsurer", // added a common one, remove if not required
+  ];
+
+  final List<String> _manualRoles = [
+    "Admin",
+  ];
+
+  CompanyType? matchCompanyType({
+    required Companies selected,
+    required List<CompanyType> types,
+  }) {
+    String selName = (selected.companyTypeName ?? "").trim().toLowerCase();
+    String selClean = selName.replaceAll("_", "").replaceAll(" ", "");
+
+    // 1️⃣ Match by ID
+    try {
+      if (selected.companyTypeId != null) {
+        return types.firstWhere((t) => t.id == selected.companyTypeId);
+      }
+    } catch (_) {}
+
+    // 2️⃣ Exact type or name match
+    for (var t in types) {
+      final type = (t.type ?? "").trim().toLowerCase();
+      final name = (t.name ?? "").trim().toLowerCase();
+      if (type == selName || name == selName) return t;
+    }
+
+    // 3️⃣ Underscore/space insensitive match
+    for (var t in types) {
+      final type = (t.type ?? "")
+          .trim()
+          .toLowerCase()
+          .replaceAll("_", "")
+          .replaceAll(" ", "");
+      final name = (t.name ?? "")
+          .trim()
+          .toLowerCase()
+          .replaceAll("_", "")
+          .replaceAll(" ", "");
+      if (type == selClean || name == selClean) return t;
+    }
+
+    // 4️⃣ Contains (Fuzzy)
+    for (var t in types) {
+      final type = (t.type ?? "").toLowerCase();
+      final name = (t.name ?? "").toLowerCase();
+      if (type.contains(selName) || name.contains(selName)) return t;
+    }
+
+    return null; // fallback
+  }
+
+  String? selectedAdminDropDownRole; // shows after API select
+  bool showAdminDropdown = false;
+
+// Manual-mode selections
+  bool isManualEntry = false;
+  String? selectedManualCompanyType;
+  String? selectedManualRole;
+  bool isLoadingCompanySearch = false;
+
+  Widget _corporateAccountUI() {
+    final typography = CustomTypography(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Corporate Country just show flag and country name
+        // Country picker (unchanged)
         Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Expanded(
               child: CountryPickerFlagName(
-                onCountryChange: !_enableCountryDropdown
+                onCountryChange: !_enableCompanyTypeDropdown
                     ? null
                     : (country) {
                         setState(() {
@@ -2236,6 +2738,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         SizedBox(height: CustomSpacing.eight),
 
+        // Company Autocomplete (API)
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
             return Column(
@@ -2245,6 +2748,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     final input = textEditingValue.text.trim().toLowerCase();
                     if (input.isEmpty) {
+                      // no typing → show API options (user can still select)
                       return authNotifier.companyOptions;
                     }
                     return authNotifier.companyOptions.where(
@@ -2254,45 +2758,46 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   displayStringForOption: (Companies option) => option.name,
                   onSelected: (Companies selection) {
                     setState(() {
+                      isManualEntry = false;
+                      showAdminDropdown = true;
+                      selectedAdminDropDownRole = null;
+
                       companyDisplayNameController.text =
-                          selection.displayName ?? "";
+                          selection.displayName ??
+                              selection.countryName ??
+                              selection.name ??
+                              "";
+
+                      selectedCompany = selection;
+                      print("FULL COMPANY OBJECT: ${selection.toJson()}");
+
+                      /// ✔ REAL company ID (UUID)
+                      selectedCompanyId = selection.id;
+
+                      /// ✔ CORRECT company type ID (slug)
+                      selectedCompanyTypeId = selection.companyTypeId;
+
+                      print(
+                          "companyTypeId from model = ${selection.companyTypeId}");
+
+                      /// ✔ Company type name (human readable)
                       selectedCompanyType1 = selection.companyTypeName;
+                      companyName = selection.name;
+                      print("Company ID = $selectedCompanyId");
+                      print("Company Type ID = $selectedCompanyTypeId");
+                      print("Company Type Name = $selectedCompanyType1");
+
+                      // Match company type object for available roles
                       final types = authNotifier.companyTypeList ?? [];
-
-                      if (types.isEmpty) {
-                        // No available company types — reset selection
-                        selectedCompanyType = null;
-                        _enableCompanyTypeDropdown = false;
-                        return;
-                      }
-
-                      final selType = (selection.companyTypeName ?? "")
-                          .trim()
-                          .toLowerCase();
-
-                      // Try exact match on type or name; fallback to a 'contains' match; final fallback = first item
-                      selectedCompanyType = types.firstWhere(
-                        (t) {
-                          final type = (t.type ?? "").trim().toLowerCase();
-                          final name = (t.name ?? "").trim().toLowerCase();
-                          return type == selType || name == selType;
-                        },
-                        orElse: () {
-                          // attempt a contains match (helps with formatting differences)
-                          final containsMatch = types.firstWhere(
-                            (t) {
-                              final type = (t.type ?? "").trim().toLowerCase();
-                              final name = (t.name ?? "").trim().toLowerCase();
-                              return selType.isNotEmpty &&
-                                  (type.contains(selType) ||
-                                      name.contains(selType));
-                            },
-                            orElse: () => types
-                                .first, // guaranteed because types.isEmpty handled above
-                          );
-                          return containsMatch;
-                        },
+                      selectedCompanyType = matchCompanyType(
+                        selected: selection,
+                        types: types,
                       );
+
+                      if (selectedCompanyType != null &&
+                          selectedCompanyType!.roles.isNotEmpty) {
+                        selectedCompanyRole = selectedCompanyType!.roles.first;
+                      }
 
                       _enableCompanyTypeDropdown = false;
                     });
@@ -2301,13 +2806,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       onFieldSubmitted) {
                     _textEditingController = textEditingController;
                     return TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: textEditingController,
                       focusNode: focusNode,
                       decoration: InputDecoration(
                         labelText: "Company Name",
-                        hintText: "Enter company name...",
+                        hintText: "Enter or search company name...",
                         border: OutlineInputBorder(),
-                        suffixIcon: isLoading
+                        suffixIcon: isLoadingCompanySearch
                             ? Padding(
                                 padding: EdgeInsets.all(10),
                                 child: SizedBox(
@@ -2320,39 +2826,72 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             : Icon(Icons.search),
                       ),
                       onChanged: (value) async {
-                        if (value.trim().isEmpty) {
+                        print(_manualCompanyTypes.length);
+                        print(companyOptions.length);
+                        print("_manualCompanyTypes.first");
+                        final v = value.trim();
+                        if (v.isEmpty) {
+                          // reset to initial state
                           setState(() {
-                            _enableCompanyTypeDropdown = true;
+                            isManualEntry = false;
+                            selectedManualCompanyType = null;
+                            selectedManualRole = null;
                             selectedCompanyType = null;
+                            selectedCompanyRole = null;
+                            _enableCompanyTypeDropdown = true;
+                            showAdminDropdown = false;
                             companyDisplayNameController.clear();
                           });
                           authNotifier.filteredCompanyOptions = [];
-                        } else {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          await authNotifier.fetchCompanies(value);
-                          authNotifier.filterCompanies(value);
-                          setState(() {
-                            isLoading = false;
-                          });
+                          return;
+                        }
+
+                        // When user types (and doesn't immediately select), enter manual mode
+                        setState(() {
+                          isManualEntry = true;
+
+                          selectedManualRole = "Admin";
+
+                          // FIX: default company type must not be null
+                          // selectedManualCompanyType ??=
+                          //     _manualCompanyTypes.first;
+
+                          // FIX: company type text field value
+                          selectedCompanyType1 = selectedManualCompanyType;
+
+                          // FIX: give a placeholder companyTypeId
+                          // selectedCompanyTypeId = "manual";
+
+                          // FIX: give a placeholder companyId
+                          selectedCompanyId = "manual";
+
+                          selectedCompanyType = null;
+                          selectedCompanyRole = null;
+
+                          _enableCompanyTypeDropdown = true;
+                          showAdminDropdown = false;
+                        });
+
+                        if (v.length > 1) {
+                          setState(() => isLoadingCompanySearch = true);
+                          await authNotifier.fetchCompanies(v);
+                          authNotifier.filterCompanies(v);
+                          setState(() => isLoadingCompanySearch = false);
                         }
                       },
                     );
                   },
                   optionsViewBuilder: (context, onSelected, options) {
-                    if (options.isEmpty) {
-                      return SizedBox.shrink();
-                    }
+                    if (options.isEmpty) return SizedBox.shrink();
 
                     return Align(
                       alignment: Alignment.topLeft,
                       child: Material(
                         elevation: 4.0,
                         child: Container(
-                          color: Colors.white,
+                          color: Colors.black38,
                           width: MediaQuery.of(context).size.width * 0.9,
-                          constraints: BoxConstraints(maxHeight: 180),
+                          constraints: BoxConstraints(maxHeight: 220),
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
                             itemCount: options.length,
@@ -2360,10 +2899,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                               final option = options.elementAt(index);
                               return ListTile(
                                 title: Text(option.name,
-                                    style: TextStyle(color: Colors.black)),
-                                onTap: () {
-                                  onSelected(option);
-                                },
+                                    style: TextStyle(color: Colors.white)),
+                                // subtitle: option.displayName != null
+                                //     ? Text(option.displayName!)
+                                //     : null,
+                                onTap: () => onSelected(option),
                               );
                             },
                           ),
@@ -2376,73 +2916,95 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             );
           },
         ),
-
         SizedBox(height: CustomSpacing.four),
-        // Text(selectedCompanyType1.toString()),
-        // Company Type
-        Consumer<AuthNotifier>(
-          builder: (context, authNotifier, child) {
-            final hasMatch = selectedCompanyType != null;
 
-            return FormField<CompanyType>(
-              builder: (FormFieldState<CompanyType> state) {
-                // Case 1: MATCH FOUND → show Dropdown
-                if (hasMatch) {
-                  return IgnorePointer(
-                    ignoring: !_enableCompanyTypeDropdown,
-                    child: DropdownButtonFormField<CompanyType>(
-                      value: selectedCompanyType,
-                      onChanged: _enableCompanyTypeDropdown
-                          ? (CompanyType? newValue) {
-                              setState(() {
-                                selectedCompanyRole = null;
-                                selectedCompanyType = newValue;
-                              });
-                            }
-                          : null,
-                      items: authNotifier.companyTypeList
-                          ?.where((companyType) =>
-                              companyType.type.toLowerCase() !=
-                              'individual_account')
-                          .map((CompanyType companyType) {
-                        return DropdownMenuItem<CompanyType>(
-                          value: companyType,
-                          child: Text(companyType.type.toString()),
-                        );
-                      }).toList(),
-                      decoration: InputDecoration(
-                        enabled: _enableCompanyTypeDropdown,
-                        labelText: "Company Type",
-                        border: const OutlineInputBorder(),
-                        errorText: state.errorText,
-                      ),
-                      validator: (value) {
-                        if (value == null) {
-                          return "Company Type is required";
-                        }
-                        return null;
-                      },
-                    ),
-                  );
+        // COMPANY TYPE: API-mode locked dropdown OR manual dropdown when typing
+        // Builder(builder: (context) {
+        //   if (isManualEntry) {
+        //     return DropdownButtonFormField<String>(
+        //       value: selectedManualCompanyType,
+        //       decoration: InputDecoration(
+        //         labelText: "Company Type2",
+        //         border: OutlineInputBorder(),
+        //       ),
+        //       items: _manualCompanyTypes
+        //           .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+        //           .toList(),
+        //
+        //       // ✅ FIX: assign manual company type + typeId
+        //       onChanged: (val) {
+        //         setState(() {
+        //           selectedManualCompanyType = val;
+        //
+        //           // 🔥 These 2 are REQUIRED by backend and must not be null
+        //           selectedCompanyType1 = val; // company_type_name
+        //           selectedCompanyTypeId = val!
+        //               .toLowerCase()
+        //               .replaceAll(" ", "_"); // company_type_id
+        //         });
+        //       },
+        //
+        //       validator: (v) {
+        //         if (v == null || v.trim().isEmpty)
+        //           return "Company Type is required";
+        //         return null;
+        //       },
+        //     );
+        //   }
+        Builder(builder: (context) {
+          if (isManualEntry)
+            return Consumer<AuthNotifier>(
+              builder: (context, authNotifier, child) {
+                final companyTypes = authNotifier.companyType;
+
+                if (companyTypes.isEmpty) {
+                  return const SizedBox();
                 }
 
-                // Case 2: NO MATCH → Show text field
-                return TextFormField(
-                  enabled: _enableCompanyTypeDropdown,
-                  decoration: InputDecoration(
+                // 🔥 Ensure selected value is valid
+                if (selectedManualCompanyType != null &&
+                    !companyTypes.any(
+                        (e) => e.companyName == selectedManualCompanyType)) {
+                  selectedManualCompanyType = null;
+                }
+
+                return DropdownButtonFormField<String>(
+                  value: selectedManualCompanyType,
+                  // 👈 SAME as manual
+                  decoration: const InputDecoration(
                     labelText: "Company Type",
-                    hintText: "Enter company type manually",
                     border: OutlineInputBorder(),
-                    errorText: state.errorText,
                   ),
-                  controller: TextEditingController(
-                    text: (selectedCompanyType1 ?? "").toString(),
-                  ),
+
+                  // ✅ Display NAME, store NAME (manual-style)
+                  items: companyTypes.map((ct) {
+                    return DropdownMenuItem<String>(
+                      value: ct.companyName, // 👈 String
+                      child: Text(ct.companyName),
+                    );
+                  }).toList(),
+
                   onChanged: (val) {
-                    state.didChange(null); // keep validator consistent
+                    if (val == null) return;
+                    print(val);
+                    print(val);
+                    print("val");
+                    final selected =
+                        companyTypes.firstWhere((e) => e.companyName == val);
+
+                    setState(() {
+                      // ✅ SAME behavior as old manual dropdown
+                      selectedManualCompanyType = val;
+                      // selectedCompanyId = selected.id;
+                      // 🔥 Backend-required values
+                      selectedCompanyTypeId = selected.id;
+                      // selectedCompanyTypeId = selected.id;
+                      selectedCompanyType1 = selected.companyName;
+                    });
                   },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
+
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
                       return "Company Type is required";
                     }
                     return null;
@@ -2450,229 +3012,342 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 );
               },
             );
-          },
-        ),
 
-        // Consumer<AuthNotifier>(
-        //   builder: (context, authNotifier, child) {
-        //     return FormField<String>(
-        //       builder: (FormFieldState<String> state) {
-        //         return _showCompanyType
-        //             ? IgnorePointer(
-        //                 ignoring: !_enableCompanyTypeDropdown,
-        //                 child: DropdownButtonFormField<CompanyType>(
-        //                   value: selectedCompanyType,
-        //                   onChanged: _enableCompanyTypeDropdown
-        //                       ? (CompanyType? newValue) {
-        //                           setState(() {
-        //                             _showRoles = false;
-        //                             selectedCompanyRole = null;
-        //                             selectedCompanyType = newValue;
-        //                           });
-        //                           Future.delayed(Duration(milliseconds: 1), () {
-        //                             setState(() {
-        //                               _showRoles = true;
-        //                             });
-        //                           });
-        //                         }
-        //                       : null,
-        //                   items: authNotifier.companyTypeList
-        //                       ?.where((companyType) =>
-        //                           companyType.type.toLowerCase() !=
-        //                           'individual_account')
-        //                       .map((CompanyType companyType) {
-        //                     return DropdownMenuItem<CompanyType>(
-        //                       value: companyType,
-        //                       // Changed from companyType.name to companyType.type.toString()
-        //                       child: Text(companyType.type.toString()),
-        //                     );
-        //                   }).toList(),
-        //                   decoration: InputDecoration(
-        //                     enabled: _enableCompanyTypeDropdown,
-        //                     label: RichText(
-        //                       text: TextSpan(
-        //                         children: [
-        //                           TextSpan(
-        //                             text: LanguageService.getTranslated(context,
-        //                                 "register_corporate_company_type_field_label"),
-        //                           ),
-        //                           WidgetSpan(
-        //                             child: Text(
-        //                               " *",
-        //                               style: TextStyle(
-        //                                 color: Colors.red,
-        //                                 fontSize: 16,
-        //                                 fontWeight: FontWeight.bold,
-        //                               ),
-        //                             ),
-        //                             alignment: PlaceholderAlignment.bottom,
-        //                           ),
-        //                         ],
-        //                       ),
-        //                     ),
-        //                     hintText: LanguageService.getTranslated(context,
-        //                         "register_corporate_company_type_field_placeholder"),
-        //                     border: const OutlineInputBorder(),
-        //                     errorText: state.errorText,
-        //                   ),
-        //                   validator: (value) {
-        //                     if (value == null) {
-        //                       return 'Company Type is required';
-        //                     }
-        //                     return null;
-        //                   },
-        //                 ),
-        //               )
-        //             : Center(
-        //                 child: CircularProgressIndicator(),
-        //               );
-        //       },
-        //     );
-        //   },
-        // ),
+          // if (isManualEntry) {
+          //   // manual entry path: show manual company type dropdown
+          //   return DropdownButtonFormField<String>(
+          //     value: selectedManualCompanyType,
+          //     decoration: InputDecoration(
+          //       labelText: "Company Type",
+          //       border: OutlineInputBorder(),
+          //     ),
+          //     items: _manualCompanyTypes
+          //         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+          //         .toList(),
+          //     onChanged: (val) {
+          //       setState(() => selectedManualCompanyType = val);
+          //     },
+          //     validator: (v) {
+          //       if (v == null || v.trim().isEmpty)
+          //         return "Company Type is required";
+          //       return null;
+          //     },
+          //   );
+          // }
+
+          else {
+            // API-mode: show selectedCompanyType (locked) or allow selection if enabled
+            return Consumer<AuthNotifier>(
+              builder: (context, authNotifier, child) {
+                return TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+
+                  controller:
+                      TextEditingController(text: selectedCompanyType1 ?? ""),
+                  enabled: _enableCompanyTypeDropdown,
+                  // false = read-only
+                  decoration: InputDecoration(
+                    labelText: "Company Type",
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCompanyType1 = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (!isManualEntry &&
+                        (value == null || value.trim().isEmpty)) {
+                      return "Company Type is required";
+                    }
+                    return null;
+                  },
+                );
+              },
+            );
+
+            //   Consumer<AuthNotifier>(
+            //   builder: (context, authNotifier, child) {
+            //     final types = authNotifier.companyTypeList ?? [];
+            //     return IgnorePointer(
+            //       ignoring: !_enableCompanyTypeDropdown,
+            //       child: DropdownButtonFormField<CompanyType>(
+            //         value: selectedCompanyType1,
+            //         decoration: InputDecoration(
+            //           labelText: "Company Type",
+            //           border: OutlineInputBorder(),
+            //         ),
+            //         items: types
+            //             .where((ct) =>
+            //                 (ct.type ?? "").toLowerCase() !=
+            //                 'individual_account')
+            //             .map((ct) => DropdownMenuItem(
+            //                 value: ct, child: Text(ct.type ?? ct.name ?? '')))
+            //             .toList(),
+            //         onChanged: _enableCompanyTypeDropdown
+            //             ? (CompanyType? newValue) {
+            //                 setState(() {
+            //                   selectedCompanyType = newValue;
+            //                   // when user manually changes companyType from dropdown (allowed only when enabled),
+            //                   // reset roles to first of that companyType (if available)
+            //                   if (selectedCompanyType != null &&
+            //                       selectedCompanyType!.roles.isNotEmpty) {
+            //                     selectedCompanyRole =
+            //                         selectedCompanyType!.roles.first;
+            //                   } else {
+            //                     selectedCompanyRole = null;
+            //                   }
+            //                 });
+            //               }
+            //             : null,
+            //         validator: (value) {
+            //           if (!isManualEntry && value == null)
+            //             return "Company Type is required";
+            //           return null;
+            //         },
+            //       ),
+            //     );
+            //   },
+            // );
+          }
+        }),
 
         SizedBox(height: CustomSpacing.four),
-        // Company Display Name
+
+        // COMPANY DISPLAY NAME -- editable only in manual mode
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          controller: companyDisplayNameController,
+          enabled: isManualEntry || _enableCompanyTypeDropdown,
           decoration: InputDecoration(
-            enabled: _enableCompanyTypeDropdown,
-            // labelText: LanguageService.getTranslated(
-            //     context, "register_corporate_company_displayname_field_label"),
             label: RichText(
               text: TextSpan(
                 children: [
-                  TextSpan(
-                    text:
-                        'Company Display Name', // Label text, // Black color for "Name"
-                  ),
+                  TextSpan(text: 'Company Display Name'),
                   WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
+                    child: Text(' *', style: TextStyle(color: Colors.red)),
                   ),
                 ],
               ),
             ),
             hintText: "Enter display name of your company",
-            // .getTranslated(context,
-            //         "register_corporate_comapny_displayname_field_placeholder"),
-            border: const OutlineInputBorder(),
+            border: OutlineInputBorder(),
           ),
           validator: (value) {
-            if (value == null ||
-                    value
-                        .isEmpty /*||
-                value.contains(RegExp(r'[0-9]'))*/
-                ) {
+            if (value == null || value.trim().isEmpty)
               return 'Company display name is required';
-            }
-            // You can add more specific email validation here if needed
             return null;
           },
-          controller: companyDisplayNameController,
         ),
+
         SizedBox(height: CustomSpacing.four),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              _enableCompanyTypeDropdown ? 'Admin' : 'User & Role(s)',
-              style: typography.Subtitle1.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface),
+
+        // ROLE SECTION
+        // If API selected (not manual entry) show roles from API and ALSO show fixed admin dropdown (per your earlier request)
+        // If manual entry -> only Admin role (manualRoles)
+        if (isManualEntry)
+          DropdownButtonFormField<String>(
+            value: selectedManualRole,
+            decoration: InputDecoration(
+              labelText: 'Role',
+              border: OutlineInputBorder(),
             ),
-            SizedBox(width: CustomSpacing.three),
-            Expanded(
-              child: Divider(
-                thickness: 1,
-                color: Colors.white.withOpacity(0.11999999731779099),
-              ),
-            ),
-          ],
-        ),
-        Text(selectedCompanyRole.toString()),
+            items: _manualRoles
+                .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                .toList(),
+            onChanged: (v) => setState(() => selectedManualRole = v),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Role is required';
+              return null;
+            },
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Text(selectedCompanyType1.toString()),
+
+              // API-driven roles dropdown (first priority)
+              // DropdownButtonFormField<Roles>(
+              //   value: selectedCompanyRole,
+              //   decoration: InputDecoration(
+              //     labelText: 'Role(s)',
+              //     border: OutlineInputBorder(),
+              //   ),
+              //   items: selectedCompanyType?.roles
+              //           .map((r) =>
+              //               DropdownMenuItem(value: r, child: Text(r.name)))
+              //           .toList() ??
+              //       [],
+              //   onChanged: (r) {
+              //     setState(() => selectedCompanyRole = r);
+              //   },
+              //   validator: (v) {
+              //     if (selectedCompanyType != null && (v == null))
+              //       return 'Role is required';
+              //     return null;
+              //   },
+              // ),
+
+              SizedBox(height: CustomSpacing.two),
+
+              // After API selection show the fixed Admin/Broker/Insurance Broker/Risk Manager dropdown as extra selection UI
+              if (!isManualEntry)
+                Consumer<AuthNotifier>(
+                  builder: (context, authNotifier, child) {
+                    final selectedName = selectedCompanyType1?.trim() ?? "";
+
+                    // Debug: Check the current state
+                    print('Selected name: $selectedName');
+                    print(
+                        'Company list length: ${authNotifier.companyType?.length}');
+
+                    // Find the matching company in companyType list
+                    CompanyType? matchingCompany;
+
+                    if (selectedName.isNotEmpty &&
+                        authNotifier.companyType != null) {
+                      try {
+                        matchingCompany = authNotifier.companyType!.firstWhere(
+                          (c) =>
+                              (c.companyName ?? "").trim().toLowerCase() ==
+                              selectedName.toLowerCase(),
+                        );
+                      } catch (e) {
+                        // No match found
+                        matchingCompany = null;
+                      }
+                    }
+
+                    // If no company selected yet or no match found
+                    if (selectedName.isEmpty) {
+                      return DropdownButton<String>(
+                        isExpanded: true,
+                        hint: Text('Select company first'),
+                        items: [],
+                        onChanged: null,
+                      );
+                    }
+
+                    if (matchingCompany == null) {
+                      return Column(
+                        children: [
+                          // Text(
+                          //     'Company list: ${authNotifier.companyType?.length}'),
+                          // Text('Selected: $selectedName'),
+                          // DropdownButton<String>(
+                          //   isExpanded: true,
+                          //   hint: Text('Company not found: $selectedName'),
+                          //   items: [],
+                          //   onChanged: null,
+                          // ),
+                        ],
+                      );
+                    }
+
+                    // Get roles from the matching company
+                    final roles = matchingCompany.roles ?? [];
+
+                    // Debug info (optional)
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Debug information
+                        // Text('Total companies: ${authNotifier.companyType?.length}'),
+                        // Text('Matched company: ${matchingCompany.companyName}'),
+                        // Text('Available roles: ${roles.length}'),
+                        // SizedBox(height: 8),
+                        // Text('Available roles: ${roles.length}'),
+                        SizedBox(height: 8),
+
+                        DropdownButtonFormField<Roles>(
+                          decoration: InputDecoration(
+                            labelText: 'Select Role',
+                            border: OutlineInputBorder(),
+                          ),
+                          value: selectedRole, // <-- your selected variable
+                          items: roles.map((role) {
+                            return DropdownMenuItem<Roles>(
+                              value: role,
+                              child: Text(role.name.toString()),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedRole = value; // <-- update selected
+                              selectedCompanyRole = value;
+                              print(value!.name.toString());
+                            });
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                )
+              // if (!isManualEntry)
+              //   Consumer<AuthNotifier>(
+              //     builder: (context, authNotifier, child) {
+              //       final selectedName = selectedCompanyType1 ?? "";
+              //
+              //       // Correct matching using c.name
+              //       final matchingCompany =
+              //           authNotifier.companyList
+              //               ?.firstWhere(
+              //         (c) =>
+              //             (c.companyName ?? "").toLowerCase() ==
+              //             selectedName.toLowerCase(),
+              //         // orElse: () => null,
+              //       );
+              //
+              //       // roles list
+              //       final roles = matchingCompany!.roles ?? [];
+              //
+              //       return Container(child: Text(roles.length.toString()),);
+              //
+              //       //   DropdownButtonFormField<Roles>(
+              //       //   value: selectedCompanyRole,
+              //       //   decoration: InputDecoration(
+              //       //     labelText: "Role(s)1",
+              //       //     border: OutlineInputBorder(),
+              //       //   ),
+              //       //   items: roles
+              //       //       .map(
+              //       //         (r) => DropdownMenuItem(
+              //       //           value: r,
+              //       //           child: Text(r.name ?? ""),
+              //       //         ),
+              //       //       )
+              //       //       .toList(),
+              //       //   onChanged: (role) {
+              //       //     setState(() {
+              //       //       selectedCompanyRole = role;
+              //       //     });
+              //       //   },
+              //       //   validator: (value) {
+              //       //     if (value == null) return "Role is required";
+              //       //     return null;
+              //       //   },
+              //       // );
+              //     },
+              //   ),
+            ],
+          ),
+
         SizedBox(height: CustomSpacing.four),
-        !_enableCompanyTypeDropdown
-            ? Consumer<AuthNotifier>(
-                builder: (context, authNotifier, child) {
-                  return FormField<String>(
-                    builder: (FormFieldState<String> state) {
-                      return _showRoles
-                          ? DropdownButtonFormField<Roles>(
-                              onChanged: (Roles? newValue) {
-                                setState(() {
-                                  selectedCompanyRole = newValue;
-                                  state.didChange(newValue
-                                      ?.name); // Notify form field state
-                                });
-                              },
-                              items:
-                                  // (_customRoles
-                                  //             ? selectedCompany?.roles
-                                  //             :
-                                  selectedCompanyType?.roles
-                                          .map((Roles companyTypeRoles) {
-                                        return DropdownMenuItem<Roles>(
-                                          value: companyTypeRoles,
-                                          child: Text(companyTypeRoles.name),
-                                        );
-                                      }).toList() ??
-                                      [],
-                              decoration: InputDecoration(
-                                labelText: 'Role(s)',
-                                labelStyle: typography.Subtitle1,
-                                hintText: 'Select Role',
-                                hintStyle: typography.Body1,
-                                border: const OutlineInputBorder(),
-                                errorText: state
-                                    .errorText, // Display validation error message
-                              ),
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Role(s) is required'; // Add your validation logic here
-                                }
-                                return null;
-                              },
-                            )
-                          : Center(child: CircularProgressIndicator());
-                    },
-                  );
-                },
-              )
-            : SizedBox(),
-        SizedBox(height: CustomSpacing.four),
-        // Admin Name
+
+        // The rest fields (Admin name, email, phone, passwords) - keep as you had
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "usermanagement_name_field_label"),
             label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "usermanagement_name_field_label"), // Label text, // Black color for "Name"
-                  ),
+                      text: LanguageService.getTranslated(
+                          context, "usermanagement_name_field_label")),
                   WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
+                      child: Text(" *", style: TextStyle(color: Colors.red)),
+                      alignment: PlaceholderAlignment.bottom),
                 ],
               ),
             ),
@@ -2686,37 +3361,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 value.contains(RegExp(r'[0-9]'))) {
               return 'Name is required';
             }
-            // You can add more specific email validation here if needed
             return null;
           },
           controller: adminNameController,
         ),
+
         SizedBox(height: CustomSpacing.four),
-        // Admin Email
+
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "connections_user_connection_email_filter"),
             label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "connections_user_connection_email_filter"), // Label text, // Black color for "Name"
-                  ),
+                      text: LanguageService.getTranslated(
+                          context, "connections_user_connection_email_filter")),
                   WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
+                      child: Text(" *", style: TextStyle(color: Colors.red)),
+                      alignment: PlaceholderAlignment.bottom),
                 ],
               ),
             ),
@@ -2728,24 +3392,23 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             if (value == null || value.isEmpty || regextest(value) == false) {
               return 'Enter a valid email address';
             }
-            // You can add more specific email validation here if needed
             return null;
           },
           controller: adminEmailController,
         ),
-        // Admin Mobile
+
         SizedBox(height: CustomSpacing.four),
+
+        // Mobile/Phone input - reuse your existing PhoneInput
         Row(
           children: [
             Expanded(
               child: FormField<String>(
                 validator: (value) {
-                  if (mobileController.value!.nsn.isEmpty) {
+                  if (mobileController.value!.nsn.isEmpty)
                     return 'Mobile number is required.';
-                  }
-                  if (mobileController.value!.nsn.length < 10) {
+                  if (mobileController.value!.nsn.length < 10)
                     return 'Enter a valid mobile number.';
-                  }
                   return null;
                 },
                 builder: (FormFieldState<String> fieldState) {
@@ -2762,34 +3425,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: LanguageService.getTranslated(
-                                    context,
-                                    "register_mobile_number",
-                                  ),
-                                ),
+                                    text: LanguageService.getTranslated(
+                                        context, "register_mobile_number")),
                                 TextSpan(
-                                  text: " *",
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                    text: " *",
+                                    style: const TextStyle(color: Colors.red)),
                               ],
                             ),
                           ),
                           hintText: _corporateAdminHintText,
                           border: const OutlineInputBorder(),
                           counterText: '',
-                          errorText:
-                              fieldState.errorText, // Show validation error
+                          errorText: fieldState.errorText,
                         ),
                         countrySelectorNavigator:
                             CountrySelectorNavigator.dialog(
                           showSearchInput: true,
-                          searchInputDecoration: const InputDecoration(
-                            hintText: 'Search Country',
-                          ),
+                          searchInputDecoration:
+                              const InputDecoration(hintText: 'Search Country'),
                         ),
                         showFlagInInput: true,
                         flagShape: BoxShape.circle,
@@ -2801,16 +3454,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             _selectedAdminCorporateCountry = p.isoCode.name;
                             _updateHintText();
                           });
-                          print('changed ${p.countryCode}');
-                          fieldState.didChange(
-                              mobileController.value!.nsn); // Notify validator
-                        },
-                        onSaved: (PhoneNumber? p) {
-                          if (p == null) return;
-                          setState(() {
-                            _selectedCountryCode = p.countryCode;
-                          });
-                          print('changed ${p.countryCode}');
+                          fieldState.didChange(mobileController.value!.nsn);
                         },
                       ),
                     ],
@@ -2821,97 +3465,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
 
-        // Row(
-        //   children: [
-        //     Expanded(
-        //       child: PhoneInput(
-        //         key: const Key('phone-field'),
-        //         controller: mobileController,
-        //         shouldFormat: true,
-        //         defaultCountry: IsoCode.US,
-        //         decoration: InputDecoration(
-        //           // labelText: LanguageService.getTranslated(
-        //           //     context, "register_mobile_number"),
-        //           label: RichText(
-        //             text: TextSpan(
-        //               children: [
-        //                 TextSpan(
-        //                   text: LanguageService.getTranslated(context,
-        //                       "register_mobile_number"), // Label text, // Black color for "Name"
-        //                 ),
-        //                 WidgetSpan(
-        //                   child: Text(
-        //                     " *",
-        //                     style: TextStyle(
-        //                       color: Colors.red,
-        //                       fontSize: 16,
-        //                       fontWeight: FontWeight.bold,
-        //                     ),
-        //                   ),
-        //                   alignment: PlaceholderAlignment
-        //                       .bottom, // Center aligns the asterisk
-        //                 ),
-        //               ],
-        //             ),
-        //           ),
-        //           hintText: _corporateAdminHintText,
-        //           border: const OutlineInputBorder(),
-        //           counterText: '',
-        //         ),
-        //         countrySelectorNavigator: CountrySelectorNavigator.dialog(
-        //           showSearchInput: true,
-        //           searchInputDecoration: InputDecoration(
-        //             hintText: 'Search Country',
-        //           ),
-        //         ),
-        //         showFlagInInput: true,
-        //         flagShape: BoxShape.circle,
-        //         flagSize: 35,
-        //         onChanged: (PhoneNumber? p) {
-        //           if (p == null) return;
-        //           setState(() {
-        //             _selectedCountryCode = p.countryCode;
-        //             _selectedAdminCorporateCountry = p.isoCode.name;
-        //             _updateHintText();
-        //           });
-        //           print('changed ${p.countryCode}');
-        //         },
-        //         onSaved: (PhoneNumber? p) {
-        //           if (p == null) return;
-        //           setState(() {
-        //             _selectedCountryCode = p.countryCode;
-        //           });
-        //           print('changed ${p.countryCode}');
-        //         },
-        //       ),
-        //     ),
-        //   ],
-        // ),
-        // Admin Password
         SizedBox(height: CustomSpacing.four),
+
+        // Password fields (kept same as existing)
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "emailsetup_field_password"),
             label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "emailsetup_field_password"), // Label text, // Black color for "Name"
-                  ),
+                      text: LanguageService.getTranslated(
+                          context, "emailsetup_field_password")),
                   WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
+                      child: Text(" *", style: TextStyle(color: Colors.red)),
+                      alignment: PlaceholderAlignment.bottom),
                 ],
               ),
             ),
@@ -2923,47 +3491,34 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ? Icon(Icons.visibility)
                   : Icon(Icons.visibility_off),
               onPressed: () {
-                setState(() {
-                  _showPasswordCorporate = !_showPasswordCorporate;
-                });
+                setState(
+                    () => _showPasswordCorporate = !_showPasswordCorporate);
               },
             ),
           ),
           obscureText: !_showPasswordCorporate,
+          controller: adminPasswordController,
           validator: (value) {
-            if (value == null || value.isEmpty || value.length < 8) {
+            if (value == null || value.isEmpty || value.length < 8)
               return 'Password must be at least 8 characters';
-            }
-            // You can add more specific password validation here if needed
             return null;
           },
-          controller: adminPasswordController,
         ),
-        // Admin Confirm Password
+
         SizedBox(height: CustomSpacing.four),
+
         TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "register_corporate_password_field_placeholder"),
             label: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "register_corporate_password_field_placeholder"), // Label text, // Black color for "Name"
-                  ),
+                      text: LanguageService.getTranslated(context,
+                          "register_corporate_password_field_placeholder")),
                   WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
+                      child: Text(" *", style: TextStyle(color: Colors.red)),
+                      alignment: PlaceholderAlignment.bottom),
                 ],
               ),
             ),
@@ -2975,55 +3530,23 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ? Icon(Icons.visibility)
                   : Icon(Icons.visibility_off),
               onPressed: () {
-                setState(() {
-                  _showPasswordConfirmationCorporate =
-                      !_showPasswordConfirmationCorporate;
-                });
+                setState(() => _showPasswordConfirmationCorporate =
+                    !_showPasswordConfirmationCorporate);
               },
             ),
           ),
           obscureText: !_showPasswordConfirmationCorporate,
+          controller: adminConfirmPasswordController,
           validator: (value) {
-            if (value == null || value.isEmpty || value.length < 8) {
+            if (value == null || value.isEmpty || value.length < 8)
               return 'Password must be at least 8 characters';
-            }
-            if (value != adminPasswordController.text) {
+            if (value != adminPasswordController.text)
               return 'Passwords do not match';
-            }
             return null;
           },
-          controller: adminConfirmPasswordController,
         ),
 
-        // TextFormField(
-        //   decoration: InputDecoration(
-        //     labelText: LanguageService.getTranslated(
-        //         context, "register_corporate_password_field_placeholder"),
-        //     hintText: LanguageService.getTranslated(context,
-        //         "register_corporate_confirm_password_field_placeholder"),
-        //     border: const OutlineInputBorder(),
-        //     suffixIcon: IconButton(
-        //       icon: _showPasswordConfirmationCorporate
-        //           ? Icon(Icons.visibility)
-        //           : Icon(Icons.visibility_off),
-        //       onPressed: () {
-        //         setState(() {
-        //           _showPasswordConfirmationCorporate =
-        //               !_showPasswordConfirmationCorporate;
-        //         });
-        //       },
-        //     ),
-        //   ),
-        //   obscureText: !_showPasswordConfirmationCorporate,
-        //   validator: (value) {
-        //     if (value == null || value.isEmpty || value.length < 8) {
-        //       return 'Password must be at least 8 characters';
-        //     }
-        //     // You can add more specific password validation here if needed
-        //     return null;
-        //   },
-        //   controller: adminConfirmPasswordController,
-        // ),
+        SizedBox(height: CustomSpacing.four),
       ],
     );
   }
@@ -3058,7 +3581,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   void handleImageSelect(int value) {}
 
-  // Define a function to validate the phone number based on the selected country
+// Define a function to validate the phone number based on the selected country
   String? validatePhoneNumber(String? value) {
     if (value != null && value.isNotEmpty) {
       // Get the dialing code for the selected country

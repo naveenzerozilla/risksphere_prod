@@ -18,8 +18,10 @@ import '../../models/my_location_list_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
+import '../../screens/listings/location_profile.dart';
 import '../../screens/listings/mysov_list.dart';
 import '../../screens/listings/news_feed_screen.dart';
+import '../../screens/listings/vendor_list.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
 import '../../screens/onboarding/login_screen.dart';
@@ -59,6 +61,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool isIndivudual = false;
   bool isLoggingOut = false;
   bool sovExpanded = false;
+  bool adminExpanded = false;
   bool showTotalCorporates = false;
   bool showAllUsers = false;
   bool showConnectionRequests = false;
@@ -203,7 +206,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     semanticsLabel: 'Logo',
                   ),
                   const SizedBox(height: 20),
-                  // Search bar added
+                  // // Search bar added
                   Consumer<UserProfileProvider>(
                     builder: (context, userProfile, child) {
                       final trialStatus = userProfile.trialInfo['status'] ?? '';
@@ -230,7 +233,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   messageTextSpans: [
                                     TextSpan(
                                       text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
                                       style: typography.Body1,
                                     ),
                                     // tappable
@@ -260,25 +263,93 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   Column(
                     children: [
-
+                      TextField(
+                        controller: searchController,
+                        onChanged: (value) {
+                          if (value.isNotEmpty && value.length > 2) {
+                            debouncer.run(() {
+                              Provider.of<MyLocationListProvider>(context,
+                                      listen: false)
+                                  .performGlobalSearch(context, value);
+                            });
+                          } else {
+                            Provider.of<MyLocationListProvider>(context,
+                                    listen: false)
+                                .searchLocationList = [];
+                          }
+                        },
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.search, color: iconColor),
+                          hintText: 'Search Locations',
+                          hintStyle: typography.Body1,
+                          filled: true,
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
                       Consumer<MyLocationListProvider>(
                         builder: (context, provider, child) {
                           return AutocompleteOptionsLocation(
                             options: provider.searchLocationList,
                             isLoading: provider.isSearchLoading,
-                            onSelected: (MyLocation selectedLocation) {
-                              // Handle location selection
-                              searchController.text =
-                                  selectedLocation.finalAddress?.address ?? '';
-                              provider.searchLocationList =
-                                  []; // Clear results after selection
+                            onSelected: (MyLocation location) {
+                              // Update text field
+                              searchController.text = location.address ?? '';
+
+                              // Clear results
+                              provider.searchLocationList = [];
+                              print(location.accountId);
+                              print(location.subAccountId);
+                              print(location.subAccountName);
+                              print(location.locationId);
+                              print(location.placeId);
+
+                              // ✅ Navigate with RESPONSE DATA
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => LocationProfile(
+                                    accountId: location.accountId!,
+                                    accountName: location.accountName!,
+                                    subAccountId: location.subAccountId!,
+                                    subAccountName: location.subAccountName!,
+                                    sovId: "",
+                                    sovName: "test",
+                                    searchQuery: "",
+                                    locationId: location.locationId,
+                                    page: "1",
+                                    totalPages: "1",
+                                    // hazardProcess: "",
+                                    // onConfirmCallback: widget.getData,
+                                    // onNavigateBack: widget.onNavigateBack,
+                                    tab: 0,
+                                  ),
+                                  // builder: (_) => LocationProfile(
+                                  //   accountId: location.accountId ?? "",
+                                  //   accountName: location.accountName ?? "",
+                                  //   subAccountId: location.subAccountId ?? "",
+                                  //   subAccountName: location.subAccountName ?? "",
+                                  //   sovId: "",
+                                  //   sovName: "",
+                                  //   searchQuery:  "",
+                                  //   locationId:  location.locationId,
+                                  //   page: "1",
+                                  //   totalPages: "1",
+                                  // ),
+                                ),
+                              );
                             },
                           );
                         },
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
                 ],
               ),
             ),
@@ -295,13 +366,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       _buildDrawerItem(
                         context,
                         provider,
-                        title: "Dashboard",
+                        title: LanguageService.getTranslated(
+                            context, 'drawer_menu_dashboard'),
                         icon: Icons.home,
                         onTap: () {
                           provider.setSelectedItem("dashboard");
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => DashboardScreen()),
+                                builder: (_) => DashboardScreen(
+                                      newUser: "false",
+                                    )),
                           );
                         },
                         isSelected: provider.selectedItem == "dashboard",
@@ -309,7 +383,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       _buildDrawerItem(
                         context,
                         provider,
-                        title: "Accounts",
+                        title: LanguageService.getTranslated(
+                            context, 'drawer_menu_locations'),
                         icon: Icons.account_balance_wallet,
                         onTap: () {
                           provider.setSelectedItem("accounts");
@@ -322,7 +397,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       ),
                       buildDrawerCategory(
                         context: context,
-                        title: "SOV List",
+                        title: LanguageService.getTranslated(
+                            context, 'drawer_menu_sovs'),
                         icon: Icons.ballot,
                         isExpanded: !sovExpanded,
                         onTap: () {
@@ -335,7 +411,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
                       if (sovExpanded) ...[
                         buildSubMenuItem(
-                          title: "My SOVs",
+                          title: LanguageService.getTranslated(
+                              context, 'drawer_menu_mysovs'),
                           isSelected: selectedSovMenu == "My SOVs",
                           onTap: () {
                             setState(() => selectedSovMenu = "My SOVs");
@@ -346,7 +423,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           },
                         ),
                         buildSubMenuItem(
-                          title: "Shared SOVs",
+                          title: LanguageService.getTranslated(
+                              context, 'drawer_menu_sharedsovs'),
                           isSelected: selectedSovMenu == "Shared SOVs",
                           onTap: () {
                             setState(() => selectedSovMenu = "Shared SOVs");
@@ -358,7 +436,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           },
                         ),
                         buildSubMenuItem(
-                          title: "Received SOVs",
+                          title: LanguageService.getTranslated(
+                              context, 'drawer_menu_receivedsovs'),
                           isSelected: selectedSovMenu == "Received SOVs",
                           onTap: () {
                             setState(() => selectedSovMenu = "Received SOVs");
@@ -370,11 +449,70 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           },
                         ),
                       ],
+                      isSuperAdmin.toString() == "true"  &&    userProfileProvider.userData.isIndividual.toString() != "true"
+                          ? _buildDrawerItem(
+                              context,
+                              provider,
+                              title: 'Credit Usage',
+                              icon: Icons.request_quote_outlined,
+                              onTap: () {
+                                provider.setSelectedItem("credit_usage");
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => VendorList(status: 'vendor')),
+                                );
+                              },
+                              isSelected:
+                                  provider.selectedItem == "credit_usage",
+                            )
+                          : Container(),
 
+                      if (showUserOnboardingStats) ...[
+                        buildDrawerCategory(
+                          context: context,
+                          title: 'Manage',
+                          icon: Icons.ballot,
+                          isExpanded: !adminExpanded,
+                          onTap: () {
+                            provider.setSelectedItem("sov_list"); // FIX 🔥
+                            setState(() {
+                              adminExpanded = !adminExpanded;
+                            });
+                          },
+                        ),
+                        if (adminExpanded) ...[
+                          buildSubMenuItem(
+                            title: 'Vendors',
+                            isSelected: selectedSovMenu == "My SOVs",
+                            onTap: () {
+                              setState(() => selectedSovMenu = "My SOVs");
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          VendorList(status: 'vendor')));
+                            },
+                          ),
+                          buildSubMenuItem(
+                            title: 'Corporate Admin',
+                            isSelected: selectedSovMenu == "Corporate Admin",
+                            onTap: () {
+                              setState(
+                                  () => selectedSovMenu = "Corporate Admin");
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          VendorList(status: 'corporate')));
+                            },
+                          ),
+                        ],
+                      ],
                       _buildDrawerItem(
                         context,
                         provider,
-                        title: "News Feed",
+                        title: LanguageService.getTranslated(
+                            context, 'drawer_menu_activity'),
                         icon: Icons.space_dashboard,
                         onTap: () {
                           provider.setSelectedItem("news");
@@ -384,24 +522,73 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         },
                         isSelected: provider.selectedItem == "news",
                       ),
-                      isPgAdmin.toString() == "true"
-                          ? _buildDrawerItem(
+                      // Text(  isPgAdmin.toString()),// == "true"
+                      //       // ? _buildDrawerItem(
+                      //       //     context,
+                      //       //     provider,
+                      //       //     title: "Payment History",
+                      //       //     icon: Icons.payments_sharp,
+                      //       //     onTap: () {
+                      //       //       provider.setSelectedItem("payment_history");
+                      //       //       Navigator.of(context).push(
+                      //       //         MaterialPageRoute(
+                      //       //           builder: (_) => PaymentTransactionsPage(),
+                      //       //         ),
+                      //       //       );
+                      //       //     },
+                      //       //     isSelected:
+                      //       //         provider.selectedItem == "Payment History",
+                      //       //   )
+                      //       // : Container(),
+                      if (isIndivudual.toString() == "false" &&
+                          isPgAdmin.toString() == "false" &&
+                          isSuperAdmin.toString() == "false" &&
+                          userProfileProvider.userData.isIndividual
+                                  .toString() ==
+                              "false")
+                        ...[]
+                      else ...[
+                        if (Platform.isAndroid)
+                          _buildDrawerItem(
+                            context,
+                            provider,
+                            title: "Purchase License",
+                            icon: Icons.description,
+                            onTap: () {
+                              provider.setSelectedItem("purchase_license");
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => PurchaseLicensePage()),
+                              );
+                            },
+                            isSelected:
+                                provider.selectedItem == "purchase_license",
+                          ),
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: LanguageService.getTranslated(
+                              context, 'drawer_menu_paymentHistory'),
+                          icon: Icons.payments_sharp,
+                          onTap: () {
+                            provider.setSelectedItem("payment_history");
+                            Navigator.push(
                               context,
-                              provider,
-                              title: "Payment History",
-                              icon: Icons.payments_sharp,
-                              onTap: () {
-                                provider.setSelectedItem("payment_history");
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PaymentTransactionsPage(),
-                                  ),
-                                );
-                              },
-                              isSelected:
-                                  provider.selectedItem == "Payment History",
-                            )
-                          : Container(),
+                              MaterialPageRoute(
+                                  builder: (_) => PaymentTransactionsPage()),
+                            );
+                          },
+                          isSelected:
+                              provider.selectedItem == "payment_history",
+                        ),
+                      ],
+//below code feature reference
+                      // Text(isIndivudual.toString()),
+                      // Text(isPgAdmin.toString()),
+                      // Text(isSuperAdmin.toString()),
+                      // Text(
+                      //     userProfileProvider.userData.isIndividual.toString()),
                       // isPgAdmin.toString() == "true" ||
                       //         (isPgAdmin.toString() == "false" &&
                       //             isIndivudual.toString() == "false" &&
@@ -413,68 +600,73 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       //         userProfileProvider.userData.role![0].name
                       //                 .toString() ==
                       //             "Admin" &&
-                      if (Platform.isAndroid)
-                        Consumer<UserProfileProvider>(
-                          builder: (context, userProfileProvider, child) {
-                            if (isSuperAdmin ||
-                                isPgAdmin ||
-                                isAdmin ||
-                                userProfileProvider.userData.isIndividual ==
-                                    true) {
-                              return _buildDrawerItem(
-                                context,
-                                provider,
-                                title: "Purchase License",
-                                icon: Icons.description,
-                                onTap: () {
-                                  provider.setSelectedItem("purchase_license");
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => PurchaseLicensePage(),
-                                    ),
-                                  );
-                                },
-                                isSelected:
-                                    provider.selectedItem == "purchase_license",
-                              );
-                            } else {
-                              return Container();
-                            }
-                          },
-                        ),
-                      Consumer<UserProfileProvider>(
-                        builder: (context, userProfileProvider, child) {
-                          if (isSuperAdmin ||
-                              isPgAdmin ||
-                              isAdmin ||
-                              userProfileProvider.userData.isIndividual ==
-                                  true) {
-                            return _buildDrawerItem(
-                              context,
-                              provider,
-                              title: "Payment History",
-                              icon: Icons.payments_sharp,
-                              onTap: () {
-                                provider.setSelectedItem("payment_history");
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PaymentTransactionsPage(),
-                                  ),
-                                );
-                              },
-                              isSelected:
-                                  provider.selectedItem == "Payment History",
-                            );
-                          } else {
-                            return Container();
-                          }
-                        },
-                      ),
+                      // if (Platform.isAndroid)
+
+//                if(!isSuperAdmin && !isPgAdmin && !isAdmin && !userProfileProvider.userData.isIndividual!) ...[
+//                  Consumer<UserProfileProvider>(
+//                    builder: (context, userProfileProvider, child) {
+//                      if (isSuperAdmin ||
+//                          isPgAdmin ||
+//                          isAdmin ||
+//                          userProfileProvider.userData.isIndividual ==
+//                              true) {
+//                        return _buildDrawerItem(
+//                          context,
+//                          provider,
+//                          title: "Purchase License",
+//                          icon: Icons.description,
+//                          onTap: () {
+//                            provider.setSelectedItem("purchase_license");
+//                            Navigator.of(context).push(
+//                              MaterialPageRoute(
+//                                builder: (_) => PurchaseLicensePage(),
+//                              ),
+//                            );
+//                          },
+//                          isSelected:
+//                          provider.selectedItem == "purchase_license",
+//                        );
+//                      } else {
+//                        return Container();
+//                      }
+//                    },
+//                  ),
+//                  Consumer<UserProfileProvider>(
+//                    builder: (context, userProfileProvider, child) {
+//                      if (isSuperAdmin ||
+//                          isPgAdmin ||
+//                          isAdmin ||
+//                          userProfileProvider.userData.isIndividual ==
+//                              true) {
+//                        return _buildDrawerItem(
+//                          context,
+//                          provider,
+//                          title: "Payment History",
+//                          icon: Icons.payments_sharp,
+//                          onTap: () {
+//                            provider.setSelectedItem("payment_history");
+//                            Navigator.of(context).push(
+//                              MaterialPageRoute(
+//                                builder: (_) => PaymentTransactionsPage(),
+//                              ),
+//                            );
+//                          },
+//                          isSelected:
+//                          provider.selectedItem == "Payment History",
+//                        );
+//                      } else {
+//                        return Container();
+//                      }
+//                    },
+//                  ),
+//                ]
+// ,
 
                       _buildDrawerItem(
                         context,
                         provider,
-                        title: "Delete Account",
+                        title: LanguageService.getTranslated(
+                            context, 'drawer_menu_delete_account'),
                         icon: Icons.delete_rounded,
                         onTap: () {
                           showDialog(
@@ -482,14 +674,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             builder: (context) {
                               return AlertDialog(
                                 title: Text(
-                                  'Delete Account',
+                                  LanguageService.getTranslated(
+                                      context, 'delete_account'),
                                   style: typography.H5_Regular,
                                 ),
                                 content: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Are you sure you want to delete the account?',
+                                      LanguageService.getTranslated(
+                                          context, 'confirm_delete_account'),
                                       style: typography.Body1,
                                     ),
                                     SizedBox(height: CustomSpacing.two),
@@ -502,8 +696,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                             },
                                             child: Text(
                                               LanguageService.getTranslated(
-                                                  context,
-                                                  "account_list_app_duplicate_cancel"),
+                                                  context, "cancel"),
                                               style: typography.ButtonLarge,
                                             ),
                                             type: ButtonType.text,
@@ -539,7 +732,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                                           (context, setState) {
                                                         return AlertDialog(
                                                           title: Text(
-                                                            'Delete Account',
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "delete_account"),
                                                             style: typography
                                                                 .H5_Regular,
                                                           ),
@@ -549,7 +745,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                                                     .min,
                                                             children: [
                                                               Text(
-                                                                'Are you sure you want to delete the account?',
+                                                                LanguageService
+                                                                    .getTranslated(
+                                                                        context,
+                                                                        "confirm_delete_account"),
                                                                 style:
                                                                     typography
                                                                         .Body1,
@@ -570,7 +769,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                                                           Text(
                                                                         LanguageService.getTranslated(
                                                                             context,
-                                                                            "account_list_app_duplicate_cancel"),
+                                                                            "cancel"),
                                                                         style: typography
                                                                             .ButtonLarge,
                                                                       ),
@@ -641,8 +840,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                                                                   valueColor: AlwaysStoppedAnimation(Colors.white),
                                                                                 ),
                                                                               )
-                                                                            : const Text(
-                                                                                "Delete",
+                                                                            : Text(
+                                                                                LanguageService.getTranslated(context, "delete"),
                                                                                 style: TextStyle(
                                                                                   color: Colors.white,
                                                                                   fontSize: 18,
@@ -679,8 +878,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                               //     ),
                                               //   );
                                               // },
-                                              child: const Text(
-                                                "Delete",
+                                              child: Text(
+                                                LanguageService.getTranslated(
+                                                    context, "delete"),
                                                 style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 18,
@@ -710,7 +910,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  ThemeSwitcher(),
+                  // ThemeSwitcher(),
                   CountryPickerDropdown(
                     initialValue: _getInitialCountry(context),
                     itemBuilder: (Country country) {
@@ -767,13 +967,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               return AlertDialog(
                                 title: Text(
                                   LanguageService.getTranslated(
-                                      context, "drawer_menu_logout"),
+                                      context, "logout"),
                                   style: typography.Body1.copyWith(
                                       color: iconColor),
                                 ),
                                 content: Text(
-                                  LanguageService.getTranslated(context,
-                                      "drawer_menu_logout_confirmation"),
+                                  LanguageService.getTranslated(
+                                      context, "confirm_logout"),
                                   style: typography.Body1.copyWith(
                                       color: iconColor),
                                 ),
@@ -784,12 +984,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                     },
                                     child: Text(
                                       LanguageService.getTranslated(
-                                          context, "drawer_menu_cancel"),
+                                          context, "cancel"),
                                       style: typography.Body1.copyWith(
                                           color: iconColor),
                                     ),
                                   ),
-
                                   TextButton(
                                     style: TextButton.styleFrom(
                                       backgroundColor: Colors.red,
@@ -804,54 +1003,112 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                     ),
                                     onPressed: () async {
                                       try {
+                                        setState(() => isLoggingOut = true);
 
-                                        final GoogleSignIn _googleSignIn =
-                                            GoogleSignIn(scopes: ['email']);
+                                        /// 1️⃣ Google SignOut (ONLY if signed in)
+                                        final GoogleSignIn googleSignIn =
+                                            GoogleSignIn();
 
-                                        // Step 1: If Google user is signed in
-                                        if (await _googleSignIn.isSignedIn()) {
-                                          try {
-                                            // Revoke access (optional)
-                                            await _googleSignIn.disconnect();
-                                          } catch (e) {
-                                            print(
-                                                "Google disconnect error (optional): $e");
-                                          }
+                                        if (await googleSignIn.isSignedIn()) {
+                                          await googleSignIn.signOut();
 
-                                          // Sign out from Google
-                                          await _googleSignIn.signOut();
+                                          // ⚠️ Do NOT call disconnect() on Android unless required
+                                          // await googleSignIn.disconnect(); ❌ REMOVE
                                         }
+
+                                        /// 2️⃣ Firebase sign out (AFTER Google)
+                                        await FirebaseAuth.instance.signOut();
+
+                                        /// 3️⃣ Clear local state
                                         final prefs = await SharedPreferences
                                             .getInstance();
                                         await prefs.setBool(
                                             'isFirstTime', false);
-                                        // Step 2: Sign out from Firebase
-                                        await FirebaseAuth.instance.signOut();
+
                                         await authNotifier.signOut();
 
-                                        // Step 3: Reset state like drawer selection
                                         Provider.of<DrawerSelectionProvider>(
-                                                context,
-                                                listen: false)
-                                            .setSelectedItem("dashboard");
+                                          context,
+                                          listen: false,
+                                        ).setSelectedItem("dashboard");
 
-                                        // Step 4: Navigate to splash screen
+                                        /// 4️⃣ Navigate cleanly
+                                        if (!context.mounted) return;
+
                                         Navigator.pushAndRemoveUntil(
                                           context,
                                           MaterialPageRoute(
                                               builder: (_) => SplashScreen()),
-                                          (route) => false,
+                                          (_) => false,
                                         );
-                                      } catch (e) {
-                                        print("Logout error: $e");
+                                      } catch (e, stack) {
+                                        debugPrint("Logout error: $e");
+                                        debugPrintStack(stackTrace: stack);
+
+                                        if (!context.mounted) return;
+
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
-                                          SnackBar(
-                                              content: Text(
-                                                  "Logout failed. Please try again.")),
+                                          const SnackBar(
+                                            content: Text(
+                                                "Logout failed. Please try again."),
+                                          ),
                                         );
+                                      } finally {
+                                        if (mounted)
+                                          setState(() => isLoggingOut = false);
                                       }
                                     },
+
+                                    // onPressed: () async {
+                                    //   try {
+                                    //     final GoogleSignIn _googleSignIn =
+                                    //         GoogleSignIn(scopes: ['email']);
+                                    //
+                                    //     // Step 1: If Google user is signed in
+                                    //     if (await _googleSignIn.isSignedIn()) {
+                                    //       try {
+                                    //         // Revoke access (optional)
+                                    //         await _googleSignIn.disconnect();
+                                    //       } catch (e) {
+                                    //         print(
+                                    //             "Google disconnect error (optional): $e");
+                                    //       }
+                                    //
+                                    //       // Sign out from Google
+                                    //       await _googleSignIn.signOut();
+                                    //     }
+                                    //     final prefs = await SharedPreferences
+                                    //         .getInstance();
+                                    //     await prefs.setBool(
+                                    //         'isFirstTime', false);
+                                    //     // Step 2: Sign out from Firebase
+                                    //     await FirebaseAuth.instance.signOut();
+                                    //     await authNotifier.signOut();
+                                    //
+                                    //     // Step 3: Reset state like drawer selection
+                                    //     Provider.of<DrawerSelectionProvider>(
+                                    //             context,
+                                    //             listen: false)
+                                    //         .setSelectedItem("dashboard");
+                                    //
+                                    //     // Step 4: Navigate to splash screen
+                                    //     Navigator.pushAndRemoveUntil(
+                                    //       context,
+                                    //       MaterialPageRoute(
+                                    //           builder: (_) => SplashScreen()),
+                                    //       (route) => false,
+                                    //     );
+                                    //   } catch (e) {
+                                    //     print("Logout error: $e");
+                                    //     ScaffoldMessenger.of(context)
+                                    //         .showSnackBar(
+                                    //       SnackBar(
+                                    //           content: Text(
+                                    //               "Logout failed. Please try again.")),
+                                    //     );
+                                    //   }
+                                    // },
                                     child: isLoggingOut
                                         ? SizedBox(
                                             height: 18,
@@ -863,14 +1120,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           )
                                         : Text(
                                             LanguageService.getTranslated(
-                                                context, "drawer_menu_logout"),
+                                                context, "logout"),
                                             style: typography.Body1.copyWith(
                                                 color: iconColor,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold),
                                           ),
                                   ),
-
                                 ],
                               );
                             },
@@ -879,7 +1135,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
-
                   if (showCorporateManagementTab ||
                       showNonCorporateManagementTab ||
                       showEmployeeManagementTab)
@@ -924,12 +1179,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                         ),
                                       )
                                     : Container();
-
                           },
                         );
                       },
                     )
-
                 ],
               ),
             ),

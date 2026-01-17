@@ -5,6 +5,7 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../providers/configuration_provider.dart';
+import '../../../service/language_service.dart';
 import '../../../service/shared_preference_service.dart';
 
 class ConfigurationTab extends StatefulWidget {
@@ -12,14 +13,18 @@ class ConfigurationTab extends StatefulWidget {
   final String? subaccountId;
   final String? updateallflag;
   final String? level;
+  final String? accountName;
+  final String? subAccountName;
 
-  const ConfigurationTab(
-      {Key? key,
-      this.accountId,
-      this.subaccountId,
-      this.updateallflag,
-      this.level})
-      : super(key: key);
+  const ConfigurationTab({
+    Key? key,
+    this.accountId,
+    this.subaccountId,
+    this.updateallflag,
+    this.level,
+    this.accountName,
+    this.subAccountName,
+  }) : super(key: key);
 
   @override
   _ConfigurationTabState createState() => _ConfigurationTabState();
@@ -34,12 +39,20 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   bool isAdmin = false;
   bool isSuperAdmin = false;
   bool isIndivudual = false;
+  final TextEditingController _accountController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _initializeData();
     loadConfiguration();
+    // ✅ Set correct initial text
+    if (widget.subAccountName != null &&
+        widget.subAccountName!.trim().isNotEmpty) {
+      _accountController.text = widget.subAccountName!;
+    } else {
+      _accountController.text = widget.accountName ?? "";
+    }
   }
 
   Future<void> _initializeData() async {
@@ -60,20 +73,20 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       provider.getVendors()
     ]).then((value) {
       var config = provider.configurations['result'] ?? {};
-      var services = config['services'] ?? {};
+      // var services = config['services'] ?? {};
       var ratings = config['geocoding_rating_enabled'] ?? {};
 
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           setState(() {
             vendorList = provider.vendors['result'] ?? [];
-            selectedServices = services.entries
-                .where(
-                    (e) => (e.value as Map<String, dynamic>)['enabled'] == true)
-                .map<String>((e) => capitalize(e.key))
-                .toList();
-
-            print("Selected Services: $selectedServices");
+            // selectedServices = services.entries
+            //     .where(
+            //         (e) => (e.value as Map<String, dynamic>)['enabled'] == true)
+            //     .map<String>((e) => capitalize(e.key))
+            //     .toList();
+            //
+            // print("Selected Services: $selectedServices");
 
             selectedStars = ratings.entries
                 .where((e) => e.value['enabled'] == true)
@@ -171,9 +184,55 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 20),
+                    widget.updateallflag != "false"
+                        ? accountNameInput(
+                            controller: _accountController,
+                            isLoading: provider.isLoading,
+                            onSubmit: () async {
+                              final name = _accountController.text.trim();
+
+                              if (name.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please write the name'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (widget.subAccountName != null &&
+                                  widget.subAccountName!.isNotEmpty) {
+                                await showConfirmApplyDialog(
+                                  context: context,
+                                  onConfirm: () async {
+                                    await provider
+                                        .updateSubAccountNameConfigurations(
+                                      context,
+                                      name,
+                                    );
+                                  },
+                                );
+                                // await provider.updateSubAccountNameConfigurations(
+                                //   context,
+                                //   name,
+                                // );
+                              } else if (widget.accountName != null &&
+                                  widget.accountName!.isNotEmpty) {
+                                await provider.updateAccountNameConfigurations(
+                                  context,
+                                  name,
+                                );
+                              }
+                            },
+                          )
+                        : const SizedBox.shrink(),
+
+
                     SizedBox(height: CustomSpacing.four),
                     Text(
-                      'Select the services you need',
+                      LanguageService.getTranslated(
+                          context, "select_services"),
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
@@ -196,7 +255,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
                     SizedBox(height: CustomSpacing.six),
                     Text(
-                      'Set the geocode ratings for which the hazard risk score should be calculated',
+                      LanguageService.getTranslated(
+                          context, "set_geocode_ratings"),
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
@@ -295,6 +355,57 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
               );
             }),
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> showConfirmApplyDialog({
+    required BuildContext context,
+    required VoidCallback onConfirm,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2E2E2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text(
+            'Confirm applying changes to all sub-accounts',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'These changes will be applied across all sub-account tables globally. Do you want to proceed?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.lightBlueAccent),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.lightBlue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+                onConfirm(); // 🔥 CALL API
+              },
+              child: const Text(
+                'Confirm',
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -2092,4 +2203,74 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       ),
     );
   }
+}
+
+Widget accountNameInput({
+  required TextEditingController controller,
+  required bool isLoading,
+  required VoidCallback onSubmit,
+}) {
+  final TextEditingController _safeController =
+  TextEditingController(text: controller?.text =="null"?"":controller.text ?? '');
+
+  return Container(
+    padding: const EdgeInsets.all(5),
+    decoration: BoxDecoration(
+      color: const Color(0xFF2A2A2A),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller:_safeController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Please write the account name',
+              hintStyle: const TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: const Color(0xFF1E1E1E),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        /// Submit Button
+        SizedBox(
+          height: 48,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7DB9F6),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.black,
+                    ),
+                  )
+                : const Text(
+                    'Submit',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

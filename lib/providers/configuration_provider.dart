@@ -43,24 +43,20 @@ class ConfigurationProvider extends ChangeNotifier {
       if (accountId != null &&
           subAccountId != null &&
           updateallflag != "false") {
-
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS}?account_id=$accountId&sub_account_id=$subAccountId');
       } else if (accountId != null && updateallflag != "false") {
-
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS_ACCOUNTS}?account_id=$accountId');
       } else if (updateallflag == "false") {
-
         apiService = ApiService(
             '${AppConstant.CONFIGURATIONS_SUB_ACCOUNTS}?account_id=$accountId&sub_account_id=$subAccountId');
       } else {
-
         apiService = ApiService(AppConstant.CONFIGURATIONS);
       }
 
       var response = await apiService.get();
-      log(response.toString());
+
       configurations = response;
     } catch (e) {
       print(e);
@@ -133,6 +129,92 @@ class ConfigurationProvider extends ChangeNotifier {
       ));
     } finally {
       isLoading = false;
+    }
+  }
+
+  Future<void> updateAccountNameConfigurations(
+    BuildContext context,
+    String accountName,
+
+  ) async {
+    var typography = CustomTypography(context);
+
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      ApiService apiService = ApiService(AppConstant.UPDATE_ACCOUNT_NAME);
+
+      final body = {
+        "account_name": accountName,
+
+      };
+
+      final response = await apiService.patch(body);
+      log(response.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Company global configuration updated successfully.',
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to update global configuration',
+            style: typography.Body1,
+          ),
+        ),
+      );
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateSubAccountNameConfigurations(
+    BuildContext context,
+    String? subAccountName,
+  ) async {
+    var typography = CustomTypography(context);
+
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      ApiService apiService = ApiService(AppConstant.UPDATE_ACCOUNT_NAME);
+
+      final body = {
+        "sub_account_name": subAccountName, // 👈 PAYLOAD UPDATED
+      };
+
+      final response = await apiService.patch(body);
+      log(response.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Company global configuration updated successfully.',
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to update global configuration',
+            style: typography.Body1,
+          ),
+        ),
+      );
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 

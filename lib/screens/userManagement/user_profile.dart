@@ -438,308 +438,308 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                 ),
-          endDrawer: Material(
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(height: CustomSpacing.two),
-                    // Circular elevated icon for filter
-                    Center(
-                        child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Icon(
-                          Icons.filter_alt_outlined,
-                          size: 32,
-                        ),
-                      ),
-                    )),
-                    SizedBox(height: CustomSpacing.six),
-                    // name, phone, email, company, role dropdown, status,
-                    Form(
-                      child: Column(
-                        children: [
-                          // Name
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, "usermanagement_app_filter_name"),
-                              labelStyle: typography.Body1,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          // Email
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, "usermanagement_app_filter_email"),
-                              labelStyle: typography.Body1,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: CustomSpacing.two,
-                          ),
-                          // Phone
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 4,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.5)),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 2.0),
-                                  child: Center(
-                                    child: Container(),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: CustomSpacing.two),
-                              // Mobile Number TextFormField
-                              Expanded(
-                                flex: 7,
-                                child: TextFormField(
-                                  keyboardType: TextInputType.number,
-                                  maxLength: 10,
-                                  // Numeric keyboard
-                                  inputFormatters: <TextInputFormatter>[
-                                    FilteringTextInputFormatter.digitsOnly
-                                    // Only allows digits
-                                  ],
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(
-                                        context,
-                                        "usermanagement_app_filter_phone"),
-                                    hintText: LanguageService.getTranslated(
-                                        context,
-                                        "usermanagement_app_filter_phone_hint"),
-                                    border: const OutlineInputBorder(),
-                                    counterText: '',
-                                  ),
-                                  validator: (value) {
-                                    if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
-                                      return LanguageService.getTranslated(
-                                          context,
-                                          "usermanagement_app_filter_phone_validation");
-                                    }
-                                    return null;
-                                  },
-                                  controller: mobileController,
-                                ),
-                              ),
-                              // Dropdown Icon Suffix
-                            ],
-                          ),
-                          SizedBox(height: CustomSpacing.two),
-                          // Company
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, "usermanagement_app_filter_company"),
-                              labelStyle: typography.Body1,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: CustomSpacing.two),
-                          // Role Dropdown
-                          Stack(
-                            children: [
-                              TextField(
-                                readOnly: true,
-                                onTap: () {
-                                  showBottomSheet(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return RolesBottomSheet(
-                                        showCorporateSwitch: true,
-                                        // isUserProfile: true,
-                                        // options: roles,
-                                        options:
-                                            context.read<AuthNotifier>().roles,
-                                        selectedRoles: _selectedRoles,
-                                        addChip: _addChip,
-                                        removeChip: _removeChip,
-                                        removeAllChips: _removeAllChips,
-                                        selectedOption: SignUpOptions.corporate,
-                                        onOptionChanged:
-                                            (SignUpOptions option) {
-                                          setState(() {
-                                            _selectedOption = option;
-                                          });
-                                        },
-                                      );
-                                    },
-                                  );
-                                },
-                                controller: _textEditingController,
-                                onChanged: (value) {
-                                  // Handle input changes
-                                },
-                                decoration: InputDecoration(
-                                  labelText: LanguageService.getTranslated(
-                                      context,
-                                      "usermanagement_app_filter_roles"),
-                                  hintText: _selectedRoles.isEmpty
-                                      ? 'Select Roles'
-                                      : "",
-                                  border: OutlineInputBorder(),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(Icons.arrow_drop_down),
-                                    onPressed: () {
-                                      showModalBottomSheet(
-                                        context: context,
-                                        useSafeArea: true,
-                                        isScrollControlled: true,
-                                        builder: (BuildContext context) {
-                                          return RolesBottomSheet(
-                                            showCorporateSwitch: false,
-                                            // isUserProfile: true,
-                                            options: context
-                                                .read<AuthNotifier>()
-                                                .roles,
-                                            // options: roles,
-                                            selectedRoles: _selectedRoles,
-                                            addChip: _addChip,
-                                            removeChip: _removeChip,
-                                            removeAllChips: _removeAllChips,
-                                            selectedOption:
-                                                SignUpOptions.corporate,
-                                            onOptionChanged:
-                                                (SignUpOptions signUpOptions) {
-                                              setState(() {
-                                                _selectedOption = signUpOptions;
-                                              });
-                                            },
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 10.0,
-                                left: 10.0,
-                                right: 10.0,
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 32.0),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      children: _selectedRoles
-                                          .map(
-                                            (value) => Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 8.0),
-                                              child: Chip(
-                                                label: Text(value.name!),
-                                                deleteIcon: Icon(Icons.cancel),
-                                                onDeleted: () =>
-                                                    _removeChip(value),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: CustomSpacing.two),
-                          // Status
-                          DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, "usermanagement_app_filter_status"),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            items: ['Active', 'Inactive'].map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            }).toList(),
-                            onChanged: (String? value) {
-                              // Handle status change
-                            },
-                          ),
-                          SizedBox(height: CustomSpacing.two),
-                          // Cancel and Submit Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    // Handle cancel button
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 22, vertical: 8),
-                                  ),
-                                  child: Text(
-                                    LanguageService.getTranslated(context,
-                                        "usermanagement_app_filter_cancel"),
-                                    style: typography.ButtonLarge,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: CustomSpacing.two),
-                              Expanded(
-                                child: CustomButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  type: ButtonType.filled,
-                                  child: Text(
-                                    LanguageService.getTranslated(context,
-                                        "usermanagement_app_filter_submit"),
-                                    style: typography.ButtonLarge,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // endDrawer: Material(
+          //   child: Container(
+          //     margin: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          //     child: SingleChildScrollView(
+          //       child: Column(
+          //         children: [
+          //           SizedBox(height: CustomSpacing.two),
+          //           // Circular elevated icon for filter
+          //           Center(
+          //               child: Container(
+          //             decoration: BoxDecoration(
+          //               color: Theme.of(context).colorScheme.surface,
+          //               shape: BoxShape.circle,
+          //               boxShadow: [
+          //                 BoxShadow(
+          //                   color: Colors.black.withOpacity(0.1),
+          //                   blurRadius: 8,
+          //                   offset: Offset(0, 4),
+          //                 ),
+          //               ],
+          //             ),
+          //             child: Padding(
+          //               padding: const EdgeInsets.all(16.0),
+          //               child: Icon(
+          //                 Icons.filter_alt_outlined,
+          //                 size: 32,
+          //               ),
+          //             ),
+          //           )),
+          //           SizedBox(height: CustomSpacing.six),
+          //           // name, phone, email, company, role dropdown, status,
+          //           Form(
+          //             child: Column(
+          //               children: [
+          //                 // Name
+          //                 TextFormField(
+          //                   decoration: InputDecoration(
+          //                     labelText: LanguageService.getTranslated(
+          //                         context, "usermanagement_app_filter_name"),
+          //                     labelStyle: typography.Body1,
+          //                     border: OutlineInputBorder(
+          //                       borderRadius: BorderRadius.circular(8),
+          //                     ),
+          //                   ),
+          //                 ),
+          //                 SizedBox(
+          //                   height: CustomSpacing.two,
+          //                 ),
+          //                 // Email
+          //                 TextFormField(
+          //                   decoration: InputDecoration(
+          //                     labelText: LanguageService.getTranslated(
+          //                         context, "usermanagement_app_filter_email"),
+          //                     labelStyle: typography.Body1,
+          //                     border: OutlineInputBorder(
+          //                       borderRadius: BorderRadius.circular(8),
+          //                     ),
+          //                   ),
+          //                 ),
+          //                 SizedBox(
+          //                   height: CustomSpacing.two,
+          //                 ),
+          //                 // Phone
+          //                 Row(
+          //                   children: [
+          //                     Expanded(
+          //                       flex: 4,
+          //                       child: Container(
+          //                         decoration: BoxDecoration(
+          //                           border: Border.all(
+          //                               color: Colors.white.withOpacity(0.5)),
+          //                           borderRadius: BorderRadius.circular(4),
+          //                         ),
+          //                         padding:
+          //                             const EdgeInsets.symmetric(vertical: 2.0),
+          //                         child: Center(
+          //                           child: Container(),
+          //                         ),
+          //                       ),
+          //                     ),
+          //                     SizedBox(width: CustomSpacing.two),
+          //                     // Mobile Number TextFormField
+          //                     Expanded(
+          //                       flex: 7,
+          //                       child: TextFormField(
+          //                         keyboardType: TextInputType.number,
+          //                         maxLength: 10,
+          //                         // Numeric keyboard
+          //                         inputFormatters: <TextInputFormatter>[
+          //                           FilteringTextInputFormatter.digitsOnly
+          //                           // Only allows digits
+          //                         ],
+          //                         decoration: InputDecoration(
+          //                           labelText: LanguageService.getTranslated(
+          //                               context,
+          //                               "usermanagement_app_filter_phone"),
+          //                           hintText: LanguageService.getTranslated(
+          //                               context,
+          //                               "usermanagement_app_filter_phone_hint"),
+          //                           border: const OutlineInputBorder(),
+          //                           counterText: '',
+          //                         ),
+          //                         validator: (value) {
+          //                           if (!RegExp(r'^[0-9]+$').hasMatch(value!)) {
+          //                             return LanguageService.getTranslated(
+          //                                 context,
+          //                                 "usermanagement_app_filter_phone_validation");
+          //                           }
+          //                           return null;
+          //                         },
+          //                         controller: mobileController,
+          //                       ),
+          //                     ),
+          //                     // Dropdown Icon Suffix
+          //                   ],
+          //                 ),
+          //                 SizedBox(height: CustomSpacing.two),
+          //                 // Company
+          //                 TextFormField(
+          //                   decoration: InputDecoration(
+          //                     labelText: LanguageService.getTranslated(
+          //                         context, "usermanagement_app_filter_company"),
+          //                     labelStyle: typography.Body1,
+          //                     border: OutlineInputBorder(
+          //                       borderRadius: BorderRadius.circular(8),
+          //                     ),
+          //                   ),
+          //                 ),
+          //                 SizedBox(height: CustomSpacing.two),
+          //                 // Role Dropdown
+          //                 Stack(
+          //                   children: [
+          //                     TextField(
+          //                       readOnly: true,
+          //                       onTap: () {
+          //                         showBottomSheet(
+          //                           context: context,
+          //                           builder: (BuildContext context) {
+          //                             return RolesBottomSheet(
+          //                               showCorporateSwitch: true,
+          //                               // isUserProfile: true,
+          //                               // options: roles,
+          //                               options:
+          //                                   context.read<AuthNotifier>().roles,
+          //                               selectedRoles: _selectedRoles,
+          //                               addChip: _addChip,
+          //                               removeChip: _removeChip,
+          //                               removeAllChips: _removeAllChips,
+          //                               selectedOption: SignUpOptions.corporate,
+          //                               onOptionChanged:
+          //                                   (SignUpOptions option) {
+          //                                 setState(() {
+          //                                   _selectedOption = option;
+          //                                 });
+          //                               },
+          //                             );
+          //                           },
+          //                         );
+          //                       },
+          //                       controller: _textEditingController,
+          //                       onChanged: (value) {
+          //                         // Handle input changes
+          //                       },
+          //                       decoration: InputDecoration(
+          //                         labelText: LanguageService.getTranslated(
+          //                             context,
+          //                             "usermanagement_app_filter_roles"),
+          //                         hintText: _selectedRoles.isEmpty
+          //                             ? 'Select Roles'
+          //                             : "",
+          //                         border: OutlineInputBorder(),
+          //                         suffixIcon: IconButton(
+          //                           icon: Icon(Icons.arrow_drop_down),
+          //                           onPressed: () {
+          //                             showModalBottomSheet(
+          //                               context: context,
+          //                               useSafeArea: true,
+          //                               isScrollControlled: true,
+          //                               builder: (BuildContext context) {
+          //                                 return RolesBottomSheet(
+          //                                   showCorporateSwitch: false,
+          //                                   // isUserProfile: true,
+          //                                   options: context
+          //                                       .read<AuthNotifier>()
+          //                                       .roles,
+          //                                   // options: roles,
+          //                                   selectedRoles: _selectedRoles,
+          //                                   addChip: _addChip,
+          //                                   removeChip: _removeChip,
+          //                                   removeAllChips: _removeAllChips,
+          //                                   selectedOption:
+          //                                       SignUpOptions.corporate,
+          //                                   onOptionChanged:
+          //                                       (SignUpOptions signUpOptions) {
+          //                                     setState(() {
+          //                                       _selectedOption = signUpOptions;
+          //                                     });
+          //                                   },
+          //                                 );
+          //                               },
+          //                             );
+          //                           },
+          //                         ),
+          //                       ),
+          //                     ),
+          //                     Positioned(
+          //                       top: 10.0,
+          //                       left: 10.0,
+          //                       right: 10.0,
+          //                       child: Container(
+          //                         margin: const EdgeInsets.only(right: 32.0),
+          //                         child: SingleChildScrollView(
+          //                           scrollDirection: Axis.horizontal,
+          //                           child: Row(
+          //                             children: _selectedRoles
+          //                                 .map(
+          //                                   (value) => Padding(
+          //                                     padding: const EdgeInsets.only(
+          //                                         right: 8.0),
+          //                                     child: Chip(
+          //                                       label: Text(value.name!),
+          //                                       deleteIcon: Icon(Icons.cancel),
+          //                                       onDeleted: () =>
+          //                                           _removeChip(value),
+          //                                     ),
+          //                                   ),
+          //                                 )
+          //                                 .toList(),
+          //                           ),
+          //                         ),
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //
+          //                 SizedBox(height: CustomSpacing.two),
+          //                 // Status
+          //                 DropdownButtonFormField<String>(
+          //                   decoration: InputDecoration(
+          //                     labelText: LanguageService.getTranslated(
+          //                         context, "usermanagement_app_filter_status"),
+          //                     border: OutlineInputBorder(
+          //                       borderRadius: BorderRadius.circular(8),
+          //                     ),
+          //                   ),
+          //                   items: ['Active', 'Inactive'].map((String value) {
+          //                     return DropdownMenuItem<String>(
+          //                       value: value,
+          //                       child: Text(value),
+          //                     );
+          //                   }).toList(),
+          //                   onChanged: (String? value) {
+          //                     // Handle status change
+          //                   },
+          //                 ),
+          //                 SizedBox(height: CustomSpacing.two),
+          //                 // Cancel and Submit Buttons
+          //                 Row(
+          //                   children: [
+          //                     Expanded(
+          //                       child: OutlinedButton(
+          //                         onPressed: () {
+          //                           // Handle cancel button
+          //                         },
+          //                         style: ElevatedButton.styleFrom(
+          //                           shape: RoundedRectangleBorder(
+          //                             borderRadius: BorderRadius.circular(8),
+          //                           ),
+          //                           padding: EdgeInsets.symmetric(
+          //                               horizontal: 22, vertical: 8),
+          //                         ),
+          //                         child: Text(
+          //                           LanguageService.getTranslated(context,
+          //                               "usermanagement_app_filter_cancel"),
+          //                           style: typography.ButtonLarge,
+          //                         ),
+          //                       ),
+          //                     ),
+          //                     SizedBox(width: CustomSpacing.two),
+          //                     Expanded(
+          //                       child: CustomButton(
+          //                         onPressed: () {
+          //                           Navigator.pop(context);
+          //                         },
+          //                         type: ButtonType.filled,
+          //                         child: Text(
+          //                           LanguageService.getTranslated(context,
+          //                               "usermanagement_app_filter_submit"),
+          //                           style: typography.ButtonLarge,
+          //                         ),
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ],
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
         );
       }),
     );
@@ -873,165 +873,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // If company image is not uploaded, show default image
-                                      // Row(
-                                      //   children: [
-                                      //     // Stack(
-                                      //     //   alignment: Alignment.bottomRight,
-                                      //     //   children: [
-                                      //     //     userImageUrl == '' &&
-                                      //     //             _pickedImage == null
-                                      //     //         ? CircleAvatar(
-                                      //     //             foregroundImage:
-                                      //     //                 const AssetImage(
-                                      //     //                     'assets/images/loginImage.png'),
-                                      //     //             backgroundColor: AppColors
-                                      //     //                 .avatarBackground,
-                                      //     //             radius: 40,
-                                      //     //           )
-                                      //     //         : CircleAvatar(
-                                      //     //             backgroundColor: AppColors
-                                      //     //                 .avatarBackground,
-                                      //     //             radius: 40,
-                                      //     //             child: ClipOval(
-                                      //     //               child:
-                                      //     //                   _pickedImage != null
-                                      //     //                       ? Image.file(
-                                      //     //                           _pickedImage!,
-                                      //     //                           fit: BoxFit
-                                      //     //                               .cover,
-                                      //     //                           width: 80,
-                                      //     //                           height: 80,
-                                      //     //                         )
-                                      //     //                       : Image.network(
-                                      //     //                           userImageUrl,
-                                      //     //                           fit: BoxFit
-                                      //     //                               .cover,
-                                      //     //                           width: 80,
-                                      //     //                           height: 80,
-                                      //     //                           loadingBuilder:
-                                      //     //                               (context,
-                                      //     //                                   child,
-                                      //     //                                   progress) {
-                                      //     //                             if (progress ==
-                                      //     //                                 null)
-                                      //     //                               return child;
-                                      //     //                             return Center(
-                                      //     //                               child:
-                                      //     //                                   CircularProgressIndicator(
-                                      //     //                                 value: progress.expectedTotalBytes != null
-                                      //     //                                     ? progress.cumulativeBytesLoaded / (progress.expectedTotalBytes ?? 1)
-                                      //     //                                     : null,
-                                      //     //                                 color:
-                                      //     //                                     AppColors.primaryMain,
-                                      //     //                               ),
-                                      //     //                             );
-                                      //     //                           },
-                                      //     //                           errorBuilder:
-                                      //     //                               (context,
-                                      //     //                                   error,
-                                      //     //                                   stack) {
-                                      //     //                             return const Icon(
-                                      //     //                                 Icons
-                                      //     //                                     .error,
-                                      //     //                                 size:
-                                      //     //                                     40,
-                                      //     //                                 color:
-                                      //     //                                     Colors.red);
-                                      //     //                           },
-                                      //     //                         ),
-                                      //     //             ),
-                                      //     //           ),
-                                      //     //
-                                      //     //     // ------------------ Edit Icon ------------------
-                                      //     //     Positioned(
-                                      //     //       bottom: 4,
-                                      //     //       right: 4,
-                                      //     //       child: GestureDetector(
-                                      //     //         onTap: _showImageOptions,
-                                      //     //         child: Container(
-                                      //     //           padding:
-                                      //     //               const EdgeInsets.all(6),
-                                      //     //           decoration:
-                                      //     //               const BoxDecoration(
-                                      //     //             color: Colors.black54,
-                                      //     //             shape: BoxShape.circle,
-                                      //     //           ),
-                                      //     //           child: const Icon(
-                                      //     //               Icons.edit,
-                                      //     //               color: Colors.white,
-                                      //     //               size: 18),
-                                      //     //         ),
-                                      //     //       ),
-                                      //     //     ),
-                                      //     //   ],
-                                      //     // ),
-                                      //     // userImageUrl == ''
-                                      //     //     ? CircleAvatar(
-                                      //     //   foregroundImage: AssetImage(
-                                      //     //       'assets/images/loginImage.png'),
-                                      //     //   backgroundColor:
-                                      //     //   AppColors.avatarBackground,
-                                      //     //   radius: 40,
-                                      //     // )
-                                      //     //     : CircleAvatar(
-                                      //     //   backgroundColor:
-                                      //     //   AppColors.avatarBackground,
-                                      //     //   radius: 40,
-                                      //     //   child: ClipOval(
-                                      //     //     child: Image.network(
-                                      //     //       userImageUrl,
-                                      //     //       fit: BoxFit.cover,
-                                      //     //       width: 80,
-                                      //     //       // Adjust to match the CircleAvatar's size
-                                      //     //       height: 80,
-                                      //     //       // Adjust to match the CircleAvatar's size
-                                      //     //       loadingBuilder:
-                                      //     //           (BuildContext context,
-                                      //     //           Widget child,
-                                      //     //           ImageChunkEvent?
-                                      //     //           loadingProgress) {
-                                      //     //         if (loadingProgress ==
-                                      //     //             null) {
-                                      //     //           return child; // Image loaded
-                                      //     //         } else {
-                                      //     //           return Center(
-                                      //     //             child:
-                                      //     //             CircularProgressIndicator(
-                                      //     //               value: loadingProgress
-                                      //     //                   .expectedTotalBytes !=
-                                      //     //                   null
-                                      //     //                   ? loadingProgress
-                                      //     //                   .cumulativeBytesLoaded /
-                                      //     //                   (loadingProgress
-                                      //     //                       .expectedTotalBytes ??
-                                      //     //                       1)
-                                      //     //                   : null,
-                                      //     //               color: AppColors
-                                      //     //                   .primaryMain,
-                                      //     //             ),
-                                      //     //           );
-                                      //     //         }
-                                      //     //       },
-                                      //     //       errorBuilder: (BuildContext
-                                      //     //       context,
-                                      //     //           Object error,
-                                      //     //           StackTrace? stackTrace) {
-                                      //     //         return Icon(
-                                      //     //           Icons.error,
-                                      //     //           size: 40,
-                                      //     //           color: Colors.red,
-                                      //     //         ); // Display error icon if image fails to load
-                                      //     //       },
-                                      //     //     ),
-                                      //     //   ),
-                                      //     // ),
-                                      //     SizedBox(
-                                      //       width: 10,
-                                      //     ),
-                                      //
-                                      //   ],
-                                      // ),
 
                                       SizedBox(
                                         width: CustomSpacing.four,
@@ -1069,8 +910,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                   onTap: !isEdit
                                                                       ? null
                                                                       : () {
-                                                                          // 🔽 Unified bottom sheet: choose between Image or Avatar
-                                                                          showModalBottomSheet(
+                                                                         showModalBottomSheet(
                                                                             context:
                                                                                 context,
                                                                             backgroundColor:
@@ -1224,15 +1064,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                 CustomSpacing
                                                                     .two,
                                                           ),
-                                                          Text(
-                                                            LanguageService
-                                                                .getTranslated(
-                                                                    context,
-                                                                    "usermanagement_app_image_size"),
-                                                            style: typography
-                                                                .BottomNavigationActiveLabel,
-                                                            textAlign:
-                                                                TextAlign.start,
+                                                          Container(
+                                                            width: MediaQuery.of(context).size.width/2.2,
+                                                            child: Text(
+                                                              LanguageService
+                                                                  .getTranslated(
+                                                                      context,
+                                                                      "usermanagement_app_image_size"),
+                                                              maxLines: 2,
+                                                              style: typography
+                                                                  .BottomNavigationActiveLabel,
+                                                              textAlign:
+                                                                  TextAlign.start,
+                                                            ),
                                                           ),
                                                           SizedBox(
                                                             height:

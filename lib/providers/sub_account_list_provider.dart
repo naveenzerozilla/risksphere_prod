@@ -33,7 +33,16 @@ class SubAccountListProvider extends ChangeNotifier {
   }
 
 
+  String?  _subaccountName="Sub Account Name";
 
+  String get showAccountName => _subaccountName!;
+
+  set showSubAccountName(String value) {
+    _subaccountName = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
   bool isDuplicating = false;
 
 
@@ -270,6 +279,20 @@ class SubAccountListProvider extends ChangeNotifier {
     autoCompleteSubAccountList = [];
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   /// Fetch sub accounts list with pagination and search query
   Future<void> fetchSubAccountList(
       BuildContext context,
@@ -302,6 +325,8 @@ class SubAccountListProvider extends ChangeNotifier {
       showSovCount = subAccountListModel.settings?.sovCount ?? true;
       totalRecords = subAccountListModel.totalHits ?? 0;
       totalPages = totalRecords ~/ pageSize;
+      _subaccountName =subAccountListModel.settings?.companyGlobalConfiguration!.accountName.toString();
+
 
       //totalPages = subAccountListModel.totalPages??1;
       if (page == 1) {
@@ -319,7 +344,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: typography.Body1,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     } catch (e, stackTrace) {
@@ -328,7 +353,7 @@ class SubAccountListProvider extends ChangeNotifier {
       // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       //   content: Text(
       //     e.toString(),
-      //     style: typography.Body1,
+      //     style:  typography.ButtonLargeBlack,
       //   ),
       // ));
       print(e);
@@ -366,7 +391,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
     } catch (e) {
@@ -374,7 +399,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
     }
@@ -466,12 +491,12 @@ class SubAccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1),
+        content: Text(e.message, style:  typography.ButtonLargeBlack),
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
+        content: Text(e.toString(), style:  typography.ButtonLargeBlack),
       ));
     }
   }
@@ -521,7 +546,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
       return false;
@@ -533,7 +558,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
       return false;
@@ -560,7 +585,7 @@ class SubAccountListProvider extends ChangeNotifier {
       // print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
     } on BackendException catch (e, stack) {
       /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1,),
+        content: Text(e.message, style:  typography.ButtonLargeBlack,),
       ));*/
       print(e.message);
       print(stack);
@@ -568,7 +593,7 @@ class SubAccountListProvider extends ChangeNotifier {
       print(e.toString());
       print(stack);
       /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1,),
+        content: Text(e.toString(), style:  typography.ButtonLargeBlack,),
       ));*/
     } finally {
       isAutoCompleteLoading = false;
@@ -605,13 +630,13 @@ class SubAccountListProvider extends ChangeNotifier {
       isAddSubAccountLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1),
+        content: Text(e.message, style: typography.ButtonLargeBlack),
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
       isAddSubAccountLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
+        content: Text(e.toString(), style: typography.ButtonLargeBlack),
       ));
     }
   }
@@ -633,21 +658,21 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           'Request sent successfully!',
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
     }
@@ -673,7 +698,7 @@ class SubAccountListProvider extends ChangeNotifier {
           response['message'] ??
               LanguageService.getTranslated(
                   context, "sub_account_list_app_sov_upload_success"),
-          style: typography.Body1,
+          style:  typography.ButtonLargeBlack,
         ),
       ));
       print("total records: " + response['total_records'].toString());
@@ -720,7 +745,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             message,
-            style: typography.Body1,
+            style:  typography.ButtonLargeBlack,
           ),
         ),
       );
@@ -733,7 +758,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             '${e.toString()}',
-            style: typography.Body1,
+            style:  typography.ButtonLargeBlack,
           ),
         ),
       );

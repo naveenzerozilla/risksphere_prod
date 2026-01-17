@@ -47,8 +47,8 @@ android {
         applicationId "com.risksphere.green.qa"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
-        versionCode 51
-        versionName "5.2.11"
+        versionCode 52
+        versionName "5.5.1"
         multiDexEnabled true
         manifestPlaceholders = [
                 appAuthRedirectScheme: "msaleb81a783-765c-482d-8fcb-6440ab1d1201"

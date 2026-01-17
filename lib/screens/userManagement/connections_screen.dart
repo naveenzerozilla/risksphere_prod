@@ -413,7 +413,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                     child: Text(
                                                       LanguageService.getTranslated(
                                                           context,
-                                                          "connections_user_connection_non_corporate_label"),
+                                                          "non_corporate"),
                                                       style: typography
                                                           .BottomNavigationActiveLabel,
                                                     ),
@@ -2043,7 +2043,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           child: Text(
                             LanguageService.getTranslated(context,
                                 "connections_user_connection_accept_btn"),
-                            style: typography.ButtonLarge,
+                            style: typography.ButtonLargeBlack,
                           ),
                         ),
                       ),

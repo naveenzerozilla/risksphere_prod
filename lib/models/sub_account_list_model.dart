@@ -4,8 +4,8 @@ class SubAccountListModel {
   int? totalPages;
   Settings? settings;
 
-
-  SubAccountListModel({this.totalHits, this.results, this.totalPages, this.settings});
+  SubAccountListModel(
+      {this.totalHits, this.results, this.totalPages, this.settings});
 
   SubAccountListModel.fromJson(Map<String, dynamic> json) {
     totalHits = json['totalRecords'];
@@ -16,7 +16,8 @@ class SubAccountListModel {
       });
     }
     totalPages = json['totalPages'];
-    settings = json['settings'] != null ? Settings.fromJson(json['settings']) : null;
+    settings =
+        json['settings'] != null ? Settings.fromJson(json['settings']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -122,18 +123,46 @@ class Owner {
 class Settings {
   bool? owner;
   bool? sovCount;
+  CompanyGlobalConfiguration? companyGlobalConfiguration;
 
-  Settings({this.owner, this.sovCount});
+  Settings({this.owner, this.sovCount, this.companyGlobalConfiguration});
 
   Settings.fromJson(Map<String, dynamic> json) {
     owner = json['owner'];
     sovCount = json['sov_count'];
+    companyGlobalConfiguration = json['company_global_configuration'] != null
+        ? new CompanyGlobalConfiguration.fromJson(
+            json['company_global_configuration'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['owner'] = owner;
     data['sov_count'] = sovCount;
+    if (this.companyGlobalConfiguration != null) {
+      data['company_global_configuration'] =
+          this.companyGlobalConfiguration!.toJson();
+    }
+    return data;
+  }
+}
+
+class CompanyGlobalConfiguration {
+  String? accountNames;
+  String? accountName;
+
+  CompanyGlobalConfiguration({this.accountNames, this.accountName});
+
+  CompanyGlobalConfiguration.fromJson(Map<String, dynamic> json) {
+    accountNames = json['sub_account_names'];
+    accountName = json['sub_account_name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['sub_account_names'] = this.accountNames;
+    data['sub_account_name'] = this.accountName;
     return data;
   }
 }

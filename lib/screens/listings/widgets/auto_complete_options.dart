@@ -35,7 +35,8 @@ class AutocompleteOptions extends StatelessWidget {
     }*/
     return Material(
       child: Container(
-        height: min(52.0 * options.length, MediaQuery.of(context).size.height / 2),
+        height:
+            min(52.0 * options.length, MediaQuery.of(context).size.height / 2),
         width: MediaQuery.of(context).size.width - 32,
         child: ListView.builder(
           padding: EdgeInsets.zero,
@@ -48,7 +49,8 @@ class AutocompleteOptions extends StatelessWidget {
               onTap: () => onSelected(option),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Text('${option.accountName}', style: typography.Subtitle1),
+                child:
+                    Text('${option.accountName}', style: typography.Subtitle1),
               ),
             );
           },
