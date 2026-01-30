@@ -18,11 +18,13 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
   bool hasAnyPlan = false;
   bool _showNotificationDot = true;
   TabController? _tabController;
+  bool _isTabLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
   }
 
   @override
@@ -90,67 +92,64 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                 ),
                 SizedBox(height: 8),
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                  // padding: const EdgeInsets.all(2),
+                  margin: const EdgeInsets.fromLTRB(11, 5, 11, 5),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: TabBar(
                     controller: _tabController,
+                    isScrollable: false,
                     indicator: const BoxDecoration(),
-                    // disable default indicator
                     dividerColor: Colors.transparent,
                     labelPadding: EdgeInsets.zero,
+                    onTap: (_) => setState(() {}),
                     tabs: List.generate(2, (index) {
                       final bool isSelected = _tabController!.index == index;
 
                       return Tab(
-                        child: Container(
-                          margin: EdgeInsets.only(right: 14),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 26,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primaryMain // filled when selected
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: isSelected
-                                ? null
-                                : Border.all(
-                                    color: AppColors.primaryMain, // blue border
-                                    width: 1,
-                                  ),
-                          ),
-                          child: Text(
-                            index == 0
-                                ? LanguageService.getTranslated(
-                                    context, "data_summary")
-                                : LanguageService.getTranslated(
-                                    context, "recommendations"),
-                            style: typography.Body1.copyWith(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.black
-                                  : AppColors.primaryMain, // blue text
+                                  ? AppColors.primaryMain
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: isSelected
+                                  ? null
+                                  : Border.all(
+                                color: AppColors.primaryMain,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              index == 0
+                                  ? LanguageService.getTranslated(context, "data_summary")
+                                  : LanguageService.getTranslated(context, "recommendations"),
+                              maxLines: 1, // ✅ prevent wrapping
+                              overflow: TextOverflow.ellipsis, // ✅ prevent hiding
+                              style: typography.Body1.copyWith(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 16, // ✅ responsive size
+                                color: isSelected
+                                    ? Colors.black
+                                    : AppColors.primaryMain,
+                              ),
                             ),
                           ),
                         ),
                       );
                     }),
-                    onTap: (_) {
-                      setState(() {});
-                    },
                   ),
                 ),
+
+
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
-                    physics: const BouncingScrollPhysics(),
+                    physics: NeverScrollableScrollPhysics(),
                     children: [
                       SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -520,6 +519,10 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                   ],
                 ),
               ),
+
+
+
+
               Text(
                 count,
                 style: typography.Body1.copyWith(

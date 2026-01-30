@@ -286,6 +286,7 @@ class SOVListProvider extends ChangeNotifier {
 
   List<Result> filteredAutoCompleteList = [];
   List<Results> filteredAutoCompleteList1 = [];
+  List<Results> filteredAutoCompleteList2 = [];
   List<Result> filtersovlist = [];
   Filters? filterlist;
   Cards? cardlist;
@@ -358,6 +359,68 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Fetch sov list with pagination and search query
+  // Future<void> fetchSovList(
+  //   BuildContext context,
+  //   String searchQuery,
+  //   int page,
+  //   int pageSize,
+  //   String? type,
+  // ) async {
+  //   try {
+  //     if (isLoading || isNextPageLoading) return;
+  //
+  //     if (page == 1) {
+  //       isLoading = true;
+  //       filtersovlist = []; // reset previous list
+  //       notifyListeners();
+  //       isLoading = true;
+  //     } else {
+  //       if (isNextPageLoading) return;
+  //       isNextPageLoading = true;
+  //       notifyListeners();
+  //     }
+  //
+  //     ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
+  //
+  //     String url = '?page=$page&pageSize=$pageSize&type=$type';
+  //
+  //     if (searchQuery.isNotEmpty) {
+  //       url += '&search=$searchQuery';
+  //     }
+  //
+  //     var response = await apiService.get(url);
+  //
+  //     // 🔥 Heavy JSON parsing → move to compute isolate
+  //     SovListModel sovListModel = await compute(parseSovList, response);
+  //     // FIXED: correct key name (API returns "result")
+  //     filtersovlist = sovListModel.result ?? [];
+  //     showLocationCount = sovListModel.settings?.locationCount ?? true;
+  //     showOverallScore = sovListModel.settings?.overAllScore ?? true;
+  //
+  //     sovHits = sovListModel.totalRecords ?? 0;
+  //     totalPages = (sovHits / pageSize).ceil();
+  //     sovCounterList = sovListModel.totalCountHeader!;
+  //
+  //     if (page == 1) {
+  //       sovList = sovListModel.result ?? [];
+  //     } else {
+  //       addToSovList(sovListModel.result ?? []);
+  //     }
+  //
+  //     // Keeping listeners
+  //     for (var item in sovList) {
+  //       if (item.sovId != null) {
+  //         listenToSovMeta(item.sovId!);
+  //       }
+  //     }
+  //   } catch (e, stack) {
+  //     print(e);
+  //     print(stack);
+  //   } finally {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //   }
+  // }
   Future<void> fetchSovList(
     BuildContext context,
     String searchQuery,
@@ -365,33 +428,29 @@ class SOVListProvider extends ChangeNotifier {
     int pageSize,
     String? type,
   ) async {
-    try {
-      if (isLoading || isNextPageLoading) return;
+    if (isLoading || isNextPageLoading) return;
 
+    try {
       if (page == 1) {
         isLoading = true;
-        filtersovlist = []; // reset previous list
-        notifyListeners();
-        isLoading = true;
+        filtersovlist = [];
       } else {
-        if (isNextPageLoading) return;
         isNextPageLoading = true;
-        notifyListeners();
       }
 
-      ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
+      notifyListeners(); // ✅ OK (called after frame)
+
+      final apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
 
       String url = '?page=$page&pageSize=$pageSize&type=$type';
-
       if (searchQuery.isNotEmpty) {
         url += '&search=$searchQuery';
       }
 
-      var response = await apiService.get(url);
+      final response = await apiService.get(url);
 
-      // 🔥 Heavy JSON parsing → move to compute isolate
-      SovListModel sovListModel = await compute(parseSovList, response);
-      // FIXED: correct key name (API returns "result")
+      final SovListModel sovListModel = await compute(parseSovList, response);
+
       filtersovlist = sovListModel.result ?? [];
       showLocationCount = sovListModel.settings?.locationCount ?? true;
       showOverallScore = sovListModel.settings?.overAllScore ?? true;
@@ -406,77 +465,198 @@ class SOVListProvider extends ChangeNotifier {
         addToSovList(sovListModel.result ?? []);
       }
 
-      // Keeping listeners
       for (var item in sovList) {
         if (item.sovId != null) {
           listenToSovMeta(item.sovId!);
         }
       }
     } catch (e, stack) {
-      print(e);
-      print(stack);
+      debugPrint('❌ fetchSovList error: $e');
+      debugPrint('$stack');
     } finally {
       isLoading = false;
       isNextPageLoading = false;
+      notifyListeners(); // ✅ REQUIRED
     }
   }
+  List<Result> allVendorList = [];
+  //
+  // Future<void> fetchvendorList(
+  //   BuildContext context,
+  //   String searchQuery,
+  //   int page,
+  //   int pageSize,
+  //   String? type,
+  // ) async {
+  //   if (isLoading || isNextPageLoading) return;
+  //
+  //   try {
+  //     if (page == 1) {
+  //       isLoading = true;
+  //     } else {
+  //       isNextPageLoading = true;
+  //     }
+  //
+  //     notifyListeners();
+  //
+  //     final apiService = ApiService(
+  //       type != "corporate"
+  //           ? AppConstant.GET_CORPORATE_DASHBOARD
+  //           : AppConstant.GET_VENDOR_HAZARD,
+  //     );
+  //
+  //     final response = await apiService.get(searchQuery);
+  //
+  //     final SovListModel sovListModel = await compute(parseSovList, response);
+  //
+  //     filterlist = sovListModel.filters;
+  //     cardlist = sovListModel.cards;
+  //     filteredAutoCompleteList1 = sovListModel.results ?? [];
+  //     allVendorList = parse(response);     // 🔥 MASTER
+  //     filteredAutoCompleteList1 = allVendorList; // 🔥 FILTER VIEW
+  //     for (var item in sovList) {
+  //       if (item.sovId != null) {
+  //         listenToSovMeta(item.sovId!);
+  //       }
+  //     }
+  //   } catch (e, stack) {
+  //     debugPrint(' fetchvendorList error: $e');
+  //     debugPrint('$stack');
+  //   } finally {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //     notifyListeners(); // ✅ THIS WAS MISSING
+  //   }
+  // }
 
   Future<void> fetchvendorList(
-    BuildContext context,
-    String searchQuery,
-    int page,
-    int pageSize,
-    String? type,
-  ) async {
-    try {
-      if (isLoading || isNextPageLoading) return;
+      BuildContext context,
+      String query,
+      int page,
+      int pageSize,
+      String? type,
+      ) async {
+    if (isLoading || isNextPageLoading) return;
 
+    try {
       if (page == 1) {
         isLoading = true;
-        filterlist; // reset previous list
-        cardlist;
-        notifyListeners();
-        isLoading = true;
+        allVendorList.clear();
+        filteredAutoCompleteList1.clear();
       } else {
-        if (isNextPageLoading) return;
         isNextPageLoading = true;
-        notifyListeners();
       }
 
-      ApiService apiService = ApiService(
-          type.toString() =="corporate"
-              ? AppConstant.GET_CORPORATE_DASHBOARD
-              :
-          AppConstant.GET_VENDOR_HAZARD);
+      notifyListeners();
 
-      String url = '';
+      final apiService = ApiService(
+        type != "corporate"
+            ? AppConstant.GET_CORPORATE_DASHBOARD
+            : AppConstant.GET_VENDOR_HAZARD,
+      );
 
-      if (searchQuery.isNotEmpty) {
-        url += '&search=$searchQuery';
-      }
+      final response = await apiService.get(query);
 
-      var response = await apiService.get(url);
+      final SovListModel sovListModel =
+      await compute(parseSovList, response);
 
-      SovListModel sovListModel = await compute(parseSovList, response);
-      // FIXED: correct key name (API returns "result")
+      /// Metadata
       filterlist = sovListModel.filters;
       cardlist = sovListModel.cards;
-      filteredAutoCompleteList1= sovListModel.results ?? [];
 
-      // Keeping listeners
-      for (var item in sovList) {
+      final List<Result> results = sovListModel.result ?? [];
+
+      /// 🔥 MASTER LIST (never filtered)
+      allVendorList.addAll(results);
+
+      /// 🔥 UI LIST (filtered view)
+      filteredAutoCompleteList1= sovListModel.results ?? [];
+      // filteredAutoCompleteList1 = results;
+      // filteredAutoCompleteList2 = List.from(allVendorList);
+
+      /// Pagination tracking
+      this.page = page;
+      // totalPages = sovListModel.totalPages ?? totalPages;
+
+      /// Listen to meta updates
+      for (final item in results) {
         if (item.sovId != null) {
           listenToSovMeta(item.sovId!);
         }
       }
     } catch (e, stack) {
-      print(e);
-      print(stack);
+      debugPrint('fetchvendorList error: $e');
+      debugPrint('$stack');
     } finally {
       isLoading = false;
       isNextPageLoading = false;
+      notifyListeners();
     }
   }
+  void clearVendorList() {
+    allVendorList.clear();
+    filteredAutoCompleteList1.clear();
+  }
+
+
+  //
+  // Future<void> fetchvendorList(
+  //   BuildContext context,
+  //   String searchQuery,
+  //   int page,
+  //   int pageSize,
+  //   String? type,
+  // ) async {
+  //   try {
+  //     if (isLoading || isNextPageLoading) return;
+  //
+  //     if (page == 1) {
+  //       isLoading = true;
+  //       filterlist; // reset previous list
+  //       cardlist;
+  //       notifyListeners();
+  //       isLoading = true;
+  //     } else {
+  //       if (isNextPageLoading) return;
+  //       isNextPageLoading = true;
+  //       notifyListeners();
+  //     }
+  //
+  //     ApiService apiService = ApiService(
+  //         type.toString() !="corporate"
+  //             ? AppConstant.GET_CORPORATE_DASHBOARD
+  //             :
+  //         AppConstant.GET_VENDOR_HAZARD
+  //     );
+  //
+  //     String url = '';
+  //
+  //     if (searchQuery.isNotEmpty) {
+  //       url += searchQuery;
+  //     }
+  //
+  //     var response = await apiService.get(url);
+  //
+  //     SovListModel sovListModel = await compute(parseSovList, response);
+  //     // FIXED: correct key name (API returns "result")
+  //     filterlist = sovListModel.filters;
+  //     cardlist = sovListModel.cards;
+  //     filteredAutoCompleteList1= sovListModel.results ?? [];
+  //
+  //     // Keeping listeners
+  //     for (var item in sovList) {
+  //       if (item.sovId != null) {
+  //         listenToSovMeta(item.sovId!);
+  //       }
+  //     }
+  //   } catch (e, stack) {
+  //     print(e);
+  //     print(stack);
+  //   } finally {
+  //     isLoading = false;
+  //     isNextPageLoading = false;
+  //   }
+  // }
 
   /// Rename sov
   Future<void> renameSov(BuildContext context, String accountId,
@@ -876,7 +1056,7 @@ class SOVListProvider extends ChangeNotifier {
 
       // CORRECTED: Use the proper API endpoint
       final URL =
-          'https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/export_sov';
+          'https://us-central1-project-green-prod.cloudfunctions.net/locations/export_sov';
       print('Request URL: $URL');
 
       final dio = Dio();

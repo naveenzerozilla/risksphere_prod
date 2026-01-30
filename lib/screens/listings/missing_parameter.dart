@@ -8,6 +8,9 @@ import '../../utils/global_imports.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
 
+import '../payments/purchase_license.dart';
+import 'location_profile.dart';
+
 class MissingParameterScreen extends StatefulWidget {
   final String sovId;
 
@@ -19,11 +22,11 @@ class MissingParameterScreen extends StatefulWidget {
 
 class _MissingParameterScreenState extends State<MissingParameterScreen>
     with TickerProviderStateMixin {
-  /// 🔥 HazardHub multi-selection state
   final Set<String> selectedHazardLocationIds = {};
 
-  /// cache visible list for checkbox logic
   List<Data> _cachedFilteredItems = [];
+  final Set<String> _optimisticProcessingIds = {};
+  final Set<String> _optimisticUnlockedHazards = {};
 
   bool get hasHazardSelection => selectedHazardLocationIds.isNotEmpty;
 
@@ -31,10 +34,20 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
 
   Set<String> _getVisibleLocationIds(List<Data> visibleItems) {
     return visibleItems
-        .where((e) => e.usFlag == true) // only selectable items
+        .where((e) =>
+            e.usFlag == true &&
+            e.hasVendorHazards != true &&
+            !_optimisticProcessingIds.contains(e.locationId))
         .map((e) => e.locationId!)
         .toSet();
   }
+
+  // Set<String> _getVisibleLocationIds(List<Data> visibleItems) {
+  //   return visibleItems
+  //       .where((e) => e.usFlag == true)
+  //       .map((e) => e.locationId!)
+  //       .toSet();
+  // }
 
   bool _isAllSelected(Set<String> visibleIds) {
     return visibleIds.isNotEmpty &&
@@ -45,7 +58,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     return selectedHazardLocationIds.isNotEmpty && !_isAllSelected(visibleIds);
   }
 
-  /// Visible IDs based on filter
   Set<String> get filteredVisibleIds =>
       _applyLocationFilter(_cachedFilteredItems)
           .map((e) => e.locationId!)
@@ -165,10 +177,8 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
       final provider = Provider.of<AccountListProvider>(context, listen: false);
 
       if (widget.sovId != null && widget.sovId!.isNotEmpty) {
-        // 🔥 START FIRESTORE LISTENER (like web)
         provider.listenToLocationRecommendations(widget.sovId!);
 
-        // 🔥 FETCH API DATA
         _getData(widget.sovId!);
       }
     });
@@ -179,13 +189,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     await prefs.setBool(
         'isFirstTime', false); // 👈 save only when user closes it
     setState(() => _showOverlay = false);
-  }
-
-  @override
-  void dispose() {
-    _tabController?.dispose();
-    _filePathController.dispose();
-    super.dispose();
   }
 
   Future<void> _refreshHazardHubCredits() async {
@@ -273,7 +276,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                       ],
                     ),
 
-                    /// 🔥 BOTTOM UNLOCK BAR (GLOBAL)
                     if (hasSelection)
                       Positioned(
                         left: 0,
@@ -308,15 +310,35 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                   hasHazardHubCount: hasHazardHubCount,
                                   selectedLocationIds:
                                       selectedHazardLocationIds.toList(),
-                                  onSuccess: () async {
+                                  onConfirmStart: () {
+                                    setState(() {
+                                      _optimisticProcessingIds
+                                          .addAll(selectedHazardLocationIds);
+                                    });
+                                  },
+                                  onFinish: () async {
+                                    setState(() {
+                                      _optimisticProcessingIds
+                                          .removeAll(selectedHazardLocationIds);
+                                    });
+
                                     selectedHazardLocationIds.clear();
-                                    // 🔄 reload data after unlock
                                     await _refreshHazardHubCredits();
                                     await _getData(widget.sovId);
-
-                                    setState(() {});
                                   },
                                 );
+
+                                // showInsufficientCreditsBottomSheet(
+                                //   context,
+                                //   hasHazardHubCount: hasHazardHubCount,
+                                //   selectedLocationIds:
+                                //       selectedHazardLocationIds.toList(),
+                                //   onSuccess: () async {
+                                //     selectedHazardLocationIds.clear();
+                                //     await _refreshHazardHubCredits();
+                                //     await _getData(widget.sovId);
+                                //   },
+                                // );
                               },
                               child: Text(
                                 "Unlock Hazard Data",
@@ -330,7 +352,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                           ),
                         ),
                       ),
-                    if (_showOverlay) _buildOverlay(),
                   ],
                 ),
               );
@@ -341,368 +362,354 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     );
   }
 
-  Widget _buildOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.7), // dim background/ dim background
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF232323),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(11),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () async {
-                    const url = 'https://www.youtube.com/watch?v=7kvdDtowGM0';
-                    if (await canLaunchUrl(Uri.parse(url))) {
-                      await launchUrl(Uri.parse(url),
-                          mode: LaunchMode.externalApplication);
-                    }
-                    ;
-                  },
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SvgPicture.asset(
-                        'assets/images/userguide.svg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                const Text(
-                  "New Account",
-                  style: TextStyle(
-                    color: AppColors.primaryMain,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  "Set up a primary account for your client or commercial entity. Add key company info to start building their digital risk data. ",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryMain,
-                          side: const BorderSide(color: AppColors.primaryMain),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _closeOverlay,
-                        child:
-                            const Text("Skip", style: TextStyle(fontSize: 14)),
-                      ),
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryMain,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        _closeOverlay();
-                        _showAddAccountDialog(context);
-                      }, //_closeOverlay,
-                      child: const Text("Add Account",
-                          style: TextStyle(color: Colors.black)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildMissingParameterCard(Data item) {
+
+  Widget _buildMissingParameterCard(
+    Data item,
+    Map<String, String> accountMap,
+    Map<String, String> subAccountMap,
+  ) {
     final typography = CustomTypography(context);
-    final provider = context.watch<AccountListProvider>();
+    final provider = context.read<AccountListProvider>();
 
     final String locationId = item.locationId ?? '';
-    final bool isBlocked = provider.blockedLocationIds.contains(locationId);
-    final bool isSelected = selectedHazardLocationIds.contains(locationId);
+    // final bool isBlocked = provider.blockedLocationIds.contains(locationId);
 
-    return Opacity(
-      opacity: isBlocked ? 0.6 : 1,
-      child: IgnorePointer(
-        ignoring: isBlocked,
-        child: GestureDetector(
-          onLongPress: () {
-            if (item.usFlag == true) {
-              setState(() {
-                selectedHazardLocationIds.add(locationId);
-              });
-            }
-          },
-          onTap: () {
-            if (hasSelection && item.usFlag == true) {
-              setState(() {
-                if (isSelected) {
-                  selectedHazardLocationIds.remove(locationId);
-                } else {
-                  selectedHazardLocationIds.add(locationId);
-                }
-              });
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Colors.grey.withOpacity(0.15)
-                  : const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? Colors.grey : const Color(0xFF2C2C2C),
-                width: 1.5,
-              ),
+    final bool isBlocked = _optimisticProcessingIds.contains(locationId) ||
+        provider.blockedLocationIds.contains(locationId);
+    final bool canSelect =
+        item.usFlag == true && item.hasVendorHazards != true && !isBlocked;
+    final bool isSelected =
+        canSelect && selectedHazardLocationIds.contains(locationId);
+    final String accountName = accountMap[item.accountId] ?? "-";
+
+    final String subAccountName = subAccountMap[item.subAccountId] ?? "-";
+    final bool hasHazard = item.hasVendorHazards == true ||
+        _optimisticUnlockedHazards.contains(locationId);
+    return GestureDetector(
+      /// future implementations
+      onLongPress: () {
+        if (item.usFlag == true && item.hasVendorHazards != true) {
+          setState(() {
+            selectedHazardLocationIds.add(locationId);
+          });
+        }
+      },
+      onTap: () {
+        if (!canSelect) return;
+
+        setState(() {
+          if (isSelected) {
+            selectedHazardLocationIds.remove(locationId);
+          } else {
+            selectedHazardLocationIds.add(locationId);
+          }
+        });
+      },
+
+      child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.grey.withOpacity(0.15)
+                : const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? Colors.grey : const Color(0xFF2C2C2C),
+              width: 1.5,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// HEADER
-
-                Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4), // square corners
-                      child: CachedNetworkImage(
-                        imageUrl:
-                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${item.latitude},${item.longitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          child: IgnorePointer(
+            ignoring: isBlocked,
+            child: Opacity(
+              opacity: isBlocked ? 0.6 : 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        // square corners
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${item.latitude},${item.longitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                         ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      const SizedBox(width: 8),
+                      Container(
+                        // color: Colors.red,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width / 3.1,
+                                  child: Text(
+                                    item.locationName ?? "-",
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.Body2.copyWith(
+                                      color: Colors.blue[300],
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                item.usFlag == true
+                                    ? InkWell(
+                                        borderRadius: BorderRadius.circular(20),
+                                        onTap: isBlocked
+                                            ? null
+                                            : () {
+                                                if (item.hasVendorHazards ==
+                                                    true) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          LocationProfile(
+                                                        accountId:
+                                                            item.accountId!,
+                                                        accountName:
+                                                            accountName,
+                                                        subAccountId:
+                                                            item.subAccountId!,
+                                                        subAccountName:
+                                                            subAccountName,
+                                                        sovId: "",
+                                                        sovName: "test",
+                                                        searchQuery: "",
+                                                        locationId:
+                                                            item.locationId,
+                                                        page: "1",
+                                                        totalPages: "1",
+                                                        tab: 2,
+                                                      ),
+                                                    ),
+                                                  );
+                                                } else {
+                                                  showInsufficientCreditsBottomSheet(
+                                                    context,
+                                                    hasHazardHubCount:
+                                                        hasHazardHubCount,
+                                                    selectedLocationIds: [
+                                                      locationId
+                                                    ],
+                                                    onConfirmStart: () {
+                                                      setState(() {
+                                                        _optimisticProcessingIds
+                                                            .add(locationId);
+                                                      });
+                                                    },
+                                                    onFinish: () async {
+                                                      if (!mounted) return;
+
+                                                      setState(() {
+                                                        _optimisticProcessingIds
+                                                            .remove(locationId);
+
+                                                        /// 🔥 INSTANT UI UPDATE
+                                                        _optimisticUnlockedHazards
+                                                            .add(locationId);
+                                                      });
+
+                                                      /// Background refresh (no UI wait)
+                                                      _refreshHazardHubCredits();
+                                                    },
+
+                                                    // onFinish: () async {
+                                                    //   if (!mounted) return;
+                                                    //   setState(() {
+                                                    //     _optimisticProcessingIds
+                                                    //         .remove(locationId);
+                                                    //   });
+                                                    //   await _refreshHazardHubCredits();
+                                                    // },
+                                                  );
+                                                }
+                                              },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: const Color(0xFF2ECC71),
+                                              width: 1,
+                                            ),
+                                          ),
+
+                                          // 🔥 CONTENT SWITCH
+                                          child: isBlocked
+                                              // 🟡 LOADER (Firebase processing)
+                                              ? const SizedBox(
+                                                  height: 14,
+                                                  width: 14,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                                Color>(
+                                                            Color(0xFF2ECC71)),
+                                                  ),
+                                                )
+                                              // 🟢 NORMAL STATES
+                                              : Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const SizedBox(
+                                                      width: 6,
+                                                      height: 6,
+                                                      child: DecoratedBox(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color:
+                                                              Color(0xFF2ECC71),
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 2),
+
+                                                    const SizedBox(width: 2),
+                                                    Text(
+                                                      hasHazard
+                                                          ? 'View Hazard'
+                                                          : 'Unlock Hazard',
+                                                      style: const TextStyle(
+                                                        color:
+                                                            Color(0xFF2ECC71),
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+
+                                                    // Text(
+                                                    //   item.hasVendorHazards ==
+                                                    //           true
+                                                    //       ? 'View Hazard'
+                                                    //       : 'Unlock Hazard',
+                                                    //   style: const TextStyle(
+                                                    //     color:
+                                                    //         Color(0xFF2ECC71),
+                                                    //     fontSize: 12,
+                                                    //     fontWeight:
+                                                    //         FontWeight.w500,
+                                                    //   ),
+                                                    // ),
+                                                  ],
+                                                ),
+                                        ),
+                                      )
+                                    : const SizedBox(),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
                             SizedBox(
-                              width: MediaQuery.of(context).size.width / 4,
+                              width: MediaQuery.of(context).size.width / 2,
                               child: Text(
-                                item.locationName ?? "-",
+                                item.address ?? "-",
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: typography.Body2.copyWith(
                                   color: Colors.blue[300],
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            item.usFlag == true
-                                ? InkWell(
-                                    borderRadius: BorderRadius.circular(20),
-                                    onTap: () {
-                                      // 🔥 Select only this location
-                                      selectedHazardLocationIds.clear();
-                                      selectedHazardLocationIds.add(locationId);
-
-                                      showInsufficientCreditsBottomSheet(
-                                        context,
-                                        hasHazardHubCount: hasHazardHubCount,
-                                        selectedLocationIds: [locationId],
-                                        onSuccess: () async {
-                                          selectedHazardLocationIds.clear();
-                                          await _refreshHazardHubCredits();
-                                          await _getData(widget.sovId);
-                                          setState(() {});
-                                        },
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFF2ECC71),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: const [
-                                          SizedBox(
-                                            width: 6,
-                                            height: 6,
-                                            child: DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                color: Color(0xFF2ECC71),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            'Unlock Hazard',
-                                            style: TextStyle(
-                                              color: Color(0xFF2ECC71),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : Container(),
-
-                            // item.usFlag.toString() !="true" ?Container():
-                            // Container(
-                            //   padding: const EdgeInsets.symmetric(
-                            //       horizontal: 6, vertical: 3),
-                            //   decoration: BoxDecoration(
-                            //     borderRadius: BorderRadius.circular(20),
-                            //     border: Border.all(
-                            //       color: const Color(0xFF2ECC71),
-                            //       width: 1,
-                            //     ),
-                            //   ),
-                            //   child: Row(
-                            //     mainAxisSize: MainAxisSize.min,
-                            //     children: [
-                            //       Container(
-                            //         width: 6,
-                            //         height: 6,
-                            //         decoration: const BoxDecoration(
-                            //           color: Color(0xFF2ECC71),
-                            //           shape: BoxShape.circle,
-                            //         ),
-                            //       ),
-                            //       const SizedBox(width: 6),
-                            //       const Text(
-                            //         'Unlock Hazard',
-                            //         style: TextStyle(
-                            //           color: Color(0xFF2ECC71),
-                            //           fontSize: 12,
-                            //           fontWeight: FontWeight.w500,
-                            //         ),
-                            //       ),
-                            //     ],
-                            //   ),
-                            // ),
                           ],
                         ),
-                        const SizedBox(height: 3),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width / 2,
-                          child: Text(
-                            item.address ?? "-",
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.Body2.copyWith(
-                              color: Colors.blue[300],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                /// MISSING PARAMETERS
-                Text(
-                  "${item.totalUnfilledParameters} missing fields",
-                  style: typography.Caption.copyWith(
-                    color: Colors.white,
-                    fontSize: 15,
+                      ),
+                    ],
                   ),
-                ),
 
-                _buildHighRiskText(
-                  context,
-                  item.highRiskUnfilledParameterNames,
-                  typography.Caption.copyWith(
-                    color: Colors.red,
-                    fontSize: 14,
-                  ),
-                ),
+                  const SizedBox(height: 12),
 
-                const SizedBox(height: 5),
-
-                /// ✅ HIDE BUTTON ONLY FOR SELECTED ITEM
-                // item.usFlag == true
-                //     ? Container()
-                //     :
-                SizedBox(
-                  width: double.infinity,
-                  height: 33,
-                  child: CustomButton(
-                    type: ButtonType.elevated,
-                    onPressed: () {
-                      // if (item.usFlag == true) {
-                      //   showInsufficientCreditsBottomSheet(
-                      //     context,
-                      //     hasHazardHubCount: hasHazardHubCount,
-                      //     selectedLocationIds:
-                      //         selectedHazardLocationIds.toList(),
-                      //     onSuccess: () async {
-                      //       // 🔄 reload data after unlock
-                      //       await _getData(widget.sovId);
-                      //       selectedHazardLocationIds.clear();
-                      //       setState(() {});
-                      //     },
-                      //   );
-                      // } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UpdateParameterScreen(item: item),
-                        ),
-                      );
-                      // }
-                    },
-                    child: Text(
-                      // item.usFlag == true ? "Unlock" : "Update",
-                      "Update",
-                      style: typography.ButtonLargeBlack,
+                  /// MISSING PARAMETERS
+                  Text(
+                    "${item.totalUnfilledParameters} missing fields",
+                    style: typography.Caption.copyWith(
+                      color: Colors.white,
+                      fontSize: 15,
                     ),
                   ),
-                ),
-              ],
+
+                  _buildHighRiskText(
+                    context,
+                    item.highRiskUnfilledParameterNames,
+                    typography.Caption.copyWith(
+                      color: Colors.red,
+                      fontSize: 14,
+                    ),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  /// ✅ HIDE BUTTON ONLY FOR SELECTED ITEM
+                  // item.usFlag == true
+                  //     ? Container()
+                  //     :
+                  SizedBox(
+                    width: double.infinity,
+                    height: 33,
+                    child: CustomButton(
+                      type: ButtonType.elevated,
+                      onPressed: isBlocked
+                          ? null
+                          : () {
+                              // if (item.usFlag == true) {
+                              //   showInsufficientCreditsBottomSheet(
+                              //     context,
+                              //     hasHazardHubCount: hasHazardHubCount,
+                              //     selectedLocationIds:
+                              //         selectedHazardLocationIds.toList(),
+                              //     onSuccess: () async {
+                              //       // 🔄 reload data after unlock
+                              //       await _getData(widget.sovId);
+                              //       selectedHazardLocationIds.clear();
+                              //       setState(() {});
+                              //     },
+                              //   );
+                              // } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      UpdateParameterScreen(item: item),
+                                ),
+                              );
+                              // }
+                            },
+                      child: Text(
+                        // item.usFlag == true ? "Unlock" : "Update",
+                        "Update",
+                        style: typography.ButtonLargeBlack,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
+          )),
     );
   }
 
@@ -886,250 +893,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     }
   }
 
-  Future<void> _showAddAccountDialog(BuildContext context) async {
-    var typography = CustomTypography(context);
-    await showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              content: SingleChildScrollView(
-                child: SizedBox(
-                  width: 500,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        LanguageService.getTranslated(
-                            context, "account_list_app_add_account_title"),
-                        style: typography.H5_Regular,
-                      ),
-                      SizedBox(height: 16.0),
-                      Consumer<AccountListProvider>(
-                        builder: (context, accountListProvider, child) {
-                          return Column(
-                            children: [
-                              TextField(
-                                controller: _textEditingController,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _accountAlreadyExists = false;
-                                    _selectedAccount = null;
-                                    accountListProvider.clearAutoCompleteList();
-                                  });
 
-                                  _autocompleteText = value;
-
-                                  // Cancel the previous debounce timer
-                                  if (_debounce?.isActive ?? false)
-                                    _debounce!.cancel();
-
-                                  // Start a new debounce timer
-                                  _debounce =
-                                      Timer(const Duration(milliseconds: 500),
-                                          () async {
-                                    await autoCompleteAccountsSearchClient(
-                                        _autocompleteText);
-                                  });
-                                },
-                                decoration: InputDecoration(
-                                  suffixIcon: _textEditingController
-                                          .text.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(Icons.clear),
-                                          onPressed: () {
-                                            setState(() {
-                                              _textEditingController.clear();
-                                              _accountAlreadyExists = false;
-                                              _selectedAccount = null;
-                                              accountListProvider
-                                                  .clearAutoCompleteList();
-                                            });
-                                          },
-                                        )
-                                      : null,
-                                  labelText: LanguageService.getTranslated(
-                                      context,
-                                      "account_list_app_add_account_title"),
-                                  hintText: LanguageService.getTranslated(
-                                      context,
-                                      "account_list_app_add_account_title"),
-                                  border: const OutlineInputBorder(),
-                                ),
-                              ),
-                              if (_textEditingController.text.isNotEmpty &&
-                                  !_accountAlreadyExists)
-                                AutocompleteOptions(
-                                  options: accountListProvider
-                                      .autoCompleteAccountList,
-                                  onSelected: (Accounts selection) {
-                                    setState(() {
-                                      _accountAlreadyExists = true;
-                                      _selectedAccount = selection;
-                                      _textEditingController.text =
-                                          selection.accountName!;
-                                      // Clear the autocomplete list when an option is selected
-                                      accountListProvider
-                                          .clearAutoCompleteList();
-                                    });
-                                  },
-                                  isLoading:
-                                      accountListProvider.isAutoCompleteLoading,
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                      SizedBox(height: CustomSpacing.six),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Consumer<AccountListProvider>(
-                                    builder: (context, accountListProvider, _) {
-                                  return accountListProvider.isAddAccountLoading
-                                      ? Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            SizedBox(
-                                                width: 25,
-                                                height: 25,
-                                                child:
-                                                    CircularProgressIndicator()),
-                                          ],
-                                        )
-                                      : CustomButton(
-                                          onPressed: () async {
-                                            if (_autocompleteText.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(SnackBar(
-                                                      content: Text(
-                                                LanguageService.getTranslated(
-                                                    context,
-                                                    "account_list_app_add_account_empty_text_error"),
-                                                style: typography.Body1,
-                                              )));
-                                              return;
-                                            }
-
-                                            if (!_accountAlreadyExists) {
-                                              // Add account
-                                              await accountListProvider
-                                                  .addAccount(context,
-                                                      _autocompleteText);
-                                            } else {
-                                              // Request access
-                                              if (_messageController
-                                                  .text.isEmpty) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(SnackBar(
-                                                        content: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "account_list_app_add_account_empty_text_error"),
-                                                  style: TextStyle(
-                                                      color: Colors.black),
-                                                )));
-                                                return;
-                                              }
-                                              await accountListProvider
-                                                  .requestAccess(
-                                                      context,
-                                                      _selectedAccount
-                                                              ?.accountId ??
-                                                          "",
-                                                      _messageController.text);
-                                            }
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text(
-                                            // _accountAlreadyExists
-                                            //     ? LanguageService.getTranslated(
-                                            //         context,
-                                            //         "account_list_app_request_access_text")
-                                            //     :
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "account_list_app_submit_text"),
-                                            style: typography.ButtonLargeBlack,
-                                          ),
-                                          type: ButtonType.elevated,
-                                        );
-                                }),
-                              ),
-                            ],
-                          ),
-                          CustomButton(
-                            onPressed: () {
-                              // Cancel
-                              _uploadedFileName = null;
-                              _sovNameController.clear();
-                              Navigator.pop(context);
-                            },
-                            child: Text(
-                              LanguageService.getTranslated(
-                                  context, "account_list_app_cancel_text"),
-                              style: typography.ButtonLarge,
-                            ),
-                            type: ButtonType.text,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ).then((_) {
-      // Clear the autocomplete list when the dialog is dismissed
-      Provider.of<AccountListProvider>(context, listen: false)
-          .clearAutoCompleteList();
-      _textEditingController.clear();
-      _messageController.clear();
-      _accountAlreadyExists = false;
-    });
-  }
-
-  _getComingSoonUI(String title) {
-    var typography = CustomTypography(context);
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                Text(
-                    title == "shared"
-                        ? 'A smarter way to track shared files-Coming Soon! '
-                        : 'A smarter way to track access requests – Coming Soon!',
-                    textAlign: TextAlign.center,
-                    style: typography.H5_Regular),
-                SizedBox(height: 10),
-                Text(
-                    LanguageService.getTranslated(
-                        context, 'coming_soon_subtitle'),
-                    textAlign: TextAlign.center,
-                    style: typography.Body1),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   List<Data> _applyLocationFilter(List<Data> list) {
     switch (selectedLocation) {
@@ -1194,6 +958,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                 },
               ),
               const SizedBox(width: 8),
+
               Text(
                 LanguageService.getTranslated(context, "missing_parameter"),
                 style: typography.Body1,
@@ -1267,30 +1032,32 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
           ),
           SizedBox(height: CustomSpacing.two),
           Expanded(
-            child:
-                Selector<AccountListProvider, Tuple3<bool, bool, List<Data>>>(
-              selector: (_, provider) => Tuple3(
+            child: Selector<
+                AccountListProvider,
+                Tuple5<bool, bool, List<Data>, AccountIdToName?,
+                    SubAccountIdToName?>>(
+              selector: (_, provider) => Tuple5(
                 provider.isLoading,
                 provider.isRefreshPending,
                 provider.missingParameterList,
+                provider.accountListModel?.accountIdToName,
+                provider.accountListModel?.subAccountIdToName,
               ),
               builder: (context, data, _) {
                 final bool isLoading = data.item1;
 
-                /// 1️⃣ Base list (only missing parameters)
                 final List<Data> allItems = data.item3
                     .where((e) => (e.totalUnfilledParameters ?? 0) > 0)
                     .toList();
+                final accountMap = data.item4?.map ?? {};
+                final subAccountMap = data.item5?.map ?? {};
 
-                /// 2️⃣ Apply dropdown filter
                 final List<Data> filteredList = _applyLocationFilter(allItems);
 
-                /// 🔹 Initial loading
-                if (isLoading && filteredList.isEmpty) {
+                if (isLoading || filteredList.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                /// 🔹 No data after filter
                 if (filteredList.isEmpty) {
                   return Center(
                     child: Padding(
@@ -1304,7 +1071,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                   );
                 }
 
-                /// 🔹 List
                 return RefreshIndicator(
                   onRefresh: () async {
                     await context
@@ -1324,14 +1090,13 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                     itemBuilder: (context, index) {
                       final item = filteredList[index];
                       return Container(
-                        padding: const EdgeInsets.all(4),
-                        margin: const EdgeInsets.symmetric(vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: _buildMissingParameterCard(item),
-                      );
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: _buildMissingParameterCard(
+                              item, accountMap, subAccountMap));
                     },
                   ),
                 );
@@ -1344,53 +1109,21 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
   }
 }
 
-Widget _chip(String text, {bool isPrimary = false}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    decoration: BoxDecoration(
-      color: isPrimary
-          ? Colors.red.withOpacity(0.15)
-          : Colors.grey.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: isPrimary ? Colors.red : Colors.grey[300],
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  );
-}
-
-Widget _countChip(String text) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.grey.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: Colors.white70,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  );
-}
-
 void showInsufficientCreditsBottomSheet(
   BuildContext context, {
   required String? hasHazardHubCount,
   required List<String> selectedLocationIds,
-  required VoidCallback onSuccess,
+  required VoidCallback onConfirmStart, // 👈 NEW
+  required VoidCallback onFinish, // 👈 NEW
 }) {
   bool isChecked = true;
 
   final int length = selectedLocationIds.length;
   final int availableCredits = int.tryParse(hasHazardHubCount ?? '0') ?? 0;
   final int remainingCredits = availableCredits;
+  final int remainingAfterUnlock = remainingCredits - length;
+  final bool noCredits = remainingCredits == 0;
+  bool understandResetChecked = false;
 
   showModalBottomSheet(
     context: context,
@@ -1417,9 +1150,10 @@ void showInsufficientCreditsBottomSheet(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// TITLE
-                    const Text(
-                      "Confirm Unlock HazardHub Data",
+                    Text(
+                      remainingCredits == 0
+                          ? "Insufficient Credits"
+                          : "Confirm Unlock HazardHub Data",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -1430,7 +1164,9 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 12),
 
                     Text(
-                      "You are about to unlock HazardHub data for this locations.",
+                      remainingCredits == 0
+                          ? "You've selected 1 location, but only 0 credits are available."
+                          : "You are about to unlock HazardHub data for this locations.",
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -1440,7 +1176,9 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 16),
 
                     Text(
-                      "This action will consume $length credits from your available balance.",
+                      remainingCredits == 0
+                          ? " To continue, you can purchase more credits."
+                          : "This action will consume $length credits from your available balance.",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -1451,7 +1189,10 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 10),
 
                     Text(
-                      "Credits remaining after unlock: $remainingCredits",
+                      remainingCredits == 0
+                          ? "During payment, your current location selection will not be saved. After purchase, you'll need to reselect locations to unlock HazardHub data."
+                          : 'Credits remaining after unlock: ' +
+                              remainingAfterUnlock.toString(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -1469,45 +1210,87 @@ void showInsufficientCreditsBottomSheet(
                     ),
 
                     const SizedBox(height: 20),
+                    const SizedBox(height: 10),
 
-                    /// CONFIRM BUTTON
+                    if (noCredits)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: understandResetChecked,
+                              onChanged: (value) {
+                                setState(() {
+                                  understandResetChecked = value ?? false;
+                                });
+                              },
+                              activeColor: const Color(0xFF8EC9FF),
+                              checkColor: Colors.black,
+                              side: const BorderSide(color: Colors.white70),
+                            ),
+                            const Expanded(
+                              child: Text(
+                                "I understand my selection will reset after payment",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: 48,
                       child: Consumer<AccountListProvider>(
                         builder: (context, provider, _) {
                           return ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF8EC9FF),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: understandResetChecked
+                                  ? Colors.grey
+                                      .shade700 // 🔒 disabled look (like screenshot)
+                                  : const Color(0xFF8EC9FF),
+                              foregroundColor:
+                                  noCredits ? Colors.white70 : Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 2),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-
-                            onPressed: (!provider.isUpdating &&
-                                    isChecked &&
-                                    remainingCredits >= 0)
+                            onPressed: (!provider.isUpdating && !noCredits ||
+                                    understandResetChecked)
                                 ? () async {
                                     try {
-                                      /// 🔥 CALL API
-                                      await provider.unlockHazardHubData(
-                                        context,
-                                        locationIds: selectedLocationIds,
-                                      );
-
-                                      onSuccess();
-                                      Navigator.of(context).pop();
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              "HazardHub unlocked successfully"),
-                                        ),
-                                      );
+                                      if (noCredits) {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const PurchaseLicensePage()));
+                                      } else {
+                                        onConfirmStart();
+                                        await provider.unlockHazardHubData(
+                                          context,
+                                          locationIds: selectedLocationIds,
+                                        );
+                                        Navigator.of(context).pop();
+                                        onFinish();
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                "HazardHub unlocked successfully"),
+                                          ),
+                                        );
+                                      }
                                     } catch (e) {
+                                      onFinish();
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
@@ -1518,8 +1301,6 @@ void showInsufficientCreditsBottomSheet(
                                     }
                                   }
                                 : null,
-
-                            /// 🔄 BUTTON CONTENT
                             child: provider.isUpdating
                                 ? const SizedBox(
                                     height: 22,
@@ -1530,9 +1311,9 @@ void showInsufficientCreditsBottomSheet(
                                           Colors.black),
                                     ),
                                   )
-                                : const Text(
-                                    "Confirm Unlock",
-                                    style: TextStyle(
+                                : Text(
+                                    noCredits ? "Buy Credit" : "Confirm Unlock",
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1542,30 +1323,79 @@ void showInsufficientCreditsBottomSheet(
                       ),
                     ),
 
-                    const SizedBox(height: 5),
-
-                    /// BUY CREDIT (only if no credits)
-                    // if (availableCredits == 0)
-                    //   SizedBox(
-                    //     width: double.infinity,
-                    //     child: OutlinedButton(
-                    //       style: OutlinedButton.styleFrom(
-                    //         side: const BorderSide(color: Color(0xFF8EC9FF)),
-                    //         foregroundColor: const Color(0xFF8EC9FF),
-                    //         padding: const EdgeInsets.symmetric(vertical: 14),
-                    //         shape: RoundedRectangleBorder(
-                    //           borderRadius: BorderRadius.circular(10),
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   height: 48,
+                    //   child: Consumer<AccountListProvider>(
+                    //     builder: (context, provider, _) {
+                    //       return ElevatedButton(
+                    //         style: ElevatedButton.styleFrom(
+                    //           backgroundColor: const Color(0xFF8EC9FF),
+                    //           foregroundColor: Colors.black,
+                    //           padding: const EdgeInsets.symmetric(vertical: 2),
+                    //           shape: RoundedRectangleBorder(
+                    //             borderRadius: BorderRadius.circular(10),
+                    //           ),
                     //         ),
-                    //       ),
-                    //       onPressed: () => Navigator.pop(context),
-                    //       child: const Text(
-                    //         "Buy Credit",
-                    //         style: TextStyle(fontSize: 16),
-                    //       ),
-                    //     ),
+                    //         onPressed: (!provider.isUpdating &&
+                    //                 remainingCredits >= 0)
+                    //             ? () async {
+                    //                 try {
+                    //                   onConfirmStart(); // 🔥 START loader here
+                    //
+                    //                   await provider.unlockHazardHubData(
+                    //                     context,
+                    //                     locationIds: selectedLocationIds,
+                    //                   );
+                    //
+                    //                   Navigator.of(context).pop();
+                    //                   onFinish(); // 🔥 STOP loader
+                    //
+                    //                   ScaffoldMessenger.of(context)
+                    //                       .showSnackBar(
+                    //                     const SnackBar(
+                    //                       content: Text(
+                    //                           "HazardHub unlocked successfully"),
+                    //                     ),
+                    //                   );
+                    //                 } catch (e) {
+                    //                   onFinish(); // 🔥 STOP loader on failure
+                    //                   ScaffoldMessenger.of(context)
+                    //                       .showSnackBar(
+                    //                     const SnackBar(
+                    //                       content:
+                    //                           Text("Unlock failed. Try again"),
+                    //                     ),
+                    //                   );
+                    //                 }
+                    //               }
+                    //             : null,
+                    //
+                    //         /// 🔄 BUTTON CONTENT
+                    //         child: provider.isUpdating
+                    //             ? const SizedBox(
+                    //                 height: 22,
+                    //                 width: 22,
+                    //                 child: CircularProgressIndicator(
+                    //                   strokeWidth: 2.5,
+                    //                   valueColor: AlwaysStoppedAnimation<Color>(
+                    //                       Colors.black),
+                    //                 ),
+                    //               )
+                    //             :  Text(
+                    //           remainingCredits == 0 ? " Buy Credits" :
+                    //                 "Confirm Unlock",
+                    //                 style: TextStyle(
+                    //                   fontSize: 16,
+                    //                   fontWeight: FontWeight.w600,
+                    //                 ),
+                    //               ),
+                    //       );
+                    //     },
                     //   ),
+                    // ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 8),
 
                     /// CANCEL
                     SizedBox(

@@ -10,18 +10,21 @@ class AccountListModel {
   bool? fromCache;
   List<Data>? data;
   UpdatedAt? updatedAt;
+  AccountIdToName? accountIdToName;
+  SubAccountIdToName? subAccountIdToName;
 
-  AccountListModel({
-    this.totalHits,
-    this.results,
-    this.totalPages,
-    this.settings,
-    this.totalRecords,
-    this.sovId,
-    this.fromCache,
-    this.data,
-    this.updatedAt,
-  });
+  AccountListModel(
+      {this.totalHits,
+      this.results,
+      this.totalPages,
+      this.settings,
+      this.totalRecords,
+      this.sovId,
+      this.fromCache,
+      this.data,
+      this.updatedAt,
+      this.accountIdToName,
+      this.subAccountIdToName});
 
   AccountListModel.fromJson(Map<String, dynamic> json) {
     totalHits = json['totalHits'];
@@ -48,6 +51,13 @@ class AccountListModel {
     updatedAt = json['updated_at'] != null
         ? UpdatedAt.fromJson(json['updated_at'])
         : null;
+    accountIdToName = json['account_id_to_name'] != null
+        ? AccountIdToName.fromJson(json['account_id_to_name'])
+        : null;
+
+    subAccountIdToName = json['sub_account_id_to_name'] != null
+        ? SubAccountIdToName.fromJson(json['sub_account_id_to_name'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -73,9 +83,48 @@ class AccountListModel {
     if (updatedAt != null) {
       json['updated_at'] = updatedAt!.toJson();
     }
+    if (accountIdToName != null) {
+      json['account_id_to_name'] = accountIdToName!.toJson();
+    }
+
+    if (subAccountIdToName != null) {
+      json['sub_account_id_to_name'] = subAccountIdToName!.toJson();
+    }
 
     return json;
   }
+}
+
+class AccountIdToName {
+  final Map<String, String> map;
+
+  AccountIdToName({required this.map});
+
+  factory AccountIdToName.fromJson(Map<String, dynamic> json) {
+    return AccountIdToName(
+      map: json.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => map;
+}
+
+class SubAccountIdToName {
+  final Map<String, String> map;
+
+  SubAccountIdToName({required this.map});
+
+  factory SubAccountIdToName.fromJson(Map<String, dynamic> json) {
+    return SubAccountIdToName(
+      map: json.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => map;
 }
 
 class Accounts {
@@ -431,8 +480,11 @@ class CompanyGlobalConfiguration {
   }
 }
 
-
 class Data {
+  String? accountId;
+  String? subAccountId;
+  String? accountName;
+  String? subAccountName;
   String? sovId;
   String? locationId;
   String? locationName;
@@ -442,6 +494,7 @@ class Data {
   double? longitude;
   String? address;
   int? totalParameters;
+  bool? hasVendorHazards;
   int? totalUnfilledParameters;
   int? highRiskParameters;
   int? highRiskUnfilledParameters;
@@ -449,7 +502,11 @@ class Data {
   List<String>? highRiskUnfilledParameterNames;
 
   Data(
-      {this.sovId,
+      {this.accountId,
+      this.subAccountId,
+      this.accountName,
+      this.subAccountName,
+      this.sovId,
       this.locationId,
       this.locationName,
       this.placeId,
@@ -458,6 +515,7 @@ class Data {
       this.longitude,
       this.address,
       this.totalParameters,
+      this.hasVendorHazards,
       this.totalUnfilledParameters,
       this.highRiskParameters,
       this.highRiskUnfilledParameters,
@@ -465,6 +523,10 @@ class Data {
       this.highRiskUnfilledParameterNames});
 
   Data.fromJson(Map<String, dynamic> json) {
+    accountId = json['account_id'];
+    subAccountId = json['sub_account_id'];
+    accountName = json['account_name'];
+    subAccountName = json['sub_account_name'];
     sovId = json['sov_id'];
     locationId = json['location_id'];
     locationName = json['location_name'];
@@ -474,6 +536,7 @@ class Data {
     longitude = json['longitude'];
     address = json['address'];
     totalParameters = json['total_parameters'];
+    hasVendorHazards = json['has_vendor_hazards'];
     totalUnfilledParameters = json['total_unfilled_parameters'];
     highRiskParameters = json['high_risk_parameters'];
     highRiskUnfilledParameters = json['high_risk_unfilled_parameters'];
@@ -484,6 +547,10 @@ class Data {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['account_id'] = this.accountId;
+    data['sub_account_id'] = this.subAccountId;
+    data['account_name'] = this.accountName;
+    data['sub_account_name'] = this.subAccountName;
     data['sov_id'] = this.sovId;
     data['location_id'] = this.locationId;
     data['location_name'] = this.locationName;
@@ -493,6 +560,7 @@ class Data {
     data['longitude'] = this.longitude;
     data['address'] = this.address;
     data['total_parameters'] = this.totalParameters;
+    data['has_vendor_hazards'] = this.hasVendorHazards;
     data['total_unfilled_parameters'] = this.totalUnfilledParameters;
     data['high_risk_parameters'] = this.highRiskParameters;
     data['high_risk_unfilled_parameters'] = this.highRiskUnfilledParameters;

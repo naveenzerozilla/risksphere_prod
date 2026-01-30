@@ -7,6 +7,8 @@ import '../design_system/primitives/custom_typography.dart';
 import '../models/DataParameterModel.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';
+import 'package:provider/provider.dart';
+import '../providers/my_location_list_provider.dart';
 
 class SubaccountParameterProvider with ChangeNotifier {
   List<Hazard> _hazardList = [];
@@ -27,7 +29,8 @@ class SubaccountParameterProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  int? updatedScore = 1;
+  // int? updatedScore = 1;
+  int? updatedScore;
 
   void setUpdatedScore(int score) {
     updatedScore = score;
@@ -171,7 +174,6 @@ class SubaccountParameterProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
   Future<void> submitParameterUpdate({
     required BuildContext context,
     required String subaccountId,
@@ -188,32 +190,39 @@ class SubaccountParameterProvider with ChangeNotifier {
       ApiService apiService = ApiService(
         selectedParameterList.toLowerCase() == 'location'
             ? AppConstant.GET_LOCATION_PARAMETERS +
-                locationId +
-                '/' +
-                parameterId
+            locationId +
+            '/' +
+            parameterId
             : selectedParameterList.toLowerCase() == 'sov'
-                ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
-                : selectedParameterList.toLowerCase() == 'campus'
-                    ? AppConstant.GET_CAMPUS_PARAMETERS +
-                        campusId +
-                        '/' +
-                        parameterId
-                    : AppConstant.GET_DATA_PARAMETERS +
-                        subaccountId +
-                        '/' +
-                        parameterId,
+            ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
+            : selectedParameterList.toLowerCase() == 'campus'
+            ? AppConstant.GET_CAMPUS_PARAMETERS +
+            campusId +
+            '/' +
+            parameterId
+            : AppConstant.GET_DATA_PARAMETERS +
+            subaccountId +
+            '/' +
+            parameterId,
       );
 
       final response = await apiService.patch(updatedFields);
 
-      // ⭐ Extract and store score
+      // ✅ SAFE SCORE EXTRACTION
       if (response != null && response['score'] != null) {
-        final score = response['score'];
+        final double score =
+        (response['score'] as num).toDouble();
 
-        // ⭐ Correct way inside provider
-        setUpdatedScore(score);
+        /// 1️⃣ Store for local usage (badge, temporary override)
+        setUpdatedScore(score.round());
 
-        print("Stored score globally: $score");
+        /// 2️⃣ 🔥 UPDATE LOCATION PROFILE (AUTO UI UPDATE)
+        Provider.of<MyLocationListProvider>(
+          context,
+          listen: false,
+        ).updateDataCompleteness(score);
+
+        debugPrint("Stored & synced score: $score");
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -234,61 +243,68 @@ class SubaccountParameterProvider with ChangeNotifier {
     }
   }
 
-// Future<void> submitParameterUpdate({
-//   required BuildContext context,
-//   required String subaccountId,
-//   required String locationId,
-//   required String sovId,
-//   required String campusId,
-//   required String parameterId,
-//   required Map<String, dynamic> updatedFields,
-//   required String selectedParameterList,
-// }) async {
-//   var typography = CustomTypography(context);
-//
-//   try {
-//     print(AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId);
-//     print("Sovparameter");
-//     ApiService apiService = ApiService(
-//       selectedParameterList.toLowerCase() == 'location'
-//           ? AppConstant.GET_LOCATION_PARAMETERS +
-//               locationId +
-//               '/' +
-//               parameterId
-//           : selectedParameterList.toLowerCase() == 'sov'
-//               ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
-//               : selectedParameterList.toLowerCase() == 'campus'
-//                   ? AppConstant.GET_CAMPUS_PARAMETERS +
-//                       campusId +
-//                       '/' +
-//                       parameterId
-//                   : AppConstant.GET_DATA_PARAMETERS +
-//                       subaccountId +
-//                       '/' +
-//                       parameterId,
-//     );
-//     // ApiService apiService = ApiService(
-//     //
-//     //     selectedParameterList
-//     //     AppConstant.GET_DATA_PARAMETERS + subaccountId + '/' + parameterId);
-//
-//     final response = await apiService.patch(updatedFields);
-//
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text("Parameter updated successfully",
-//             style: typography.ButtonLargeBlack),
-//       ),
-//     );
-//   } on BackendException catch (e) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(content: Text(e.message, style: typography.Body1)),
-//     );
-//   } catch (e, stackTrace) {
-//     debugPrint(" Error: $e");
-//     debugPrint(stackTrace.toString());
-//   }
-// }
+  // Future<void> submitParameterUpdate({
+  //   required BuildContext context,
+  //   required String subaccountId,
+  //   required String locationId,
+  //   required String sovId,
+  //   required String campusId,
+  //   required String parameterId,
+  //   required Map<String, dynamic> updatedFields,
+  //   required String selectedParameterList,
+  // }) async {
+  //   var typography = CustomTypography(context);
+  //
+  //   try {
+  //     ApiService apiService = ApiService(
+  //       selectedParameterList.toLowerCase() == 'location'
+  //           ? AppConstant.GET_LOCATION_PARAMETERS +
+  //               locationId +
+  //               '/' +
+  //               parameterId
+  //           : selectedParameterList.toLowerCase() == 'sov'
+  //               ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
+  //               : selectedParameterList.toLowerCase() == 'campus'
+  //                   ? AppConstant.GET_CAMPUS_PARAMETERS +
+  //                       campusId +
+  //                       '/' +
+  //                       parameterId
+  //                   : AppConstant.GET_DATA_PARAMETERS +
+  //                       subaccountId +
+  //                       '/' +
+  //                       parameterId,
+  //     );
+  //
+  //     final response = await apiService.patch(updatedFields);
+  //
+  //     // ⭐ Extract and store score
+  //     // if (response != null && response['score'] != null) {
+  //       final score = response['score'];
+  //
+  //       // ⭐ Correct way inside provider
+  //       setUpdatedScore(score);
+  //
+  //       print("Stored score globally: $score");
+  //     // }
+  //
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           "Parameter updated successfully",
+  //           style: typography.ButtonLargeBlack,
+  //         ),
+  //       ),
+  //     );
+  //   } on BackendException catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(e.message, style: typography.Body1)),
+  //     );
+  //   } catch (e, stackTrace) {
+  //     debugPrint("Error: $e");
+  //     debugPrint(stackTrace.toString());
+  //   }
+  // }
+
 }
 
 class Hazard {

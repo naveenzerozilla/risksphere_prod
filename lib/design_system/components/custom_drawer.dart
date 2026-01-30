@@ -26,6 +26,7 @@ import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
 import '../../screens/onboarding/login_screen.dart';
 import '../../screens/onboarding/splash_screen.dart';
+import '../../screens/onboarding/supportscreen.dart';
 import '../../screens/payments/purchase_license.dart';
 import '../../screens/payments/transaction_summary.dart';
 import '../../service/language_service.dart';
@@ -449,7 +450,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           },
                         ),
                       ],
-                      isSuperAdmin.toString() == "true"  &&    userProfileProvider.userData.isIndividual.toString() != "true"
+                      isSuperAdmin.toString() == "true" &&
+                              userProfileProvider.userData.isIndividual
+                                      .toString() !=
+                                  "true"
                           ? _buildDrawerItem(
                               context,
                               provider,
@@ -459,7 +463,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                 provider.setSelectedItem("credit_usage");
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                      builder: (_) => VendorList(status: 'vendor')),
+                                      builder: (_) =>
+                                          VendorList(status: 'vendor')),
                                 );
                               },
                               isSelected:
@@ -956,10 +961,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       }
                     },
                   ),
+                  InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => SupportScreen()));
+                      },
+                      child: Icon(Icons.support_agent)),
                   Consumer<AuthNotifier>(
                     builder: (context, authNotifier, child) {
                       return IconButton(
-                        icon: Icon(Icons.logout_rounded, color: iconColor),
+                        icon: Icon(Icons.logout_rounded,
+                            color: Colors.red.withOpacity(0.8)),
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -1059,56 +1071,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           setState(() => isLoggingOut = false);
                                       }
                                     },
-
-                                    // onPressed: () async {
-                                    //   try {
-                                    //     final GoogleSignIn _googleSignIn =
-                                    //         GoogleSignIn(scopes: ['email']);
-                                    //
-                                    //     // Step 1: If Google user is signed in
-                                    //     if (await _googleSignIn.isSignedIn()) {
-                                    //       try {
-                                    //         // Revoke access (optional)
-                                    //         await _googleSignIn.disconnect();
-                                    //       } catch (e) {
-                                    //         print(
-                                    //             "Google disconnect error (optional): $e");
-                                    //       }
-                                    //
-                                    //       // Sign out from Google
-                                    //       await _googleSignIn.signOut();
-                                    //     }
-                                    //     final prefs = await SharedPreferences
-                                    //         .getInstance();
-                                    //     await prefs.setBool(
-                                    //         'isFirstTime', false);
-                                    //     // Step 2: Sign out from Firebase
-                                    //     await FirebaseAuth.instance.signOut();
-                                    //     await authNotifier.signOut();
-                                    //
-                                    //     // Step 3: Reset state like drawer selection
-                                    //     Provider.of<DrawerSelectionProvider>(
-                                    //             context,
-                                    //             listen: false)
-                                    //         .setSelectedItem("dashboard");
-                                    //
-                                    //     // Step 4: Navigate to splash screen
-                                    //     Navigator.pushAndRemoveUntil(
-                                    //       context,
-                                    //       MaterialPageRoute(
-                                    //           builder: (_) => SplashScreen()),
-                                    //       (route) => false,
-                                    //     );
-                                    //   } catch (e) {
-                                    //     print("Logout error: $e");
-                                    //     ScaffoldMessenger.of(context)
-                                    //         .showSnackBar(
-                                    //       SnackBar(
-                                    //           content: Text(
-                                    //               "Logout failed. Please try again.")),
-                                    //     );
-                                    //   }
-                                    // },
                                     child: isLoggingOut
                                         ? SizedBox(
                                             height: 18,
@@ -1135,6 +1097,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
+
                   if (showCorporateManagementTab ||
                       showNonCorporateManagementTab ||
                       showEmployeeManagementTab)

@@ -1,6 +1,8 @@
 import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/my_location_list_model.dart';
 import '../../utils/global_imports.dart';
@@ -47,8 +49,23 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   bool isSelectionMode = false;
   List<bool> selectedList = [];
   String isMaintenance = "";
+  String selectedVendor = '';
+  List<Results> _dedupedVendors = [];
 
+  bool isFilterApplied = false; // 🔥 controls filter icon highlight
+  List<Result> allVendorList = [];
+  List<Result> filteredAutoCompleteList1 = [];
+
+// Defaults (single source of truth)
+  static const String _defaultDateView = 'yearly';
+  static const String _defaultSort = 'all';
+
+  String locationQuery = '';
+  String dateView = 'yearly'; // ✅ DECLARE HERE
+  String corporateSort = 'asc'; // asc | desc
+  String userSort = 'asc';
   bool isHasAnyPlan = false;
+  List<String> vendorList = [];
   Screens _selectedScreen = Screens.locationList;
   TextEditingController _sovNameEditNameController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
@@ -67,7 +84,6 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   List<String> filterStatus = [];
   roleModel.Roles? selectedRoleForFilter;
   String selectedStatus = '';
-  String locationQuery = '';
   bool showSelectAll = false;
   bool isAllSelected = false;
   bool _isHazardLoading = false;
@@ -123,6 +139,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   bool isProcessing = false;
 
   bool _isDisposed = false;
+  int? selectedVendorIndex; // null = All
 
 // State fields
   final _processIndex$ = BehaviorSubject<int>.seeded(0);
@@ -131,18 +148,22 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    final provider = context.read<SOVListProvider>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<SOVListProvider>();
 
-    provider.page = 1;
-    provider.totalPages = 1;
+      provider.page = 1;
+      provider.totalPages = 1;
+
+      provider.fetchvendorList(
+        context,
+        _sovQuery,
+        1,
+        5,
+        widget.status,
+      );
+    });
+
     _setClaims();
-    provider.fetchvendorList(
-      context,
-      _sovQuery,
-      1,
-      5,
-      widget.status,
-    );
   }
 
   MyLocationListProvider? _myLocationProvider;
@@ -197,6 +218,73 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
 
   String selectedSov = 'my';
 
+  String buildQuery() {
+    final params = <String>[];
+
+    // REQUIRED (always)
+    params.add('page=1');
+    params.add('pageSize=10');
+
+    // REQUIRED (send even if empty)
+    params.add('search=${locationQuery.trim()}');
+
+    // Vendor (send only if selected)
+    if (selectedVendorIndex != null &&
+        selectedVendorIndex! < _dedupedVendors.length) {
+      final vendorName =
+          _dedupedVendors[selectedVendorIndex!].vendorName?.trim();
+
+      if (vendorName != null && vendorName.isNotEmpty) {
+        params.add('vendor=$vendorName');
+      }
+    }
+
+    // REQUIRED
+    params.add('dateMode=$dateView');
+
+    // 🔥 MUST MATCH WEB
+    params.add('corporateSort=all');
+    params.add('usersSort=all');
+
+    return '?${params.join('&')}';
+  }
+
+  void _applyFilters() async {
+    Navigator.pop(context);
+
+    setState(() {
+      isFilterApplied = true;
+    });
+
+    final provider = context.read<SOVListProvider>();
+
+    provider.page = 1;
+    provider.clearVendorList();
+
+    final query = buildQuery();
+
+    debugPrint('✅ FINAL URL QUERY: $query');
+
+    await provider.fetchvendorList(
+      context,
+      query,
+      1,
+      10,
+      widget.status,
+    );
+  }
+
+  void _resetFilters() {
+    setState(() {
+      locationQuery = '';
+      selectedVendorIndex = null;
+      dateView = _defaultDateView;
+      corporateSort = _defaultSort;
+      userSort = _defaultSort;
+      isFilterApplied = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
@@ -230,8 +318,10 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                     },
                   ),
                   drawer: CustomDrawer(),
+                  endDrawer: _buildFilterDrawer(),
                   body: Stack(
                     children: [
+                      // Text(widget.status.toString()),
                       Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +342,335 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterDrawer() {
+    return Drawer(
+      width: 360,
+      backgroundColor: const Color(0xFF1E1E1E),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Header
+              const Text(
+                "Filters",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              /// Search
+              TextField(
+                decoration: InputDecoration(
+                  hintText: "Search",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: const Color(0xFF2C2C2C),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (v) => locationQuery = v,
+              ),
+
+              const SizedBox(height: 16),
+
+              /// Vendor
+              _sectionTitle("Vendor"),
+              Consumer2<SOVListProvider, UserProfileProvider>(
+                builder: (context, sovProvider, userProvider, _) {
+                  final rawVendors =
+                      sovProvider.filteredAutoCompleteList1 ?? [];
+
+                  // 1️⃣ Deduplicate locally
+                  final deduped = {
+                    for (final v in rawVendors) (v.vendorName ?? '').trim(): v
+                  }.values.toList();
+
+                  // 2️⃣ Sync with state ONLY if changed
+                  if (!listEquals(
+                    deduped.map((e) => e.vendorName).toList(),
+                    _dedupedVendors.map((e) => e.vendorName).toList(),
+                  )) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      setState(() {
+                        _dedupedVendors = deduped!;
+                      });
+                    });
+                  }
+
+                  if (deduped.isEmpty) {
+                    return const Text(
+                      "No vendors available",
+                      style: TextStyle(color: Colors.white70),
+                    );
+                  }
+
+                  return DropdownButtonHideUnderline(
+                    child: DropdownButton2<int>(
+                      isExpanded: true,
+
+                      /// null = All
+                      value: selectedVendorIndex,
+
+                      hint: const Text(
+                        "All",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text("All"),
+                        ),
+                        ...List.generate(
+                          deduped.length,
+                          (index) => DropdownMenuItem<int>(
+                            value: index,
+                            child: Text(deduped[index].vendorName ?? "-"),
+                          ),
+                        ),
+                      ],
+
+                      onChanged: (index) {
+                        setState(() {
+                          selectedVendorIndex = index;
+                        });
+
+                        debugPrint(
+                          '🟢 Selected vendor: ${index == null ? "ALL" : deduped[index].vendorName}',
+                        );
+                      },
+
+                      buttonStyleData: ButtonStyleData(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2A2A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF3A3A3A)),
+                        ),
+                      ),
+
+                      iconStyleData: const IconStyleData(
+                        icon: Icon(Icons.keyboard_arrow_down),
+                        iconSize: 22,
+                        iconEnabledColor: Colors.white70,
+                      ),
+
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 260,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2A2A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF3A3A3A)),
+                        ),
+                      ),
+
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+
+                      selectedItemBuilder: (context) {
+                        return [
+                          const _CenteredDropdownText("All"),
+                          ...deduped.map(
+                            (e) => _CenteredDropdownText(e.vendorName ?? "-"),
+                          ),
+                        ];
+                      },
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              /// Date
+              _sectionTitle("Date"),
+              CheckboxListTile(
+                title:
+                    const Text("Yearly", style: TextStyle(color: Colors.white)),
+                value: dateView == 'yearly',
+                onChanged: (_) => setState(() => dateView = 'yearly'),
+              ),
+              CheckboxListTile(
+                title: const Text("Monthly",
+                    style: TextStyle(color: Colors.white)),
+                value: dateView == 'monthly',
+                onChanged: (_) => setState(() => dateView = 'monthly'),
+              ),
+
+              const SizedBox(height: 16),
+
+              /// Corporate Admin
+              _sectionTitle("Corporate Admin"),
+              RadioListTile(
+                title: const Text("A-Z", style: TextStyle(color: Colors.white)),
+                value: 'asc',
+                groupValue: corporateSort,
+                onChanged: (v) => setState(() => corporateSort = v!),
+              ),
+              RadioListTile(
+                title: const Text("Z-A", style: TextStyle(color: Colors.white)),
+                value: 'desc',
+                groupValue: corporateSort,
+                onChanged: (v) => setState(() => corporateSort = v!),
+              ),
+
+              const SizedBox(height: 16),
+
+              /// Users
+              _sectionTitle("Users"),
+              RadioListTile(
+                title: const Text("A-Z", style: TextStyle(color: Colors.white)),
+                value: 'asc',
+                groupValue: userSort,
+                onChanged: (v) => setState(() => userSort = v!),
+              ),
+              RadioListTile(
+                title: const Text("Z-A", style: TextStyle(color: Colors.white)),
+                value: 'desc',
+                groupValue: userSort,
+                onChanged: (v) => setState(() => userSort = v!),
+              ),
+
+              const Spacer(),
+
+              /// Footer Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        _resetFilters();
+                        Navigator.pop(context);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xFF3A3A3A),
+                          width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8), // 🔥 SAME radius
+                        ),
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _applyFilters,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF90CAF9), // 🔥 Blue background
+                        foregroundColor: Colors.black,            // Text color
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        "Submit",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Expanded(
+                  //   child: ElevatedButton(
+                  //     onPressed: _applyFilters,
+                  //     child: const Text("Submit"),
+                  //   ),
+                  // ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _vendorItem({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF90CAF9).withOpacity(0.15)
+              : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF90CAF9) : Colors.white,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check, color: Color(0xFF90CAF9), size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration() {
+    return InputDecoration(
+      filled: true,
+      fillColor: const Color(0xFF2C2C2C),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
       ),
     );
   }
@@ -287,205 +706,182 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
     }
   }
 
+  void _updateVendorList(SOVListProvider provider) {
+    final vendors = provider.allVendorList
+        .map((e) => e.vendorName)
+        .where((v) => v != null && v!.isNotEmpty)
+        .cast<String>()
+        .toSet()
+        .toList();
+
+    vendors.sort();
+
+    if (!listEquals(vendorList, vendors)) {
+      setState(() {
+        vendorList = vendors;
+      });
+    }
+  }
+
   Widget sovBody(CustomTypography typography) {
     return Consumer2<SOVListProvider, UserProfileProvider>(
         builder: (context, sovListProvider, user, _) {
+      _updateVendorList(sovListProvider);
       final String trialStatus = user.trialInfo?['status'] ?? '';
 
-      return sovListProvider.isLoading
-          ? Center(
-              child: CircularProgressIndicator(),
-            )
-          : (trialStatus.contains('Expired') && isHasAnyPlan == false)
-              ? Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.surface.withOpacity(0.95),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: MessageCard(
-                          messageTextSpans: [
-                            TextSpan(
-                              text:
-                                  'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
-                              style: typography.Body1,
-                            ),
-                            // tappable
-                            TextSpan(
-                              text: ' Upgrade Now!',
-                              style: typography.Body1.copyWith(
-                                color: AppColors.primaryMain,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => PurchaseLicensePage()));
-                                },
-                            ),
-                          ],
-                          isError: true,
+      return (trialStatus.contains('Expired') && isHasAnyPlan == false)
+          ? Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: MessageCard(
+                      messageTextSpans: [
+                        TextSpan(
+                          text:
+                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
+                          style: typography.Body1,
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Back icon
-                        // Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-
-                        const SizedBox(width: 10),
-
-                        // Title
-                        const Text(
-                          'Credit Usage',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                        // tappable
+                        TextSpan(
+                          text: ' Upgrade Now!',
+                          style: typography.Body1.copyWith(
+                            color: AppColors.primaryMain,
                           ),
-                        ),
-                        //
-                        // const SizedBox(width: 12),
-
-                        // Push right content to end
-                        // Expanded(
-                        //   child: Column(
-                        //     mainAxisAlignment: MainAxisAlignment.end,
-                        //     children: [
-                        //       Text(
-                        //         '12,480 Credits Remaining',
-                        //         style: TextStyle(
-                        //           color: Colors.white,
-                        //           fontSize: 12,
-                        //         ),
-                        //       ),
-                        //
-                        //       // const SizedBox(width: 10),
-                        //
-                        //       // Progress bar
-                        //       SizedBox(
-                        //         width: 140,
-                        //         height: 8,
-                        //         child: ClipRRect(
-                        //           borderRadius: BorderRadius.circular(4),
-                        //           child: LinearProgressIndicator(
-                        //             value: 0.65, // progress value
-                        //             backgroundColor: Colors.grey.shade700,
-                        //             valueColor: const AlwaysStoppedAnimation<Color>(
-                        //                 AppColors.primaryMain),
-                        //           ),
-                        //         ),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
-                        //
-                        // // Info icon
-                        // const Icon(
-                        //   Icons.info_outline,
-                        //   color: AppColors.primaryMain,
-                        //   size: 18,
-                        // ),
-                      ],
-                    ),
-
-                    SizedBox(height: CustomSpacing.two),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Consumer<SOVListProvider>(
-                          builder: (context, sovListProvider, _) {
-                        return Row(
-                          children: [
-                            InfoCard(
-                              title: "Total APIs Used",
-                              count: sovListProvider.cardlist!.totalApisUsed
-                                      .toString() ??
-                                  "",
-                              icon: Icons.checklist,
-                              growthText: "increase vs last month",
-                            ),
-                            InfoCard(
-                              title: "Total Cost Incurred",
-                              count: sovListProvider.cardlist!.totalApiCost
-                                      .toString() ??
-                                  "",
-                              icon: Icons.attach_money,
-                              growthText: "increase vs last month",
-                            ),
-                            InfoCard(
-                              title: "Average Cost per API",
-                              count: sovListProvider.cardlist!.avgCostPerApi
-                                      .toString() ??
-                                  "",
-                              icon: Icons.attach_money,
-                              growthText: "increase vs last month",
-                            ),
-                            InfoCard(
-                              title: "Active Users",
-                              count: sovListProvider.cardlist!.activeVendors
-                                      .toString() ??
-                                  "",
-                              icon: Icons.attach_money,
-                              growthText: "increase vs last month",
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
-
-                    usageDetailsHeader(),
-                    // List of accounts
-                    Expanded(
-                      child: Consumer<SOVListProvider>(
-                        builder: (context, sovListProvider, _) {
-                          if (sovListProvider.isLoading) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.only(top: 100),
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
-
-                          return RefreshIndicator(
-                            onRefresh: () async {
-                              sovListProvider.page = 1;
-                              await sovListProvider.fetchvendorList(
-                                context,
-                                // sovListProvider.sovList.first.accountId!,
-                                // sovListProvider.sovList.first.subAccountId!,
-                                _sovQuery,
-                                1,
-                                7,
-                                widget.status,
-                              );
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => PurchaseLicensePage()));
                             },
-                            child: ListView.builder(
-                              controller: _scrollController1,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: sovListProvider
-                                  .filteredAutoCompleteList1.length,
-                              itemBuilder: (context, index) {
-                                return _buildSovCard(index, sovListProvider);
-                              },
-                            ),
-                          );
-                        },
+                        ),
+                      ],
+                      isError: true,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Back icon
+                    // Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+
+                    const SizedBox(width: 10),
+
+                    // Title
+                    const Text(
+                      'Credit Usage',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
-                );
+                ),
+                SizedBox(height: CustomSpacing.two),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Consumer<SOVListProvider>(
+                      builder: (context, sovListProvider, _) {
+                    return Row(
+                      children: [
+                        InfoCard(
+                          title: "Total APIs Used",
+                          count: sovListProvider.cardlist?.totalApisUsed
+                                  .toString() ??
+                              "",
+                          icon: Icons.checklist,
+                          growthText: "increase vs last month",
+                        ),
+                        InfoCard(
+                          title: "Total Cost Incurred",
+                          count: sovListProvider.cardlist?.totalApiCost
+                                  .toString() ??
+                              "",
+                          icon: Icons.attach_money,
+                          growthText: "increase vs last month",
+                        ),
+                        InfoCard(
+                          title: "Average Cost per API",
+                          count: sovListProvider.cardlist?.avgCostPerApi
+                                  .toString() ??
+                              "",
+                          icon: Icons.trending_up,
+                          growthText: "increase vs last month",
+                        ),
+                        InfoCard(
+                          title: "Active Users",
+                          count: sovListProvider.cardlist?.activeVendors
+                                  .toString() ??
+                              "",
+                          icon: Icons.accessibility,
+                          growthText: "increase vs last month",
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+                usageDetailsHeader(),
+                sovListProvider.cardlist?.totalApiCost
+                    .toString()=="0" ?Center(
+                  child: Container(
+
+                    alignment: Alignment.center,
+                    height: 400,
+                    child: Text("No data found"),
+                  ),
+                ):
+                Expanded(
+                  child: Consumer<SOVListProvider>(
+                    builder: (context, sovListProvider, _) {
+                      if (sovListProvider.isLoading) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 100),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          sovListProvider.page = 1;
+                          await sovListProvider.fetchvendorList(
+                            context,
+                            // sovListProvider.sovList.first.accountId!,
+                            // sovListProvider.sovList.first.subAccountId!,
+                            _sovQuery,
+                            1,
+                            7,
+                            widget.status,
+                          );
+                        },
+                        child: ListView.builder(
+                          controller: _scrollController1,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount:
+                              sovListProvider.filteredAutoCompleteList1.length,
+                          itemBuilder: (context, index) {
+                            return _buildSovCard(index, sovListProvider);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
     });
   }
 
@@ -507,15 +903,18 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 52,
-                    width: 52,
-                    color: Colors.grey.shade800,
-                    child:
-                        const Icon(Icons.location_city, color: Colors.white70),
-                  ),
-                ),
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl:
+                          "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${vendorData.locationLatitude},${vendorData.locationLongitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          CircularProgressIndicator(strokeWidth: 2),
+                      errorWidget: (context, url, error) => Icon(Icons.error),
+                    )),
+
                 const SizedBox(width: 12),
 
                 Expanded(
@@ -523,9 +922,9 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        vendorData.companyName.toString(),
-                        style: const TextStyle(
-                          color: Color(0xFF90CAF9),
+                        vendorData.locationName.toString(),
+                        style: TextStyle(
+                          color: AppColors.primaryMain,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
@@ -534,9 +933,9 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        vendorData.vendorName ?? "",
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        vendorData.locationAddress.toString() ?? "",
+                        style: TextStyle(
+                          color: AppColors.primaryMain,
                           fontSize: 12,
                         ),
                         maxLines: 1,
@@ -557,12 +956,12 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
               ],
             ),
             const SizedBox(height: 12),
-            _infoRow("User", vendorData?.name ?? "N/A"),
-            _infoRow("Role", "Admin" ?? "—"),
+            _infoRow("User", vendorData.userName ?? "NA"),
+            _infoRow("Role", vendorData.userRole.toString() ?? "NA"),
             _infoRow("Vendor", vendorData.vendorName.toString() ?? "—"),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             Divider(color: Colors.white.withOpacity(0.2)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -612,7 +1011,6 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   Widget usageDetailsHeader() {
     return Row(
       children: [
-        /// Title
         const Text(
           "Usage Details",
           style: TextStyle(
@@ -621,31 +1019,26 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
             fontWeight: FontWeight.w600,
           ),
         ),
-
         const Spacer(),
-
-        /// Filter icon
         IconButton(
           onPressed: () {
-            // filter action
+            _scaffoldKey.currentState?.openEndDrawer();
           },
-          icon: const Icon(
-            Icons.filter_list_alt,
-            color: Color(0xFF90CAF9),
-            size: 20,
-          ),
-          splashRadius: 20,
-        ),
-
-        /// Share icon
-        IconButton(
-          onPressed: () {
-            // share action
-          },
-          icon: const Icon(
-            Icons.download_rounded,
-            color: Colors.white70,
-            size: 20,
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isFilterApplied
+                  ? const Color(0xFF90CAF9).withOpacity(0.2) // 🔥 active bg
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              Icons.filter_list_alt,
+              color: isFilterApplied
+                  ? const Color(0xFF90CAF9) // 🔥 active color
+                  : Colors.white70,
+              size: 20,
+            ),
           ),
           splashRadius: 20,
         ),
@@ -674,841 +1067,6 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
           ),
         ),
       ],
-    );
-  }
-
-  // Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
-  //   var typography = CustomTypography(context);
-  //
-  //   final sov = sOVListProvider.sovList[index];
-  //   final sovId = sov.sovId ?? "";
-  //
-  //   final meta = sOVListProvider.sovMeta[sovId];
-  //   final isRefreshPending = meta?['refresh_pending'] == true;
-  //   final sharedUsersWithEmail = sov.sharingStatus?.users.values
-  //           .where((u) => u.email != null && u.email!.trim().isNotEmpty)
-  //           .toList() ??
-  //       [];
-  //   return Opacity(
-  //     opacity: isRefreshPending ? 0.5 : 1.0, // Fade UI
-  //     child: IgnorePointer(
-  //       ignoring: isRefreshPending, // Disable touch
-  //       child: Container(
-  //         margin: EdgeInsets.only(top: 0.0, bottom: 8),
-  //         child: InkWell(
-  //           borderRadius: BorderRadius.circular(8),
-  //           onTap: () {
-  //             setState(() {
-  //               if (isSelectionMode) {
-  //                 selectedList[index] = !selectedList[index];
-  //                 if (!selectedList.contains(true)) {
-  //                   isSelectionMode = false;
-  //                 }
-  //
-  //                 selectedSovIds = sOVListProvider.sovList
-  //                     .asMap()
-  //                     .entries
-  //                     .where((entry) => selectedList[entry.key])
-  //                     .map((entry) => entry.value.sovId)
-  //                     .whereType<String>()
-  //                     .toSet();
-  //               } else {
-  //                 Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //                   return SovLocationList(
-  //                     accountID: sov.accountId,
-  //                     subAccountID: sov.subAccountId,
-  //                     accountName: "",
-  //                     subAccountName: "",
-  //                     sovID: sov.sovId ?? "",
-  //                     sovName: sov.name ?? "",
-  //                   );
-  //                 }));
-  //                 _isDisposed = true;
-  //                 _refreshTimer?.cancel();
-  //                 deBouncer?.cancel();
-  //               }
-  //             });
-  //           },
-  //           onLongPress: () {
-  //             setState(() {
-  //               if (selectedList.length != sOVListProvider.sovList.length) {
-  //                 selectedList = List.generate(
-  //                   sOVListProvider.sovList.length,
-  //                   (_) => false,
-  //                 );
-  //               }
-  //
-  //               if (isSelectionMode) {
-  //                 selectedList[index] = !selectedList[index];
-  //                 if (!selectedList.contains(true)) {
-  //                   isSelectionMode = false;
-  //                 }
-  //               } else {
-  //                 selectedList[index] = true;
-  //                 isSelectionMode = true;
-  //               }
-  //
-  //               selectedSovIds = sOVListProvider.sovList
-  //                   .asMap()
-  //                   .entries
-  //                   .where((entry) => selectedList[entry.key])
-  //                   .map((entry) => entry.value.sovId)
-  //                   .whereType<String>()
-  //                   .toSet();
-  //             });
-  //           },
-  //           child: Stack(
-  //             children: [
-  //               Row(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Expanded(
-  //                     child: Column(
-  //                       mainAxisAlignment: MainAxisAlignment.start,
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: [
-  //                         SizedBox(
-  //                           height: 230,
-  //                           width: MediaQuery.of(context).size.width,
-  //                           child: Card(
-  //                             color: Colors.white12,
-  //                             margin: EdgeInsets.zero,
-  //                             shape: RoundedRectangleBorder(
-  //                               borderRadius: BorderRadius.circular(8),
-  //                             ),
-  //                             child: Column(
-  //                               crossAxisAlignment: CrossAxisAlignment.start,
-  //                               children: [
-  //                                 Row(
-  //                                   crossAxisAlignment:
-  //                                       CrossAxisAlignment.start,
-  //                                   children: [
-  //                                     SizedBox(width: CustomSpacing.two),
-  //                                     Expanded(
-  //                                       child: Column(
-  //                                         crossAxisAlignment:
-  //                                             CrossAxisAlignment.start,
-  //                                         children: [
-  //                                           Row(
-  //                                             mainAxisAlignment:
-  //                                                 MainAxisAlignment
-  //                                                     .spaceBetween,
-  //                                             children: [
-  //                                               Expanded(
-  //                                                 child: Row(
-  //                                                   children: [
-  //                                                     if (isSelectionMode)
-  //                                                       Checkbox(
-  //                                                         value: (index <
-  //                                                                 selectedList
-  //                                                                     .length)
-  //                                                             ? selectedList[
-  //                                                                 index]
-  //                                                             : false,
-  //                                                         onChanged: (value) {
-  //                                                           setState(() {
-  //                                                             if (selectedList
-  //                                                                     .length !=
-  //                                                                 sOVListProvider
-  //                                                                     .sovList
-  //                                                                     .length) {
-  //                                                               selectedList =
-  //                                                                   List.generate(
-  //                                                                 sOVListProvider
-  //                                                                     .sovList
-  //                                                                     .length,
-  //                                                                 (_) => false,
-  //                                                               );
-  //                                                             }
-  //                                                             selectedList[
-  //                                                                     index] =
-  //                                                                 value ??
-  //                                                                     false;
-  //
-  //                                                             if (!selectedList
-  //                                                                 .contains(
-  //                                                                     true)) {
-  //                                                               isSelectionMode =
-  //                                                                   false;
-  //                                                             }
-  //                                                           });
-  //                                                         },
-  //                                                       ),
-  //                                                     Chip(
-  //                                                       label: Text(
-  //                                                         sov.status ??
-  //                                                             "Pending",
-  //                                                         style: typography
-  //                                                             .Body2.copyWith(
-  //                                                           color: sov.status ==
-  //                                                                   "completed"
-  //                                                               ? Colors.white
-  //                                                               : Color(
-  //                                                                   0xFFFFA726),
-  //                                                           fontWeight:
-  //                                                               FontWeight.w500,
-  //                                                         ),
-  //                                                       ),
-  //                                                       backgroundColor: sov
-  //                                                                   .status ==
-  //                                                               "completed"
-  //                                                           ? Colors.green
-  //                                                           : Color(0xFFFFA726)
-  //                                                               .withOpacity(
-  //                                                                   0.2),
-  //                                                     ),
-  //                                                     IconButton(
-  //                                                       icon: const Icon(Icons
-  //                                                           .file_copy_rounded),
-  //                                                       color: AppColors
-  //                                                           .primaryMain,
-  //                                                       onPressed: () {
-  //                                                         // Show duplicate dialog
-  //                                                         showDialog(
-  //                                                           context: context,
-  //                                                           barrierDismissible:
-  //                                                               false,
-  //                                                           builder: (context) {
-  //                                                             return AlertDialog(
-  //                                                               title: Text(
-  //                                                                 LanguageService
-  //                                                                     .getTranslated(
-  //                                                                         context,
-  //                                                                         "duplicate_sov_account"),
-  //                                                                 style: typography
-  //                                                                     .H5_Regular,
-  //                                                               ),
-  //                                                               content: Column(
-  //                                                                 mainAxisSize:
-  //                                                                     MainAxisSize
-  //                                                                         .min,
-  //                                                                 children: [
-  //                                                                   Text(
-  //                                                                     LanguageService.getTranslated(
-  //                                                                         context,
-  //                                                                         "sov_list_app_duplicate_text"),
-  //                                                                     style: typography
-  //                                                                         .Body1,
-  //                                                                   ),
-  //                                                                   SizedBox(
-  //                                                                     height:
-  //                                                                         CustomSpacing
-  //                                                                             .two,
-  //                                                                   ),
-  //                                                                   Row(
-  //                                                                     children: [
-  //                                                                       Expanded(
-  //                                                                         child:
-  //                                                                             CustomButton(
-  //                                                                           onPressed:
-  //                                                                               () {
-  //                                                                             // Cancel
-  //                                                                             Navigator.pop(context);
-  //                                                                           },
-  //                                                                           child:
-  //                                                                               Text(
-  //                                                                             LanguageService.getTranslated(context, "cancel"),
-  //                                                                             style: typography.ButtonLarge,
-  //                                                                           ),
-  //                                                                           type:
-  //                                                                               ButtonType.text,
-  //                                                                         ),
-  //                                                                       ),
-  //                                                                       Expanded(
-  //                                                                         child:
-  //                                                                             Consumer<SOVListProvider>(
-  //                                                                           builder: (context,
-  //                                                                               provider,
-  //                                                                               child) {
-  //                                                                             if (provider.isDuplicateLoading) {
-  //                                                                               return Center(
-  //                                                                                 child: SizedBox(
-  //                                                                                   height: 28,
-  //                                                                                   width: 28,
-  //                                                                                   child: CircularProgressIndicator(strokeWidth: 2),
-  //                                                                                 ),
-  //                                                                               );
-  //                                                                             }
-  //
-  //                                                                             return CustomButton(
-  //                                                                               onPressed: () async {
-  //                                                                                 provider.isDuplicateLoading = true;
-  //                                                                                 provider.notifyListeners();
-  //
-  //                                                                                 try {
-  //                                                                                   // 1️⃣ Duplicate Sub Account
-  //                                                                                   await provider.duplicateSov(
-  //                                                                                     context,
-  //                                                                                     sov.sovId!,
-  //                                                                                   );
-  //
-  //                                                                                   final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
-  //                                                                                   Navigator.pop(context);
-  //                                                                                   await sovProvider.fetchSovList(
-  //                                                                                     context,
-  //                                                                                     "",
-  //                                                                                     1,
-  //                                                                                     5,
-  //                                                                                     widget.status,
-  //                                                                                   );
-  //                                                                                   sOVListProvider.notifyListeners();
-  //
-  //                                                                                   /// STOP LOADER
-  //                                                                                   // accountListProvider.isRenameLoading = false;
-  //                                                                                   // accountListProvider.notifyListeners();
-  //                                                                                 } finally {
-  //                                                                                   provider.isDuplicateLoading = false;
-  //                                                                                   provider.notifyListeners();
-  //                                                                                 }
-  //                                                                               },
-  //                                                                               child: Text(
-  //                                                                                 LanguageService.getTranslated(
-  //                                                                                   context,
-  //                                                                                   "duplicate",
-  //                                                                                 ),
-  //                                                                               ),
-  //                                                                               type: ButtonType.elevated,
-  //                                                                             );
-  //                                                                           },
-  //                                                                         ),
-  //                                                                       )
-  //                                                                     ],
-  //                                                                   ),
-  //                                                                 ],
-  //                                                               ),
-  //                                                             );
-  //                                                           },
-  //                                                         );
-  //                                                       },
-  //                                                       tooltip: LanguageService
-  //                                                           .getTranslated(
-  //                                                               context,
-  //                                                               "sub_account_list_app_duplicate_tooltip_text"),
-  //                                                     ),
-  //                                                   ],
-  //                                                 ),
-  //                                               ),
-  //                                               _buildMoreMenu(index),
-  //                                             ],
-  //                                           ),
-  //                                           SizedBox(height: 4),
-  //                                           Row(
-  //                                             crossAxisAlignment:
-  //                                                 CrossAxisAlignment.center,
-  //                                             children: [
-  //                                               /// LEFT
-  //                                               Expanded(
-  //                                                 child: Row(
-  //                                                   children: [
-  //                                                     Flexible(
-  //                                                       child: Text(
-  //                                                         sov.name ?? "",
-  //                                                         style: typography
-  //                                                             .Body2.copyWith(
-  //                                                           fontSize: 20,
-  //                                                           fontWeight:
-  //                                                               FontWeight.w400,
-  //                                                           color: const Color(
-  //                                                               0xFF90CAF9),
-  //                                                         ),
-  //                                                         overflow: TextOverflow
-  //                                                             .ellipsis,
-  //                                                       ),
-  //                                                     ),
-  //                                                     const SizedBox(width: 6),
-  //                                                     InkWell(
-  //                                                       onTap: () =>
-  //                                                           _showRenameDialog(
-  //                                                               index, sov),
-  //                                                       child: const Icon(
-  //                                                         Icons.edit,
-  //                                                         size: 16,
-  //                                                         color: Colors.white70,
-  //                                                       ),
-  //                                                     ),
-  //                                                   ],
-  //                                                 ),
-  //                                               ),
-  //
-  //                                               /// RIGHT
-  //                                               widget.status
-  //                                                           .toString()
-  //                                                           .toLowerCase() ==
-  //                                                       "shared"
-  //                                                   ? InkWell(
-  //                                                       onTap: () =>
-  //                                                           _showSharedWithDialog(
-  //                                                               context,
-  //                                                               sov.sharingStatus),
-  //                                                       child: Container(
-  //                                                         padding:
-  //                                                             const EdgeInsets
-  //                                                                 .symmetric(
-  //                                                                 horizontal: 5,
-  //                                                                 vertical: 6),
-  //                                                         decoration:
-  //                                                             BoxDecoration(
-  //                                                           color: const Color(
-  //                                                               0xFF2A2A2A),
-  //                                                           borderRadius:
-  //                                                               BorderRadius
-  //                                                                   .circular(
-  //                                                                       8),
-  //                                                           border: Border.all(
-  //                                                               color: const Color(
-  //                                                                   0xFF3A3A3A)),
-  //                                                         ),
-  //                                                         child: Row(
-  //                                                           mainAxisSize:
-  //                                                               MainAxisSize
-  //                                                                   .min,
-  //                                                           children: [
-  //                                                             const Icon(
-  //                                                               Icons.mail,
-  //                                                               size: 16,
-  //                                                               color: Colors
-  //                                                                   .white,
-  //                                                             ),
-  //                                                             const SizedBox(
-  //                                                                 width: 4),
-  //                                                             Text(
-  //                                                               "${sov.sharingStatus!.users.values.toList().length ?? 0}",
-  //                                                               style: typography
-  //                                                                       .Body2
-  //                                                                   .copyWith(
-  //                                                                 color: Colors
-  //                                                                     .white,
-  //                                                                 fontWeight:
-  //                                                                     FontWeight
-  //                                                                         .w500,
-  //                                                               ),
-  //                                                             ),
-  //                                                           ],
-  //                                                         ),
-  //                                                       ),
-  //                                                     )
-  //                                                   : Container(),
-  //                                               SizedBox(width: 4),
-  //                                             ],
-  //                                           ),
-  //                                           SizedBox(height: 4),
-  //                                           Row(
-  //                                             children: [
-  //                                               CircleAvatar(
-  //                                                 radius: 16,
-  //                                                 backgroundColor:
-  //                                                     Colors.grey[800],
-  //                                                 child: Text(
-  //                                                   sov.owner?.name
-  //                                                           ?.substring(0, 2)
-  //                                                           .toUpperCase() ??
-  //                                                       "?",
-  //                                                   style: TextStyle(
-  //                                                       color: Colors.white),
-  //                                                 ),
-  //                                               ),
-  //                                               SizedBox(width: 10),
-  //                                               Expanded(
-  //                                                 child: Text(
-  //                                                   sov.owner?.name ??
-  //                                                       "Unknown",
-  //                                                   style: TextStyle(
-  //                                                     fontWeight:
-  //                                                         FontWeight.bold,
-  //                                                     fontSize: 16,
-  //                                                     color: Colors.white,
-  //                                                   ),
-  //                                                   overflow:
-  //                                                       TextOverflow.ellipsis,
-  //                                                 ),
-  //                                               ),
-  //                                               SizedBox(width: 10),
-  //                                               Container(
-  //                                                 padding: const EdgeInsets
-  //                                                     .symmetric(
-  //                                                     horizontal: 5,
-  //                                                     vertical: 6),
-  //                                                 decoration: BoxDecoration(
-  //                                                   color:
-  //                                                       const Color(0xFF2A2A2A),
-  //                                                   borderRadius:
-  //                                                       BorderRadius.circular(
-  //                                                           8),
-  //                                                   border: Border.all(
-  //                                                       color: const Color(
-  //                                                           0xFF3A3A3A)),
-  //                                                 ),
-  //                                                 child: Row(
-  //                                                   mainAxisSize:
-  //                                                       MainAxisSize.min,
-  //                                                   children: [
-  //                                                     const Icon(
-  //                                                         Icons.location_on,
-  //                                                         size: 18,
-  //                                                         color: Colors.white),
-  //                                                     const SizedBox(width: 2),
-  //                                                     Text(
-  //                                                       "${sov.locationCount ?? 0}",
-  //                                                       style: typography.Body2
-  //                                                           .copyWith(
-  //                                                         color: Colors.white,
-  //                                                         fontWeight:
-  //                                                             FontWeight.w500,
-  //                                                       ),
-  //                                                     ),
-  //                                                   ],
-  //                                                 ),
-  //                                               ),
-  //                                               SizedBox(width: 4),
-  //                                             ],
-  //                                           ),
-  //                                           SizedBox(height: 8),
-  //                                           if ((sov.companyName ?? "")
-  //                                               .isNotEmpty)
-  //                                             Text(
-  //                                               "Company: ${sov.companyName}",
-  //                                               style:
-  //                                                   typography.Body2.copyWith(
-  //                                                 color: Colors.white,
-  //                                                 fontSize: 14,
-  //                                                 fontWeight: FontWeight.w500,
-  //                                               ),
-  //                                             ),
-  //                                           SizedBox(height: 8),
-  //                                           _buildScrollableScores(
-  //                                             context,
-  //                                             sov.geocodeAvg.toString(),
-  //                                             sov.overallAvg.toString(),
-  //                                             sov.dataCompleteness.toString(),
-  //                                           ),
-  //                                         ],
-  //                                       ),
-  //                                     ),
-  //                                   ],
-  //                                 ),
-  //                               ],
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //               if (isRefreshPending)
-  //                 Positioned(
-  //                   top: 10,
-  //                   right: 10,
-  //                   child: SizedBox(
-  //                     height: 22,
-  //                     width: 22,
-  //                     child: CircularProgressIndicator(
-  //                       strokeWidth: 2,
-  //                       color: Colors.blue,
-  //                     ),
-  //                   ),
-  //                 ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _buildMoreMenu(int index) {
-    return Consumer2<SubAccountListProvider, SOVListProvider>(
-      builder: (context, subAccountListProvider, sovProvider, child) {
-        return PopupMenuButton<String>(
-          color: const Color(0xFF1E1E1E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onSelected: (value) async {
-            if (value == 'delete') {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  bool loading = false;
-
-                  return StatefulBuilder(
-                    builder: (context, setState) {
-                      return AlertDialog(
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        title: Text(
-                          LanguageService.getTranslated(
-                              context, "confirm_deletion"),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: Text(
-                          LanguageService.getTranslated(
-                              context, "confirm_delete_sov_message"),
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              LanguageService.getTranslated(context, "cancel"),
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              setState(() => loading = true);
-
-                              bool isSuccess = false;
-
-                              try {
-                                isSuccess = await subAccountListProvider
-                                    .deleteSOVAccount(
-                                  context,
-                                  sovProvider.sovList[index].accountId!,
-                                  sovProvider.sovList[index].subAccountId!,
-                                  sovProvider.sovList[index].sovId!,
-                                );
-                              } catch (e) {
-                                debugPrint("Error deleting SOV: $e");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "Failed to delete SOV. Please try again."),
-                                  ),
-                                );
-                              }
-
-                              if (isSuccess) {
-                                Navigator.pop(context);
-
-                                await sovProvider.fetchSovList(
-                                  context,
-                                  "",
-                                  1,
-                                  5,
-                                  widget.status,
-                                );
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("SOV deleted successfully."),
-                                  ),
-                                );
-                              }
-
-                              setState(() => loading = false);
-                            },
-                            child: loading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.red,
-                                    ),
-                                  )
-                                : Text(
-                                    LanguageService.getTranslated(
-                                        context, "delete"),
-                                    style: TextStyle(
-                                      color: Colors.redAccent,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.redAccent),
-                  SizedBox(width: 8),
-                  Text(
-                    LanguageService.getTranslated(context, "delete"),
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showRenameDialog(int index, Result sov) {
-    final typography = CustomTypography(context);
-
-    _sovNameEditNameController.text = sov.name ?? "";
-
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(LanguageService.getTranslated(context, "edit_sov"),
-              style: typography.H5_Regular),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _sovNameEditNameController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: LanguageService.getTranslated(context, "sov_name"),
-                  labelStyle: typography.Body1,
-                  hintText:
-                      LanguageService.getTranslated(context, "enter_sov_name"),
-                  hintStyle: typography.Body1,
-                ),
-              ),
-              SizedBox(height: CustomSpacing.two),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                          LanguageService.getTranslated(context, "cancel"),
-                          style: typography.ButtonLarge),
-                      type: ButtonType.text,
-                    ),
-                  ),
-
-                  /// 🔥 RENAME BUTTON
-                  Consumer<AccountListProvider>(
-                    builder: (context, accountListProvider, _) {
-                      return accountListProvider.isRenameLoading
-                          ? const Expanded(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 25,
-                                    height: 25,
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Expanded(
-                              child: CustomButton(
-                                onPressed: () async {
-                                  final newName =
-                                      _sovNameEditNameController.text.trim();
-
-                                  if (newName.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text("Name cannot be empty"),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  /// START LOADER
-                                  accountListProvider.isRenameLoading = true;
-                                  accountListProvider.notifyListeners();
-
-                                  /// 1️⃣ SEND RENAME REQUEST
-                                  await accountListProvider.renameSov(
-                                    context,
-                                    sov.sovId.toString(),
-                                    newName,
-                                  );
-
-                                  /// 2️⃣ REFRESH LIST
-                                  final sovProvider =
-                                      Provider.of<SOVListProvider>(context,
-                                          listen: false);
-
-                                  await sovProvider.fetchSovList(
-                                    context,
-                                    "",
-                                    1,
-                                    5,
-                                    widget.status,
-                                  );
-
-                                  /// STOP LOADER
-                                  accountListProvider.isRenameLoading = false;
-                                  accountListProvider.notifyListeners();
-
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                  LanguageService.getTranslated(
-                                      context, "update"),
-                                  style: typography.ButtonLargeBlack,
-                                ),
-                                type: ButtonType.elevated,
-                              ),
-                            );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildScrollableScores(BuildContext context, String geocoding,
-      String riskScore, String completeness) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          InkWell(
-            onTap: () {},
-            child: _buildScoreCard(
-              context,
-              LanguageService.getTranslated(context, "geocoding"),
-              int.tryParse(geocoding) ?? 1,
-            ),
-          ),
-          // if (MediaQuery.of(context).size.width > 400) SizedBox(width: 10),
-          SizedBox(width: 10),
-          InkWell(
-            onTap: () {},
-            child: _buildScoreCard(
-              context,
-              LanguageService.getTranslated(context, "hazard_score"),
-              int.tryParse(riskScore) ?? 1,
-            ),
-          ),
-          // if (MediaQuery.of(context).size.width > 400)
-          SizedBox(width: 10),
-          InkWell(
-            onTap: () {},
-            child: _buildScoreCard(
-              context,
-              LanguageService.getTranslated(context, "completeness"),
-              int.tryParse(completeness) == 0
-                  ? 1
-                  : int.tryParse(completeness) ?? 1,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -2310,7 +1868,7 @@ String formatCount(String value, {bool isCurrency = false}) {
   final number = double.tryParse(value.replaceAll(',', '')) ?? 0;
   final formatter = NumberFormat('#,##0');
   return isCurrency
-      ? '\$ ${formatter.format(number)}'
+      ? '\$${formatter.format(number)}'
       : formatter.format(number);
 }
 
@@ -2331,7 +1889,8 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 200,
+      width: 160,
+      height: 150,
       child: Card(
         color: const Color(0xFFFFFFFF).withOpacity(0.12),
         shape: RoundedRectangleBorder(
@@ -2360,7 +1919,7 @@ class InfoCard extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 18,
-                  color: Colors.white70,
+                  color: AppColors.primaryMain,
                 ),
               ),
 
@@ -2397,50 +1956,45 @@ class InfoCard extends StatelessWidget {
                 ),
               ),
 
-
-              const SizedBox(height: 4),
-              Divider(color: Colors.white.withOpacity(0.08)),
               const SizedBox(height: 2),
-
-              /// Growth Info
-              /// Growth Info
-              Container(
-                padding: const EdgeInsets.only(right: 16, left: 16, bottom: 2),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.trending_up,
-                      size: 18,
-                      color: Color(0xFF4CAF50),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '12.4% ',
-                              style: const TextStyle(
-                                color: Color(0xFF4CAF50),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextSpan(
-                              text: growthText,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+//future implementation for growth text
+              // Container(
+              //   padding: const EdgeInsets.only(right: 16, left: 16, bottom: 2),
+              //   child: Row(
+              //     children: [
+              //       const Icon(
+              //         Icons.trending_up,
+              //         size: 18,
+              //         color: Color(0xFF4CAF50),
+              //       ),
+              //       const SizedBox(width: 6),
+              //       Expanded(
+              //         child: Text.rich(
+              //           TextSpan(
+              //             children: [
+              //               TextSpan(
+              //                 text: '12.4% ',
+              //                 style: const TextStyle(
+              //                   color: Color(0xFF4CAF50),
+              //                   fontSize: 12,
+              //                   fontWeight: FontWeight.w600,
+              //                 ),
+              //               ),
+              //               TextSpan(
+              //                 text: growthText,
+              //                 style: TextStyle(
+              //                   color: Colors.white.withOpacity(0.85),
+              //                   fontSize: 12,
+              //                   fontWeight: FontWeight.w400,
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
               const SizedBox(height: 4),
             ],
@@ -2451,97 +2005,123 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-void _showSharedWithDialog(
-  BuildContext context,
-  SharingStatus? sharingStatus,
-) {
-  final users = sharingStatus?.users.values.toList() ?? [];
+// void _showSharedWithDialog(
+//   BuildContext context,
+//   SharingStatus? sharingStatus,
+// ) {
+//   final users = sharingStatus?.users.values.toList() ?? [];
+//
+//   showDialog(
+//     context: context,
+//     barrierDismissible: true,
+//     builder: (_) {
+//       return Dialog(
+//         backgroundColor: const Color(0xFF1E1E1E),
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(8),
+//         ),
+//         child: SizedBox(
+//           width: 420,
+//           child: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               /// 🔹 Header
+//               Padding(
+//                 padding: const EdgeInsets.all(16),
+//                 child: Text(
+//                   "Shared With",
+//                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
+//                         color: Colors.white,
+//                         fontWeight: FontWeight.w600,
+//                       ),
+//                 ),
+//               ),
+//
+//               const Divider(color: Color(0xFF2C2C2C), height: 1),
+//
+//               /// 🔹 Email List
+//               Flexible(
+//                 child: ListView.separated(
+//                   shrinkWrap: true,
+//                   itemCount: users.length,
+//                   separatorBuilder: (_, __) => const Divider(
+//                     color: Color(0xFF2C2C2C),
+//                     height: 1,
+//                   ),
+//                   itemBuilder: (_, index) {
+//                     final user = users[index];
+//                     return Padding(
+//                       padding: const EdgeInsets.symmetric(
+//                           horizontal: 16, vertical: 14),
+//                       child: Text(
+//                         user.email ?? "-",
+//                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+//                               color: Colors.white,
+//                             ),
+//                       ),
+//                     );
+//                   },
+//                 ),
+//               ),
+//
+//               const Divider(color: Color(0xFF2C2C2C), height: 1),
+//
+//               /// 🔹 Footer
+//               Align(
+//                 alignment: Alignment.centerRight,
+//                 child: Padding(
+//                   padding: const EdgeInsets.all(12),
+//                   child: TextButton(
+//                     onPressed: () => Navigator.pop(context),
+//                     style: TextButton.styleFrom(
+//                       backgroundColor: const Color(0xFF90CAF9),
+//                       padding: const EdgeInsets.symmetric(
+//                           horizontal: 20, vertical: 10),
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(6),
+//                       ),
+//                     ),
+//                     child: const Text(
+//                       "Close",
+//                       style: TextStyle(
+//                         color: Colors.black,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     },
+//   );
+// }
 
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (_) {
-      return Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// 🔹 Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  "Shared With",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
+class _CenteredDropdownText extends StatelessWidget {
+  final String text;
 
-              const Divider(color: Color(0xFF2C2C2C), height: 1),
+  const _CenteredDropdownText(this.text);
 
-              /// 🔹 Email List
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: users.length,
-                  separatorBuilder: (_, __) => const Divider(
-                    color: Color(0xFF2C2C2C),
-                    height: 1,
-                  ),
-                  itemBuilder: (_, index) {
-                    final user = users[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      child: Text(
-                        user.email ?? "-",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                            ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const Divider(color: Color(0xFF2C2C2C), height: 1),
-
-              /// 🔹 Footer
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF90CAF9),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    child: const Text(
-                      "Close",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft, // horizontal alignment
+      child: Center(
+        // 🔥 vertical centering
+        heightFactor: 1,
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 }

@@ -39,6 +39,7 @@ import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_details_popup.dart';
 import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -46,6 +47,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart'
     as cluster_manager;
 import '../../design_system/components/custom_button.dart';
+import '../../models/locationDocument.dart';
 import '../../models/location_profile_model.dart';
 import '../../models/my_location_list_model.dart';
 import '../../providers/account_list_provider.dart';
@@ -1562,226 +1564,52 @@ class _LocationProfileState extends State<LocationProfile>
                                                             ),
                                                           ),
                                                         ),
-                                                  // (locationProfileProvider.locationProfile
-                                                  //     ?.finalAddress?.score ??
-                                                  //     0) ==
-                                                  //     5
-                                                  //     ? SizedBox.shrink()
-                                                  //     :
-                                                  // IconButton(
-                                                  //     icon: Icon(Icons.edit),
-                                                  //     tooltip: 'Edit Address',
-                                                  //     onPressed: () async {
-                                                  //       print(
-                                                  //           locationProfileProvider
-                                                  //               .locationProfile
-                                                  //               ?.finalAddress
-                                                  //               ?.locationName
-                                                  //               .toString());
-                                                  //       print(
-                                                  //           locationProfileProvider
-                                                  //               .locationProfile
-                                                  //               ?.id
-                                                  //               .toString());
-                                                  //       print("Edit Locations");
-                                                  //       var userProfileProvider =
-                                                  //           Provider.of<
-                                                  //                   UserProfileProvider>(
-                                                  //               context,
-                                                  //               listen: false);
-                                                  //       final trialStatus =
-                                                  //           userProfileProvider
-                                                  //                       .trialInfo[
-                                                  //                   'status'] ??
-                                                  //               '';
-                                                  //       final trialSubdestinations =
-                                                  //           userProfileProvider
-                                                  //                       .trialInfo[
-                                                  //                   'subDestinations'] ??
-                                                  //               0;
-                                                  //       if (trialStatus != '' &&
-                                                  //           trialSubdestinations <
-                                                  //               1) {
-                                                  //         showDialog(
-                                                  //           context: context,
-                                                  //           barrierColor: Theme
-                                                  //                   .of(context)
-                                                  //               .colorScheme
-                                                  //               .surfaceContainerLowest,
-                                                  //           builder:
-                                                  //               (BuildContext
-                                                  //                   context) {
-                                                  //             return Column(
-                                                  //               mainAxisAlignment:
-                                                  //                   MainAxisAlignment
-                                                  //                       .center,
-                                                  //               children: [
-                                                  //                 Row(
-                                                  //                   mainAxisAlignment:
-                                                  //                       MainAxisAlignment
-                                                  //                           .end,
-                                                  //                   children: [
-                                                  //                     IconButton(
-                                                  //                       icon: Icon(
-                                                  //                           Icons.close),
-                                                  //                       onPressed:
-                                                  //                           () {
-                                                  //                         Navigator.of(context)
-                                                  //                             .pop();
-                                                  //                       },
-                                                  //                     ),
-                                                  //                   ],
-                                                  //                 ),
-                                                  //                 MessageCard(
-                                                  //                   isUpgrade:
-                                                  //                       true,
-                                                  //                   messageTextSpans: [
-                                                  //                     TextSpan(
-                                                  //                       text:
-                                                  //                           'You\'ve reached your limit for ',
-                                                  //                       style: CustomTypography(context)
-                                                  //                           .Body1,
-                                                  //                     ),
-                                                  //                     TextSpan(
-                                                  //                       text:
-                                                  //                           '“editing locations”',
-                                                  //                       style: CustomTypography(context)
-                                                  //                           .Body1
-                                                  //                           .copyWith(
-                                                  //                             color: AppColors.warning,
-                                                  //                           ),
-                                                  //                     ),
-                                                  //                     TextSpan(
-                                                  //                       text:
-                                                  //                           '.  Consider upgrading your account to unlock more possibilities!',
-                                                  //                       style: CustomTypography(context)
-                                                  //                           .Body1,
-                                                  //                     ),
-                                                  //                   ],
-                                                  //                 ),
-                                                  //               ],
-                                                  //             );
-                                                  //           },
-                                                  //         );
-                                                  //         return;
-                                                  //       }
-                                                  //       // Store the necessary navigation data before pushing
-                                                  //       // final navigationData = {
-                                                  //       //   'accountId': widget.accountId,
-                                                  //       //   'subAccountId': widget.subAccountId,
-                                                  //       //   'sovId': widget.sovId,
-                                                  //       //   'accountName': widget.accountName,
-                                                  //       //   'subAccountName': widget.subAccountName,
-                                                  //       //   'sovName': widget.sovName,
-                                                  //       //   'locationId': locationProfileProvider
-                                                  //       //       .locationProfile?.id ??
-                                                  //       //       "",
-                                                  //       //   'searchQuery': widget.searchQuery,
-                                                  //       //   'page': widget.page,
-                                                  //       //   'totalPages': widget.totalPages,
-                                                  //       // };
-                                                  //       var value =
-                                                  //           await Navigator.of(
-                                                  //                   context)
-                                                  //               .push(
-                                                  //         MaterialPageRoute(
-                                                  //           builder: (_) =>
-                                                  //               AddLocationScreen(
-                                                  //             accountId: widget
-                                                  //                 .accountId,
-                                                  //             subAccountId: widget
-                                                  //                 .subAccountId,
-                                                  //             sovId:
-                                                  //                 widget.sovId,
-                                                  //             accountName: widget
-                                                  //                 .accountName,
-                                                  //             subAccountName: widget
-                                                  //                 .subAccountName,
-                                                  //             sovName: widget
-                                                  //                 .sovName,
-                                                  //             locationId:
-                                                  //                 locationProfileProvider
-                                                  //                         .locationProfile
-                                                  //                         ?.id ??
-                                                  //                     "",
-                                                  //             locationName: locationProfileProvider
-                                                  //                     .locationProfile
-                                                  //                     ?.finalAddress
-                                                  //                     ?.locationName ??
-                                                  //                 "",
-                                                  //             locationIdForRef:
-                                                  //                 locationProfileProvider
-                                                  //                         ?.locationProfile
-                                                  //                         ?.finalAddress
-                                                  //                         ?.locationIdForRef ??
-                                                  //                     "",
-                                                  //             searchQuery: widget
-                                                  //                     .searchQuery ??
-                                                  //                 "",
-                                                  //             page: widget.page,
-                                                  //             totalPages: widget
-                                                  //                     .locationId!
-                                                  //                     .isNotEmpty
-                                                  //                 ? (locationProfileProvider
-                                                  //                             .resetTotalPage! -
-                                                  //                         1)
-                                                  //                     .toString()
-                                                  //                 : widget
-                                                  //                     .totalPages!,
-                                                  //           ),
-                                                  //         ),
-                                                  //       );
-                                                  //       if (value == true) {
-                                                  //         // ✅ RELOAD CURRENT PAGE
-                                                  //         await locationProfileProvider
-                                                  //             .fetchIndividualLocationProfile(
-                                                  //           context,
-                                                  //           locationProfileProvider
-                                                  //               .locationProfile!
-                                                  //               .id!,
-                                                  //         );
-                                                  //
-                                                  //         setState(() {});
-                                                  //       }
-                                                  //     }),
                                                 ],
                                               );
                                             },
                                           )
                                         : Consumer2<MyLocationListProvider,
                                             SubaccountParameterProvider>(
-                                            builder: (context,
-                                                locationProfileProvider,
-                                                provider,
-                                                child) {
-                                              dynamic rawScore;
+                                            builder: (context, locationProvider,
+                                                paramProvider, child) {
+                                              double rawScore = 1;
 
                                               try {
                                                 if (tabIndex == 0) {
-                                                  rawScore =
-                                                      locationProfileProvider
+                                                  rawScore = (locationProvider
                                                               .locationProfile
                                                               ?.geocodingScore ??
-                                                          1;
+                                                          1)
+                                                      .toDouble();
                                                 } else if (tabIndex == 1) {
-                                                  rawScore =
-                                                      locationProfileProvider
+                                                  rawScore = (locationProvider
                                                               .locationProfile
                                                               ?.overallScore ??
-                                                          5;
+                                                          5)
+                                                      .toDouble();
                                                   if (rawScore == 0)
                                                     rawScore = 5;
-                                                } else {
-                                                  rawScore =
-                                                      locationProfileProvider
+                                                } else if (tabIndex == 2) {
+                                                  final apiScore = (locationProvider
                                                               .locationProfile
                                                               ?.dataCompleteness ??
-                                                          1;
+                                                          1)
+                                                      .toDouble();
 
-                                                  if (provider.updatedScore !=
-                                                      null) {
-                                                    rawScore =
-                                                        provider.updatedScore;
+                                                  /// ⭐ Use updatedScore ONLY if available & greater
+                                                  if (paramProvider
+                                                              .updatedScore !=
+                                                          null &&
+                                                      paramProvider
+                                                              .updatedScore! >
+                                                          apiScore) {
+                                                    rawScore = paramProvider
+                                                        .updatedScore!
+                                                        .toDouble();
+                                                  } else {
+                                                    rawScore = apiScore == 0
+                                                        ? 1
+                                                        : apiScore;
                                                   }
                                                 }
                                               } catch (_) {
@@ -1789,36 +1617,16 @@ class _LocationProfileState extends State<LocationProfile>
                                               }
 
                                               final int rating =
+                                                  normalizeScore(rawScore);
+                                              final int colorIndex =
                                                   scoreToColorIndex(rawScore);
-                                              final rawScore1 =
-                                                  locationProfileProvider
-                                                      .locationProfile
-                                                      ?.dataCompleteness;
-                                              final completeness =
-                                                  locationProfileProvider
-                                                          .locationProfile
-                                                          ?.dataCompleteness ??
-                                                      0;
-                                              final colorIndex =
-                                                  scoreToColorIndex(rawScore1);
+
                                               return Row(
                                                 children: [
-                                                  /// BAR INDICATOR
                                                   VerticalBarIndicator(
-                                                      score: locationProfileProvider
-                                                                  .locationProfile
-                                                                  ?.dataCompleteness
-                                                                  .toString() ==
-                                                              "0"
-                                                          ? 1
-                                                          : locationProfileProvider
-                                                              .locationProfile
-                                                              ?.dataCompleteness),
-
+                                                      score: rawScore),
                                                   const SizedBox(width: 8),
-
-                                                  /// CERTIFIED OR SCORE BADGE
-                                                  rating == 5
+                                                  rawScore == 5
                                                       ? SvgPicture.asset(
                                                           'assets/images/certified_five.svg',
                                                           width: 24,
@@ -1837,12 +1645,19 @@ class _LocationProfileState extends State<LocationProfile>
                                                           alignment:
                                                               Alignment.center,
                                                           child: Text(
-                                                            completeness == 0
+                                                            rawScore.toString() ==
+                                                                    "1.0"
                                                                 ? '1'
-                                                                : completeness
-                                                                    .toString(),
-                                                            textAlign: TextAlign
-                                                                .center,
+                                                                : rawScore.toString() ==
+                                                                        "2.0"
+                                                                    ? '2'
+                                                                    : rawScore.toString() ==
+                                                                            "3.0"
+                                                                        ? '3'
+                                                                        : rawScore.toString() ==
+                                                                                "4.0"
+                                                                            ? '4'
+                                                                            : rawScore.toString(),
                                                             style: TextStyle(
                                                               fontWeight:
                                                                   FontWeight
@@ -1863,134 +1678,124 @@ class _LocationProfileState extends State<LocationProfile>
                                               );
                                             },
                                           ),
-
                                     // Consumer2<MyLocationListProvider,
-                                    //     SubaccountParameterProvider>(
-                                    //   builder: (context,
-                                    //       locationProfileProvider,
-                                    //       provider,
-                                    //       child) {
-                                    //     int rating = 0;
-                                    //     try {
-                                    //       if (tabIndex == 0) {
-                                    //         final scoreStr =
-                                    //             locationProfileProvider
-                                    //                     .locationProfile
-                                    //                     ?.geocodingScore
-                                    //                     ?.toString() ??
-                                    //                 '0';
-                                    //         rating =
-                                    //             int.tryParse(scoreStr) ?? 1;
-                                    //       } else if (tabIndex == 1) {
-                                    //         final overallScoreStr =
-                                    //             locationProfileProvider
-                                    //                     .locationProfile
-                                    //                     ?.overallScore
-                                    //                     ?.toString() ??
-                                    //                 '0';
-                                    //         final parsedScore =
-                                    //             int.tryParse(overallScoreStr) ??
-                                    //                 0;
-                                    //         rating = parsedScore == 0
-                                    //             ? 5
-                                    //             : parsedScore;
-                                    //       } else {
-                                    //         // -------- DATA COMPLETENESS SCORE --------
-                                    //         final data = locationProfileProvider
-                                    //             .locationProfile
-                                    //             ?.dataCompleteness;
+                                    //         SubaccountParameterProvider>(
+                                    //         builder: (context,
+                                    //             locationProfileProvider,
+                                    //             provider,
+                                    //             child) {
+                                    //           dynamic rawScore;
                                     //
-                                    //         int dataScore = 1;
+                                    //           try {
+                                    //             if (tabIndex == 0) {
+                                    //               rawScore =
+                                    //                   locationProfileProvider
+                                    //                           .locationProfile
+                                    //                           ?.geocodingScore ??
+                                    //                       1;
+                                    //             } else if (tabIndex == 1) {
+                                    //               rawScore =
+                                    //                   locationProfileProvider
+                                    //                           .locationProfile
+                                    //                           ?.overallScore ??
+                                    //                       5;
+                                    //               if (rawScore == 0)
+                                    //                 rawScore = 5;
+                                    //             } else {
+                                    //               rawScore =
+                                    //                   locationProfileProvider
+                                    //                           .locationProfile
+                                    //                           ?.dataCompleteness ??
+                                    //                       1;
                                     //
-                                    //         if (data is int) {
-                                    //           dataScore = data;
-                                    //         } else if (data is double) {
-                                    //           dataScore = data!.round();
-                                    //         } else if (data is String) {
-                                    //           dataScore =
-                                    //               int.tryParse(data!) ?? 1;
-                                    //         }
+                                    //               if (provider.updatedScore !=
+                                    //                   null) {
+                                    //                 rawScore =
+                                    //                     provider.updatedScore;
+                                    //               }
+                                    //             }
+                                    //           } catch (_) {
+                                    //             rawScore = 1;
+                                    //           }
                                     //
-                                    //         // Ensure valid range
-                                    //         dataScore = dataScore.clamp(1, 5);
+                                    //           final int rating =
+                                    //               scoreToColorIndex(rawScore);
+                                    //           final rawScore1 =
+                                    //               locationProfileProvider
+                                    //                   .locationProfile
+                                    //                   ?.dataCompleteness;
+                                    //           final completeness =
+                                    //               locationProfileProvider
+                                    //                       .locationProfile
+                                    //                       ?.dataCompleteness ??
+                                    //                   0;
+                                    //           final colorIndex =
+                                    //               scoreToColorIndex(rawScore1);
+                                    //           return Row(
+                                    //             children: [
+                                    //               /// BAR INDICATOR
+                                    //               VerticalBarIndicator(
+                                    //                   score:
+                                    //                   locationProfileProvider
+                                    //                               .locationProfile
+                                    //                               ?.dataCompleteness
+                                    //                               .toString() ==
+                                    //                           "0"
+                                    //                       ? 1
+                                    //                       : locationProfileProvider
+                                    //                           .locationProfile
+                                    //                           ?.dataCompleteness
                                     //
-                                    //         // -------- UPDATED SCORE FROM PROVIDER --------
-                                    //         final int updatedScore =
-                                    //             provider.updatedScore != null
-                                    //                 ? int.tryParse(provider
-                                    //                         .updatedScore
-                                    //                         .toString()) ??
-                                    //                     0
-                                    //                 : 0;
+                                    //               ),
                                     //
-                                    //         // -------- FINAL RATING DECISION --------
-                                    //         if (updatedScore > 0) {
-                                    //           rating = updatedScore.clamp(1, 5);
-                                    //         } else {
-                                    //           rating = dataScore;
-                                    //         }
-                                    //       }
+                                    //               const SizedBox(width: 8),
                                     //
-                                    //     } catch (e) {
-                                    //       rating = 1;
-                                    //     }
-                                    //     return Row(
-                                    //       children: [
-                                    //         VerticalBarIndicator(
-                                    //           score: rating,
-                                    //         ),
-                                    //         SizedBox(width: 8),
-                                    //         rating == 0
-                                    //             ? SizedBox.shrink()
-                                    //             : rating == 5
-                                    //                 ? SvgPicture.asset(
-                                    //                     'assets/images/certified_five.svg',
-                                    //                     width: 24,
-                                    //                     height: 24,
-                                    //                   )
-                                    //                 : Container(
-                                    //                     width: 22,
-                                    //                     height: 22,
-                                    //                     decoration:
-                                    //                         BoxDecoration(
-                                    //                       color: scoreColors[
-                                    //                           rating.clamp(
-                                    //                               0,
-                                    //                               scoreColors
-                                    //                                       .length -
-                                    //                                   1)],
-                                    //                       shape:
-                                    //                           BoxShape.circle,
-                                    //                     ),
-                                    //                     alignment:
-                                    //                         Alignment.center,
-                                    //                     child: Text(
-                                    //                       rating.toString(),
-                                    //                       textAlign:
-                                    //                           TextAlign.center,
-                                    //                       style: TextStyle(
-                                    //                         fontWeight:
-                                    //                             FontWeight.bold,
-                                    //                         fontSize: 13,
-                                    //                         // Automatically adjust text color for better contrast
-                                    //                         color: ThemeData
-                                    //                                     .estimateBrightnessForColor(
-                                    //                                   scoreColors[rating.clamp(
-                                    //                                       0,
-                                    //                                       scoreColors.length -
-                                    //                                           1)],
-                                    //                                 ) ==
-                                    //                                 Brightness
-                                    //                                     .dark
-                                    //                             ? Colors.white
-                                    //                             : Colors.black,
+                                    //               /// CERTIFIED OR SCORE BADGE
+                                    //               rating == 5
+                                    //                   ? SvgPicture.asset(
+                                    //                       'assets/images/certified_five.svg',
+                                    //                       width: 24,
+                                    //                       height: 24,
+                                    //                     )
+                                    //                   : Container(
+                                    //                       width: 22,
+                                    //                       height: 22,
+                                    //                       decoration:
+                                    //                           BoxDecoration(
+                                    //                         color: scoreColors[
+                                    //                             colorIndex],
+                                    //                         shape:
+                                    //                             BoxShape.circle,
+                                    //                       ),
+                                    //                       alignment:
+                                    //                           Alignment.center,
+                                    //                       child: Text(
+                                    //                         completeness == 0
+                                    //                             ? '1'
+                                    //                             : completeness
+                                    //                                 .toString(),
+                                    //                         textAlign: TextAlign
+                                    //                             .center,
+                                    //                         style: TextStyle(
+                                    //                           fontWeight:
+                                    //                               FontWeight
+                                    //                                   .bold,
+                                    //                           fontSize: 11,
+                                    //                           color: ThemeData.estimateBrightnessForColor(
+                                    //                                       scoreColors[
+                                    //                                           colorIndex]) ==
+                                    //                                   Brightness
+                                    //                                       .dark
+                                    //                               ? Colors.white
+                                    //                               : Colors
+                                    //                                   .black,
+                                    //                         ),
                                     //                       ),
                                     //                     ),
-                                    //                   ),
-                                    //       ],
-                                    //     );
-                                    //   },
-                                    // ),
+                                    //             ],
+                                    //           );
+                                    //         },
+                                    //       ),
                                   ],
                                 ),
                               ),
@@ -2025,8 +1830,7 @@ class _LocationProfileState extends State<LocationProfile>
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                        horizontal: 14),
-                                                // 👈 spacing here
+                                                        horizontal: 20),
                                                 child: Text(
                                                   LanguageService.getTranslated(
                                                       context, "geocoding"),
@@ -2037,7 +1841,7 @@ class _LocationProfileState extends State<LocationProfile>
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                        horizontal: 14),
+                                                        horizontal: 20),
                                                 child: Text(
                                                   LanguageService.getTranslated(
                                                       context, "hazard_score"),
@@ -2048,7 +1852,7 @@ class _LocationProfileState extends State<LocationProfile>
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                        horizontal: 14),
+                                                        horizontal: 20),
                                                 child: Text(
                                                   LanguageService.getTranslated(
                                                       context,
@@ -2539,7 +2343,7 @@ class _LocationProfileState extends State<LocationProfile>
                 ),
                 SizedBox(height: 10),
                 DefaultTabController(
-                  length: 4, // Number of tabs
+                  length: 5, // Number of tabs
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2548,13 +2352,29 @@ class _LocationProfileState extends State<LocationProfile>
                         isScrollable: true,
                         onTap: (index) {
                           if (!mounted) return;
+
+                          final provider = Provider.of<MyLocationListProvider>(
+                              context,
+                              listen: false);
+
+                          /// CAMPUS TAB
                           if (index == 0) {
                             setState(() => tabIndex = 0);
-                            Provider.of<MyLocationListProvider>(context,
-                                    listen: false)
-                                .fetchLocations();
+                            provider.fetchLocations();
                           }
-                          // Do nothing if index == 1
+
+                          /// DOCUMENTS TAB
+                          if (index == 2) {
+                            final locationId =
+                                provider.locationProfile?.locationId;
+
+                            if (locationId != null && locationId.isNotEmpty) {
+                              provider.fetchDocuments(
+                                context: context,
+                                locationId: locationId,
+                              );
+                            }
+                          }
                         },
                         tabs: [
                           Tab(
@@ -2565,6 +2385,7 @@ class _LocationProfileState extends State<LocationProfile>
                             text: LanguageService.getTranslated(
                                 context, "gallery"),
                           ),
+                          Tab(text: "Documents"),
                           Tab(
                             text: LanguageService.getTranslated(
                                 context, "activity_log"),
@@ -2592,6 +2413,7 @@ class _LocationProfileState extends State<LocationProfile>
                           children: [
                             _campusWidget(),
                             _mediaImageWidget(),
+                            _mediaDocumentWidget(),
                             _activityLogWidget(),
                             _activityCommentsWidget()
                           ],
@@ -3145,31 +2967,44 @@ class _LocationProfileState extends State<LocationProfile>
                                     );
                                   },
                                   onPageChanged: (index) {
+                                    if (!mounted) return;
+
                                     setState(() {
                                       selectedIndex = index;
                                     });
 
-                                    var subdestination = locationProfileProvider
-                                        .subdestinations[index];
-                                    _focusOnSubdestination(subdestination);
+                                    if (index <
+                                        filteredSubdestinations.length) {
+                                      _focusOnSubdestination(
+                                          filteredSubdestinations[index]);
+                                    }
                                   },
+
+                                  // onPageChanged: (index) {
+                                  //   setState(() {
+                                  //     selectedIndex = index;
+                                  //   });
+                                  //
+                                  //   var subdestination = locationProfileProvider
+                                  //       .subdestinations[index];
+                                  //   _focusOnSubdestination(subdestination);
+                                  // },
                                 ),
                               ),
 
                               SizedBox(height: 150),
                               if (isSelectionMode && !isSwitched)
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
+                                Align(
+                                  alignment: Alignment.bottomCenter,
                                   child: SafeArea(
                                     top: false,
                                     child: Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 12.0),
-                                      decoration: BoxDecoration(
-                                        // color: Colors.white,
+                                        horizontal: 16.0,
+                                        vertical: 12.0,
+                                      ),
+                                      decoration: const BoxDecoration(
                                         boxShadow: [
                                           BoxShadow(
                                             color: Colors.black26,
@@ -3183,6 +3018,7 @@ class _LocationProfileState extends State<LocationProfile>
                                         onPressed: () async {
                                           Set<String> tempSelectedIds =
                                               Set.from(selectedIds);
+
                                           await showDialog(
                                             context: context,
                                             barrierDismissible: false,
@@ -3199,7 +3035,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                           BorderRadius.circular(
                                                               10),
                                                     ),
-                                                    title: Text(
+                                                    title: const Text(
                                                         "Confirm Add to Campus"),
                                                     content: SizedBox(
                                                       width: double.maxFinite,
@@ -3212,8 +3048,9 @@ class _LocationProfileState extends State<LocationProfile>
                                                         itemCount:
                                                             tempSelectedIds
                                                                 .length,
-                                                        separatorBuilder:
-                                                            (_, __) => SizedBox(
+                                                        separatorBuilder: (_,
+                                                                __) =>
+                                                            const SizedBox(
                                                                 height: 12),
                                                         itemBuilder:
                                                             (context, index) {
@@ -3224,8 +3061,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                           final item =
                                                               filteredSubdestinations
                                                                   .firstWhere(
-                                                            (element) =>
-                                                                element.id ==
+                                                            (e) =>
+                                                                e.id ==
                                                                 selectedId,
                                                           );
 
@@ -3269,11 +3106,13 @@ class _LocationProfileState extends State<LocationProfile>
                                                                         null)
                                                                       Text(
                                                                         item.address!,
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                12,
-                                                                            color:
-                                                                                Colors.grey),
+                                                                        style:
+                                                                            const TextStyle(
+                                                                          fontSize:
+                                                                              12,
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
                                                                       ),
                                                                   ],
                                                                 ),
@@ -3289,7 +3128,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                             Navigator.of(
                                                                     context)
                                                                 .pop(),
-                                                        child: Text("Cancel"),
+                                                        child: const Text(
+                                                            "Cancel"),
                                                       ),
                                                       ElevatedButton(
                                                         onPressed: confirmload
@@ -3300,25 +3140,33 @@ class _LocationProfileState extends State<LocationProfile>
                                                                   confirmload =
                                                                       true;
                                                                 });
+
                                                                 try {
-                                                                  var provider = Provider.of<
+                                                                  final provider =
+                                                                      Provider.of<
                                                                           MyLocationListProvider>(
-                                                                      context,
-                                                                      listen:
-                                                                          false);
+                                                                    context,
+                                                                    listen:
+                                                                        false,
+                                                                  );
+
                                                                   final campusId = provider
                                                                           .locationProfile
                                                                           ?.finalAddress
                                                                           ?.campusId ??
                                                                       "";
 
-                                                                  for (String id
+                                                                  for (final id
                                                                       in tempSelectedIds) {
                                                                     final subdestination =
-                                                                        filteredSubdestinations.firstWhere((item) =>
-                                                                            item.id ==
-                                                                            id);
-                                                                    String occupancy = (subdestination.rented ??
+                                                                        filteredSubdestinations
+                                                                            .firstWhere(
+                                                                      (e) =>
+                                                                          e.id ==
+                                                                          id,
+                                                                    );
+
+                                                                    final occupancy = (subdestination.rented ??
                                                                             false)
                                                                         ? 'Rented/Leased'
                                                                         : 'Owned';
@@ -3334,14 +3182,18 @@ class _LocationProfileState extends State<LocationProfile>
                                                                     );
                                                                   }
 
+                                                                  if (!mounted)
+                                                                    return;
+
                                                                   setState(() {
                                                                     selectedIds
                                                                         .clear();
-                                                                    isLoadingAddToCampus =
-                                                                        false;
                                                                     isSelectionMode =
                                                                         false;
+                                                                    isLoadingAddToCampus =
+                                                                        false;
                                                                   });
+
                                                                   await _fetchAllData();
 
                                                                   if (context
@@ -3369,7 +3221,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                 }
                                                               },
                                                         child: confirmload
-                                                            ? SizedBox(
+                                                            ? const SizedBox(
                                                                 width: 20,
                                                                 height: 20,
                                                                 child:
@@ -3380,7 +3232,8 @@ class _LocationProfileState extends State<LocationProfile>
                                                                       .white,
                                                                 ),
                                                               )
-                                                            : Text("Confirm"),
+                                                            : const Text(
+                                                                "Confirm"),
                                                       ),
                                                     ],
                                                   );
@@ -3390,7 +3243,7 @@ class _LocationProfileState extends State<LocationProfile>
                                           );
                                         },
                                         child: isLoadingAddToCampus
-                                            ? SizedBox(
+                                            ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
                                                 child:
@@ -3401,7 +3254,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                           Color>(Colors.white),
                                                 ),
                                               )
-                                            : Text(
+                                            : const Text(
                                                 'Confirm Add to Campus',
                                                 style: TextStyle(
                                                   color: Colors.black,
@@ -3414,249 +3267,259 @@ class _LocationProfileState extends State<LocationProfile>
                                   ),
                                 ),
 
-                              // if (isSelectionMode &&
-                              //     // selectedIds.length > 1 &&
-                              //     !isSwitched)
-                              //   Container(
-                              //     width: double.infinity,
-                              //     padding: const EdgeInsets.symmetric(
-                              //         horizontal: 32.0, vertical: 8.0),
-                              //     child: CustomButton(
-                              //       type: ButtonType.elevated,
-                              //       onPressed: () async {
-                              //         Set<String> tempSelectedIds =
-                              //             Set.from(selectedIds);
-                              //         await showDialog(
-                              //           context: context,
-                              //           barrierDismissible: false,
-                              //           builder: (context) {
-                              //             bool confirmload = false;
+                              //old
+                              // if (isSelectionMode && !isSwitched)
                               //
-                              //             return StatefulBuilder(
-                              //               builder: (context, setStateDialog) {
-                              //                 return AlertDialog(
-                              //                   shape: RoundedRectangleBorder(
-                              //                     borderRadius:
-                              //                         BorderRadius.circular(
-                              //                             10), // change 20 to whatever you like
-                              //                   ),
-                              //                   title: Text(
-                              //                       "Confirm Add to Campus"),
-                              //                   content: SizedBox(
-                              //                     width: double.maxFinite,
-                              //                     height: MediaQuery.of(context)
-                              //                             .size
-                              //                             .height /
-                              //                         3,
-                              //                     child: ListView.separated(
-                              //                       itemCount:
-                              //                           tempSelectedIds.length,
-                              //                       separatorBuilder: (context,
-                              //                               index) =>
-                              //                           SizedBox(height: 12),
-                              //                       itemBuilder:
-                              //                           (context, index) {
-                              //                         final selectedId =
-                              //                             tempSelectedIds
-                              //                                 .toList()[index];
-                              //                         final item =
-                              //                             filteredSubdestinations
-                              //                                 .firstWhere(
-                              //                                     (element) =>
-                              //                                         element
-                              //                                             .id ==
-                              //                                         selectedId);
+                              //  SafeArea(
+                              //       top: false,
+                              //       child: Container(
+                              //         width: double.infinity,
+                              //         padding: const EdgeInsets.symmetric(
+                              //             horizontal: 16.0, vertical: 12.0),
+                              //         decoration: BoxDecoration(
+                              //           // color: Colors.white,
+                              //           boxShadow: [
+                              //             BoxShadow(
+                              //               color: Colors.black26,
+                              //               blurRadius: 8,
+                              //               offset: Offset(0, -2),
+                              //             ),
+                              //           ],
+                              //         ),
+                              //         child: CustomButton(
+                              //           type: ButtonType.elevated,
+                              //           onPressed: () async {
+                              //             Set<String> tempSelectedIds =
+                              //                 Set.from(selectedIds);
+                              //             await showDialog(
+                              //               context: context,
+                              //               barrierDismissible: false,
+                              //               builder: (context) {
+                              //                 bool confirmload = false;
                               //
-                              //                         return Row(
-                              //                           crossAxisAlignment:
-                              //                               CrossAxisAlignment
-                              //                                   .start,
-                              //                           children: [
-                              //                             Checkbox(
-                              //                               value: tempSelectedIds
-                              //                                   .contains(
-                              //                                       selectedId),
-                              //                               onChanged:
-                              //                                   (bool? value) {
-                              //                                 setStateDialog(
-                              //                                     () {
-                              //                                   if (value ==
-                              //                                       true) {
-                              //                                     tempSelectedIds
-                              //                                         .add(
-                              //                                             selectedId);
-                              //                                   } else {
-                              //                                     tempSelectedIds
-                              //                                         .remove(
-                              //                                             selectedId);
-                              //                                   }
-                              //                                 });
-                              //                               },
-                              //                             ),
-                              //                             Expanded(
-                              //                               child: Column(
-                              //                                 crossAxisAlignment:
-                              //                                     CrossAxisAlignment
-                              //                                         .start,
-                              //                                 children: [
-                              //                                   Text(item
-                              //                                           .name ??
-                              //                                       "Unnamed Location"),
-                              //                                   if (item.address !=
-                              //                                       null)
-                              //                                     Text(
-                              //                                       item.address!,
-                              //                                       style: TextStyle(
-                              //                                           fontSize:
-                              //                                               12,
-                              //                                           color: Colors
-                              //                                               .grey),
-                              //                                     ),
-                              //                                 ],
-                              //                               ),
-                              //                             ),
-                              //                           ],
-                              //                         );
-                              //                       },
-                              //                     ),
-                              //                   ),
-                              //                   actions: [
-                              //                     TextButton(
-                              //                       onPressed: () =>
-                              //                           Navigator.of(context)
-                              //                               .pop(),
-                              //                       child: Text("Cancel"),
-                              //                     ),
-                              //                     ElevatedButton(
-                              //                       style: ElevatedButton
-                              //                           .styleFrom(
-                              //                         shape:
-                              //                             RoundedRectangleBorder(
-                              //                           borderRadius:
-                              //                               BorderRadius.zero,
+                              //                 return StatefulBuilder(
+                              //                   builder:
+                              //                       (context, setStateDialog) {
+                              //                     return AlertDialog(
+                              //                       shape:
+                              //                           RoundedRectangleBorder(
+                              //                         borderRadius:
+                              //                             BorderRadius.circular(
+                              //                                 10),
+                              //                       ),
+                              //                       title: Text(
+                              //                           "Confirm Add to Campus"),
+                              //                       content: SizedBox(
+                              //                         width: double.maxFinite,
+                              //                         height:
+                              //                             MediaQuery.of(context)
+                              //                                     .size
+                              //                                     .height /
+                              //                                 3,
+                              //                         child: ListView.separated(
+                              //                           itemCount:
+                              //                               tempSelectedIds
+                              //                                   .length,
+                              //                           separatorBuilder:
+                              //                               (_, __) => SizedBox(
+                              //                                   height: 12),
+                              //                           itemBuilder:
+                              //                               (context, index) {
+                              //                             final selectedId =
+                              //                                 tempSelectedIds
+                              //                                         .toList()[
+                              //                                     index];
+                              //                             final item =
+                              //                                 filteredSubdestinations
+                              //                                     .firstWhere(
+                              //                               (element) =>
+                              //                                   element.id ==
+                              //                                   selectedId,
+                              //                             );
+                              //
+                              //                             return Row(
+                              //                               crossAxisAlignment:
+                              //                                   CrossAxisAlignment
+                              //                                       .start,
+                              //                               children: [
+                              //                                 Checkbox(
+                              //                                   value: tempSelectedIds
+                              //                                       .contains(
+                              //                                           selectedId),
+                              //                                   onChanged:
+                              //                                       (bool?
+                              //                                           value) {
+                              //                                     setStateDialog(
+                              //                                         () {
+                              //                                       if (value ==
+                              //                                           true) {
+                              //                                         tempSelectedIds
+                              //                                             .add(
+                              //                                                 selectedId);
+                              //                                       } else {
+                              //                                         tempSelectedIds
+                              //                                             .remove(
+                              //                                                 selectedId);
+                              //                                       }
+                              //                                     });
+                              //                                   },
+                              //                                 ),
+                              //                                 Expanded(
+                              //                                   child: Column(
+                              //                                     crossAxisAlignment:
+                              //                                         CrossAxisAlignment
+                              //                                             .start,
+                              //                                     children: [
+                              //                                       Text(item
+                              //                                               .name ??
+                              //                                           "Unnamed Location"),
+                              //                                       if (item.address !=
+                              //                                           null)
+                              //                                         Text(
+                              //                                           item.address!,
+                              //                                           style: TextStyle(
+                              //                                               fontSize:
+                              //                                                   12,
+                              //                                               color:
+                              //                                                   Colors.grey),
+                              //                                         ),
+                              //                                     ],
+                              //                                   ),
+                              //                                 ),
+                              //                               ],
+                              //                             );
+                              //                           },
                               //                         ),
                               //                       ),
-                              //                       onPressed: confirmload
-                              //                           ? null
-                              //                           : () async {
-                              //                               setStateDialog(() {
-                              //                                 confirmload =
-                              //                                     true;
-                              //                               });
-                              //
-                              //                               try {
-                              //                                 var provider =
-                              //                                     Provider.of<
+                              //                       actions: [
+                              //                         TextButton(
+                              //                           onPressed: () =>
+                              //                               Navigator.of(
+                              //                                       context)
+                              //                                   .pop(),
+                              //                           child: Text("Cancel"),
+                              //                         ),
+                              //                         ElevatedButton(
+                              //                           onPressed: confirmload
+                              //                               ? null
+                              //                               : () async {
+                              //                                   setStateDialog(
+                              //                                       () {
+                              //                                     confirmload =
+                              //                                         true;
+                              //                                   });
+                              //                                   try {
+                              //                                     var provider = Provider.of<
                               //                                             MyLocationListProvider>(
                               //                                         context,
                               //                                         listen:
                               //                                             false);
-                              //                                 final campusId = provider
-                              //                                         .locationProfile
-                              //                                         ?.finalAddress
-                              //                                         ?.campusId ??
-                              //                                     "";
+                              //                                     final campusId = provider
+                              //                                             .locationProfile
+                              //                                             ?.finalAddress
+                              //                                             ?.campusId ??
+                              //                                         "";
                               //
-                              //                                 for (String id
-                              //                                     in tempSelectedIds) {
-                              //                                   final subdestination =
-                              //                                       filteredSubdestinations.firstWhere(
-                              //                                           (item) =>
+                              //                                     for (String id
+                              //                                         in tempSelectedIds) {
+                              //                                       final subdestination =
+                              //                                           filteredSubdestinations.firstWhere((item) =>
                               //                                               item.id ==
                               //                                               id);
-                              //                                   String
-                              //                                       occupancy =
-                              //                                       (subdestination.rented ??
+                              //                                       String occupancy = (subdestination.rented ??
                               //                                               false)
                               //                                           ? 'Rented/Leased'
                               //                                           : 'Owned';
                               //
-                              //                                   await _addToSOV(
-                              //                                     subdestination
-                              //                                             .id ??
-                              //                                         "",
-                              //                                     occupancy:
-                              //                                         occupancy,
-                              //                                     campusName:
-                              //                                         campusId,
-                              //                                   );
-                              //                                 }
+                              //                                       await _addToSOV(
+                              //                                         subdestination
+                              //                                                 .id ??
+                              //                                             "",
+                              //                                         occupancy:
+                              //                                             occupancy,
+                              //                                         campusName:
+                              //                                             campusId,
+                              //                                       );
+                              //                                     }
                               //
-                              //                                 setState(() {
-                              //                                   selectedIds
-                              //                                       .clear();
-                              //                                   isLoadingAddToCampus =
-                              //                                       false;
-                              //                                   isSelectionMode =
-                              //                                       false;
-                              //                                 });
-                              //                                 await _fetchAllData();
+                              //                                     setState(() {
+                              //                                       selectedIds
+                              //                                           .clear();
+                              //                                       isLoadingAddToCampus =
+                              //                                           false;
+                              //                                       isSelectionMode =
+                              //                                           false;
+                              //                                     });
+                              //                                     await _fetchAllData();
                               //
-                              //                                 if (context
-                              //                                     .mounted) {
-                              //                                   widget
-                              //                                       .onConfirmCallback
-                              //                                       ?.call();
-                              //                                   _getData();
-                              //                                   _initializeClusterManager();
-                              //                                   await _refreshData();
-                              //                                   Navigator.of(
-                              //                                           context)
-                              //                                       .pop(true);
-                              //                                 }
-                              //                               } catch (e) {
-                              //                                 print(
-                              //                                     "Error: $e");
-                              //                               } finally {
-                              //                                 if (context
-                              //                                     .mounted) {
-                              //                                   setState(() {
-                              //                                     confirmload =
-                              //                                         false;
-                              //                                   });
-                              //                                 }
-                              //                               }
-                              //                             },
-                              //                       child: confirmload
-                              //                           ? SizedBox(
-                              //                               width: 20,
-                              //                               height: 20,
-                              //                               child:
-                              //                                   CircularProgressIndicator(
-                              //                                 strokeWidth: 2,
-                              //                                 color:
-                              //                                     Colors.white,
-                              //                               ),
-                              //                             )
-                              //                           : Text("Confirm"),
-                              //                     )
-                              //                   ],
+                              //                                     if (context
+                              //                                         .mounted) {
+                              //                                       widget
+                              //                                           .onConfirmCallback
+                              //                                           ?.call();
+                              //                                       _getData();
+                              //                                       _initializeClusterManager();
+                              //                                       await _refreshData();
+                              //                                       Navigator.of(
+                              //                                               context)
+                              //                                           .pop(
+                              //                                               true);
+                              //                                     }
+                              //                                   } finally {
+                              //                                     if (context
+                              //                                         .mounted) {
+                              //                                       setStateDialog(
+                              //                                           () {
+                              //                                         confirmload =
+                              //                                             false;
+                              //                                       });
+                              //                                     }
+                              //                                   }
+                              //                                 },
+                              //                           child: confirmload
+                              //                               ? SizedBox(
+                              //                                   width: 20,
+                              //                                   height: 20,
+                              //                                   child:
+                              //                                       CircularProgressIndicator(
+                              //                                     strokeWidth:
+                              //                                         2,
+                              //                                     color: Colors
+                              //                                         .white,
+                              //                                   ),
+                              //                                 )
+                              //                               : Text("Confirm"),
+                              //                         ),
+                              //                       ],
+                              //                     );
+                              //                   },
                               //                 );
                               //               },
                               //             );
                               //           },
-                              //         );
-                              //       },
-                              //       child: isLoadingAddToCampus
-                              //           ? SizedBox(
-                              //               width: 20,
-                              //               height: 20,
-                              //               child: CircularProgressIndicator(
-                              //                 strokeWidth: 2,
-                              //                 valueColor:
-                              //                     AlwaysStoppedAnimation<Color>(
-                              //                         Colors.white),
-                              //               ),
-                              //             )
-                              //           : Text('Add Location to Campus',
-                              //               style: TextStyle(
-                              //                 color: Colors.black,
-                              //                 fontWeight: FontWeight.w500,
-                              //                 fontSize: 16,
-                              //               )),
+                              //           child: isLoadingAddToCampus
+                              //               ? SizedBox(
+                              //                   width: 20,
+                              //                   height: 20,
+                              //                   child:
+                              //                       CircularProgressIndicator(
+                              //                     strokeWidth: 2,
+                              //                     valueColor:
+                              //                         AlwaysStoppedAnimation<
+                              //                             Color>(Colors.white),
+                              //                   ),
+                              //                 )
+                              //               : Text(
+                              //                   'Confirm Add to Campus',
+                              //                   style: TextStyle(
+                              //                     color: Colors.black,
+                              //                     fontWeight: FontWeight.w600,
+                              //                     fontSize: 16,
+                              //                   ),
+                              //                 ),
+                              //         ),
+                              //       ),
                               //     ),
-                              //   ),
-                              // // SizedBox(height: 5),
                             ],
                           ),
                   ],
@@ -3677,312 +3540,649 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Widget _mediaImageWidget() {
-    var typography = CustomTypography(context);
+    final typography = CustomTypography(context);
 
     return Consumer<MyLocationListProvider>(
-      builder: (context, locationProfileProvider, child) {
-        return Builder(
-          builder: (context) {
-            return Stack(
-              children: [
-                if (_isBottomSheetExpanded)
-                  Scrollbar(
-                    thumbVisibility: true,
-                    child: ListView(
-                      padding: const EdgeInsets.only(bottom: 100),
-                      children: [
-                        const SizedBox(height: 10),
+      builder: (context, provider, _) {
+        return Stack(
+          children: [
+            if (_isBottomSheetExpanded)
+              Scrollbar(
+                thumbVisibility: true,
+                child: ListView(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  children: [
+                    const SizedBox(height: 10),
 
-                        // Header
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                LanguageService.getTranslated(
-                                    context, "images"),
-                                style: typography.H6.copyWith(height: 1.2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Loading State
-                        if (locationProfileProvider.isUploadingImage)
-                          Center(
-                            child: Container(
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              alignment: Alignment.center,
-                              child: const CircularProgressIndicator(),
-                            ),
-                          )
-                        // Image Gallery
-                        else if (_images.isNotEmpty ||
-                            (locationProfileProvider
-                                    .locationProfile?.screenshots?.isNotEmpty ??
-                                false))
-                          Column(
-                            children: [
-                              Container(
-                                height:
-                                    MediaQuery.of(context).size.height / 3.5,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                ),
-                                child: PageView.builder(
-                                  key: ValueKey(
-                                    _images.length +
-                                        (locationProfileProvider.locationProfile
-                                                ?.screenshots?.length ??
-                                            0),
-                                  ),
-                                  controller:
-                                      PageController(viewportFraction: 0.9),
-                                  itemCount: _images.length +
-                                      (locationProfileProvider.locationProfile
-                                              ?.screenshots?.length ??
-                                          0),
-                                  itemBuilder: (context, itemIndex) {
-                                    if (itemIndex < _images.length) {
-                                      final localImage = _images[itemIndex];
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8.0),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Stack(
-                                                children: [
-                                                  Center(
-                                                    child: ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              16),
-                                                      child: Image.file(
-                                                        localImage,
-                                                        width: double.infinity,
-                                                        height: double.infinity,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 10,
-                                                    right: 10,
-                                                    child: InkWell(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              20),
-                                                      onTap: () {
-                                                        setState(() {
-                                                          if (itemIndex <
-                                                              _images.length) {
-                                                            _images.removeAt(
-                                                                itemIndex);
-                                                          } else {
-                                                            locationProfileProvider
-                                                                .locationProfile
-                                                                ?.screenshots
-                                                                ?.removeAt(
-                                                                    itemIndex -
-                                                                        _images
-                                                                            .length);
-                                                          }
-                                                        });
-                                                      },
-                                                      child: Container(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors.black
-                                                              .withOpacity(0.5),
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: Colors
-                                                                  .black
-                                                                  .withOpacity(
-                                                                      0.3),
-                                                              blurRadius: 4,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(6),
-                                                        child: const Icon(
-                                                          Icons.delete,
-                                                          color: Colors.red,
-                                                          size: 20,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    } else {
-                                      final screenshotIndex =
-                                          itemIndex - _images.length;
-                                      final screenshot = locationProfileProvider
-                                          .locationProfile
-                                          ?.screenshots?[screenshotIndex];
-
-                                      if (screenshot == null)
-                                        return const SizedBox();
-
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8.0),
-                                        child: GestureDetector(
-                                          onTap: () => _showImagePreviewFromUrl(
-                                            screenshot.imageUrl ?? '',
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Stack(
-                                                  children: [
-                                                    Center(
-                                                      child: ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(16),
-                                                        child: Image.network(
-                                                          screenshot.imageUrl ??
-                                                              '',
-                                                          width:
-                                                              double.infinity,
-                                                          height:
-                                                              double.infinity,
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      top: 8,
-                                                      right: 8,
-                                                      child: IconButton(
-                                                        icon: const Icon(
-                                                            Icons.delete,
-                                                            color: Colors.red),
-                                                        onPressed: () {
-                                                          setState(() {
-                                                            locationProfileProvider
-                                                                .locationProfile
-                                                                ?.screenshots
-                                                                ?.removeAt(
-                                                                    screenshotIndex);
-                                                          });
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 10.0),
-                                                child: Text(
-                                                  screenshot.name ?? '',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium,
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 10.0),
-                                                child: Text(
-                                                  _formatTimestamp(screenshot
-                                                      .createdAt?.iSeconds),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 50),
-                            ],
-                          )
-                        else
-                          Center(
-                            child: Container(
-                              height: MediaQuery.of(context).size.height / 3,
-                              alignment: Alignment.center,
-                              child: Text(
-                                LanguageService.getTranslated(
-                                    context, "no_images"),
-                                style: typography.Body1,
-                              ),
-                            ),
-                          ),
-                      ],
+                    /// HEADER
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        LanguageService.getTranslated(context, "images"),
+                        style: typography.H6.copyWith(height: 1.2),
+                      ),
                     ),
-                  ),
 
-                /// Sticky Upload Button
-                if (_isBottomSheetExpanded)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 12),
-                        child: CustomButton(
-                          type: ButtonType.elevated,
-                          onPressed: _pickImage,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.upload_sharp,
-                                  color: Colors.black, size: 20),
-                              SizedBox(width: 10),
-                              Text(
-                                LanguageService.getTranslated(
-                                    context, "upload_relevant_images"),
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+                    const SizedBox(height: 20),
+
+                    /// LOADING
+                    if (provider.isUploadingImage)
+                      Center(
+                        child: Container(
+                          height: MediaQuery.of(context).size.height / 3.5,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(),
+                        ),
+                      )
+
+                    /// IMAGES
+                    else if (_images.isNotEmpty ||
+                        (provider.locationProfile?.screenshots?.isNotEmpty ??
+                            false))
+                      Column(
+                        children: [
+                          Container(
+                            height: MediaQuery.of(context).size.height / 3.5,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                            ),
+                            child: PageView.builder(
+                              controller: PageController(viewportFraction: 0.9),
+                              itemCount: _images.length +
+                                  (provider.locationProfile?.screenshots
+                                          ?.length ??
+                                      0),
+                              itemBuilder: (context, index) {
+                                /// LOCAL IMAGES
+                                if (index < _images.length) {
+                                  final localImage = _images[index];
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: Image.file(
+                                            localImage,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: _deleteIcon(
+                                            onTap: () {
+                                              setState(() {
+                                                _images.removeAt(index);
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                /// SERVER IMAGES
+                                final screenshotIndex = index - _images.length;
+                                final screenshot = provider.locationProfile
+                                    ?.screenshots?[screenshotIndex];
+
+                                if (screenshot == null) {
+                                  return const SizedBox();
+                                }
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  child: GestureDetector(
+                                    onTap: () => _showImagePreviewFromUrl(
+                                        screenshot.imageUrl ?? ''),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: Image.network(
+                                            screenshot.imageUrl ?? '',
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: _deleteIcon(
+                                            onTap: () {
+                                              setState(() {
+                                                provider.locationProfile
+                                                    ?.screenshots
+                                                    ?.removeAt(screenshotIndex);
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 50),
+                        ],
+                      )
+
+                    /// EMPTY
+                    else
+                      Center(
+                        child: Container(
+                          height: MediaQuery.of(context).size.height / 3,
+                          alignment: Alignment.center,
+                          child: Text(
+                            LanguageService.getTranslated(context, "no_images"),
+                            style: typography.Body1,
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+
+            /// UPLOAD BUTTON
+            if (_isBottomSheetExpanded)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 12),
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: CustomButton(
+                      type: ButtonType.elevated,
+                      onPressed: _pickImage,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.upload_sharp,
+                              color: Colors.black, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            LanguageService.getTranslated(
+                                context, "upload_relevant_images"),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-              ],
-            );
-          },
+                ),
+              ),
+          ],
         );
       },
     );
   }
 
-  // Widget _mediaImageWidget() {
+  Widget _deleteIcon({required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.delete, color: Colors.red, size: 20),
+      ),
+    );
+  }
+
+  Widget _mediaDocumentWidget() {
+    final typography = CustomTypography(context);
+
+    return Consumer<MyLocationListProvider>(
+      builder: (context, provider, _) {
+        return RefreshIndicator(
+          onRefresh: () async {
+            await provider.fetchDocuments(
+              context: context,
+              locationId: provider.locationProfile!.locationId!,
+              forceRefresh: true,
+            );
+          },
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 10),
+
+                /// HEADER
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Documents",
+                    style: typography.H6.copyWith(height: 1.2),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// LOADING
+                if (provider.isDocumentsLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+
+                /// EMPTY
+                else if (provider.documents.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 60),
+                      child: Text("No Documents", style: typography.Body1),
+                    ),
+                  )
+
+                /// LIST
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: provider.documents.length,
+                    itemBuilder: (context, index) {
+                      final doc = provider.documents[index];
+
+                      return InkWell(
+                        onTap: doc.urls.isEmpty
+                            ? null
+                            : () => _previewDocument(
+                                  doc.urls.first,
+                                ),
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// TITLE + DELETE
+                                Row(
+                                  children: [
+                                    const Icon(Icons.description),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        doc.name,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (doc.createdAt != null)
+                                      provider.isDeleting(doc.id)
+                                          ? const SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                            )
+                                          : IconButton(
+                                              icon: const Icon(Icons.close,
+                                                  color: Colors.red),
+                                              onPressed: doc.urls.isEmpty
+                                                  ? null
+                                                  : () {
+                                                      provider.deleteDocument(
+                                                        context: context,
+                                                        locationId: provider
+                                                            .locationProfile!
+                                                            .locationId!,
+                                                        documentId: doc.id,
+                                                        imageUrl:
+                                                            doc.urls.first,
+                                                      );
+                                                    },
+                                            ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 6),
+
+                                if (doc.createdAt != null)
+                                  Text(
+                                    _formatTimestamp(
+                                      doc.createdAt!.millisecondsSinceEpoch ~/
+                                          1000,
+                                    ),
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                const SizedBox(height: 30),
+
+                /// UPLOAD BUTTON
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: CustomButton(
+                    type: ButtonType.elevated,
+                    onPressed: () async {
+                      await _pickDocuments();
+
+                      /// AUTO REFRESH AFTER UPLOAD
+                      await provider.fetchDocuments(
+                        context: context,
+                        locationId: provider.locationProfile!.locationId!,
+                      );
+                    },
+                    child: Row(
+                      children: const [
+                        Icon(Icons.upload_sharp, color: Colors.black),
+                        SizedBox(width: 20),
+                        Text(
+                          "Upload relevant document(s)",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  //
+  // Widget _mediaDocumentWidget() {
+  //   final typography = CustomTypography(context);
+  //
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, provider, child) {
+  //       return Stack(
+  //         children: [
+  //           if (_isBottomSheetExpanded)
+  //             Scrollbar(
+  //               thumbVisibility: true,
+  //               child: ListView(
+  //                 children: [
+  //                   const SizedBox(height: 10),
+  //
+  //                   /// HEADER
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  //                     child: Text(
+  //                       'Documents',
+  //                       style: typography.H6.copyWith(height: 1.2),
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(height: 20),
+  //
+  //                   /// LOADING
+  //                   if (provider.isDocumentsLoading)
+  //                     const Center(
+  //                       child: Padding(
+  //                         padding: EdgeInsets.symmetric(vertical: 40),
+  //                         child: CircularProgressIndicator(),
+  //                       ),
+  //                     )
+  //
+  //                   /// EMPTY STATE
+  //                   else if (provider.documents.isEmpty)
+  //                     Center(
+  //                       child: Container(
+  //                         height: MediaQuery.of(context).size.height / 3,
+  //                         alignment: Alignment.center,
+  //                         child: Text(
+  //                           'No Documents',
+  //                           style: typography.Body1,
+  //                         ),
+  //                       ),
+  //                     )
+  //
+  //                   /// DOCUMENT LIST
+  //                   else
+  //                     Column(
+  //                       children: [
+  //                         ListView.builder(
+  //                           shrinkWrap: true,
+  //                           physics: const NeverScrollableScrollPhysics(),
+  //                           itemCount: provider.documents.length,
+  //                           itemBuilder: (context, index) {
+  //                             final doc = provider.documents[index];
+  //
+  //                             return Card(
+  //                               margin: const EdgeInsets.symmetric(
+  //                                   horizontal: 16, vertical: 8),
+  //                               shape: RoundedRectangleBorder(
+  //                                   borderRadius: BorderRadius.circular(12)),
+  //                               child: Padding(
+  //                                 padding: const EdgeInsets.all(12),
+  //                                 child: Column(
+  //                                   crossAxisAlignment:
+  //                                       CrossAxisAlignment.start,
+  //                                   children: [
+  //                                     /// HEADER ROW
+  //                                     Row(
+  //                                       children: [
+  //                                         const Icon(Icons.description),
+  //                                         const SizedBox(width: 10),
+  //
+  //                                         /// TITLE
+  //                                         Expanded(
+  //                                           child: Text(
+  //                                             doc.name,
+  //                                             maxLines: 2,
+  //                                             overflow: TextOverflow.ellipsis,
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodyMedium,
+  //                                           ),
+  //                                         ),
+  //
+  //                                         /// DELETE ICON (optional)
+  //                                         if (doc.createdAt != null)
+  //                                           IconButton(
+  //                                             icon: const Icon(
+  //                                                 Icons.close_outlined,
+  //                                                 color: Colors.red),
+  //                                             onPressed: () {
+  //                                               final provider = Provider.of<
+  //                                                       MyLocationListProvider>(
+  //                                                   context,
+  //                                                   listen: false);
+  //
+  //                                               provider.deleteDocument(
+  //                                                 context: context,
+  //                                                 locationId: provider
+  //                                                     .locationProfile!
+  //                                                     .locationId!,
+  //                                                 documentId: doc.id,
+  //                                                 imageUrl: doc.urls.first,
+  //                                               );
+  //                                             },
+  //                                           ),
+  //                                         // const SizedBox(height: 12),
+  //                                         // InkWell(
+  //                                         //   onTap: doc.urls.isEmpty
+  //                                         //       ? null
+  //                                         //       : () => _previewDocument(doc.urls.first),
+  //                                         //   child:
+  //                                         //   Icon(Icons.visibility),
+  //                                         //
+  //                                         // ),
+  //                                       ],
+  //                                     ),
+  //
+  //                                     const SizedBox(height: 6),
+  //
+  //                                     /// DATE
+  //                                     if (doc.createdAt != null)
+  //                                       Text(
+  //                                         _formatTimestamp(
+  //                                           doc.createdAt!
+  //                                                   .millisecondsSinceEpoch ~/
+  //                                               1000,
+  //                                         ),
+  //                                         style: Theme.of(context)
+  //                                             .textTheme
+  //                                             .bodySmall,
+  //                                       ),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //                             );
+  //                           },
+  //                         ),
+  //                         const SizedBox(height: 50),
+  //                       ],
+  //                     ),
+  //
+  //                   /// UPLOAD BUTTON
+  //                   Container(
+  //                     margin: const EdgeInsets.symmetric(horizontal: 30),
+  //                     child: CustomButton(
+  //                       type: ButtonType.elevated,
+  //                       onPressed: _pickDocuments,
+  //                       child: Row(
+  //                         children: const [
+  //                           Icon(Icons.upload_sharp,
+  //                               color: Colors.black, size: 20),
+  //                           SizedBox(width: 20),
+  //                           Text(
+  //                             'Upload relevant document(s)',
+  //                             style: TextStyle(
+  //                               color: Colors.black,
+  //                               fontWeight: FontWeight.w600,
+  //                               fontSize: 16,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(height: 20),
+  //                 ],
+  //               ),
+  //             ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  Future<void> _previewDocument(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not open document');
+    }
+  }
+
+  void _showDocumentActions({
+    required BuildContext context,
+    required LocationDocument document,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.visibility),
+                title: const Text('Preview'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _previewDocument(document.urls.first);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Delete document?'),
+                      content: const Text('This action cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true) {
+                    final provider = Provider.of<MyLocationListProvider>(
+                      context,
+                      listen: false,
+                    );
+
+                    provider.deleteDocument(
+                      context: context,
+                      locationId: provider.locationProfile!.locationId!,
+                      documentId: document.id,
+                      imageUrl: document.urls.first,
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget _mediaDocumentWidget() {
   //   var typography = CustomTypography(context);
   //   return Consumer<MyLocationListProvider>(
   //     builder: (context, locationProfileProvider, child) {
@@ -4003,7 +4203,7 @@ class _LocationProfileState extends State<LocationProfile>
   //                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
   //                           children: [
   //                             Text(
-  //                               'Images',
+  //                               'Documents',
   //                               style: typography.H6.copyWith(height: 1.2),
   //                             ),
   //                           ],
@@ -4013,9 +4213,7 @@ class _LocationProfileState extends State<LocationProfile>
   //                       locationProfileProvider.isUploadingImage
   //                           ? Center(
   //                               child: Container(
-  //                                 height:
-  //                                 MediaQuery.of(context).size.height /
-  //                                     3.5,
+  //                                 height: 200,
   //                                 alignment: Alignment.center,
   //                                 child: CircularProgressIndicator(),
   //                               ),
@@ -4257,7 +4455,7 @@ class _LocationProfileState extends State<LocationProfile>
   //                                             3,
   //                                     alignment: Alignment.center,
   //                                     child: Text(
-  //                                       'No Images',
+  //                                       'No Documents',
   //                                       style: typography.Body1,
   //                                     ),
   //                                   ),
@@ -4269,15 +4467,15 @@ class _LocationProfileState extends State<LocationProfile>
   //                           type: ButtonType.elevated,
   //                           onPressed: _pickImage,
   //                           child: Row(
-  //                             mainAxisAlignment: MainAxisAlignment.center,
+  //                             mainAxisAlignment: MainAxisAlignment.start,
   //                             crossAxisAlignment: CrossAxisAlignment.center,
   //                             children: [
   //                               Icon(Icons.upload_sharp,
   //                                   color: Colors.black, size: 20),
-  //                               SizedBox(width: 30),
+  //                               SizedBox(width: 20),
   //                               InkWell(
-  //                                 onTap: _pickImage,
-  //                                 child: Text('Upload relevant image(s)',
+  //                                 onTap: _pickDocuments,
+  //                                 child: Text('Upload relevant document(s)',
   //                                     style: TextStyle(
   //                                       color: Colors.black,
   //                                       fontWeight: FontWeight.w600,
@@ -4299,325 +4497,10 @@ class _LocationProfileState extends State<LocationProfile>
   //   );
   // }
 
-  Widget _mediaDocumentWidget() {
-    var typography = CustomTypography(context);
-    return Consumer<MyLocationListProvider>(
-      builder: (context, locationProfileProvider, child) {
-        return Builder(
-          builder: (context) {
-            return Stack(
-              children: [
-                if (_isBottomSheetExpanded)
-                  Scrollbar(
-                    thumbVisibility: true,
-                    child: ListView(
-                      children: [
-                        SizedBox(height: 10),
-                        // Removed Expanded from here
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Documents',
-                                style: typography.H6.copyWith(height: 1.2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        locationProfileProvider.isUploadingImage
-                            ? Center(
-                                child: Container(
-                                  height: 200,
-                                  alignment: Alignment.center,
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : _images.isNotEmpty ||
-                                    locationProfileProvider.locationProfile
-                                            ?.screenshots?.isNotEmpty ==
-                                        true
-                                ? Column(
-                                    // Wrapped in Column instead of Expanded
-                                    children: [
-                                      Container(
-                                        height:
-                                            MediaQuery.of(context).size.height /
-                                                3.5,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                        ),
-                                        child: PageView.builder(
-                                          key: ValueKey(
-                                            _images.length +
-                                                (locationProfileProvider
-                                                        .locationProfile
-                                                        ?.screenshots
-                                                        ?.length ??
-                                                    0),
-                                          ),
-                                          controller: PageController(
-                                              viewportFraction: 0.9),
-                                          itemCount: _images.length +
-                                              (locationProfileProvider
-                                                      .locationProfile
-                                                      ?.screenshots
-                                                      ?.length ??
-                                                  0),
-                                          itemBuilder: (BuildContext context,
-                                              int itemIndex) {
-                                            if (itemIndex < _images.length) {
-                                              final localImage =
-                                                  _images[itemIndex];
-
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8.0),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Stack(
-                                                        children: [
-                                                          Center(
-                                                            child: ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          16),
-                                                              child: Image.file(
-                                                                localImage,
-                                                                width: double
-                                                                    .infinity,
-                                                                height: double
-                                                                    .infinity,
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Positioned(
-                                                            top: 8,
-                                                            right: 8,
-                                                            child: IconButton(
-                                                              icon: Icon(
-                                                                  Icons.delete,
-                                                                  color: Colors
-                                                                      .red),
-                                                              onPressed: () {
-                                                                print(
-                                                                    localImage ??
-                                                                        '');
-                                                                setState(() {
-                                                                  _images.removeAt(
-                                                                      itemIndex);
-                                                                });
-                                                              },
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    const Padding(
-                                                      padding: EdgeInsets.only(
-                                                          left: 10.0),
-                                                      child: Text(
-                                                        '',
-                                                        style:
-                                                            TextStyle(), // You can add styling if needed
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              left: 10.0),
-                                                      child: Text(
-                                                        "",
-                                                        // _formatTimestamp(DateTime.now().second),
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodyMedium,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else {
-                                              final screenshotIndex =
-                                                  itemIndex - _images.length;
-                                              final screenshot =
-                                                  locationProfileProvider
-                                                          .locationProfile
-                                                          ?.screenshots?[
-                                                      screenshotIndex];
-
-                                              if (screenshot == null)
-                                                return const SizedBox();
-
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8.0),
-                                                child: GestureDetector(
-                                                  onTap: () =>
-                                                      _showImagePreviewFromUrl(
-                                                          screenshot.imageUrl ??
-                                                              ''),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Expanded(
-                                                        child: Stack(
-                                                          children: [
-                                                            Center(
-                                                              child: ClipRRect(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            16),
-                                                                child: Image
-                                                                    .network(
-                                                                  screenshot
-                                                                          .imageUrl ??
-                                                                      '',
-                                                                  width: double
-                                                                      .infinity,
-                                                                  height: double
-                                                                      .infinity,
-                                                                  fit: BoxFit
-                                                                      .cover,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Positioned(
-                                                              top: 8,
-                                                              right: 8,
-                                                              child: IconButton(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .delete,
-                                                                    color: Colors
-                                                                        .red),
-                                                                onPressed: () {
-                                                                  print(screenshot
-                                                                          .imageUrl ??
-                                                                      '');
-                                                                  setState(() {
-                                                                    locationProfileProvider
-                                                                        .locationProfile
-                                                                        ?.screenshots
-                                                                        ?.removeAt(
-                                                                            screenshotIndex);
-                                                                  });
-                                                                },
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                left: 10.0),
-                                                        child: Text(
-                                                          '${screenshot.name ?? ''} (@)',
-                                                          style:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .bodyMedium,
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                left: 10.0),
-                                                        child: Text(
-                                                          _formatTimestamp(
-                                                              screenshot
-                                                                  .createdAt
-                                                                  ?.iSeconds),
-                                                          style:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .bodyMedium,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      SizedBox(height: 50),
-                                    ],
-                                  )
-                                : Center(
-                                    child: Container(
-                                      height:
-                                          MediaQuery.of(context).size.height /
-                                              3,
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'No Documents',
-                                        style: typography.Body1,
-                                      ),
-                                    ),
-                                  ),
-
-                        Container(
-                          margin: EdgeInsets.symmetric(horizontal: 30),
-                          child: CustomButton(
-                            type: ButtonType.elevated,
-                            onPressed: _pickImage,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Icon(Icons.upload_sharp,
-                                    color: Colors.black, size: 20),
-                                SizedBox(width: 20),
-                                InkWell(
-                                  onTap: _pickDocuments,
-                                  child: Text('Upload relevant document(s)',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      )),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _activityLogWidget() {
     return Consumer<MyLocationListProvider>(
       builder: (context, provider, child) {
-        final logs = provider.locationProfile?.allActivityLogs ?? [];
+        final logs = provider.allAcitivityLogs.length;
 
         return _isBottomSheetExpanded
             ? Scrollbar(
@@ -4633,8 +4516,9 @@ class _LocationProfileState extends State<LocationProfile>
                         dashPattern: [4, 4],
                       ),
                       child: Column(
-                        children: List.generate(logs.length, (index) {
-                          final log = logs[index];
+                        children: List.generate(
+                            provider.allAcitivityLogs.length, (index) {
+                          final log = provider.allAcitivityLogs[index];
 
                           final action = log.action ?? "";
                           final targetId = log.targetId?.toString() ?? "";
@@ -4935,136 +4819,6 @@ class _LocationProfileState extends State<LocationProfile>
       },
     );
   }
-
-  // Widget _activityCommentsWidget() {
-  //   return Consumer<MyLocationListProvider>(
-  //     builder: (context, locationProfileProvider, child) {
-  //       return Builder(
-  //         builder: (context) {
-  //           return Stack(
-  //             children: [
-  //               if (_isBottomSheetExpanded)
-  //                 Scrollbar(
-  //                   thumbVisibility: true,
-  //                   child: ListView(
-  //                     padding: const EdgeInsets.all(12),
-  //                     children: [
-  //                       Padding(
-  //                         padding: const EdgeInsets.all(8.0),
-  //                         child: DottedBorder(
-  //                           options: RectDottedBorderOptions(
-  //                             padding: const EdgeInsets.all(12),
-  //                             color: Colors.white24,
-  //                             strokeWidth: 2,
-  //                             dashPattern: [6, 6],
-  //                           ),
-  //                           child: ListView.builder(
-  //                             shrinkWrap: true,
-  //                             physics: const NeverScrollableScrollPhysics(),
-  //                             itemCount: locationProfileProvider
-  //                                 .locationProfile!.locationComments!.length,
-  //                             itemBuilder: (context, index) {
-  //                               final log = locationProfileProvider
-  //                                   .locationProfile!.locationComments![index];
-  //
-  //                               return Padding(
-  //                                 padding: const EdgeInsets.only(bottom: 16.0),
-  //                                 child: Row(
-  //                                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                                   children: [
-  //                                     // Avatar Circle with Initials
-  //                                     CircleAvatar(
-  //                                       backgroundColor: Colors.grey[800],
-  //                                       child: Text(
-  //                                         log.user != null &&
-  //                                                 log.user!.name!.isNotEmpty
-  //                                             ? log.user!.name![0].toUpperCase()
-  //                                             : "?",
-  //                                         style: const TextStyle(
-  //                                           color: Colors.white,
-  //                                           fontWeight: FontWeight.bold,
-  //                                         ),
-  //                                       ),
-  //                                     ),
-  //                                     const SizedBox(width: 10),
-  //
-  //                                     Expanded(
-  //                                       child: Column(
-  //                                         crossAxisAlignment:
-  //                                             CrossAxisAlignment.start,
-  //                                         children: [
-  //                                           // Name + Role / Tag
-  //                                           Row(
-  //                                             children: [
-  //                                               Text(
-  //                                                 log.user!.name ?? "Unknown",
-  //                                                 style: const TextStyle(
-  //                                                   color: Colors.white,
-  //                                                   fontWeight: FontWeight.bold,
-  //                                                 ),
-  //                                               ),
-  //                                               const SizedBox(width: 6),
-  //                                               // if (log.user?.name != null)
-  //                                               //   Container(
-  //                                               //     padding: const EdgeInsets.symmetric(
-  //                                               //         horizontal: 8, vertical: 4),
-  //                                               //     decoration: BoxDecoration(
-  //                                               //       color: Colors.blue,
-  //                                               //       borderRadius: BorderRadius.circular(12),
-  //                                               //     ),
-  //                                               //     child: Text(
-  //                                               //       log.comment!,
-  //                                               //       style: const TextStyle(
-  //                                               //         color: Colors.white,
-  //                                               //         fontSize: 12,
-  //                                               //       ),
-  //                                               //     ),
-  //                                               //   ),
-  //                                             ],
-  //                                           ),
-  //
-  //                                           const SizedBox(height: 6),
-  //
-  //                                           // Message
-  //                                           Text(
-  //                                             log.comment ?? "",
-  //                                             style: const TextStyle(
-  //                                               color: Colors.white,
-  //                                               fontSize: 14,
-  //                                             ),
-  //                                           ),
-  //
-  //                                           const SizedBox(height: 6),
-  //
-  //                                           // Date
-  //                                           Text(
-  //                                             _formatTimestamp(
-  //                                                 log.updatedAt!.iSeconds),
-  //                                             style: TextStyle(
-  //                                               color: Colors.grey[400],
-  //                                               fontSize: 12,
-  //                                             ),
-  //                                           ),
-  //                                         ],
-  //                                       ),
-  //                                     ),
-  //                                   ],
-  //                                 ),
-  //                               );
-  //                             },
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
 
   void showLocationDetailsPopup(BuildContext context, MyLocation location,
       [bool hideNavigation = false]) {
@@ -6161,452 +5915,6 @@ class _LocationProfileState extends State<LocationProfile>
     });
   }
 
-  // Widget _geocodingScore() {
-  //   return Consumer<MyLocationListProvider>(
-  //       builder: (context, locationProfileProvider, child) {
-  //     final screenWidth = MediaQuery.of(context).size.width;
-  //     final screenHeight = MediaQuery.of(context).size.height;
-  //     final dynamicTop = screenHeight * 0.17;
-  //     final dynamicLeft = screenWidth * 0.37;
-  //     double latitude =
-  //         locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
-  //     double longitude =
-  //         locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
-  //
-  //     List<Subdestination> filteredSubdestinations =
-  //         (locationProfileProvider.locationProfile?.subdestinations ?? [])
-  //             .where((sub) {
-  //       final status = (sub.status ?? '').toLowerCase();
-  //       return isSwitched ? status == 'added' : status != 'added';
-  //     }).toList();
-  //
-  //     return locationProfileProvider.isLoading
-  //         ? Center(child: CircularProgressIndicator())
-  //         : Stack(
-  //             children: [
-  //               Container(
-  //                 height: MediaQuery.of(context).size.height * 0.4,
-  //                 margin: EdgeInsets.all(16),
-  //                 decoration: BoxDecoration(
-  //                   color: Colors.white,
-  //                   borderRadius: BorderRadius.circular(20),
-  //                   boxShadow: [
-  //                     BoxShadow(
-  //                       color: Colors.black.withOpacity(0.1),
-  //                       blurRadius: 10,
-  //                       offset: Offset(0, 5),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 child: ClipRRect(
-  //                   borderRadius: BorderRadius.circular(20),
-  //                   child: Screenshot(
-  //                     controller: _geocodingScreenshotController,
-  //                     child: RepaintBoundary(
-  //                         key: _mapKey,
-  //                         child: Stack(
-  //                           children: [
-  //                             // GoogleMap(
-  //                             //   key: ValueKey('${latitude}_${longitude}_${_currentMapType.name}'),
-  //                             //   mapType: _currentMapType,
-  //                             //   mapToolbarEnabled: true,
-  //                             //   myLocationEnabled: true,
-  //                             //   markers: Set<Marker>.of(markers.values),
-  //                             //   zoomControlsEnabled: false,
-  //                             //
-  //                             //   initialCameraPosition: CameraPosition(
-  //                             //     target: LatLng(latitude, longitude),
-  //                             //     zoom: 18,
-  //                             //   ),
-  //                             //
-  //                             //   onMapCreated: (GoogleMapController controller) {
-  //                             //     mapController = controller;
-  //                             //     clusterManager.setMapId(controller.mapId);
-  //                             //     // ⭐ Detect when map finishes rendering
-  //                             //     Future.delayed(const Duration(milliseconds: 300), () {
-  //                             //       if (mounted) {
-  //                             //         setState(() => _mapIsReady = true);
-  //                             //       }
-  //                             //     });
-  //                             //   },
-  //                             //
-  //                             //   // ⭐ Required for "map is ready"
-  //                             //   // onMapLoaded: () {
-  //                             //   //   if (mounted) {
-  //                             //   //     setState(() => _mapIsReady = true);
-  //                             //   //   }
-  //                             //   // },
-  //                             //
-  //                             //   onCameraIdle: () {
-  //                             //     clusterManager.updateMap();
-  //                             //   },
-  //                             //
-  //                             //   onCameraMove: (position) {
-  //                             //     _currentCenter = position.target;
-  //                             //     clusterManager.onCameraMove(position);
-  //                             //
-  //                             //     if (showViewMore) {
-  //                             //       setState(() {
-  //                             //         showViewMore = false; // hide once map moved
-  //                             //       });
-  //                             //     }
-  //                             //   },
-  //                             //
-  //                             //   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-  //                             //     Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
-  //                             //   },
-  //                             //
-  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
-  //                             // ),
-  //
-  //                             GoogleMap(
-  //                               key: ValueKey(
-  //                                   '${latitude}_${longitude}_${_currentMapType.name}'),
-  //                               mapType: _currentMapType,
-  //                               mapToolbarEnabled: true,
-  //                               myLocationEnabled: true,
-  //                               markers: Set<Marker>.of(markers.values),
-  //                               zoomControlsEnabled: false,
-  //
-  //                               initialCameraPosition: CameraPosition(
-  //                                 target: LatLng(latitude, longitude),
-  //                                 zoom: 18,
-  //                               ),
-  //
-  //                               onMapCreated: (GoogleMapController controller) {
-  //                                 mapController = controller;
-  //                                 clusterManager.setMapId(controller.mapId);
-  //                               },
-  //
-  //                               // ⭐ ADD THIS — MOST IMPORTANT FIX
-  //
-  //                               onCameraIdle: () {
-  //                                 // optional fallback
-  //                                 if (!_mapIsReady) {
-  //                                   setState(() => _mapIsReady = true);
-  //                                 }
-  //
-  //                               },
-  //
-  //                               onCameraMove: (position) {
-  //                                 _currentCenter = position.target;
-  //                                 clusterManager.onCameraMove(position);
-  //
-  //                                 if (showViewMore) {
-  //                                   setState(() {
-  //                                     showViewMore = !_mapIsReady;
-  //                                   });
-  //                                 }
-  //                               },
-  //
-  //                               gestureRecognizers: <Factory<
-  //                                   OneSequenceGestureRecognizer>>{
-  //                                 Factory<OneSequenceGestureRecognizer>(
-  //                                     () => EagerGestureRecognizer()),
-  //                               },
-  //
-  //                               onTap: _isAddingMarker ? _handleMapTap : null,
-  //                             ),
-  //
-  //                             // GoogleMap(
-  //                             //   key: ValueKey('${latitude}_${longitude}_${_currentMapType.name}'),
-  //                             //   mapType: _currentMapType,
-  //                             //   mapToolbarEnabled: true,
-  //                             //   myLocationEnabled: true,
-  //                             //   markers: Set<Marker>.of(markers.values),
-  //                             //   zoomControlsEnabled: false,
-  //                             //
-  //                             //   initialCameraPosition: CameraPosition(
-  //                             //     target: LatLng(latitude, longitude),
-  //                             //     zoom: 18,
-  //                             //   ),
-  //                             //
-  //                             //   onMapCreated: (GoogleMapController controller) {
-  //                             //     mapController = controller;
-  //                             //     clusterManager.setMapId(controller.mapId);
-  //                             //   },
-  //                             //
-  //                             //
-  //                             //   // ⭐ BEST place to mark map fully ready
-  //                             //   // onMapLoaded: () {
-  //                             //   //   if (mounted) {
-  //                             //   //     setState(() => _mapIsReady = true);
-  //                             //   //   }
-  //                             //   // },
-  //                             //
-  //                             //   onCameraIdle: () {
-  //                             //     // optional fallback if needed
-  //                             //     if (!_mapIsReady) {
-  //                             //       setState(() => _mapIsReady = true);
-  //                             //     }
-  //                             //   },
-  //                             //
-  //                             //   onCameraMove: (position) {
-  //                             //     _currentCenter = position.target;
-  //                             //     clusterManager.onCameraMove(position);
-  //                             //
-  //                             //     if (showViewMore) {
-  //                             //       setState(() {
-  //                             //         showViewMore = !_mapIsReady;
-  //                             //       });
-  //                             //     }
-  //                             //   },
-  //                             //
-  //                             //   gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-  //                             //     Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
-  //                             //   },
-  //                             //
-  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
-  //                             // ),
-  //
-  //                             // GoogleMap(
-  //                             //   key: ValueKey(
-  //                             //       '${latitude}_${longitude}_${_currentMapType.name}'),
-  //                             //   mapType: _currentMapType,
-  //                             //   mapToolbarEnabled: true,
-  //                             //   myLocationEnabled: true,
-  //                             //   markers: Set<Marker>.of(markers.values),
-  //                             //   zoomControlsEnabled: false,
-  //                             //   initialCameraPosition: CameraPosition(
-  //                             //     target: LatLng(latitude, longitude),
-  //                             //     zoom: 18,
-  //                             //   ),
-  //                             //   onMapCreated: (GoogleMapController controller) {
-  //                             //     mapController = controller;
-  //                             //     // _mapReady = true; // ⭐ REQUIRED FIX
-  //                             //     clusterManager.setMapId(controller.mapId);
-  //                             //     // mapController.setMapStyle(_mapStyle);
-  //                             //
-  //                             //     // _tryAttachMarkers(); // ⭐ Attach markers once map is ready
-  //                             //   },
-  //                             //   // onMapCreated: (GoogleMapController controller) {
-  //                             //   //   _mapController = controller;
-  //                             //   // },
-  //                             //   onCameraIdle: () {
-  //                             //     _mapIsReady = true;
-  //                             //   },
-  //                             //
-  //                             //   // ✅ Hide "Click here" when map is moved
-  //                             //   onCameraMove: (position) {
-  //                             //     _currentCenter = position
-  //                             //         .target; // ⭐ KEEP TRACK OF CURRENT MAP LOCATION
-  //                             //     clusterManager.onCameraMove(position);
-  //                             //     if (showViewMore) {
-  //                             //       setState(() {
-  //                             //         showViewMore =
-  //                             //             _mapIsReady == true ? false : true;
-  //                             //       });
-  //                             //     }
-  //                             //   },
-  //                             //
-  //                             //   gestureRecognizers: <Factory<
-  //                             //       OneSequenceGestureRecognizer>>{
-  //                             //     Factory<OneSequenceGestureRecognizer>(
-  //                             //         () => EagerGestureRecognizer()),
-  //                             //   },
-  //                             //   onTap: _isAddingMarker ? _handleMapTap : null,
-  //                             // ),
-  //                             Positioned(
-  //                                 bottom: 70,
-  //                                 right: 8,
-  //                                 child: InkWell(
-  //                                   onTap: _toggle2D3DView,
-  //                                   child: Container(
-  //                                     padding: EdgeInsets.symmetric(
-  //                                         horizontal: 12, vertical: 6),
-  //                                     decoration: BoxDecoration(
-  //                                       color: Colors.white,
-  //                                       borderRadius: BorderRadius.circular(8),
-  //                                       boxShadow: [
-  //                                         BoxShadow(
-  //                                           color:
-  //                                               Colors.black.withOpacity(0.1),
-  //                                           blurRadius: 6,
-  //                                           offset: Offset(0, 3),
-  //                                         ),
-  //                                       ],
-  //                                     ),
-  //                                     child: Text(
-  //                                       is3DView ? "3D " : "2D ",
-  //                                       style: TextStyle(
-  //                                         fontSize: 14,
-  //                                         fontWeight: FontWeight.bold,
-  //                                         color: Colors.black,
-  //                                       ),
-  //                                     ),
-  //                                   ),
-  //                                 )),
-  //                             // ✅ Show this only when `showViewMore == true`
-  //                             if (showViewMore)
-  //                               Positioned(
-  //                                 top: dynamicTop,
-  //                                 left: dynamicLeft,
-  //                                 child: Container(
-  //                                   alignment: Alignment.center,
-  //                                   padding: EdgeInsets.symmetric(
-  //                                       horizontal: 10, vertical: 5),
-  //                                   decoration: BoxDecoration(
-  //                                     color: Colors.black.withOpacity(0.8),
-  //                                     borderRadius: BorderRadius.circular(8),
-  //                                   ),
-  //                                   child: Text(
-  //                                     "Click here",
-  //                                     style: TextStyle(
-  //                                         color: Colors.white, fontSize: 14),
-  //                                   ),
-  //                                 ),
-  //                               ),
-  //                           ],
-  //                         )),
-  //                   ),
-  //                 ),
-  //               ),
-  //
-  //               Positioned(
-  //                 bottom: MediaQuery.of(context).size.height / 4.5,
-  //                 left: 16,
-  //                 child: Container(
-  //                   margin: EdgeInsets.all(12),
-  //                   decoration: BoxDecoration(
-  //                     color: Theme.of(context).colorScheme.brightness ==
-  //                             Brightness.light
-  //                         ? AppColors.paperElevation2Light
-  //                         : AppColors.paperElevation2,
-  //                     borderRadius: BorderRadius.circular(12),
-  //                     boxShadow: [
-  //                       BoxShadow(
-  //                         color: Colors.black.withOpacity(0.1),
-  //                         blurRadius: 10,
-  //                         offset: Offset(0, 5),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   child: Row(
-  //                     children: [
-  //                       FloatingActionButton.small(
-  //                         elevation: 0,
-  //                         backgroundColor:
-  //                             Theme.of(context).colorScheme.brightness ==
-  //                                     Brightness.light
-  //                                 ? AppColors.paperElevation2Light
-  //                                 : AppColors.paperElevation2,
-  //                         onPressed: () {
-  //                           setState(() {
-  //                             _currentMapType =
-  //                                 _currentMapType == MapType.normal
-  //                                     ? MapType.satellite
-  //                                     : MapType.normal;
-  //                           });
-  //                         },
-  //                         child: Icon(Icons.layers,
-  //                             color: Theme.of(context).colorScheme.onSurface),
-  //                         tooltip: 'Change Map Type',
-  //                       ),
-  //                       SizedBox(width: 8),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ),
-  //
-  //               // Screenshot & Add Location Button
-  //               Positioned(
-  //                 top: 16,
-  //                 right: 16,
-  //                 child: Container(
-  //                   margin: EdgeInsets.all(12),
-  //                   decoration: BoxDecoration(
-  //                     color: Theme.of(context).colorScheme.brightness ==
-  //                             Brightness.light
-  //                         ? AppColors.paperElevation2Light
-  //                         : AppColors.paperElevation2,
-  //                     borderRadius: BorderRadius.circular(12),
-  //                     boxShadow: [
-  //                       BoxShadow(
-  //                         color: Colors.black.withOpacity(0.1),
-  //                         blurRadius: 10,
-  //                         offset: Offset(0, 5),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   child: Row(
-  //                     children: [
-  //                       FloatingActionButton.small(
-  //                         elevation: 0,
-  //                         onPressed: () async {
-  //                           if (_isLoading) return;
-  //
-  //                           try {
-  //                             if (mounted) {
-  //                               setState(() => _isLoading = true);
-  //                             }
-  //
-  //                             await _captureAndUploadMapScreenshot();
-  //                           } finally {
-  //                             if (mounted) {
-  //                               setState(() => _isLoading = false);
-  //                             }
-  //                           }
-  //                         },
-  //                         backgroundColor:
-  //                             Theme.of(context).colorScheme.brightness ==
-  //                                     Brightness.light
-  //                                 ? AppColors.paperElevation2Light
-  //                                 : AppColors.paperElevation2,
-  //                         child: _isLoading
-  //                             ? SizedBox(
-  //                                 width: 20,
-  //                                 height: 20,
-  //                                 child: CircularProgressIndicator(
-  //                                   color:
-  //                                       Theme.of(context).colorScheme.onSurface,
-  //                                   strokeWidth: 2.0,
-  //                                 ),
-  //                               )
-  //                             : Icon(Icons.camera_alt,
-  //                                 color:
-  //                                     Theme.of(context).colorScheme.onSurface),
-  //                         tooltip: 'Capture and Upload Screenshot',
-  //                       ),
-  //                       SizedBox(width: 8),
-  //                       if (locationProfileProvider
-  //                               .locationProfile?.finalAddress?.placeTypes
-  //                               ?.contains('premise') ==
-  //                           true)
-  //                         if (filteredSubdestinations.length > 0)
-  //                           FloatingActionButton.small(
-  //                             elevation: 0,
-  //                             backgroundColor:
-  //                                 Theme.of(context).colorScheme.brightness ==
-  //                                         Brightness.light
-  //                                     ? AppColors.paperElevation2Light
-  //                                     : AppColors.paperElevation2,
-  //                             onPressed: null,
-  //                             child: Icon(Icons.add_location_alt,
-  //                                 color: Colors.grey),
-  //                             tooltip: 'Add Campus',
-  //                           )
-  //                         else
-  //                           FloatingActionButton.small(
-  //                             elevation: 0,
-  //                             backgroundColor:
-  //                                 Theme.of(context).colorScheme.brightness ==
-  //                                         Brightness.light
-  //                                     ? AppColors.paperElevation2Light
-  //                                     : AppColors.paperElevation2,
-  //                             onPressed: _handleSubDestinationTap,
-  //                             child: Icon(Icons.add_location_alt,
-  //                                 color: Colors.white),
-  //                             tooltip: 'Add Campus',
-  //                           )
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           );
-  //   });
-  // }
-
   Future<void> _captureAndUploadMapScreenshot() async {
     // Early exit if conditions aren't met
     if (!_mapIsReady || _mapController == null || !mounted) {
@@ -6689,210 +5997,6 @@ class _LocationProfileState extends State<LocationProfile>
         );
       }
     }
-  }
-
-  /// Returns tile overlays with safe null checks
-  Set<TileOverlay> _getTileOverlays() {
-    if (0 == 1) return {}; // No overlays if this condition is met
-
-    if (_selectedHazard != null &&
-        _tileProviders.containsKey(_selectedHazard) &&
-        _mainHazardTileProvider != null &&
-        selectedHazardId != null &&
-        selectedVendor != null) {
-      return {
-        TileOverlay(
-          tileOverlayId: TileOverlayId(selectedHazardId!),
-          tileProvider: _mainHazardTileProvider!,
-        ),
-        TileOverlay(
-          tileOverlayId: TileOverlayId(_selectedHazard!),
-          tileProvider: _tileProviders[_selectedHazard!]!,
-        ),
-      };
-    }
-
-    if (_mainHazardTileProvider != null &&
-        selectedHazardId != null &&
-        selectedVendor != null) {
-      return {
-        TileOverlay(
-          tileOverlayId: TileOverlayId(selectedHazardId!),
-          tileProvider: _mainHazardTileProvider!,
-        ),
-      };
-    }
-    return {};
-  }
-
-  Widget _buildNavigationButton({
-    Alignment alignment = Alignment.center,
-    double? left,
-    double? right,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Positioned(
-      left: left,
-      right: right,
-      top: 0,
-      bottom: 0,
-      child: Align(
-        alignment: alignment,
-        child: FloatingActionButton(
-          shape: CircleBorder(),
-          mini: true,
-          backgroundColor: Theme.of(context).brightness == Brightness.light
-              ? AppColors.paperElavation25Light
-              : AppColors.paperElavation25,
-          onPressed: onPressed,
-          child: Icon(icon, size: 30),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHazardControls() {
-    var typography = CustomTypography(context);
-
-    // Show loading spinner if the main hazards are loading
-    if (isLoadingMainHazards) {
-      return Positioned(
-        bottom: 33,
-        left: 16,
-        child: Container(
-          width: 45,
-          height: 45,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.light
-                ? AppColors.paperElavation25Light
-                : AppColors.paperElavation25,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
-    }
-
-    // If heatmap is off, use the existing menu with mainHazards and vendors
-    if (!_isHeatmapOn || _isLoading) {
-      if (!(2 == 2 || 1 == 1) || mainHazards.isEmpty) {
-        return SizedBox();
-      }
-
-      return Positioned(
-        bottom: 16,
-        left: 16,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.light
-                ? AppColors.paperElavation25Light
-                : AppColors.paperElavation25,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: MenuAnchor(
-            builder: (context, controller, child) {
-              return IconButton(
-                onPressed: () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
-                icon: SvgPicture.asset(
-                  'assets/images/hazardLayerIcon.svg',
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              );
-            },
-            menuChildren: [
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 200),
-                // Limit height of the menu
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: mainHazards.map((hazard) {
-                      return SubmenuButton(
-                        child: Text(hazard.name, style: typography.InputLabel),
-                        menuChildren: hazard.vendors.map((vendor) {
-                          return MenuItemButton(
-                            child:
-                                Text(vendor.name, style: typography.InputLabel),
-                            onPressed: () {
-                              _changeHazardLayer(hazard.id);
-                              _changeVendor(vendor.name);
-                            },
-                          );
-                        }).toList(),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // If heatmap is on and not loading, generate the menu using tileProviders
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.light
-              ? AppColors.paperElavation25Light
-              : AppColors.paperElavation25,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: MenuAnchor(
-          builder: (context, controller, child) {
-            return IconButton(
-              onPressed: () {
-                if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
-                }
-              },
-              icon: SvgPicture.asset(
-                'assets/images/hazardLayerIcon.svg',
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            );
-          },
-          menuChildren: [
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: 200),
-              // Limit height of the menu
-              child: SingleChildScrollView(
-                child: Column(
-                  children: _tileProviders.keys.map((hazard) {
-                    return MenuItemButton(
-                      child: Text(hazard, style: typography.InputLabel),
-                      onPressed: () {
-                        // Update the selected hazard
-                        setState(() {
-                          _selectedHazard = hazard;
-                          print("Selected Hazard changed to: $_selectedHazard");
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _changeHazardLayer(String hazardId) {
@@ -7576,7 +6680,7 @@ class _LocationProfileState extends State<LocationProfile>
       {required String occupancy, required String campusName}) async {
     var provider = Provider.of<MyLocationListProvider>(context, listen: false);
     var user = FirebaseAuth.instance.currentUser;
-    print('User ID: ${user?.uid}');
+
     await provider.addSubdestinationToSOV(
       context: context,
       accountId: widget.accountId,
@@ -7590,7 +6694,6 @@ class _LocationProfileState extends State<LocationProfile>
       subAccountName: widget.subAccountName,
     );
 
-    // ✅ Instead of _getData(), manually update the local model
     final updatedSub = provider.locationProfile?.subdestinations?.firstWhere(
       (sub) => sub.id == subdestinationId,
     );
@@ -7599,9 +6702,6 @@ class _LocationProfileState extends State<LocationProfile>
       updatedSub.status = 'added';
       provider.notifyListeners(); // 🔔 Trigger UI update
     }
-    //     .then((value) {
-    //   _getData();
-    // });
   }
 
   Future<void> _removeFromSOV(String subdestinationId) async {

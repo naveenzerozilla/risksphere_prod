@@ -191,7 +191,6 @@ class _MyLocationListState extends State<MyLocationList>
 
         // Reload when NOT all true
         if (!allAreTrue) {
-
           _reloadPage();
         }
       });
@@ -674,8 +673,7 @@ class _MyLocationListState extends State<MyLocationList>
     String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
     String? hazardLicenseStatus =
         await SharedPreferenceService.getHazardLicense();
-    String? hazardhubCount =
-        await SharedPreferenceService.getHazardLicense();
+    String? hazardhubCount = await SharedPreferenceService.getHazardLicense();
     var hazardLicenseStatus11 =
         await SharedPreferenceService.getTrialMaxLocations();
     var hazardLicenseStatus22 =
@@ -1799,7 +1797,7 @@ class _MyLocationListState extends State<MyLocationList>
                                                       false); // 🔹 STOP loader BEFORE dialog submit
                                                 }
                                               },
-                                        child: isBusy
+                                        child: provider.isAddToSOVLoading
                                             ? const SizedBox(
                                                 width: 18,
                                                 height: 18,
@@ -1880,82 +1878,137 @@ class _MyLocationListState extends State<MyLocationList>
                             Consumer<MyLocationListProvider>(
                               builder: (context, provider, _) {
                                 final bool isBusy =
-                                    provider.isAddTagFetchingIds ||
-                                        provider.isAddTagsLoading;
+                                    provider.isAddTagFetchingIds || provider.isAddTagsLoading;
 
                                 return IconButton(
                                   tooltip: 'Add Tag',
                                   icon: isBusy
                                       ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
                                       : const Icon(Symbols.note_stack_add),
                                   onPressed: isBusy
                                       ? null
                                       : () async {
-                                          if (provider.isGlobalSelectAll) {
-                                            final allIds = await provider
-                                                .fetchAllLocationIdsForAddTag(
-                                              accountId: widget.accountID!,
-                                              subAccountId:
-                                                  widget.subAccountID!,
-                                            );
+                                    /// 🔥 CASE 1: SELECT ALL LOCATIONS
+                                    if (provider.isGlobalSelectAll) {
+                                      await provider.showAddTagDialog(
+                                        context,
+                                        widget.accountID!,
+                                        widget.subAccountID!,
+                                        const [], // ✅ empty list
+                                        isGlobal: true, // ✅ IMPORTANT
+                                      );
+                                      return;
+                                    }
 
-                                            debugPrint(
-                                                "ALL IDS COUNT: ${allIds.length}");
+                                    /// 🔥 CASE 2: MANUAL SELECTION
+                                    final selectedIds =
+                                    provider.selectedLocationIds.toList();
 
-                                            if (allIds.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      "No locations found"),
-                                                ),
-                                              );
-                                              return;
-                                            }
+                                    if (selectedIds.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                          Text("Please select at least one location"),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                                            await provider.showAddTagDialog(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!,
-                                              allIds,
-                                              isGlobal: false, // explicit IDs
-                                            );
-                                          } else {
-                                            final selectedIds = provider
-                                                .selectedLocationIds
-                                                .toList();
-
-                                            debugPrint(
-                                                "ADD TAG → IDS: $selectedIds");
-
-                                            if (selectedIds.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      "Please select at least one location"),
-                                                ),
-                                              );
-                                              return;
-                                            }
-
-                                            await provider.showAddTagDialog(
-                                              context,
-                                              widget.accountID!,
-                                              widget.subAccountID!,
-                                              selectedIds,
-                                              isGlobal: false,
-                                            );
-                                          }
-                                        },
+                                    await provider.showAddTagDialog(
+                                      context,
+                                      widget.accountID!,
+                                      widget.subAccountID!,
+                                      selectedIds,
+                                      isGlobal: false,
+                                    );
+                                  },
                                 );
                               },
                             ),
+
+                            // Consumer<MyLocationListProvider>(
+                            //   builder: (context, provider, _) {
+                            //     final bool isBusy =
+                            //         provider.isAddTagFetchingIds ||
+                            //             provider.isAddTagsLoading;
+                            //
+                            //     return IconButton(
+                            //       tooltip: 'Add Tag',
+                            //       icon: isBusy
+                            //           ? const SizedBox(
+                            //               width: 18,
+                            //               height: 18,
+                            //               child: CircularProgressIndicator(
+                            //                   strokeWidth: 2),
+                            //             )
+                            //           : const Icon(Symbols.note_stack_add),
+                            //       onPressed: isBusy
+                            //           ? null
+                            //           : () async {
+                            //               if (provider.isGlobalSelectAll) {
+                            //                 final allIds = await provider
+                            //                     .fetchAllLocationIdsForAddTag(
+                            //                   accountId: widget.accountID!,
+                            //                   subAccountId:
+                            //                       widget.subAccountID!,
+                            //                 );
+                            //
+                            //                 debugPrint(
+                            //                     "ALL IDS COUNT: ${allIds.length}");
+                            //
+                            //                 if (allIds.isEmpty) {
+                            //                   ScaffoldMessenger.of(context)
+                            //                       .showSnackBar(
+                            //                     const SnackBar(
+                            //                       content: Text(
+                            //                           "No locations found"),
+                            //                     ),
+                            //                   );
+                            //                   return;
+                            //                 }
+                            //
+                            //                 await provider.showAddTagDialog(
+                            //                   context,
+                            //                   widget.accountID!,
+                            //                   widget.subAccountID!,
+                            //                   allIds,
+                            //                   isGlobal: false, // explicit IDs
+                            //                 );
+                            //               } else {
+                            //                 final selectedIds = provider
+                            //                     .selectedLocationIds
+                            //                     .toList();
+                            //
+                            //                 debugPrint(
+                            //                     "ADD TAG → IDS: $selectedIds");
+                            //
+                            //                 if (selectedIds.isEmpty) {
+                            //                   ScaffoldMessenger.of(context)
+                            //                       .showSnackBar(
+                            //                     const SnackBar(
+                            //                       content: Text(
+                            //                           "Please select at least one location"),
+                            //                     ),
+                            //                   );
+                            //                   return;
+                            //                 }
+                            //
+                            //                 await provider.showAddTagDialog(
+                            //                   context,
+                            //                   widget.accountID!,
+                            //                   widget.subAccountID!,
+                            //                   selectedIds,
+                            //                   isGlobal: false,
+                            //                 );
+                            //               }
+                            //             },
+                            //     );
+                            //   },
+                            // ),
                             Consumer<MyLocationListProvider>(
                               builder: (context, provider, _) {
                                 return IconButton(
@@ -3920,8 +3973,6 @@ class _MyLocationListState extends State<MyLocationList>
                                           );
                                         },
                                         onAddToSOV: (locationId) {
-                                          // Show add to SOV dialog
-                                          // Implement bulk add to SOV
                                           locationListProvider.addSelectedToSOV(
                                               context,
                                               widget.accountID!,
@@ -4827,6 +4878,22 @@ class _MyLocationListState extends State<MyLocationList>
       builder: (BuildContext context) {
         return Consumer<UserProfileProvider>(
             builder: (context, userProfileProvider, child) {
+          /// ✅ TAG HANDLER (FIXED)
+          void _handleTagInput(String value) {
+            if (!value.contains(',')) return;
+
+            final tag = value.replaceAll(',', '').trim();
+            if (tag.isEmpty || tags.contains(tag)) return;
+
+            setState(() {
+              tags.add(tag);
+            });
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              tagController.clear();
+            });
+          }
+
           final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
           int locations = userProfileProvider.trialInfo['locations'] ?? 0;
           int total = userProfileProvider.trialInfo['maxLocations'] ?? 0;
@@ -4982,79 +5049,80 @@ class _MyLocationListState extends State<MyLocationList>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                TextFormField(
-                                  controller: tagController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: LanguageService.getTranslated(
-                                        context, "enter_tags"),
-                                    labelStyle:
-                                        const TextStyle(color: Colors.white),
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide:
-                                          BorderSide(color: Colors.grey),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide:
-                                          BorderSide(color: Colors.blue),
-                                    ),
-                                    hintText: "Type tag and press ,",
-                                    hintStyle:
-                                        const TextStyle(color: Colors.white54),
-                                  ),
-                                  onChanged: (value) {
-                                    if (value.contains(',')) {
-                                      final tag =
-                                          value.replaceAll(',', '').trim();
-
-                                      if (tag.isNotEmpty &&
-                                          !tags.contains(tag)) {
-                                        setState(() {
-                                          tags.add(tag);
-                                        });
-                                      }
-
-                                      tagController.clear();
-                                    }
-                                  },
-                                  onFieldSubmitted: (value) {
-                                    final tag = value.trim();
-                                    if (tag.isNotEmpty && !tags.contains(tag)) {
-                                      setState(() {
-                                        tags.add(tag);
-                                      });
-                                    }
-                                    tagController.clear();
-                                  },
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                /// 🔹 TAG LIST SHOWN BELOW
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 33,
-                                  children: tags.map((tag) {
-                                    return Chip(
-                                      label: Text(
-                                        tag,
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                      ),
-                                      backgroundColor: Colors.grey,
-                                      deleteIconColor: Colors.white,
-                                      onDeleted: () {
-                                        setState(() {
-                                          tags.remove(tag);
-                                        });
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
+                                // TextFormField(
+                                //   controller: tagController,
+                                //   style: const TextStyle(color: Colors.white),
+                                //   decoration: InputDecoration(
+                                //     labelText: LanguageService.getTranslated(
+                                //         context, "enter_tags"),
+                                //     labelStyle:
+                                //         const TextStyle(color: Colors.white),
+                                //     enabledBorder: const OutlineInputBorder(
+                                //       borderSide:
+                                //           BorderSide(color: Colors.grey),
+                                //     ),
+                                //     focusedBorder: const OutlineInputBorder(
+                                //       borderSide:
+                                //           BorderSide(color: Colors.blue),
+                                //     ),
+                                //     hintText: "Type tag and press ,",
+                                //     hintStyle:
+                                //         const TextStyle(color: Colors.white54),
+                                //   ),
+                                //   onChanged: (value) {
+                                //     if (value.contains(',')) {
+                                //       final tag =
+                                //           value.replaceAll(',', '').trim();
+                                //
+                                //       if (tag.isNotEmpty &&
+                                //           !tags.contains(tag)) {
+                                //         setState(() {
+                                //           tags.add(tag);
+                                //         });
+                                //       }
+                                //
+                                //       tagController.clear();
+                                //     }
+                                //   },
+                                //   onFieldSubmitted: (value) {
+                                //     final tag = value.trim();
+                                //     if (tag.isNotEmpty && !tags.contains(tag)) {
+                                //       setState(() {
+                                //         tags.add(tag);
+                                //       });
+                                //     }
+                                //     tagController.clear();
+                                //   },
+                                // ),
+                                //
+                                // const SizedBox(height: 10),
+                                //
+                                // /// 🔹 TAG LIST SHOWN BELOW
+                                // Wrap(
+                                //   spacing: 8,
+                                //   runSpacing: 33,
+                                //   children: tags.map((tag) {
+                                //     return Chip(
+                                //       label: Text(
+                                //         tag,
+                                //         style: const TextStyle(
+                                //             color: Colors.white),
+                                //       ),
+                                //       backgroundColor: Colors.grey,
+                                //       deleteIconColor: Colors.white,
+                                //       onDeleted: () {
+                                //         setState(() {
+                                //           tags.remove(tag);
+                                //         });
+                                //       },
+                                //     );
+                                //   }).toList(),
+                                // ),
                               ],
                             ),
                           ),
                         ],
+
                         if (addToSOVCheck) ...[
                           // Fields displayed only if checkbox is checked
 
@@ -5199,51 +5267,60 @@ class _MyLocationListState extends State<MyLocationList>
                           ),
 
                           SizedBox(height: 14),
-                          TextField(
-                            controller: tagController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: LanguageService.getTranslated(
-                                  context, "enterd_tags"),
-                              labelStyle: const TextStyle(color: Colors.white),
-                              enabledBorder: const OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              focusedBorder: const OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue),
-                              ),
-                              hintStyle: const TextStyle(color: Colors.white54),
-                            ),
-                            onChanged: (value) {
-                              if (value.contains(',')) {
-                                final tag = value.replaceAll(',', '').trim();
-
-                                if (tag.isNotEmpty && !tags.contains(tag)) {
-                                  setState(() {
-                                    tags.add(tag);
-                                  });
-                                }
-
-                                tagController.clear();
-                              }
-                            },
-                          ),
-
-                          // TextField(
-                          //   controller: tagController,
-                          //   style: TextStyle(color: Colors.white),
-                          //   decoration: InputDecoration(
-                          //     labelText: LanguageService.getTranslated(
-                          //         context, "enter_tags"),
-                          //     labelStyle: TextStyle(color: Colors.white),
-                          //     enabledBorder: OutlineInputBorder(
-                          //         borderSide: BorderSide(color: Colors.grey)),
-                          //     focusedBorder: OutlineInputBorder(
-                          //         borderSide: BorderSide(color: Colors.blue)),
-                          //     hintStyle: TextStyle(color: Colors.white54),
-                          //   ),
-                          // ),
                         ],
+                        TextField(
+                          controller: tagController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Enter tags separated by commas",
+                            labelStyle: const TextStyle(color: Colors.white),
+                            enabledBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue),
+                            ),
+                            hintStyle: const TextStyle(color: Colors.white54),
+                          ),
+                          onChanged: (value) {
+                            if (value.contains(',')) {
+                              final tag = value.replaceAll(',', '').trim();
+
+                              if (tag.isNotEmpty && !tags.contains(tag)) {
+                                setState(() {
+                                  tags.add(tag);
+                                });
+                              }
+
+                              tagController.clear();
+                            }
+                          },
+                        ),
+
+
+                        const SizedBox(height: 12),
+
+                        /// 🧩 TAG CHIPS
+                        if (tags.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: tags.map((tag) {
+                              return Chip(
+                                label: Text(
+                                  tag,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.grey[700],
+                                deleteIconColor: Colors.white,
+                                onDeleted: () {
+                                  setState(() {
+                                    tags.remove(tag);
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 0.0),
                           child: Row(

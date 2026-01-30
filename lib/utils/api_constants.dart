@@ -3,16 +3,16 @@ import '../constants/configuration.dart';
 class AppConstant {
   static const String REGION = "us-central1";
   static const DELETE_LOCATION_IMAGE =
-      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Locationparameter/";
+      "https://us-central1-project-green-prod.cloudfunctions.net/data_categories/Locationparameter/";
 
   static const DELETE_SOV_IMAGE =
-      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/SOVparameter/";
+      "https://us-central1-project-green-prod.cloudfunctions.net/data_categories/SOVparameter/";
 
   static const DELETE_CAMPUS_IMAGE =
-      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Campusparameter/";
+      "https://us-central1-project-green-prod.cloudfunctions.net/data_categories/Campusparameter/";
 
   static const DELETE_DATA_IMAGE =
-      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/data_categories/Dataparameter/";
+      "https://us-central1-project-green-prod.cloudfunctions.net/data_categories/Dataparameter/";
 
   static String get baseURL =>
       'https://${REGION}-${Configuration.projectId}.cloudfunctions.net';
@@ -134,12 +134,16 @@ class AppConstant {
 
   static String get TRANSFER_USER_AUTOCOMPLETE =>
       '$baseURL/user_management_new/company_user_list/current';
-
+  static String get APP_SUPPORT_URL => '$baseURL/sendEmail_to_client?type=support';
   static String get MAIN_HAZARDS_TILE_PROVIDERS =>
       '$baseURL/vendor_hazards/hazards_layer';
 
   // R2 APIS
   static String get GET_ACCOUNT_LIST => '$baseURL/locations/accounts';
+  static String get HANDLE_VENDOR_DATA => '$baseURL/recommendation_engine/handle_vendor_data';
+
+
+
 
   static String get GET_PRICING_LIST => '$baseURL/pricing';
 
@@ -254,6 +258,7 @@ class AppConstant {
   static String get ADD_LOCATION => '$baseURL/accounts';
 
   static String get MY_LOCATION => '$baseURL/locations';
+  static String get DOCUMENT_LIST => '$baseURL/data_categories/documents';
 
   static String get ADD_COMMENT => '$MY_LOCATION/update_location_comment';
 

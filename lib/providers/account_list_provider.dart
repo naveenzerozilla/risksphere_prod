@@ -15,6 +15,7 @@ import 'package:RiskSphere/service/language_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../design_system/components/custom_toast.dart';
+import '../main.dart' hide CustomToast;
 import '../utils/toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
@@ -22,9 +23,14 @@ class AccountListProvider extends ChangeNotifier {
   final Map<String, StreamSubscription<DocumentSnapshot>> _sovListeners = {};
   final Map<String, Map<String, dynamic>?> sovMeta = {};
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
+  AccountListModel? accountListModel;
   StreamSubscription<DocumentSnapshot>? _locRecSub;
   String? _listeningSovId;
+  final Map<String, StreamSubscription<DocumentSnapshot>> _sovMetaListeners =
+      {};
+  final Map<String, StreamSubscription<DocumentSnapshot>> _locationListeners =
+      {};
+  final Set<String> _blockedLocationIds = {};
 
   Set<String> get blockedLocationIds {
     final list = locRecMetaData?['blocked_locations'];
@@ -32,6 +38,34 @@ class AccountListProvider extends ChangeNotifier {
       return list.map((e) => e.toString()).toSet();
     }
     return {};
+  }
+
+  void markHazardUnlocked(List<String> locationIds) {
+    for (final item in missingParameterList) {
+      if (locationIds.contains(item.locationId)) {
+        item.hasVendorHazards = true;
+      }
+    }
+    notifyListeners();
+  }
+
+  void listenToSovMeta(String sovId) {
+    if (_sovMetaListeners.containsKey(sovId)) return;
+
+    final sub = FirebaseFirestore.instance
+        .collection("location_recommendations")
+        .doc(sovId)
+        .snapshots()
+        .listen((snap) {
+      if (snap.exists) {
+        sovMeta[sovId] = snap.data();
+      } else {
+        sovMeta[sovId] = null;
+      }
+      notifyListeners(); // updates only dependent UI
+    });
+
+    _sovMetaListeners[sovId] = sub;
   }
 
   Map<String, dynamic>? locRecMetaData;
@@ -56,16 +90,25 @@ class AccountListProvider extends ChangeNotifier {
   //   isUpdating = true;
   //   notifyListeners();
   // }
-
   void startUpdating(String locationId) {
-    blockedLocationIds.add(locationId);
+    _blockedLocationIds.add(locationId);
     notifyListeners();
   }
 
   void stopUpdating(String locationId) {
-    blockedLocationIds.remove(locationId);
+    _blockedLocationIds.remove(locationId);
     notifyListeners();
   }
+
+  // void startUpdating(String locationId) {
+  //   blockedLocationIds.add(locationId);
+  //   notifyListeners();
+  // }
+  //
+  // void stopUpdating(String locationId) {
+  //   blockedLocationIds.remove(locationId);
+  //   notifyListeners();
+  // }
 
   // void stopUpdating() {
   //   isUpdating = false;
@@ -200,6 +243,67 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
+  //
+  // void listenToLocationRecommendations(String? sovId) {
+  //   _locRecSub?.cancel();
+  //   _locRecSub = null;
+  //   _listeningSovId = null;
+  //
+  //   if (sovId == null || sovId.isEmpty) {
+  //     locRecMetaData = null;
+  //     notifyListeners();
+  //     return;
+  //   }
+  //
+  //   _listeningSovId = sovId;
+  //
+  //   final docRef = firestore.collection('location_recommendations').doc(sovId);
+  //
+  //   _locRecSub = docRef.snapshots().listen(
+  //     (snapshot) async {
+  //       if (!snapshot.exists) {
+  //         locRecMetaData = null;
+  //         notifyListeners();
+  //         return;
+  //       }
+  //
+  //       final data = snapshot.data() as Map<String, dynamic>;
+  //
+  //       /// 🔥 CURRENT blocked locations from Firestore
+  //       final List<dynamic> blocked = data['blocked_locations'] ?? [];
+  //       final Set<String> currentBlockedIds =
+  //           blocked.map((e) => e.toString()).toSet();
+  //
+  //       /// 🔥 FIND locations that JUST finished processing
+  //       final Set<String> completedLocationIds =
+  //           _previousBlockedLocationIds.difference(currentBlockedIds);
+  //
+  //       /// 🔄 Update meta used by UI
+  //       locRecMetaData = {
+  //         'is_stale': data['is_stale'] ?? false,
+  //         'refresh_pending': data['refresh_pending'] ?? false,
+  //         'refresh_triggered_at': data['refresh_triggered_at'],
+  //         'refresh_completed_at': data['refresh_completed_at'],
+  //         'refresh_failed_at': data['refresh_failed_at'],
+  //         'blocked_locations': blocked,
+  //       };
+  //
+  //       _previousBlockedLocationIds = currentBlockedIds;
+  //
+  //       notifyListeners();
+  //
+  //       // for (final locationId in completedLocationIds) {
+  //       //   await _reloadSingleLocation(sovId, '');
+  //       // }
+  //     },
+  //     onError: (error) {
+  //       debugPrint(
+  //           'Error listening to location_recommendations/$sovId: $error');
+  //       locRecMetaData = null;
+  //       notifyListeners();
+  //     },
+  //   );
+  // }
   void listenToLocationRecommendations(String? sovId) {
     _locRecSub?.cancel();
     _locRecSub = null;
@@ -225,16 +329,15 @@ class AccountListProvider extends ChangeNotifier {
 
         final data = snapshot.data() as Map<String, dynamic>;
 
-        /// 🔥 CURRENT blocked locations from Firestore
         final List<dynamic> blocked = data['blocked_locations'] ?? [];
         final Set<String> currentBlockedIds =
             blocked.map((e) => e.toString()).toSet();
 
-        /// 🔥 FIND locations that JUST finished processing
+        /// 🔥 LOCATIONS THAT JUST FINISHED PROCESSING
         final Set<String> completedLocationIds =
             _previousBlockedLocationIds.difference(currentBlockedIds);
 
-        /// 🔄 Update meta used by UI
+        /// 🔄 UPDATE META
         locRecMetaData = {
           'is_stale': data['is_stale'] ?? false,
           'refresh_pending': data['refresh_pending'] ?? false,
@@ -248,9 +351,17 @@ class AccountListProvider extends ChangeNotifier {
 
         notifyListeners();
 
-        // for (final locationId in completedLocationIds) {
-        //   await _reloadSingleLocation(sovId, '');
-        // }
+        /// ✅ 🔥 RELOAD API WHEN PROCESSING COMPLETES
+        if (completedLocationIds.isNotEmpty) {
+          debugPrint(
+              "Processing completed for locations: $completedLocationIds");
+
+          await fetchMissingParameterList(
+            navigatorKey.currentContext!,
+            sovId,
+            isRefresh: true,
+          );
+        }
       },
       onError: (error) {
         debugPrint(
@@ -291,10 +402,8 @@ class AccountListProvider extends ChangeNotifier {
   }
 
   void listenToLocationProcessing(String locationId) {
-    // Avoid duplicate listeners
-    if (_sovListeners.containsKey(locationId)) return;
+    if (_locationListeners.containsKey(locationId)) return;
 
-    // Assume processing starts
     _isLocationUpdating[locationId] = true;
     notifyListeners();
 
@@ -305,18 +414,23 @@ class AccountListProvider extends ChangeNotifier {
         .listen((snap) {
       if (!snap.exists) {
         _isLocationUpdating[locationId] = false;
+        _blockedLocationIds.remove(locationId);
       } else {
-        final data = snap.data();
-        final status =
-            data?['status']; // expected: processing | completed | failed
+        final status = snap.data()?['status'];
+        final isProcessing = status == 'processing';
 
-        _isLocationUpdating[locationId] = status == 'processing';
+        _isLocationUpdating[locationId] = isProcessing;
+
+        if (isProcessing) {
+          _blockedLocationIds.add(locationId);
+        } else {
+          _blockedLocationIds.remove(locationId);
+        }
       }
-
-      notifyListeners(); // 🔥 updates only affected rows
+      notifyListeners();
     });
 
-    _sovListeners[locationId] = sub;
+    _locationListeners[locationId] = sub;
   }
 
   // Column Visibility
@@ -386,26 +500,6 @@ class AccountListProvider extends ChangeNotifier {
   //     notifyListeners();
   //   });
   // }
-  void listenToSovMeta(String sovId) {
-    // ❌ Prevent duplicate listeners
-    if (_sovListeners.containsKey(sovId)) return;
-
-    final sub = FirebaseFirestore.instance
-        .collection("location_recommendations")
-        .doc(sovId)
-        .snapshots()
-        .listen((snap) {
-      if (snap.exists) {
-        sovMeta[sovId] = snap.data();
-      } else {
-        sovMeta[sovId] = null;
-      }
-
-      notifyListeners(); // 🔥 updates only affected UI
-    });
-
-    _sovListeners[sovId] = sub;
-  }
 
   int _totalPages = 1;
 
@@ -663,10 +757,9 @@ class AccountListProvider extends ChangeNotifier {
       isUpdating = true;
       notifyListeners();
 
-      final apiService = ApiService(
-        'https://us-central1-project-green-r5-1-qa.cloudfunctions.net/'
-        'recommendation_engine/handle_vendor_data',
-      );
+      final apiService = ApiService(AppConstant.HANDLE_VENDOR_DATA
+          // 'https://us-central1-project-green-prod.cloudfunctions.net/recommendation_engine/handle_vendor_data',
+          );
 
       final payload = {
         "location_ids": locationIds,
@@ -688,9 +781,9 @@ class AccountListProvider extends ChangeNotifier {
     try {
       if (isLoading) return;
 
-      /// 🔥 FULL RESET ON REFRESH
+      /// 🔄 FULL RESET ON REFRESH
       if (isRefresh) {
-        blockedLocationIds.clear();
+        _blockedLocationIds.clear();
         _previousBlockedLocationIds.clear();
         _isLocationUpdating.clear();
         updatingItemId = null;
@@ -701,28 +794,32 @@ class AccountListProvider extends ChangeNotifier {
 
       final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
       final response = await apiService.get('?sov_id=$sovId');
-      final model = await compute(AccountListModel.fromJson, response);
 
-      /// 🔥 ONLY CURRENT PROCESSING MATTERS
+      final model = await compute(AccountListModel.fromJson, response);
+      accountListModel = model;
+
+      /// 🔥 CURRENT BLOCKED LOCATIONS FROM FIRESTORE
       final Set<String> currentBlocked =
           (locRecMetaData?['blocked_locations'] as List?)
                   ?.map((e) => e.toString())
                   .toSet() ??
               {};
 
-      /// ✅ FULL REFRESH LOGIC
+      /// ✅ FILTER ONLY – NO SIDE EFFECTS
       missingParameterList = (model.data ?? []).where((item) {
         final locationId = item.locationId ?? '';
         final missing = item.totalUnfilledParameters ?? 0;
 
-        // Keep if still processing
+        // keep if still processing
         if (currentBlocked.contains(locationId)) {
           return true;
         }
 
-        // Keep only if still missing
+        // keep if still missing parameters
         return missing > 0;
       }).toList();
+
+      listenToSovMeta(sovId);
     } catch (e, stack) {
       debugPrint('fetchMissingParameterList error: $e');
       debugPrint(stack.toString());
@@ -731,6 +828,116 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Future<void> fetchMissingParameterList(
+  //   BuildContext context,
+  //   String sovId, {
+  //   bool isRefresh = false,
+  // }) async {
+  //   try {
+  //     if (isLoading) return;
+  //
+  //     /// 🔄 FULL RESET ON REFRESH
+  //     if (isRefresh) {
+  //       blockedLocationIds.clear();
+  //       _previousBlockedLocationIds.clear();
+  //       _isLocationUpdating.clear();
+  //       updatingItemId = null;
+  //     }
+  //
+  //     isLoading = true;
+  //     notifyListeners();
+  //
+  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
+  //     final response = await apiService.get('?sov_id=$sovId');
+  //
+  //     final model = await compute(AccountListModel.fromJson, response);
+  //
+  //     accountListModel = model;
+  //
+  //     final Set<String> currentBlocked =
+  //         (locRecMetaData?['blocked_locations'] as List?)
+  //                 ?.map((e) => e.toString())
+  //                 .toSet() ??
+  //             {};
+  //
+  //     missingParameterList = (model.data ?? []).where((item) {
+  //       final locationId = item.locationId ?? '';
+  //       final missing = item.totalUnfilledParameters ?? 0;
+  //
+  //       // keep items still processing
+  //       if (currentBlocked.contains(locationId)) {
+  //         return true;
+  //       }
+  //       // Keeping listeners
+  //       for (var item in sovList) {
+  //         if (item.sovId != null) {
+  //           listenToSovMeta(item.sovId!);
+  //         }
+  //       }
+  //       // keep items with missing parameters
+  //       return missing > 0;
+  //     }).toList();
+  //   } catch (e, stack) {
+  //     debugPrint('fetchMissingParameterList error: $e');
+  //     debugPrint(stack.toString());
+  //   } finally {
+  //     isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+  // Future<void> fetchMissingParameterList(
+  //   BuildContext context,
+  //   String sovId, {
+  //   bool isRefresh = false,
+  // }) async {
+  //   try {
+  //     if (isLoading) return;
+  //
+  //     /// 🔥 FULL RESET ON REFRESH
+  //     if (isRefresh) {
+  //       blockedLocationIds.clear();
+  //       _previousBlockedLocationIds.clear();
+  //       _isLocationUpdating.clear();
+  //       updatingItemId = null;
+  //     }
+  //
+  //     isLoading = true;
+  //     notifyListeners();
+  //
+  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
+  //     final response = await apiService.get('?sov_id=$sovId');
+  //     final model = await compute(AccountListModel.fromJson, response);
+  //
+  //     /// 🔥 ONLY CURRENT PROCESSING MATTERS
+  //     final Set<String> currentBlocked =
+  //         (locRecMetaData?['blocked_locations'] as List?)
+  //                 ?.map((e) => e.toString())
+  //                 .toSet() ??
+  //             {};
+  //
+  //     /// ✅ FULL REFRESH LOGIC
+  //     missingParameterList = (model.data ?? []).where((item) {
+  //       final locationId = item.locationId ?? '';
+  //       final missing = item.totalUnfilledParameters ?? 0;
+  //
+  //       // Keep if still processing
+  //       if (currentBlocked.contains(locationId)) {
+  //         return true;
+  //       }
+  //
+  //       // Keep only if still missing
+  //       return missing > 0;
+  //     }).toList();
+  //   } catch (e, stack) {
+  //     debugPrint('fetchMissingParameterList error: $e');
+  //     debugPrint(stack.toString());
+  //   } finally {
+  //     isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   // Future<void> fetchMissingParameterList(
   //   BuildContext context,

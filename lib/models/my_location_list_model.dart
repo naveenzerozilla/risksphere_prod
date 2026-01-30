@@ -324,16 +324,15 @@ class MyLocation with ClusterItem {
 }
 
 class AllActivityLogs {
-  Null? actorUserId;
+  dynamic actorUserId;
   String? eventId;
-  CreatedAt? at;
-  Null? companyId;
+  At? at;
+  dynamic? companyId;
   String? targetType;
   String? action;
   String? targetId;
+  DetailedChanges? detailedChanges;
   Event? event;
-
-  // After? after;
 
   AllActivityLogs(
       {this.actorUserId,
@@ -343,18 +342,21 @@ class AllActivityLogs {
       this.targetType,
       this.action,
       this.targetId,
+      this.detailedChanges,
       this.event});
 
   AllActivityLogs.fromJson(Map<String, dynamic> json) {
     actorUserId = json['actor_user_id'];
     eventId = json['event_id'];
-    at = json['at'] != null ? new CreatedAt.fromJson(json['at']) : null;
+    at = json['at'] != null ? new At.fromJson(json['at']) : null;
     companyId = json['company_id'];
     targetType = json['target_type'];
     action = json['action'];
     targetId = json['target_id'];
+    detailedChanges = json['detailed_changes'] != null
+        ? new DetailedChanges.fromJson(json['detailed_changes'])
+        : null;
     event = json['event'] != null ? new Event.fromJson(json['event']) : null;
-    // after = json['after'] != null ? new After.fromJson(json['after']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -368,12 +370,179 @@ class AllActivityLogs {
     data['target_type'] = this.targetType;
     data['action'] = this.action;
     data['target_id'] = this.targetId;
+    if (this.detailedChanges != null) {
+      data['detailed_changes'] = this.detailedChanges!.toJson();
+    }
     if (this.event != null) {
       data['event'] = this.event!.toJson();
     }
-    // if (this.after != null) {
-    //   data['after'] = this.after!.toJson();
-    // }
+    return data;
+  }
+}
+
+class DetailedChanges {
+  Added? added;
+  Meta? meta;
+  List<ChangesFlat>? changesFlat;
+  dynamic modified;
+
+  DetailedChanges({this.added, this.meta, this.changesFlat, this.modified});
+
+  DetailedChanges.fromJson(Map<String, dynamic> json) {
+    // removed = json['removed'] != null ? new Removed.fromJson(json['removed']) : null;
+    added = json['added'] != null ? new Added.fromJson(json['added']) : null;
+    meta = json['meta'] != null ? new Meta.fromJson(json['meta']) : null;
+    if (json['changes_flat'] != null) {
+      changesFlat = <ChangesFlat>[];
+      json['changes_flat'].forEach((v) {
+        changesFlat!.add(new ChangesFlat.fromJson(v));
+      });
+    }
+    // modified = json['modified'] != null ? new Removed.fromJson(json['modified']) : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+
+    if (this.added != null) {
+      data['added'] = this.added!.toJson();
+    }
+    if (this.meta != null) {
+      data['meta'] = this.meta!.toJson();
+    }
+    if (this.changesFlat != null) {
+      data['changes_flat'] = this.changesFlat!.map((v) => v.toJson()).toList();
+    }
+
+    return data;
+  }
+}
+
+class Added {
+  List<Subdestinations>? subdestinations;
+
+  Added({this.subdestinations});
+
+  Added.fromJson(Map<String, dynamic> json) {
+    if (json['subdestinations'] != null) {
+      subdestinations = <Subdestinations>[];
+      json['subdestinations'].forEach((v) {
+        subdestinations!.add(new Subdestinations.fromJson(v));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.subdestinations != null) {
+      data['subdestinations'] =
+          this.subdestinations!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class Subdestinations {
+  String? address;
+  String? id;
+  double? lat;
+  double? lng;
+  String? name;
+  String? placeId;
+  List<String>? types;
+
+  Subdestinations(
+      {this.address,
+      this.id,
+      this.lat,
+      this.lng,
+      this.name,
+      this.placeId,
+      this.types});
+
+  Subdestinations.fromJson(Map<String, dynamic> json) {
+    address = json['address'];
+    id = json['id'];
+    lat = json['lat'];
+    lng = json['lng'];
+    name = json['name'];
+    placeId = json['place_id'];
+    types = json['types'].cast<String>();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['address'] = this.address;
+    data['id'] = this.id;
+    data['lat'] = this.lat;
+    data['lng'] = this.lng;
+    data['name'] = this.name;
+    data['place_id'] = this.placeId;
+    data['types'] = this.types;
+    return data;
+  }
+}
+
+class Meta {
+  bool? addedOnly;
+  bool? firstWriteForDoc;
+
+  Meta({this.addedOnly, this.firstWriteForDoc});
+
+  Meta.fromJson(Map<String, dynamic> json) {
+    addedOnly = json['added_only'];
+    firstWriteForDoc = json['first_write_for_doc'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['added_only'] = this.addedOnly;
+    data['first_write_for_doc'] = this.firstWriteForDoc;
+    return data;
+  }
+}
+
+class ChangesFlat {
+  String? field;
+  String? type;
+  dynamic? before;
+
+  ChangesFlat({this.field, this.type, this.before});
+
+  ChangesFlat.fromJson(Map<String, dynamic> json) {
+    field = json['field'];
+    type = json['type'];
+    before = json['before'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['field'] = this.field;
+    data['type'] = this.type;
+    data['before'] = this.before;
+
+    return data;
+  }
+}
+
+class Event {
+  Params? params;
+  dynamic? timestamp;
+
+  Event({this.params, this.timestamp});
+
+  Event.fromJson(Map<String, dynamic> json) {
+    params =
+        json['params'] != null ? new Params.fromJson(json['params']) : null;
+    timestamp = json['timestamp'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.params != null) {
+      data['params'] = this.params!.toJson();
+    }
+    data['timestamp'] = this.timestamp;
     return data;
   }
 }
@@ -394,24 +563,61 @@ class Params {
   }
 }
 
-class Event {
-  Params? params;
-  Null? timestamp;
+class UpdatedAt {
+  At? before;
 
-  Event({this.params, this.timestamp});
+// Removed? after;
 
-  Event.fromJson(Map<String, dynamic> json) {
-    params =
-        json['params'] != null ? new Params.fromJson(json['params']) : null;
-    timestamp = json['timestamp'];
+  UpdatedAt({this.before});
+
+  UpdatedAt.fromJson(Map<String, dynamic> json) {
+    before = json['before'] != null ? new At.fromJson(json['before']) : null;
+// after = json['after'] != null ? new Removed.fromJson(json['after']) : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.params != null) {
-      data['params'] = this.params!.toJson();
+    if (this.before != null) {
+      data['before'] = this.before!.toJson();
     }
-    data['timestamp'] = this.timestamp;
+// if (this.after != null) {
+// data['after'] = this.after!.toJson();
+// }
+    return data;
+  }
+}
+
+class Status {
+  String? dAEN5YjpVOXIk1josXgy;
+
+  Status({this.dAEN5YjpVOXIk1josXgy});
+
+  Status.fromJson(Map<String, dynamic> json) {
+    dAEN5YjpVOXIk1josXgy = json['DAEN5YjpVOXIk1josXgy'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['DAEN5YjpVOXIk1josXgy'] = this.dAEN5YjpVOXIk1josXgy;
+    return data;
+  }
+}
+
+class At {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  At({this.iSeconds, this.iNanoseconds});
+
+  At.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
     return data;
   }
 }
@@ -760,7 +966,7 @@ class User {
     email = json['email'];
     name = json['name'];
     role = json['role'];
-    // ⭐ parse role list safely
+// ⭐ parse role list safely
     if (json["role"] != null && json["role"] is List) {
       roles = (json["role"] as List).map((e) => Role.fromJson(e)).toList();
     } else {
@@ -775,7 +981,7 @@ class User {
     data['email'] = email;
     data['name'] = name;
     data['role'] = this.role;
-    // ⭐ convert roles to json list
+// ⭐ convert roles to json list
     data["role"] = roles.map((e) => e.toJson()).toList();
 
     return data;
@@ -1128,7 +1334,7 @@ class HazardDetails {
           )
         : null;
 
-    // Parsing the `others` field
+// Parsing the `others` field
     if (json['others'] != null) {
       others = {};
       json['others'].forEach((key, value) {

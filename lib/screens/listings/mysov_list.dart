@@ -70,7 +70,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   String locationQuery = '';
   bool showSelectAll = false;
   bool isAllSelected = false;
-  bool _isHazardLoading = false;
   bool isPgAdmin = false;
   bool isAdmin = false;
   bool isSuperAdmin = false;
@@ -131,21 +130,29 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    final provider = context.read<SOVListProvider>();
-
-    provider.page = 1;
-    provider.totalPages = 1;
     _setClaims();
-    provider.fetchSovList(
-      context,
-      _sovQuery,
-      1,
-      5,
-      widget.status,
-    );
 
+    /// 🔥 CALL API AFTER FIRST FRAME
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<SOVListProvider>();
+
+      provider.page = 1;
+      provider.totalPages = 1;
+
+      provider.fetchSovList(
+        context,
+        _sovQuery,
+        1,
+        5,
+        widget.status,
+      );
+    });
+
+    /// 🔥 PAGINATION LISTENER (SAFE)
     _scrollController1.addListener(() {
       if (!_scrollController1.hasClients) return;
+
+      final provider = context.read<SOVListProvider>();
 
       if (_scrollController1.position.pixels >=
               _scrollController1.position.maxScrollExtent - 300 &&
@@ -155,8 +162,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
         provider.fetchSovList(
           context,
-          // widget.accountID ?? '',
-          // widget.subAccountID ?? '',
           _sovQuery,
           provider.page,
           5,
@@ -165,6 +170,45 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       }
     });
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //
+  //   final provider = context.read<SOVListProvider>();
+  //
+  //   provider.page = 1;
+  //   provider.totalPages = 1;
+  //   _setClaims();
+  //   provider.fetchSovList(
+  //     context,
+  //     _sovQuery,
+  //     1,
+  //     5,
+  //     widget.status,
+  //   );
+  //
+  //   _scrollController1.addListener(() {
+  //     if (!_scrollController1.hasClients) return;
+  //
+  //     if (_scrollController1.position.pixels >=
+  //             _scrollController1.position.maxScrollExtent - 300 &&
+  //         !provider.isNextPageLoading &&
+  //         provider.page < provider.totalPages) {
+  //       provider.page++;
+  //
+  //       provider.fetchSovList(
+  //         context,
+  //         // widget.accountID ?? '',
+  //         // widget.subAccountID ?? '',
+  //         _sovQuery,
+  //         provider.page,
+  //         5,
+  //         widget.status,
+  //       );
+  //     }
+  //   });
+  // }
 
   MyLocationListProvider? _myLocationProvider;
 
@@ -344,7 +388,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                       messageTextSpans: [
                         TextSpan(
                           text:
-                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
                           style: typography.Body1,
                         ),
                         // tappable
@@ -585,41 +629,45 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                               //   icon: Icon(Icons.download),
                               //   tooltip: 'Export Selected',
                               // ),
-                              widget.status.toString() == "received" ?Container():
-                              IconButton(
-                                onPressed: () {
-                                  if (selectedList.length !=
-                                      sovListProvider.sovList.length) {
-                                    selectedList = List.generate(
-                                      sovListProvider.sovList.length,
-                                      (_) => false,
-                                    );
-                                  }
+                              widget.status.toString() == "received"
+                                  ? Container()
+                                  : IconButton(
+                                      onPressed: () {
+                                        if (selectedList.length !=
+                                            sovListProvider.sovList.length) {
+                                          selectedList = List.generate(
+                                            sovListProvider.sovList.length,
+                                            (_) => false,
+                                          );
+                                        }
 
-                                  final selectedSovs = sovListProvider.sovList
-                                      .asMap()
-                                      .entries
-                                      .where((entry) => selectedList[entry.key])
-                                      .map((entry) => entry.value)
-                                      .toList();
+                                        final selectedSovs = sovListProvider
+                                            .sovList
+                                            .asMap()
+                                            .entries
+                                            .where((entry) =>
+                                                selectedList[entry.key])
+                                            .map((entry) => entry.value)
+                                            .toList();
 
-                                  if (selectedSovs.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              "Please select at least one SOV to share.")),
-                                    );
-                                    return;
-                                  }
+                                        if (selectedSovs.isEmpty) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    "Please select at least one SOV to share.")),
+                                          );
+                                          return;
+                                        }
 
-                                  _showTransferDialog(context, selectedSovs);
-                                },
-                                icon: const Icon(
-                                  Symbols.share,
-                                  color: Color(0xFF90CAF9),
-                                ),
-                                tooltip: 'Share Selected',
-                              ),
+                                        _showTransferDialog(context, selectedSovs);
+                                      },
+                                      icon: const Icon(
+                                        Symbols.share,
+                                        color: Color(0xFF90CAF9),
+                                      ),
+                                      tooltip: 'Share Selected',
+                                    ),
                             ]
                           ],
                         );
@@ -796,10 +844,10 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
     final meta = sOVListProvider.sovMeta[sovId];
     final isRefreshPending = meta?['refresh_pending'] == true;
-    final sharedUsersWithEmail = sov.sharingStatus?.users.values
-            .where((u) => u.email != null && u.email!.trim().isNotEmpty)
-            .toList() ??
-        [];
+    // final sharedUsersWithEmail = sov.sharingStatus.users.values
+    //         .where((u) => u.email != null && u.email!.trim().isNotEmpty)
+    //         .toList() ??
+    //     [];
     return Opacity(
       opacity: isRefreshPending ? 0.5 : 1.0, // Fade UI
       child: IgnorePointer(
@@ -826,13 +874,13 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                 } else {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
                     return SovLocationList(
-                      status:  widget.status.toString() == "received"
+                      status: widget.status.toString() == "received"
                           ? "Received SOVs"
                           : widget.status.toString() == "my"
-                          ? "My SOVs"
-                          : widget.status.toString() == "shared"
-                          ? "Shared SOVs"
-                          : "SOVs",
+                              ? "My SOVs"
+                              : widget.status.toString() == "shared"
+                                  ? "Shared SOVs"
+                                  : "SOVs",
                       accountID: sov.accountId,
                       subAccountID: sov.subAccountId,
                       accountName: "",
@@ -1154,10 +1202,10 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                             .toLowerCase() ==
                                                         "shared"
                                                     ? InkWell(
-                                                        onTap: () =>
-                                                            _showSharedWithDialog(
-                                                                context,
-                                                                sov.sharingStatus),
+                                                        // onTap: () =>
+                                                        // _showSharedWithDialog(
+                                                        //     context,
+                                                        //     sov.sharingStatus),
                                                         child: Container(
                                                           padding:
                                                               const EdgeInsets
@@ -1190,7 +1238,8 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                               const SizedBox(
                                                                   width: 4),
                                                               Text(
-                                                                "${sov.sharingStatus!.users.values.toList().length ?? 0}",
+                                                                "",
+                                                                // "${sov.sharingStatus!.users.values.toList().length ?? 0}",
                                                                 style: typography
                                                                         .Body2
                                                                     .copyWith(
@@ -2493,97 +2542,97 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-void _showSharedWithDialog(
-  BuildContext context,
-  SharingStatus? sharingStatus,
-) {
-  final users = sharingStatus?.users.values.toList() ?? [];
-
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (_) {
-      return Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// 🔹 Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  "Shared With",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-
-              const Divider(color: Color(0xFF2C2C2C), height: 1),
-
-              /// 🔹 Email List
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: users.length,
-                  separatorBuilder: (_, __) => const Divider(
-                    color: Color(0xFF2C2C2C),
-                    height: 1,
-                  ),
-                  itemBuilder: (_, index) {
-                    final user = users[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      child: Text(
-                        user.email ?? "-",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                            ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const Divider(color: Color(0xFF2C2C2C), height: 1),
-
-              /// 🔹 Footer
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF90CAF9),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    child: const Text(
-                      "Close",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
+// void _showSharedWithDialog(
+//   BuildContext context,
+//   SharingStatus? sharingStatus,
+// ) {
+//   final users = sharingStatus?.users.values.toList() ?? [];
+//a
+//   showDialog(
+//     context: context,
+//     barrierDismissible: true,
+//     builder: (_) {
+//       return Dialog(
+//         backgroundColor: const Color(0xFF1E1E1E),
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(8),
+//         ),
+//         child: SizedBox(
+//           width: 420,
+//           child: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               /// 🔹 Header
+//               Padding(
+//                 padding: const EdgeInsets.all(16),
+//                 child: Text(
+//                   "Shared With",
+//                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
+//                         color: Colors.white,
+//                         fontWeight: FontWeight.w600,
+//                       ),
+//                 ),
+//               ),
+//
+//               const Divider(color: Color(0xFF2C2C2C), height: 1),
+//
+//               /// 🔹 Email List
+//               Flexible(
+//                 child: ListView.separated(
+//                   shrinkWrap: true,
+//                   itemCount: users.length,
+//                   separatorBuilder: (_, __) => const Divider(
+//                     color: Color(0xFF2C2C2C),
+//                     height: 1,
+//                   ),
+//                   itemBuilder: (_, index) {
+//                     final user = users[index];
+//                     return Padding(
+//                       padding: const EdgeInsets.symmetric(
+//                           horizontal: 16, vertical: 14),
+//                       child: Text(
+//                         user.email ?? "-",
+//                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+//                               color: Colors.white,
+//                             ),
+//                       ),
+//                     );
+//                   },
+//                 ),
+//               ),
+//
+//               const Divider(color: Color(0xFF2C2C2C), height: 1),
+//
+//               /// 🔹 Footer
+//               Align(
+//                 alignment: Alignment.centerRight,
+//                 child: Padding(
+//                   padding: const EdgeInsets.all(12),
+//                   child: TextButton(
+//                     onPressed: () => Navigator.pop(context),
+//                     style: TextButton.styleFrom(
+//                       backgroundColor: const Color(0xFF90CAF9),
+//                       padding: const EdgeInsets.symmetric(
+//                           horizontal: 20, vertical: 10),
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(6),
+//                       ),
+//                     ),
+//                     child: const Text(
+//                       "Close",
+//                       style: TextStyle(
+//                         color: Colors.black,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       );
+//     },
+//   );
+// }

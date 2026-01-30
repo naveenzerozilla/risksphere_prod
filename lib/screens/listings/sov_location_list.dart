@@ -992,100 +992,171 @@ class _SovLocationListState extends State<SovLocationList>
                                   child: Icon(Icons.download),
                                   // tooltip: 'Export Selected',
                                 ),
-                                SizedBox(width: 10),
-                                InkWell(
-                                  onTap: () {
-                                    final provider =
-                                        Provider.of<MyLocationListProvider>(
-                                            context,
-                                            listen: false);
-
-                                    final ids = provider.isGlobalSelectAll
-                                        ? <String>[] // backend handles global
-                                        : provider.selectedLocationIds.toList();
-
-                                    if (ids.isEmpty &&
-                                        !provider.isGlobalSelectAll) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                "Please select at least one location")),
-                                      );
-                                      return;
-                                    }
-
-                                    provider.addTagsToSelectedLocations(
-                                      context,
-                                      widget.accountID!,
-                                      widget.subAccountID!,
-                                    );
-                                  },
-
-                                  // onTap: () {
-                                  //   // Implement bulk add to SOV
-                                  //   locationListProvider
-                                  //       .addTagsToSelectedLocations(
-                                  //           context,
-                                  //           widget.accountID!,
-                                  //           widget.subAccountID!);
-                                  // },
-                                  child: Icon(Symbols.note_stack_add),
-                                ),
+                                // SizedBox(width: 10),
+                                // InkWell(
+                                //   onTap: () {
+                                //     final provider =
+                                //         Provider.of<MyLocationListProvider>(
+                                //             context,
+                                //             listen: false);
+                                //
+                                //     final ids = provider.isGlobalSelectAll
+                                //         ? <String>[] // backend handles global
+                                //         : provider.selectedLocationIds.toList();
+                                //
+                                //     if (ids.isEmpty &&
+                                //         !provider.isGlobalSelectAll) {
+                                //       ScaffoldMessenger.of(context)
+                                //           .showSnackBar(
+                                //         const SnackBar(
+                                //             content: Text(
+                                //                 "Please select at least one location")),
+                                //       );
+                                //       return;
+                                //     }
+                                //
+                                //     provider.addTagsToSelectedLocations(
+                                //       context,
+                                //       widget.accountID!,
+                                //       widget.subAccountID!,
+                                //     );
+                                //   },
+                                //
+                                //   // onTap: () {
+                                //   //   // Implement bulk add to SOV
+                                //   //   locationListProvider
+                                //   //       .addTagsToSelectedLocations(
+                                //   //           context,
+                                //   //           widget.accountID!,
+                                //   //           widget.subAccountID!);
+                                //   // },
+                                //   child: Icon(Symbols.note_stack_add),
+                                // ),
                                 SizedBox(width: 10),
                                 InkWell(
                                   onTap: () async {
                                     final provider =
-                                        Provider.of<MyLocationListProvider>(
-                                            context,
-                                            listen: false);
+                                    Provider.of<MyLocationListProvider>(context, listen: false);
 
-                                    // Show loader
-                                    setState(() {
-                                      provider.isLoading = true;
-                                    });
+                                    final bool isGlobal = provider.isGlobalSelectAll;
 
-                                    await provider.markAsCompleteSov(
-                                      context,
-                                      widget.accountID!,
-                                      widget.subAccountID!,
-                                      widget.sovID!,
-                                    );
+                                    /// ✅ CORRECT SOURCE OF IDS
+                                    final List<String> locationIds = isGlobal
+                                        ? provider.myLocationList
+                                        .map((e) => e.id)
+                                        .whereType<String>()
+                                        .toList() // 🔥 ALL IDS
+                                        : provider.selectedLocationIds.toList();
 
-                                    provider.clearSelection();
+                                    /// 🔍 DEBUG PRINT (YOU WILL SEE IDS NOW)
+                                    debugPrint("Is Global Select: $isGlobal");
+                                    debugPrint("Location IDs sent: $locationIds");
 
-                                    setState(() {
-                                      locationListProvider.isLoading = false;
-                                    });
+                                    /// ❌ Nothing selected
+                                    if (locationIds.isEmpty && !isGlobal) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Please select at least one location"),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                                    setState(() {
-                                      provider.isLoading = false;
-                                    });
+                                    setState(() => provider.isLoading = true);
 
-                                    provider.fetchLocationList(
-                                      context,
-                                      locationQuery,
-                                      1,
-                                      11,
-                                      widget.accountID,
-                                      widget.subAccountID,
-                                      widget.initialProcessId,
-                                      widget.initialSubProcessId,
-                                      widget.sovID,
-                                    );
+                                    try {
+                                      await provider.markAsCompleteSovA(
+                                        context,
+                                        widget.accountID!,
+                                        widget.subAccountID!,
+                                        widget.sovID!,
+                                        locationIds, // ✅ SENT CORRECTLY
+                                      );
+
+                                      provider.clearSelection();
+
+                                      provider.fetchLocationList(
+                                        context,
+                                        locationQuery,
+                                        1,
+                                        11,
+                                        widget.accountID,
+                                        widget.subAccountID,
+                                        widget.initialProcessId,
+                                        widget.initialSubProcessId,
+                                        widget.sovID,
+                                      );
+                                    } finally {
+                                      setState(() => provider.isLoading = false);
+                                    }
                                   },
+
                                   child: locationListProvider.isLoading
                                       ? const SizedBox(
-                                          height: 22,
-                                          width: 22,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
                                       : const Icon(
-                                          Symbols.done_all_rounded,
-                                          color: Colors.green,
-                                        ),
+                                    Symbols.done_all_rounded,
+                                    color: Colors.green,
+                                  ),
                                 ),
+
+
+                                // InkWell(
+                                //   onTap: () async {
+                                //     final provider =
+                                //         Provider.of<MyLocationListProvider>(
+                                //             context,
+                                //             listen: false);
+                                //
+                                //     // Show loader
+                                //     setState(() {
+                                //       provider.isLoading = true;
+                                //     });
+                                //
+                                //     await provider.markAsCompleteSov(
+                                //       context,
+                                //       widget.accountID!,
+                                //       widget.subAccountID!,
+                                //       widget.sovID!,
+                                //     );
+                                //
+                                //     provider.clearSelection();
+                                //
+                                //     setState(() {
+                                //       locationListProvider.isLoading = false;
+                                //     });
+                                //
+                                //     setState(() {
+                                //       provider.isLoading = false;
+                                //     });
+                                //
+                                //     provider.fetchLocationList(
+                                //       context,
+                                //       locationQuery,
+                                //       1,
+                                //       11,
+                                //       widget.accountID,
+                                //       widget.subAccountID,
+                                //       widget.initialProcessId,
+                                //       widget.initialSubProcessId,
+                                //       widget.sovID,
+                                //     );
+                                //   },
+                                //   child: locationListProvider.isLoading
+                                //       ? const SizedBox(
+                                //           height: 22,
+                                //           width: 22,
+                                //           child: CircularProgressIndicator(
+                                //               strokeWidth: 2),
+                                //         )
+                                //       : const Icon(
+                                //           Symbols.done_all_rounded,
+                                //           color: Colors.green,
+                                //         ),
+                                // ),
 
                                 SizedBox(width: 10),
                                 InkWell(

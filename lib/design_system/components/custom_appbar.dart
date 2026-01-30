@@ -147,11 +147,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
     String? hazardLicenseStatus =
         await SharedPreferenceService.getHazardLicense();
 
-    print("geoCodingStatus: $geoCodingStatus");
-    print("userLicenseStatus: $userLicenseStatus");
-    print("hazardLicenseStatus: $hazardLicenseStatus");
-    print("userCount: $userCount");
-    print("locationleft: $trailLocation");
+    // print("geoCodingStatus: $geoCodingStatus");
+    // print("userLicenseStatus: $userLicenseStatus");
+    // print("hazardLicenseStatus: $hazardLicenseStatus");
+    // print("userCount: $userCount");
+    // print("locationleft: $trailLocation");
 
     setState(() {
       hasAnyPlan = hasAnyPlans ?? false;

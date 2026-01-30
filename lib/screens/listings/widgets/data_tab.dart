@@ -124,7 +124,6 @@ class _DataTabState extends State<DataTab> {
         widget.campusId,
         selectedParameterList,
         selectedParameterList,
-        // ✔ (your API signature uses this twice)
         widget.sovId, // ✔ Correct sovId
       );
     });
@@ -1029,7 +1028,6 @@ class _DataTabState extends State<DataTab> {
                                   left: 10, right: 10, bottom: 10),
                               child: Column(
                                 children: [
-                                  /// 🔴 HEADER (ONLY ONE HEADER — NO DUPLICATION)
                                   GestureDetector(
                                     onTap: () {
                                       setState(() {
@@ -1043,18 +1041,32 @@ class _DataTabState extends State<DataTab> {
                                           horizontal: 12),
                                       decoration: BoxDecoration(
                                         color: impactType == "high"
-                                            ? const Color(0xFFF44336)
+                                            ? Color.fromRGBO(244, 67, 54, 0.08)
+                                                .withOpacity(0.2)
                                             : impactType == "medium"
-                                                ? const Color(0xFFFFA726)
-                                                : const Color(0xFFCE93D8),
+                                                ? Color.fromRGBO(
+                                                        255, 167, 38, 0.5)
+                                                    .withOpacity(0.2)
+                                                : Color.fromRGBO(
+                                                        206, 147, 216, 0.08)
+                                                    .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: impactType == "high"
+                                              ? Color.fromRGBO(244, 67, 54, 0.5)
+                                              : impactType == "medium"
+                                                  ? Color.fromRGBO(
+                                                      255, 167, 38, 0.5)
+                                                  : Color.fromRGBO(
+                                                      206, 147, 216, 0.5),
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            "${impactType.toUpperCase()} Impact Parameter",
+                                            "${impactType[0].toUpperCase()}${impactType.substring(1)} Impact Parameter",
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
@@ -1073,8 +1085,6 @@ class _DataTabState extends State<DataTab> {
                                       ),
                                     ),
                                   ),
-
-                                  /// 🔴 EXPAND / COLLAPSE CONTENT
                                   AnimatedCrossFade(
                                     duration: const Duration(milliseconds: 300),
                                     crossFadeState: isExpanded
@@ -1097,12 +1107,8 @@ class _DataTabState extends State<DataTab> {
                                       selectedParameterList:
                                           selectedParameterList!,
                                       onRefresh: () => _getRefreshData(),
-
-                                      /// 🔥 IMPORTANT — prevents duplicate header
                                       showHeader: false,
-
-                                      expandElementName:
-                                          selectedDropdownLabel,
+                                      expandElementName: selectedDropdownLabel,
                                       onExpanded: () {
                                         final ctx =
                                             itemKeys[cardKey]!.currentContext;
@@ -1123,22 +1129,28 @@ class _DataTabState extends State<DataTab> {
                             );
                           },
                         );
-
                       }),
-                      Consumer<SubaccountParameterProvider>(
-                        builder: (context, provider, child) {
-                          final List<DataCategories> items = provider.parameters
-                                  ?.vendorData?.hazardHub?.dataCategories ??
-                              [];
+                      Padding(
+                        padding: const EdgeInsets.all(0.0),
+                        child: Consumer<SubaccountParameterProvider>(
+                          builder: (context, provider, child) {
+                            final List<DataCategories> items = provider
+                                    .parameters
+                                    ?.vendorData
+                                    ?.hazardHub
+                                    ?.dataCategories ??
+                                [];
 
-                          if (items.isEmpty) {
-                            return const SizedBox.shrink(); // or Container()
-                          }
+                            if (items.isEmpty) {
+                              return const SizedBox.shrink(); // or Container()
+                            }
 
-                          return Container(
-                            child: HazardHubCard(items: items),
-                          );
-                        },
+                            return Container(
+                              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                              child: HazardHubCard(items: items),
+                            );
+                          },
+                        ),
                       ),
                       SizedBox(height: 20),
                     ] else ...[
@@ -3110,7 +3122,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   GestureDetector(
                                     onTap: () {
                                       final int? timestamp = widget.result
-                                          .parameterValue!.updatedAt!.iSeconds;
+                                          .parameterValue!.updatedAt?.iSeconds ?? 1;
                                       final dateTime =
                                           DateTime.fromMillisecondsSinceEpoch(
                                               timestamp! * 1000);
@@ -3903,13 +3915,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
         "value": value, // always stringified JSON when number/json
         "param_type": widget.parametertype!.name,
         "reference": referenceData,
-        // "reference": [
-        //   {
-        //     "url": [""], // array, like Web
-        //     "tags": [],
-        //     "size": 0,
-        //   }
-        // ],
+
       };
 
       final provider = Provider.of<SubaccountParameterProvider>(
@@ -4401,11 +4407,27 @@ class PreviewPopup extends StatelessWidget {
     );
   }
 }
+String mapScoreToRiskLabel(String score) {
+  switch (score.toUpperCase()) {
+    case 'A':
+      return 'Lowest Risk';
+    case 'B':
+      return 'Low Risk';
+    case 'C':
+      return 'Moderate Risk';
+    case 'D':
+      return 'High Risk';
+    case 'F':
+      return 'Very High Risk';
+    default:
+      return score; // fallback (numeric or NA)
+  }
+}
 
 class HazardHubCard extends StatefulWidget {
   final List<DataCategories> items;
 
-  const HazardHubCard({super.key, required this.items});
+  HazardHubCard({super.key, required this.items});
 
   @override
   State<HazardHubCard> createState() => _HazardHubCardState();
@@ -4413,77 +4435,150 @@ class HazardHubCard extends StatefulWidget {
 
 class _HazardHubCardState extends State<HazardHubCard> {
   int expandedIndex = -1;
+  bool isHeaderExpanded = true;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: const BoxDecoration(
-            color: Color(0xFF66BB6A),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-          ),
-          child: const Text(
-            "HazardHub",
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              isHeaderExpanded = !isHeaderExpanded;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Color.fromRGBO(104, 206, 109, 0.08).withOpacity(0.3),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(8),
+                topRight: const Radius.circular(8),
+                bottomLeft: isHeaderExpanded
+                    ? const Radius.circular(2)
+                    : const Radius.circular(8),
+                bottomRight: isHeaderExpanded
+                    ? const Radius.circular(2)
+                    : const Radius.circular(8),
+              ),
+              border: Border.all(
+                color: Color.fromRGBO(104, 206, 109, 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "HazardHub",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                Icon(
+                  isHeaderExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ],
             ),
           ),
         ),
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 300),
+          crossFadeState: isHeaderExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: const SizedBox.shrink(),
+          secondChild: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF252525),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              border: Border.all(color: Colors.grey.shade700),
+            ),
+            child: Column(
+              children: List.generate(widget.items.length, (index) {
+                final item = widget.items[index];
+                final isExpanded = expandedIndex == index;
 
-        /// BODY
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A2A2A),
-            borderRadius:
-                const BorderRadius.vertical(bottom: Radius.circular(10)),
-            border: Border.all(color: Colors.grey.shade700),
-          ),
-          child: Column(
-            children: List.generate(widget.items.length, (index) {
-              final item = widget.items[index];
-              final isExpanded = expandedIndex == index;
+                final data = item.parameterData;
+                final title = data?.name ?? "NA";
 
-              final data = item.parameterData;
-              final title = data?.name ?? "-";
-              // final key = data?.key ?? "-";
+                final expandedData =
+                    parseParameterValue(data!.parameterValue!.value);
+                final parsed = parseExpandedJson(expandedData);
+                final value = parsed['value'];
+                final rawScore =
+                value is Map ? value['score']?.toString() ?? 'NA' : 'NA';
 
-              final parsed = parseParameterValue(data?.parameterValue);
+                final score = mapScoreToRiskLabel(rawScore);
 
-              final score = parsed['score']?.toString() ?? "--";
-
-              return Column(
-                children: [
-                  _mainRow(
-                    title: title,
-                    // keyName: key,
-                    score: score,
-                    isExpanded: isExpanded,
-                    onTap: () {
-                      setState(() {
-                        expandedIndex = isExpanded ? -1 : index;
-                      });
-                    },
-                  ),
-                  if (isExpanded) _expandedSection(parsed),
-                  const Divider(height: 1, color: Colors.grey),
-                ],
-              );
-            }),
+                return Column(
+                  children: [
+                    // Text(expandedData.toString()),
+                    _mainRow(
+                      title: title,
+                      score: score,
+                      isExpanded: isExpanded,
+                      onTap: () {
+                        setState(() {
+                          expandedIndex = isExpanded ? -1 : index;
+                        });
+                      },
+                    ),
+                    if (isExpanded) _expandedSection(expandedData),
+                    const Divider(height: 1, color: Colors.grey),
+                  ],
+                );
+              }),
+            ),
           ),
         ),
       ],
     );
   }
+  Map<String, dynamic> parseExpandedJson(dynamic raw) {
+    if (raw == null) return {};
 
-  /// ================= MAIN ROW =================
+    if (raw is Map<String, dynamic>) {
+      return raw;
+    }
+
+    if (raw is String) {
+      try {
+        return jsonDecode(raw) as Map<String, dynamic>;
+      } catch (_) {
+        return {};
+      }
+    }
+
+    return {};
+  }
+  String getScoreFromExpanded(dynamic raw) {
+    final parsed = parseExpandedJson(raw);
+
+    final value = parsed['value'];
+
+    if (value is Map<String, dynamic>) {
+      return value['score']?.toString() ?? 'NA';
+    }
+
+    if (value is String || value is num) {
+      return value.toString();
+    }
+
+    return 'NA';
+  }
+
   Widget _mainRow({
     required String title,
-    // required String keyName,
     required String score,
     required bool isExpanded,
     required VoidCallback onTap,
@@ -4503,7 +4598,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -4511,7 +4606,9 @@ class _HazardHubCardState extends State<HazardHubCard> {
                 _chip("Score : $score"),
                 const SizedBox(width: 5),
                 Icon(
-                  isExpanded ? Icons.remove : Icons.add_circle_outline,
+                  isExpanded
+                      ? Icons.remove_circle_outline_outlined
+                      : Icons.add_circle_outline,
                   color: Colors.grey,
                 )
               ],
@@ -4522,10 +4619,54 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
     );
   }
-
-  /// ================= EXPANDED =================
   Widget _expandedSection(Map<String, dynamic> data) {
-    final entries = data.entries.where((e) => e.key != "score").toList();
+    final dynamic value = data['value'];
+
+    if (value == null) return const SizedBox.shrink();
+
+    if (value is Map<String, dynamic>) {
+      return _buildTable(value);
+    }
+
+    return _buildSingleValueTable(value);
+  }
+  Widget _buildSingleValueTable(dynamic value) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF3A3A3A),
+      ),
+      child: Column(
+        children: [
+
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(8)),
+            ),
+            child: Row(
+              children: [
+                _headerCell("Category"),
+                _verticalDivider(),
+                _headerCell("Value"),
+              ],
+            ),
+          ),
+
+          _dataRow("Value", value.toString()),
+        ],
+      ),
+    );
+  }
+
+
+
+  Widget _buildTable(Map<String, dynamic> map) {
+    final entries = map.entries.toList();
 
     return Container(
       margin: const EdgeInsets.all(12),
@@ -4536,41 +4677,196 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
       child: Column(
         children: [
-          /// TABLE HEADER
+
           Container(
             height: 48,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(8)),
+              const BorderRadius.vertical(top: Radius.circular(8)),
             ),
             child: Row(
               children: [
                 _headerCell("Category"),
                 _verticalDivider(),
-                _headerCell("Value / Detail"),
+                _headerCell("Value"),
               ],
             ),
           ),
 
           /// ROWS
-          ...List.generate(entries.length, (index) {
-            final e = entries[index];
+          ...entries.asMap().entries.map((entry) {
+            final index = entry.key;
+            final key = entry.value.key;
+            final value = entry.value.value;
+
             return Column(
               children: [
-                _dataRow(
-                  formatKey(e.key),
-                  e.value.toString(),
-                ),
+                _buildRow(key, value),
                 if (index != entries.length - 1)
                   Divider(height: 1, color: Colors.grey.shade700),
               ],
             );
-          }),
-        ],
+          }).toList(),
+
+       ],
       ),
     );
   }
+  Widget _buildRow(String key, dynamic value) {
+    /// CASE 1: Map → nested table
+    if (value is Map<String, dynamic>) {
+      return Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              formatKey(key),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildTable(value),
+          ],
+        ),
+      );
+    }
+
+    /// CASE 2: List → each item becomes a table
+    if (value is List) {
+      if (value.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              formatKey(key),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            ...value.asMap().entries.map((entry) {
+              final item = entry.value;
+
+              // List item is a map → build table
+              if (item is Map<String, dynamic>) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _buildTable(item),
+                );
+              }
+
+              // Fallback (rare)
+              return _dataRow(
+                formatKey(key),
+                item.toString(),
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    }
+
+    /// CASE 3: Primitive value
+    return _dataRow(
+      formatKey(key),
+      value?.toString() ?? '—',
+    );
+  }
+
+
+    // Widget _buildRow(String key, dynamic value) {
+    //   /// Nested JSON → show sub-table
+    //   if (value is Map<String, dynamic>) {
+    //     return Padding(
+    //       padding: const EdgeInsets.all(8),
+    //       child: Column(
+    //         crossAxisAlignment: CrossAxisAlignment.start,
+    //         children: [
+    //           Text(
+    //             formatKey(key),
+    //             style: const TextStyle(
+    //               color: Colors.white,
+    //               fontWeight: FontWeight.bold,
+    //             ),
+    //           ),
+    //           const SizedBox(height: 8),
+    //           _buildTable(value),
+    //         ],
+    //       ),
+    //     );
+    //   }
+    //
+    //   /// Normal value
+    //   return _dataRow(
+    //     formatKey(key),
+    //     value?.toString() ?? '—',
+    //   );
+    // }
+
+
+  // Widget _expandedSection(Map<String, dynamic> data) {
+  //   // Remove keys you don't want in expanded table
+  //   final entries = data.entries
+  //       .where((e) => e.key != 'score' && e.value != null)
+  //       .toList();
+  //
+  //   if (entries.isEmpty) return const SizedBox.shrink();
+  //
+  //   return Container(
+  //     margin: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       border: Border.all(color: Colors.grey.shade700),
+  //       borderRadius: BorderRadius.circular(8),
+  //       color: const Color(0xFF3A3A3A),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         /// TABLE HEADER
+  //         Container(
+  //           height: 48,
+  //           decoration: BoxDecoration(
+  //             color: Colors.black.withOpacity(0.2),
+  //             borderRadius:
+  //             const BorderRadius.vertical(top: Radius.circular(8)),
+  //           ),
+  //           child: Row(
+  //             children: [
+  //               _headerCell("Category"),
+  //               _verticalDivider(),
+  //               _headerCell("Value / Detail"),
+  //             ],
+  //           ),
+  //         ),
+  //
+  //         /// TABLE ROWS (DYNAMIC)
+  //         ...entries.asMap().entries.map((entry) {
+  //           final index = entry.key;
+  //           final e = entry.value;
+  //
+  //           return Column(
+  //             children: [
+  //               _dataRow(
+  //                 formatKey(e.key),
+  //                 e.value.toString(),
+  //               ),
+  //               if (index != entries.length - 1)
+  //                 Divider(height: 1, color: Colors.grey.shade700),
+  //             ],
+  //           );
+  //         }).toList(),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _headerCell(String text) {
     return Expanded(
@@ -4580,6 +4876,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
           text,
           style: const TextStyle(
             color: Colors.white,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -4606,7 +4903,6 @@ class _HazardHubCardState extends State<HazardHubCard> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// CATEGORY
             Expanded(
               child: Padding(
                 padding:
@@ -4614,8 +4910,8 @@ class _HazardHubCardState extends State<HazardHubCard> {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
+                    color: Colors.white,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -4636,7 +4932,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
                   value,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -4647,15 +4943,27 @@ class _HazardHubCardState extends State<HazardHubCard> {
     );
   }
 
-  /// ================= HELPERS =================
-  Map<String, dynamic> parseParameterValue(ParameterValue? paramValue) {
-    if (paramValue?.value == null) return {};
-    try {
-      final decoded = jsonDecode(paramValue!.value!);
-      return decoded['value'] ?? {};
-    } catch (_) {
-      return {};
+  Map<String, dynamic> parseParameterValue(dynamic rawValue) {
+    if (rawValue == null) return {};
+
+    // If already a map
+    if (rawValue is Map<String, dynamic>) {
+      return rawValue;
     }
+
+    // If JSON string
+    if (rawValue is String) {
+      try {
+        final decoded = jsonDecode(rawValue);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } catch (e) {
+        debugPrint("JSON parse error: $e");
+      }
+    }
+
+    return {};
   }
 
   Widget _chip(String text, {Color? color}) {
@@ -4667,7 +4975,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
       child: Text(
         text,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
       ),
     );
   }
@@ -4675,10 +4983,16 @@ class _HazardHubCardState extends State<HazardHubCard> {
   String formatKey(String key) {
     return key
         .replaceAll('_', ' ')
+        .replaceAllMapped(
+      RegExp(r'([a-z])([A-Z])'),
+          (m) => '${m[1]} ${m[2]}',
+    )
         .split(' ')
-        .map((e) => e.isEmpty ? e : '${e[0].toUpperCase()}${e.substring(1)}')
+        .map((e) =>
+    e.isEmpty ? e : '${e[0].toUpperCase()}${e.substring(1)}')
         .join(' ');
   }
+
 }
 
 /// ================= STYLES =================

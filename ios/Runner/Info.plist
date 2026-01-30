@@ -38,7 +38,7 @@
 
     <!-- Version info -->
     <key>CFBundleShortVersionString</key>
-    <string>5.6.1</string>
+    <string>5.8.9</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleSignature</key>
@@ -61,7 +61,7 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>msauth.com.sonofthunder.risksphere</string>
-                <string>msaleb81a783-765c-482d-8fcb-6440ab1d1201</string>
+                <string>msal184459ca-bb23-407f-845c-720d49b25768</string>
             </array>
         </dict>
         <dict>
@@ -93,8 +93,6 @@
     <string>We need your location to provide personalized content and improve your experience.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>We need your location to enhance app features and provide relevant content.</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>This app needs access to location when in the background.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>We need access to your microphone to record videos.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>

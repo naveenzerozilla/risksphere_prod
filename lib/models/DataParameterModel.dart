@@ -1482,7 +1482,7 @@ class ParameterData {
   String? moduleName;
   String? parameterNameA;
   bool? isItRangeParameter;
-  String? path;
+  // String? path;
 
   ParameterData(
       {this.unitName,
@@ -1524,7 +1524,8 @@ class ParameterData {
       this.moduleName,
       this.parameterNameA,
       this.isItRangeParameter,
-      this.path});
+      // this.path
+      });
 
   ParameterData.fromJson(Map<String, dynamic> json) {
     unitName = json['unit_name'];
@@ -1588,7 +1589,7 @@ class ParameterData {
     moduleName = json['module_name'];
     parameterNameA = json['parameter_name_a'];
     isItRangeParameter = json['is_it_range_parameter'];
-    path = json['path'];
+    // path = json['path'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1657,7 +1658,7 @@ class ParameterData {
     data['module_name'] = this.moduleName;
     data['parameter_name_a'] = this.parameterNameA;
     data['is_it_range_parameter'] = this.isItRangeParameter;
-    data['path'] = this.path;
+    // data['path'] = this.path;
     return data;
   }
 }

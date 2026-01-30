@@ -102,36 +102,7 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Container(
-          //   decoration: BoxDecoration(
-          //     color: widget.titleColor,
-          //     borderRadius: BorderRadius.only(
-          //       topLeft: Radius.circular(8),
-          //       topRight: Radius.circular(8),
-          //     ),
-          //   ),
-          //   padding: const EdgeInsets.only(left: 16, top: 15, bottom: 10),
-          //   child: Row(
-          //     children: [
-          //       // Text(
-          //       //   widget.title == "high"
-          //       //       ? "High Impact  Parameter"
-          //       //       : widget.title == "medium"
-          //       //           ? "Medium Impact  Parameter"
-          //       //           : widget.title == "low"
-          //       //               ? "Low Impact  Parameter"
-          //       //               : widget.title,
-          //       //   style: TextStyle(
-          //       //     fontSize: 16,
-          //       //     fontWeight: FontWeight.w600,
-          //       //     color: Colors.white,
-          //       //   ),
-          //       // ),
-          //     ],
-          //   ),
-          // ),
 
-          // Expandable List
           ...widget.dataElements.asMap().entries.map((entry) {
             int index = entry.key;
             ImpactDataElement element = entry.value;
@@ -139,13 +110,13 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
 
             return Column(
               children: [
-                if (index == 0) Divider(height: 1, color: Colors.grey),
+                if (index == 0) Divider(height: 0, color: Colors.grey),
                 Container(
                   margin: isExpanded ? EdgeInsets.all(8) : EdgeInsets.all(0),
                   decoration: BoxDecoration(
-                    color: isExpanded
-                        ? AppColors.primaryMain.withOpacity(0.16)
-                        : Colors.transparent,
+                    // color: isExpanded
+                    //     ? AppColors.primaryMain.withOpacity(0.16)
+                    //     : Colors.transparent,
                     border: Border.all(
                         color: isExpanded ? Colors.blue : Colors.transparent),
                     borderRadius: BorderRadius.circular(10),

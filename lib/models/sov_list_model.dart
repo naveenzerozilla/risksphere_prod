@@ -30,7 +30,7 @@ class SovListModel {
     page = json['page'] is int ? json['page'] : 1;
     pageSize = json['pageSize'] is int ? json['pageSize'] : 0;
     filters =
-    json['filters'] != null ? new Filters.fromJson(json['filters']) : null;
+        json['filters'] != null ? new Filters.fromJson(json['filters']) : null;
     cards = json['cards'] != null ? new Cards.fromJson(json['cards']) : null;
     // ✅ Safe 'result' parsing
     if (json['result'] is List) {
@@ -104,25 +104,74 @@ class SovListModel {
 }
 
 class Results {
-  String? sovId;
-  String? name;
-  int? locationCount;
+  String? companyId;
   String? companyName;
+  String? hazardName;
+  String? locationId;
+  String? locationName;
+  String? locationAddress;
+  String? locationImage;
+  double? locationLatitude;
+  double? locationLongitude;
+  double? latitude;
+  double? longitude;
+  Users? users;
+  String? userId;
+  String? userName;
+  String? userRole;
   String? date;
   String? vendorName;
   int? apisUsed;
-  int? totalCost;
-  Results({this.sovId, this.name, this.locationCount,
+  dynamic totalCost;
+  String? sovId;
+  String? name;
+  int? locationCount;
 
+  Results({
+    this.companyId,
     this.companyName,
+    this.hazardName,
+    this.locationImage,
+    this.locationLatitude,
+    this.locationLongitude,
+    this.locationId,
+    this.locationName,
+    this.locationAddress,
+    this.latitude,
+    this.longitude,
+    this.users,
+    this.userId,
+    this.userName,
+    this.userRole,
     this.date,
     this.vendorName,
     this.apisUsed,
-    this.totalCost
-
+    this.totalCost,
+    this.sovId,
+    this.name,
+    this.locationCount,
   });
 
   Results.fromJson(Map<String, dynamic> json) {
+    companyId = json['company_id'];
+    companyName = json['company_name'];
+    hazardName = json['hazard_name'];
+    locationId = json['location_id'];
+    locationName = json['location_name'];
+    locationAddress = json['location_address'];
+    locationImage = json['location_image'];
+    locationLatitude = json['location_latitude'];
+    locationLongitude = json['location_longitude'];
+    latitude = json['latitude'];
+    longitude = json['longitude'];
+    users = json['users'] != null ? new Users.fromJson(json['users']) : null;
+    userId = json['user_id'];
+    userName = json['user_name'];
+    userRole = json['user_role'];
+    date = json['date'];
+    vendorName = json['vendor_name'];
+    apisUsed = json['apis_used'];
+    totalCost = json['total_cost'];
     sovId = json['sov_id'];
     name = json['name'];
     locationCount = json['location_count'];
@@ -135,6 +184,27 @@ class Results {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['company_id'] = this.companyId;
+    data['company_name'] = this.companyName;
+    data['hazard_name'] = this.hazardName;
+    data['location_id'] = this.locationId;
+    data['location_name'] = this.locationName;
+    data['location_address'] = this.locationAddress;
+    data['location_image'] = this.locationImage;
+    data['location_latitude'] = this.locationLatitude;
+    data['location_longitude'] = this.locationLongitude;
+    data['latitude'] = this.latitude;
+    data['longitude'] = this.longitude;
+    if (this.users != null) {
+      data['users'] = this.users!.toJson();
+    }
+    data['user_id'] = this.userId;
+    data['user_name'] = this.userName;
+    data['user_role'] = this.userRole;
+    data['date'] = this.date;
+    data['vendor_name'] = this.vendorName;
+    data['apis_used'] = this.apisUsed;
+    data['total_cost'] = this.totalCost;
     data['sov_id'] = this.sovId;
     data['name'] = this.name;
     data['location_count'] = this.locationCount;
@@ -146,34 +216,186 @@ class Results {
     return data;
   }
 }
+
+class Users {
+  HRUMQK6MdthFmvsKv9lgbrRUdtC3? hRUMQK6MdthFmvsKv9lgbrRUdtC3;
+
+  Users({this.hRUMQK6MdthFmvsKv9lgbrRUdtC3});
+
+  Users.fromJson(Map<String, dynamic> json) {
+    hRUMQK6MdthFmvsKv9lgbrRUdtC3 = json['hRUMQK6MdthFmvsKv9lgbrRUdtC3'] != null
+        ? new HRUMQK6MdthFmvsKv9lgbrRUdtC3.fromJson(
+            json['hRUMQK6MdthFmvsKv9lgbrRUdtC3'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.hRUMQK6MdthFmvsKv9lgbrRUdtC3 != null) {
+      data['hRUMQK6MdthFmvsKv9lgbrRUdtC3'] =
+          this.hRUMQK6MdthFmvsKv9lgbrRUdtC3!.toJson();
+    }
+    return data;
+  }
+}
+
+class HRUMQK6MdthFmvsKv9lgbrRUdtC3 {
+  UserRole? userRole;
+  int? cost;
+  String? userName;
+  int? apisUsed;
+
+  HRUMQK6MdthFmvsKv9lgbrRUdtC3(
+      {this.userRole, this.cost, this.userName, this.apisUsed});
+
+  HRUMQK6MdthFmvsKv9lgbrRUdtC3.fromJson(Map<String, dynamic> json) {
+    userRole = json['user_role'] != null
+        ? new UserRole.fromJson(json['user_role'])
+        : null;
+    cost = json['cost'];
+    userName = json['user_name'];
+    apisUsed = json['apis_used'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.userRole != null) {
+      data['user_role'] = this.userRole!.toJson();
+    }
+    data['cost'] = this.cost;
+    data['user_name'] = this.userName;
+    data['apis_used'] = this.apisUsed;
+    return data;
+  }
+}
+
+class UserRole {
+  String? role;
+  String? name;
+
+  UserRole({this.role, this.name});
+
+  UserRole.fromJson(Map<String, dynamic> json) {
+    role = json['role'];
+    name = json['name'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['role'] = this.role;
+    data['name'] = this.name;
+    return data;
+  }
+}
+
+class Autogenerated {
+  String? companyId;
+  String? companyName;
+  String? hazardName;
+  String? locationId;
+  String? locationName;
+  String? locationAddress;
+  double? latitude;
+  double? longitude;
+  Users? users;
+  String? userId;
+  String? userName;
+  String? userRole;
+  String? date;
+  String? vendorName;
+  int? apisUsed;
+  int? totalCost;
+
+  Autogenerated(
+      {this.companyId,
+      this.companyName,
+      this.hazardName,
+      this.locationId,
+      this.locationName,
+      this.locationAddress,
+      this.latitude,
+      this.longitude,
+      this.users,
+      this.userId,
+      this.userName,
+      this.userRole,
+      this.date,
+      this.vendorName,
+      this.apisUsed,
+      this.totalCost});
+
+  Autogenerated.fromJson(Map<String, dynamic> json) {
+    companyId = json['company_id'];
+    companyName = json['company_name'];
+    hazardName = json['hazard_name'];
+    locationId = json['location_id'];
+    locationName = json['location_name'];
+    locationAddress = json['location_address'];
+    latitude = json['latitude'];
+    longitude = json['longitude'];
+    users = json['users'] != null ? new Users.fromJson(json['users']) : null;
+    userId = json['user_id'];
+    userName = json['user_name'];
+    userRole = json['user_role'];
+    date = json['date'];
+    vendorName = json['vendor_name'];
+    apisUsed = json['apis_used'];
+    totalCost = json['total_cost'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['company_id'] = this.companyId;
+    data['company_name'] = this.companyName;
+    data['hazard_name'] = this.hazardName;
+    data['location_id'] = this.locationId;
+    data['location_name'] = this.locationName;
+    data['location_address'] = this.locationAddress;
+    data['latitude'] = this.latitude;
+    data['longitude'] = this.longitude;
+    if (this.users != null) {
+      data['users'] = this.users!.toJson();
+    }
+    data['user_id'] = this.userId;
+    data['user_name'] = this.userName;
+    data['user_role'] = this.userRole;
+    data['date'] = this.date;
+    data['vendor_name'] = this.vendorName;
+    data['apis_used'] = this.apisUsed;
+    data['total_cost'] = this.totalCost;
+    return data;
+  }
+}
+
 class Cards {
-  int? totalApisUsed;
-  int? totalApiCost;
-  int? avgCostPerApi;
-  int? activeVendors;
+  dynamic totalApisUsed;
+  dynamic totalApiCost;
+  dynamic avgCostPerApi;
+  dynamic activeVendors;
 
   Cards(
       {this.totalApisUsed,
-        this.totalApiCost,
-        this.avgCostPerApi,
-        this.activeVendors});
+      this.totalApiCost,
+      this.avgCostPerApi,
+      this.activeVendors});
 
   Cards.fromJson(Map<String, dynamic> json) {
     totalApisUsed = json['total_apis_used'];
-    totalApiCost = json['total_api_cost'];
+    totalApiCost = json['total_cost_incurred'];
     avgCostPerApi = json['avg_cost_per_api'];
-    activeVendors = json['active_vendors'];
+    activeVendors = json['active_users'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['total_apis_used'] = this.totalApisUsed;
-    data['total_api_cost'] = this.totalApiCost;
+    data['total_cost_incurred'] = this.totalApiCost;
     data['avg_cost_per_api'] = this.avgCostPerApi;
-    data['active_vendors'] = this.activeVendors;
+    data['active_users'] = this.activeVendors;
     return data;
   }
 }
+
 class Filters {
   String? startDate;
   String? endDate;
@@ -188,15 +410,15 @@ class Filters {
 
   Filters(
       {this.startDate,
-        this.endDate,
-        this.vendorName,
-        this.groupBy,
-        this.dateView,
-        this.search,
-        this.sortBy,
-        this.sortOrder,
-        this.page,
-        this.pageSize});
+      this.endDate,
+      this.vendorName,
+      this.groupBy,
+      this.dateView,
+      this.search,
+      this.sortBy,
+      this.sortOrder,
+      this.page,
+      this.pageSize});
 
   Filters.fromJson(Map<String, dynamic> json) {
     startDate = json['start_date'];
@@ -226,10 +448,25 @@ class Filters {
     return data;
   }
 }
+
 class Result {
+  String? companyId;
+  String? companyName;
+  String? hazardName;
+  String? locationId;
+  String? locationName;
+  String? locationAddress;
+  double? latitude;
+  double? longitude;
+  String? userId;
+  String? userName;
+  String? userRole;
+  String? date;
+  String? vendorName;
+  int? apisUsed;
+  int? totalCost;
   String? sovId;
   Owner? owner;
-  String? companyId;
   String? subAccountId;
   String? accountName;
   String? subAccountName;
@@ -245,7 +482,6 @@ class Result {
   SharingStatus? sharingStatus;
   int? locationCount;
   dynamic role;
-  String? companyName;
   String? status;
   int? geocodeAvg;
   int? overallAvg;
@@ -253,9 +489,23 @@ class Result {
   int? dataCompleteness;
 
   Result(
-      {this.sovId,
+      {this.companyId,
+      this.companyName,
+      this.hazardName,
+      this.locationId,
+      this.locationName,
+      this.locationAddress,
+      this.latitude,
+      this.longitude,
+      this.userId,
+      this.userName,
+      this.userRole,
+      this.date,
+      this.vendorName,
+      this.apisUsed,
+      this.totalCost,
+      this.sovId,
       this.owner,
-      this.companyId,
       this.subAccountId,
       this.accountName,
       this.subAccountName,
@@ -269,7 +519,6 @@ class Result {
       this.sharingStatus,
       this.locationCount,
       this.role,
-      this.companyName,
       this.status,
       this.geocodeAvg,
       this.overallAvg,
@@ -277,6 +526,22 @@ class Result {
       this.dataCompleteness});
 
   Result.fromJson(Map<String, dynamic> json) {
+    companyId = json['company_id'];
+    companyName = json['company_name'];
+    hazardName = json['hazard_name'];
+    locationId = json['location_id'];
+    locationName = json['location_name'];
+    locationAddress = json['location_address'];
+    latitude = json['latitude'];
+    longitude = json['longitude'];
+    userId = json['user_id'];
+    userName = json['user_name'];
+    userRole = json['user_role'];
+    date = json['date'];
+    vendorName = json['vendor_name'];
+    apisUsed = json['apis_used'];
+    totalCost = json['total_cost'];
+
     sovId = json['sov_id'];
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     companyId = json['company_id'];
@@ -326,6 +591,23 @@ class Result {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
+
+    data['company_id'] = this.companyId;
+    data['company_name'] = this.companyName;
+    data['hazard_name'] = this.hazardName;
+    data['location_id'] = this.locationId;
+    data['location_name'] = this.locationName;
+    data['location_address'] = this.locationAddress;
+    data['latitude'] = this.latitude;
+    data['longitude'] = this.longitude;
+
+    data['user_id'] = this.userId;
+    data['user_name'] = this.userName;
+    data['user_role'] = this.userRole;
+    data['date'] = this.date;
+    data['vendor_name'] = this.vendorName;
+    data['apis_used'] = this.apisUsed;
+    data['total_cost'] = this.totalCost;
     data['sov_id'] = this.sovId;
     if (this.owner != null) {
       data['owner'] = this.owner!.toJson();
@@ -645,27 +927,79 @@ class CreatedAt {
 }
 
 class SharingStatus {
-  final Map<String, SharingUser> users;
+  String? email;
+  String? userId;
+  String? status;
+  String? comment;
+  Role? role;
+  DateTime? shareExpiry;
+  CreatedAt? updatedAt;
+  String? updatedBy;
 
-  SharingStatus({required this.users});
+  SharingStatus({
+    this.email,
+    this.userId,
+    this.status,
+    this.comment,
+    this.role,
+    this.shareExpiry,
+    this.updatedAt,
+    this.updatedBy,
+  });
 
-  factory SharingStatus.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      return SharingStatus(users: {});
-    }
-
-    final map = <String, SharingUser>{};
-
-    json.forEach((key, value) {
-      map[key] = SharingUser.fromJson(value);
-    });
-
-    return SharingStatus(users: map);
+  factory SharingStatus.fromJson(Map<String, dynamic> json) {
+    return SharingStatus(
+      email: json['email'],
+      userId: json['user_id'],
+      status: json['status'],
+      comment: json['comment'],
+      role: json['role'] != null ? Role.fromJson(json['role']) : null,
+      shareExpiry: json['share_expiry'] != null
+          ? DateTime.tryParse(json['share_expiry'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? CreatedAt.fromJson(json['updated_at'])
+          : null,
+      updatedBy: json['updated_by'],
+    );
   }
 
-  /// ✅ Total count
-  int get count => users.length;
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'user_id': userId,
+      'status': status,
+      'comment': comment,
+      'role': role?.toJson(),
+      'share_expiry': shareExpiry?.toIso8601String(),
+      'updated_at': updatedAt?.toJson(),
+      'updated_by': updatedBy,
+    };
+  }
 }
+
+// class SharingStatus {
+//   final Map<String, SharingUser> users;
+//
+//   SharingStatus({required this.users});
+//
+//   factory SharingStatus.fromJson(Map<String, dynamic>? json) {
+//     if (json == null) {
+//       return SharingStatus(users: {});
+//     }
+//
+//     final map = <String, SharingUser>{};
+//
+//     json.forEach((key, value) {
+//       map[key] = SharingUser.fromJson(value);
+//     });
+//
+//     return SharingStatus(users: map);
+//   }
+//
+//   /// ✅ Total count
+//   int get count => users.length;
+// }
 
 class SharingUser {
   String? userId;
@@ -685,9 +1019,7 @@ class SharingUser {
       this.updatedAt,
       this.updatedBy,
       this.user,
-      this.email
-
-      });
+      this.email});
 
   SharingUser.fromJson(Map<String, dynamic> json) {
     userId = json['user_id'];

@@ -1,4 +1,3 @@
-import 'package:RiskSphere/main.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
 import 'package:RiskSphere/utils/http_client.dart';
 import 'package:firebase_performance/firebase_performance.dart';
@@ -7,8 +6,6 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'design_system/app_themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
-
-import 'main.dart';
 
 late PerformanceHttpClient httpClient; // global client
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -50,8 +47,8 @@ void main() async {
 
   try {
     Stripe.publishableKey =
-        // 'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
-        'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+        'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
+    // 'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
     await Stripe.instance.applySettings();
   } catch (e, stackTrace) {
     debugPrint('Stripe initialization failed: $e');
@@ -63,11 +60,11 @@ void main() async {
   runApp(
     EasyLocalization(
       supportedLocales: const [
-        Locale('en'), // US
-        Locale('es'), // Spain
-        Locale('fr'), // France
-        Locale('ja'), // Japan
-        Locale('zh'), // China
+        Locale('en'),
+        Locale('es'),
+        Locale('fr'),
+        Locale('ja'),
+        Locale('zh'),
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:RiskSphere/screens/listings/sub_account_list.dart';
+import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -95,8 +96,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   TextEditingController _locationZipCodeController = TextEditingController();
   TextEditingController _locationDescriptionController =
       TextEditingController();
+  TextEditingController tagController = TextEditingController();
+  final List<String> tags = [];
   bool isSovSelected = false;
-
+  bool isHasAnyPlan = false;
   String _selectedCountry = "United States";
   bool hasAnyPlan = false;
   String? hasLicenseStatus = "1";
@@ -212,29 +215,6 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
     await _updateMap(position);
   }
-
-  // Future<void> _initMapFromApi() async {
-  //   final provider =
-  //       Provider.of<MyLocationListProvider>(context, listen: false);
-  //
-  //   final lat = provider.locationProfile?.finalAddress?.latitude;
-  //   final lng = provider.locationProfile?.finalAddress?.longitude;
-  //
-  //   if (lat == null || lng == null) return;
-  //
-  //   final position = LatLng(lat, lng);
-  //
-  //   setState(() {
-  //     _selectedLatLng = position;
-  //     _latitudeController.text = lat.toStringAsFixed(6);
-  //     _longitudeController.text = lng.toStringAsFixed(6);
-  //   });
-  //
-  //   final controller = await _mapController.future;
-  //   controller.animateCamera(
-  //     CameraUpdate.newLatLngZoom(position, 16),
-  //   );
-  // }
 
   void _initLocationFields() {
     var provider = Provider.of<MyLocationListProvider>(context, listen: false);
@@ -378,6 +358,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   }
 
   Future<void> _getData() async {
+    await _setClaims();
     await Provider.of<MyLocationListProvider>(context, listen: false)
       ..fetchIndividualLocationProfile(context, widget.locationId ?? '');
     final dashboardProvider =
@@ -413,6 +394,16 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     } catch (error) {
       print("Error fetching data: $error");
     }
+  }
+
+  _setClaims() async {
+    final adminValues = await Future.wait([
+      SharedPreferenceService.getHasAnyPlan(),
+    ]);
+
+    isHasAnyPlan = adminValues[4] ?? false;
+
+    if (mounted) setState(() {});
   }
 
   final GlobalKey _dropdownKey = GlobalKey();
@@ -2245,6 +2236,75 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 //     );
                                                 //   },
                                                 // ),
+                                                SizedBox(height: 8),
+                                                TextField(
+                                                  controller: tagController,
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                  decoration: InputDecoration(
+                                                    labelText:
+                                                        "Enter tags separated by commas",
+                                                    labelStyle: const TextStyle(
+                                                        color: Colors.white),
+                                                    enabledBorder:
+                                                        const OutlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                          color: Colors.grey),
+                                                    ),
+                                                    focusedBorder:
+                                                        const OutlineInputBorder(
+                                                      borderSide: BorderSide(
+                                                          color: Colors.blue),
+                                                    ),
+                                                    hintStyle: const TextStyle(
+                                                        color: Colors.white54),
+                                                  ),
+                                                  onChanged: (value) {
+                                                    if (value.contains(',')) {
+                                                      final tag = value
+                                                          .replaceAll(',', '')
+                                                          .trim();
+
+                                                      if (tag.isNotEmpty &&
+                                                          !tags.contains(tag)) {
+                                                        setState(() {
+                                                          tags.add(tag);
+                                                        });
+                                                      }
+
+                                                      tagController.clear();
+                                                    }
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 12),
+
+                                                /// 🧩 TAG CHIPS
+                                                if (tags.isNotEmpty)
+                                                  Wrap(
+                                                    spacing: 8,
+                                                    runSpacing: 8,
+                                                    children: tags.map((tag) {
+                                                      return Chip(
+                                                        label: Text(
+                                                          tag,
+                                                          style:
+                                                              const TextStyle(
+                                                                  color: Colors
+                                                                      .white),
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.grey[700],
+                                                        deleteIconColor:
+                                                            Colors.white,
+                                                        onDeleted: () {
+                                                          setState(() {
+                                                            tags.remove(tag);
+                                                          });
+                                                        },
+                                                      );
+                                                    }).toList(),
+                                                  ),
                                               ],
                                             ),
                                           ),
@@ -2365,6 +2425,59 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                   ],
                 );
               }),
+              Consumer<UserProfileProvider>(
+                builder: (context, userProfile, child) {
+                  final trialStatus = userProfile.trialInfo['status'] ?? '';
+                  if (trialStatus.contains('Expired') &&
+                      isHasAnyPlan == false) {
+                    return Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.95),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(height: CustomSpacing.four),
+                          // Text(isHasAnyPlan.toString()),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: MessageCard(
+                              messageTextSpans: [
+                                TextSpan(
+                                  text:
+                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2026. After this date, we will need to delete your data. Thank you for being with us!',
+                                  style: typography.Body1,
+                                ),
+                                // tappable
+                                TextSpan(
+                                  text: ' Upgrade Now!',
+                                  style: typography.Body1.copyWith(
+                                    color: AppColors.primaryMain,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PurchaseLicensePage()));
+                                    },
+                                ),
+                              ],
+                              isError: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
             ],
           ),
         );
@@ -2373,6 +2486,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   }
 
   Map<String, dynamic> _buildRequestBody() {
+    String tagsString =
+        tags.map((e) => "'${e.trim()}'").where((e) => e != "''").join(',');
+
     return {
       "data": {
         "account_id": widget.accountId,
@@ -2404,7 +2520,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         // "longitude": markers.values.first.position.longitude,
         "user_id": FirebaseAuth.instance.currentUser!.uid,
         "add_to_sov": addToSOVCheck.toString(),
-        "tags": "",
+        "tags": tagsString, // Send the actual tags list
         "name": sovController.text.toString(),
         "account_name": widget.accountName,
         "sub_account_name": widget.subAccountName,

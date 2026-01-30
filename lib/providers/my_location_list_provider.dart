@@ -31,6 +31,7 @@ import 'package:RiskSphere/models/location_list_model.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 
+import '../models/locationDocument.dart';
 import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/language_service.dart';
 
@@ -47,7 +48,8 @@ MyLocationModel parseMyLocationModel(Map<String, dynamic> json) {
   return MyLocationModel.fromJson(json);
 }
 
-class MyLocationListProvider extends ChangeNotifier {
+class MyLocationListProvider with ChangeNotifier {
+// class MyLocationListProvider extends ChangeNotifier {
   final Set<String> selectedLocationIds = {};
   final Set<String> excludedLocationIds = {};
   bool isGlobalSelectAll = false;
@@ -119,6 +121,103 @@ class MyLocationListProvider extends ChangeNotifier {
   //   }
   //   notifyListeners();
   // }
+  bool isDocumentsLoading = false;
+  bool isDocumentsLoaded = false;
+  List<dynamic> documents = [];
+
+  int documentsCount = 0;
+  String? deletingDocumentId;
+
+  bool isDeleting(String documentId) => deletingDocumentId == documentId;
+
+  Future<void> fetchDocuments({
+    required BuildContext context,
+    required String locationId,
+    bool forceRefresh = false,
+  }) async {
+    if (isDocumentsLoading) return;
+    if (isDocumentsLoaded && !forceRefresh) return;
+
+    if (forceRefresh) {
+      isDocumentsLoaded = false;
+    }
+
+    isDocumentsLoading = true;
+    notifyListeners();
+
+    try {
+      final headers = await CommonHeaders.createHeaders();
+
+      final url = "${AppConstant.DOCUMENT_LIST}/$locationId";
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        documentsCount = jsonResponse['count'] ?? 0;
+
+        documents = (jsonResponse['result'] as List)
+            .map((e) => LocationDocument.fromJson(e))
+            .toList();
+
+        isDocumentsLoaded = true;
+      } else {
+        throw Exception("Failed to load documents");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Documents API Error: $e");
+      debugPrint(stackTrace.toString());
+    } finally {
+      isDocumentsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteDocument({
+    required BuildContext context,
+    required String locationId,
+    required String documentId,
+    required String imageUrl,
+  }) async {
+    try {
+      final headers = await CommonHeaders.createHeaders();
+
+      final url =
+          "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/location_media/$locationId/$documentId";
+
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "data": {
+            "image_url": imageUrl,
+          }
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        documents.removeWhere((doc) => doc.id == documentId);
+        notifyListeners();
+      } else {
+        debugPrint("Delete failed: ${response.body}");
+        throw Exception("Failed to delete document");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Delete Document Error: $e");
+      debugPrint(stackTrace.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to delete document")),
+      );
+    }
+  }
 
   bool _isLoading = false;
   int currentPage = 1;
@@ -903,6 +1002,17 @@ class MyLocationListProvider extends ChangeNotifier {
 
   set subdestinations(List<Subdestination> value) {
     _subdestinations = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  List<AllActivityLogs> _allActivitylogs = [];
+
+  List<AllActivityLogs> get allAcitivityLogs => _allActivitylogs;
+
+  set allAcitivityLogs(List<AllActivityLogs> value) {
+    _allActivitylogs = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -2032,7 +2142,7 @@ class MyLocationListProvider extends ChangeNotifier {
 
   Future<void> fetchUserManagement() async {
     final url = Uri.parse(
-      "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/user_management?current_role=true&current_user=true",
+      "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
     );
 
     try {
@@ -2691,57 +2801,6 @@ class MyLocationListProvider extends ChangeNotifier {
                                       type: ButtonType.elevated,
                                     ),
                             )
-
-                            // Expanded(
-                            //   child: isAddToSOVLoading
-                            //       ? Center(
-                            //           child: CircularProgressIndicator(),
-                            //         )
-                            //       : CustomButton(
-                            //           onPressed: () async {
-                            //             if (sovController.text.isEmpty) {
-                            //               ScaffoldMessenger.of(context)
-                            //                   .showSnackBar(SnackBar(
-                            //                 content: Text(
-                            //                   "Please select or enter an SoV name.",
-                            //                   style: typography.Body1,
-                            //                 ),
-                            //               ));
-                            //               return;
-                            //             }
-                            //
-                            //             // Prepare the body with location, account, sub-account, and sov details
-                            //             Map<String, dynamic> body = {
-                            //               "location_list": locationId == null
-                            //                   ? _selectedLocations
-                            //                       .map(
-                            //                           (location) => location.id)
-                            //                       .toList()
-                            //                   : [locationId],
-                            //               "account_id": accountID,
-                            //               "sub_account_id": subAccountID,
-                            //               "sov": {
-                            //                 "sov_id": selectedSovId,
-                            //                 // Empty if creating new SoV
-                            //                 "sov_name": sovController.text,
-                            //                 // Mandatory if creating new SoV
-                            //               }
-                            //             };
-                            //
-                            //             // Call your method to add the location to the SoV
-                            //             await addLocationToSOV(context, body);
-                            //
-                            //             setState(() {
-                            //               masterTabController?.animateTo(1);
-                            //             });
-                            //           },
-                            //           child: Text(
-                            //             "Add",
-                            //             style: typography.ButtonLargeBlack,
-                            //           ),
-                            //           type: ButtonType.elevated,
-                            //         ),
-                            // ),
                           ],
                         ),
                         SizedBox(width: 8.0),
@@ -2996,8 +3055,10 @@ class MyLocationListProvider extends ChangeNotifier {
     List<String> locationId, {
     required bool isGlobal,
   }) async {
-    var typography = CustomTypography(context);
-    TextEditingController tagsController = TextEditingController();
+    final typography = CustomTypography(context);
+    final TextEditingController tagsController = TextEditingController();
+    final ValueNotifier<List<String>> tagsNotifier =
+        ValueNotifier<List<String>>([]);
 
     await showDialog(
       context: context,
@@ -3005,191 +3066,402 @@ class MyLocationListProvider extends ChangeNotifier {
         return AlertDialog(
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.85,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  /// TITLE
-                  Text(
-                    "Add Tags",
-                    textAlign: TextAlign.center,
-                    style: typography.H5_Regular.copyWith(height: 1.5),
-                  ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                /// TITLE
+                Text(
+                  "Add Tags",
+                  textAlign: TextAlign.center,
+                  style: typography.H5_Regular.copyWith(height: 1.5),
+                ),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  /// INPUT
-                  TextField(
-                    controller: tagsController,
-                    decoration: const InputDecoration(
-                      labelText: "Enter comma-separated tags",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// ACTIONS
-                  Consumer<MyLocationListProvider>(
-                    builder: (_, provider, __) {
-                      return Row(
+                ValueListenableBuilder<List<String>>(
+                  valueListenable: tagsNotifier,
+                  builder: (_, tags, __) {
+                    return Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          /// CANCEL
-                          Expanded(
-                            child: CustomButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              type: ButtonType.text,
-                              child: Text(
-                                "Cancel",
-                                style: typography.ButtonLarge,
+                          /// TAG LIST (ONLY WHEN TAGS EXIST)
+                          if (tags.isNotEmpty)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxHeight: 140, // ~4 rows
+                              ),
+                              child: SingleChildScrollView(
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: tags
+                                      .map(
+                                        (tag) => _TagChip(
+                                          label: tag,
+                                          onDelete: () {
+                                            final updated =
+                                                List<String>.from(tags)
+                                                  ..remove(tag);
+                                            tagsNotifier.value = updated;
+                                          },
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
                               ),
                             ),
-                          ),
 
-                          const SizedBox(width: 12),
+                          /// DIVIDER (ONLY IF TAGS EXIST)
+                          if (tags.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Divider(height: 1),
+                          ],
 
-                          /// ADD / LOADER
-                          Expanded(
-                            child: provider.isAddTagsLoading
-                                ? const Center(
-                                    child: SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    ),
-                                  )
-                                : CustomButton(
-                                    type: ButtonType.elevated,
-                                    onPressed: () async {
-                                      if (tagsController.text.trim().isEmpty) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text("Please enter tags."),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      final tags = tagsController.text
-                                          .split(',')
-                                          .map((e) => e.trim())
-                                          .where((e) => e.isNotEmpty)
-                                          .toList();
-
-                                      await addTagsToLocation(
-                                        context,
-                                        accountId,
-                                        subAccountId,
-                                        isGlobal ? [] : locationId,
-                                        tags,
-                                        isGlobal: isGlobal,
-                                      );
-
-                                      if (!isGlobal) {
-                                        for (final id in locationId) {
-                                          final loc = getLocationById(id);
-                                          loc?.tags ??= [];
-                                          loc?.tags!.addAll(tags);
-                                        }
-                                      }
-
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text("Add"),
-                                  ),
+                          /// ADD TAG FIELD (ALWAYS VISIBLE)
+                          TextField(
+                            controller: tagsController,
+                            decoration: const InputDecoration(
+                              hintText: "Add tag",
+                              border: InputBorder.none,
+                              isDense: true,
+                            ),
+                            onChanged: (value) {
+                              if (value.endsWith(',') || value.endsWith('\n')) {
+                                _addTagFromInput(
+                                  tagsController,
+                                  tagsNotifier,
+                                );
+                              }
+                            },
+                            onSubmitted: (_) {
+                              _addTagFromInput(
+                                tagsController,
+                                tagsNotifier,
+                              );
+                            },
                           ),
                         ],
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
+                ),
 
-                  const SizedBox(height: 12),
-                ],
-              ),
+                const SizedBox(height: 20),
 
-              // Column(
-              //   mainAxisSize: MainAxisSize.min,
-              //   children: [
-              //     Text("Add Tags",
-              //         style: typography.H5_Regular.copyWith(height: 1.5)),
-              //     const SizedBox(height: 16),
-              //     TextField(
-              //       controller: tagsController,
-              //       decoration: const InputDecoration(
-              //         labelText: "Enter comma-separated tags",
-              //         border: OutlineInputBorder(),
-              //       ),
-              //     ),
-              //     const SizedBox(height: 16),
-              //     Consumer<MyLocationListProvider>(
-              //       builder: (_, provider, __) {
-              //         return
-              //           Expanded(
-              //                                           child:
-              //           provider.isAddTagsLoading
-              //             ? const CircularProgressIndicator()
-              //             : CustomButton(
-              //                 onPressed: () async {
-              //                   if (tagsController.text.isEmpty) {
-              //                     ScaffoldMessenger.of(context).showSnackBar(
-              //                       const SnackBar(
-              //                         content: Text("Please enter tags."),
-              //                       ),
-              //                     );
-              //                     return;
-              //                   }
-              //
-              //                   final tags = tagsController.text.split(",");
-              //
-              //                   await addTagsToLocation(
-              //                     context,
-              //                     accountId,
-              //                     subAccountId,
-              //                     isGlobal ? [] : locationId,
-              //                     tags,
-              //                     isGlobal: isGlobal,
-              //                   );
-              //
-              //                   if (!isGlobal) {
-              //                     for (final id in locationId) {
-              //                       final loc = getLocationById(id);
-              //                       loc?.tags ??= [];
-              //                       loc?.tags!.addAll(tags);
-              //                     }
-              //                   }
-              //
-              //                   Navigator.pop(context);
-              //                 },
-              //                 child: const Text("Add"),
-              //                 type: ButtonType.elevated,
-              //               ));
-              //       },
-              //     ),
-              //                             CustomButton(
-              //                               onPressed: () {
-              //                                 Navigator.pop(context);
-              //                               },
-              //                               child: Text(
-              //                                 "Cancel",
-              //                                 style: typography.ButtonLarge,
-              //                               ),
-              //                               type: ButtonType.text,
-              //                             ),
-              //   ],
-              // ),
+                /// ACTIONS
+                Consumer<MyLocationListProvider>(
+                  builder: (_, provider, __) {
+                    return Row(
+                      children: [
+                        /// CANCEL
+                        Expanded(
+                          child: CustomButton(
+                            type: ButtonType.text,
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: typography.ButtonLarge,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        /// ADD
+                        Expanded(
+                          child: provider.isAddTagsLoading
+                              ? const Center(
+                                  child: SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                )
+                              : CustomButton(
+                                  type: ButtonType.elevated,
+                                  onPressed: () async {
+                                    final tags = tagsNotifier.value;
+
+                                    if (tags.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Please add at least one tag."),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    await addTagsToLocation(
+                                      context,
+                                      accountId,
+                                      subAccountId,
+                                      isGlobal ? [] : locationId,
+                                      tags,
+                                      isGlobal: isGlobal,
+                                    );
+
+                                    if (!isGlobal) {
+                                      for (final id in locationId) {
+                                        final loc = getLocationById(id);
+                                        loc?.tags ??= [];
+                                        loc?.tags!.addAll(tags);
+                                      }
+                                    }
+
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("Add Tags"),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 12),
+              ],
             ),
           ),
         );
       },
     );
-
-    tagsController.clear();
   }
+
+  void _addTagFromInput(
+    TextEditingController controller,
+    ValueNotifier<List<String>> tagsNotifier,
+  ) {
+    final text = controller.text.replaceAll(',', '').trim();
+
+    if (text.isEmpty) return;
+
+    final currentTags = List<String>.from(tagsNotifier.value);
+
+    if (currentTags.contains(text)) {
+      controller.clear();
+      return;
+    }
+
+    /// 🔥 INSERT AT TOP (MOST RECENT FIRST)
+    currentTags.insert(0, text);
+
+    tagsNotifier.value = currentTags;
+    controller.clear();
+  }
+
+  // Future<void> showAddTagDialog(
+  //   BuildContext context,
+  //   String accountId,
+  //   String subAccountId,
+  //   List<String> locationId, {
+  //   required bool isGlobal,
+  // }) async {
+  //   var typography = CustomTypography(context);
+  //   TextEditingController tagsController = TextEditingController();
+  //
+  //   await showDialog(
+  //     context: context,
+  //     builder: (dialogContext) {
+  //       return AlertDialog(
+  //         content: SizedBox(
+  //           width: MediaQuery.of(context).size.width * 0.85,
+  //           child: SingleChildScrollView(
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               crossAxisAlignment: CrossAxisAlignment.stretch,
+  //               children: [
+  //                 /// TITLE
+  //                 Text(
+  //                   "Add Tags",
+  //                   textAlign: TextAlign.center,
+  //                   style: typography.H5_Regular.copyWith(height: 1.5),
+  //                 ),
+  //
+  //                 const SizedBox(height: 16),
+  //
+  //                 /// INPUT
+  //                 TextField(
+  //                   controller: tagsController,
+  //                   decoration: const InputDecoration(
+  //                     labelText: "Enter comma-separated tags",
+  //                     border: OutlineInputBorder(),
+  //                   ),
+  //                 ),
+  //
+  //                 const SizedBox(height: 20),
+  //
+  //                 /// ACTIONS
+  //                 Consumer<MyLocationListProvider>(
+  //                   builder: (_, provider, __) {
+  //                     return Row(
+  //                       children: [
+  //                         /// CANCEL
+  //                         Expanded(
+  //                           child: CustomButton(
+  //                             onPressed: () {
+  //                               Navigator.pop(context);
+  //                             },
+  //                             type: ButtonType.text,
+  //                             child: Text(
+  //                               "Cancel",
+  //                               style: typography.ButtonLarge,
+  //                             ),
+  //                           ),
+  //                         ),
+  //
+  //                         const SizedBox(width: 12),
+  //
+  //                         /// ADD / LOADER
+  //                         Expanded(
+  //                           child: provider.isAddTagsLoading
+  //                               ? const Center(
+  //                                   child: SizedBox(
+  //                                     height: 24,
+  //                                     width: 24,
+  //                                     child: CircularProgressIndicator(
+  //                                         strokeWidth: 2),
+  //                                   ),
+  //                                 )
+  //                               : CustomButton(
+  //                                   type: ButtonType.elevated,
+  //                                   onPressed: () async {
+  //                                     if (tagsController.text.trim().isEmpty) {
+  //                                       ScaffoldMessenger.of(context)
+  //                                           .showSnackBar(
+  //                                         const SnackBar(
+  //                                           content: Text("Please enter tags."),
+  //                                         ),
+  //                                       );
+  //                                       return;
+  //                                     }
+  //
+  //                                     final tags = tagsController.text
+  //                                         .split(',')
+  //                                         .map((e) => e.trim())
+  //                                         .where((e) => e.isNotEmpty)
+  //                                         .toList();
+  //
+  //                                     await addTagsToLocation(
+  //                                       context,
+  //                                       accountId,
+  //                                       subAccountId,
+  //                                       isGlobal ? [] : locationId,
+  //                                       tags,
+  //                                       isGlobal: isGlobal,
+  //                                     );
+  //
+  //                                     if (!isGlobal) {
+  //                                       for (final id in locationId) {
+  //                                         final loc = getLocationById(id);
+  //                                         loc?.tags ??= [];
+  //                                         loc?.tags!.addAll(tags);
+  //                                       }
+  //                                     }
+  //
+  //                                     Navigator.pop(context);
+  //                                   },
+  //                                   child: const Text("Add"),
+  //                                 ),
+  //                         ),
+  //                       ],
+  //                     );
+  //                   },
+  //                 ),
+  //
+  //                 const SizedBox(height: 12),
+  //               ],
+  //             ),
+  //
+  //             // Column(
+  //             //   mainAxisSize: MainAxisSize.min,
+  //             //   children: [
+  //             //     Text("Add Tags",
+  //             //         style: typography.H5_Regular.copyWith(height: 1.5)),
+  //             //     const SizedBox(height: 16),
+  //             //     TextField(
+  //             //       controller: tagsController,
+  //             //       decoration: const InputDecoration(
+  //             //         labelText: "Enter comma-separated tags",
+  //             //         border: OutlineInputBorder(),
+  //             //       ),
+  //             //     ),
+  //             //     const SizedBox(height: 16),
+  //             //     Consumer<MyLocationListProvider>(
+  //             //       builder: (_, provider, __) {
+  //             //         return
+  //             //           Expanded(
+  //             //                                           child:
+  //             //           provider.isAddTagsLoading
+  //             //             ? const CircularProgressIndicator()
+  //             //             : CustomButton(
+  //             //                 onPressed: () async {
+  //             //                   if (tagsController.text.isEmpty) {
+  //             //                     ScaffoldMessenger.of(context).showSnackBar(
+  //             //                       const SnackBar(
+  //             //                         content: Text("Please enter tags."),
+  //             //                       ),
+  //             //                     );
+  //             //                     return;
+  //             //                   }
+  //             //
+  //             //                   final tags = tagsController.text.split(",");
+  //             //
+  //             //                   await addTagsToLocation(
+  //             //                     context,
+  //             //                     accountId,
+  //             //                     subAccountId,
+  //             //                     isGlobal ? [] : locationId,
+  //             //                     tags,
+  //             //                     isGlobal: isGlobal,
+  //             //                   );
+  //             //
+  //             //                   if (!isGlobal) {
+  //             //                     for (final id in locationId) {
+  //             //                       final loc = getLocationById(id);
+  //             //                       loc?.tags ??= [];
+  //             //                       loc?.tags!.addAll(tags);
+  //             //                     }
+  //             //                   }
+  //             //
+  //             //                   Navigator.pop(context);
+  //             //                 },
+  //             //                 child: const Text("Add"),
+  //             //                 type: ButtonType.elevated,
+  //             //               ));
+  //             //       },
+  //             //     ),
+  //             //                             CustomButton(
+  //             //                               onPressed: () {
+  //             //                                 Navigator.pop(context);
+  //             //                               },
+  //             //                               child: Text(
+  //             //                                 "Cancel",
+  //             //                                 style: typography.ButtonLarge,
+  //             //                               ),
+  //             //                               type: ButtonType.text,
+  //             //                             ),
+  //             //   ],
+  //             // ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  //
+  //   tagsController.clear();
+  // }
 
   // Future<void> showAddTagDialog(BuildContext context, String accountId,
   //     String subAccountId, List<String> locationId) async {
@@ -3725,6 +3997,12 @@ class MyLocationListProvider extends ChangeNotifier {
   }
 
   /// Profile apis
+  void updateDataCompleteness(double score) {
+    if (locationProfile == null) return;
+
+    locationProfile!.dataCompleteness = score; // ⚠️ mutable
+    notifyListeners();
+  }
 
   /// Fetch location with pagination, search query, and filters
   Future<void> fetchLocationListProfile(
@@ -3812,8 +4090,8 @@ class MyLocationListProvider extends ChangeNotifier {
             await compute<Map<String, dynamic>, MyLocationModel>(
                 MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
 
-        //summaryList = locationListModel.summaryList ?? [];
-        //mainSovRating = locationListModel. ?? 0.0;
+        allAcitivityLogs = locationListModel.results![0].allActivityLogs ?? [];
+        print(allAcitivityLogs.length.toString());
 
         if (locationListModel.totalRecords != null) {
           // Assuming you are using a fixed page size (e.g., 1 from your URL)
@@ -3829,10 +4107,7 @@ class MyLocationListProvider extends ChangeNotifier {
           grapDataProfile = locationListModel.graphData;
         }
 
-        log(resetTotalPage.toString() ?? "");
-        log(locationProfile?.toString() ?? "");
-
-        log(page.toString());
+        print(allAcitivityLogs.length.toString());
       } else {
         print(json.decode(response.body)?["error"] ?? "");
         throw Exception('Failed to load data');
@@ -4046,12 +4321,12 @@ class MyLocationListProvider extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
               response['message'] ?? "Subdestination added successfully",
-              style: typography.Body1),
+              style: typography.ButtonLargeBlack),
         ));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text("Failed to add subdestination", style: typography.Body1),
+          content: Text("Failed to add subdestination",
+              style: typography.ButtonLargeBlack),
         ));
       }
 
@@ -4061,7 +4336,7 @@ class MyLocationListProvider extends ChangeNotifier {
       isLoading = false;
       print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1),
+        content: Text(e.message, style: typography.ButtonLargeBlack),
       ));
     } catch (e, stackTrace) {
       isLoading = false;
@@ -4201,6 +4476,58 @@ class MyLocationListProvider extends ChangeNotifier {
     } finally {
       isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> markAsCompleteSovA(
+    BuildContext context,
+    String accountId,
+    String subAccountId,
+    String sovId,
+    List<String> locationIds, // ✅ RECEIVE IDS
+  ) async {
+    final typography = CustomTypography(context);
+
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      final url = AppConstant.SOV_COMPLETE_STATUS;
+      final apiService = ApiService(url);
+
+      final body = {
+        "status": "completed",
+        "sov_id": sovId,
+        "location_id": locationIds, // ✅ SEND ALL / SELECTED IDS
+      };
+
+      final response = await apiService.patch(body);
+
+      if (response.containsKey('result')) {
+        subdestinations = locationProfile?.subdestinations ?? [];
+        return true;
+      } else {
+        locationProfile?.finalAddress = null;
+        subdestinations = [];
+        return false;
+      }
+    } on BackendException catch (e, stackTrace) {
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: typography.Body1),
+        ),
+      );
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners(); // ✅ only once
     }
   }
 
@@ -4630,5 +4957,47 @@ PATCH
       isLoading = false;
       notifyListeners();
     }
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onDelete;
+
+  const _TagChip({
+    required this.label,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onDelete,
+            child: const Icon(
+              Icons.close,
+              size: 16,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
