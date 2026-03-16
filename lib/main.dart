@@ -1,6 +1,11 @@
 import 'package:RiskSphere/providers/data_list_parameters.dart';
+import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/utils/http_client.dart';
+import 'package:app_links/app_links.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_performance/firebase_performance.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
 import '../../utils/global_imports.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'design_system/app_themes.dart';
@@ -28,35 +33,54 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
+  // Step 1 - Firebase init SEPARATE block
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    debugPrint('✅ Firebase initialized');
+  } catch (e) {
+    debugPrint('❌ Firebase init error: $e');
+  }
 
+  // Step 2 - App Check SEPARATE block
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    );
+    debugPrint('✅ AppCheck activated');
+  } catch (e) {
+    debugPrint('❌ AppCheck activation error: $e');
+  }
+
+  // Step 3 - Performance SEPARATE block
+  try {
     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-
     httpClient = PerformanceHttpClient();
     bool isEnabled =
         await FirebasePerformance.instance.isPerformanceCollectionEnabled();
-    debugPrint('Firebase Performance isEnabled: $isEnabled');
+    debugPrint('✅ Firebase Performance isEnabled: $isEnabled');
   } catch (e) {
-    debugPrint('Firebase initialization error: $e');
+    debugPrint('❌ Performance error: $e');
   }
 
+  // Step 4 - Messaging
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Step 5 - Stripe SEPARATE block
   try {
-    Stripe.publishableKey =
-        'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
-    // 'pk_test_51RWO7ARtw6KU9heKwCpClVPqlQ9UettHfLjbYdSUpWnR2fAf39IvocEIWlxMRve7iIxmHOcDfdr7Gao00OiGhzxN00l4zEuUzR';
+    Stripe.publishableKey = AppConstant.Stripe_prod;
+
     await Stripe.instance.applySettings();
+    debugPrint(' Stripe initialized');
   } catch (e, stackTrace) {
-    debugPrint('Stripe initialization failed: $e');
+    debugPrint(' Stripe initialization failed: $e');
     debugPrint('Stack trace: $stackTrace');
   }
 
   initializeNotifications();
-
   runApp(
     EasyLocalization(
       supportedLocales: const [
@@ -72,6 +96,53 @@ void main() async {
     ),
   );
 }
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await EasyLocalization.ensureInitialized();
+//   try {
+//     await Firebase.initializeApp(
+//       options: DefaultFirebaseOptions.currentPlatform,
+//     );
+//
+//     await FirebaseAppCheck.instance.activate(
+//       androidProvider:
+//           kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+//       appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+//     );
+//
+//     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+//     httpClient = PerformanceHttpClient();
+//     bool isEnabled =
+//         await FirebasePerformance.instance.isPerformanceCollectionEnabled();
+//     debugPrint('Firebase Performance isEnabled: $isEnabled');
+//   } catch (e) {
+//     debugPrint('Firebase initialization error: $e');
+//   }
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//   try {
+//     Stripe.publishableKey =
+//         'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
+//     await Stripe.instance.applySettings();
+//   } catch (e, stackTrace) {
+//     debugPrint('Stripe initialization failed: $e');
+//     debugPrint('Stack trace: $stackTrace');
+//   }
+//   initializeNotifications();
+//   runApp(
+//     EasyLocalization(
+//       supportedLocales: const [
+//         Locale('en'),
+//         Locale('es'),
+//         Locale('fr'),
+//         Locale('ja'),
+//         Locale('zh'),
+//       ],
+//       path: 'assets/translations',
+//       fallbackLocale: const Locale('en'),
+//       child: AppLifecycleManager(),
+//     ),
+//   );
+// }
 
 class AppLifecycleManager extends StatefulWidget {
   @override
@@ -80,10 +151,158 @@ class AppLifecycleManager extends StatefulWidget {
 
 class _AppLifecycleManagerState extends State<AppLifecycleManager>
     with WidgetsBindingObserver {
+  late AppLinks _appLinks;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _handleDeepLink();
+    _handleSharedGoogleMapsLink();
+  }
+
+  void _handleSharedGoogleMapsLink() {
+    FlutterSharingIntent.instance.getInitialSharing().then((value) {
+      debugPrint('🔥 getInitialSharing called, count: ${value.length}');
+      if (value.isNotEmpty) {
+        final text = value.first.value ?? '';
+        debugPrint('🔥 Shared text: $text');
+        PendingSharedLocation.sharedText = text;
+        PendingSharedLocation.wasLaunchedViaShare = true;
+      } else {
+        debugPrint('🔥 No shared text received');
+      }
+    });
+
+    FlutterSharingIntent.instance.getMediaStream().listen((value) {
+      if (value.isNotEmpty) {
+        final text = value.first.value ?? '';
+        debugPrint('🔥 Warm share: $text');
+        _extractLatLngAndNavigate(text);
+      }
+    });
+  }
+
+  void _extractLatLngAndNavigate(String sharedText) async {
+    double? lat;
+    double? lng;
+
+    String resolvedUrl = sharedText.trim();
+    debugPrint('Original shared URL: $resolvedUrl');
+
+    // Step 1: Resolve shortened URL (goo.gl or maps.app.goo.gl)
+    if (resolvedUrl.contains('goo.gl') || resolvedUrl.contains('maps.app')) {
+      try {
+        final response = await http.get(
+          Uri.parse(resolvedUrl),
+          headers: {'User-Agent': 'Mozilla/5.0'},
+        );
+        resolvedUrl = response.request?.url.toString() ?? resolvedUrl;
+        debugPrint('Resolved URL: $resolvedUrl');
+      } catch (e) {
+        debugPrint('Failed to resolve URL: $e');
+      }
+    }
+
+    // Step 2: Parse lat/lng from URL
+    final uri = Uri.tryParse(resolvedUrl);
+    if (uri != null) {
+      // Format 1: ?q=12.9716,77.5946
+      final q = uri.queryParameters['q'];
+      if (q != null && q.contains(',')) {
+        final parts = q.split(',');
+        lat = double.tryParse(parts[0].trim());
+        lng = double.tryParse(parts[1].trim());
+      }
+
+      // Format 2: /@12.9716,77.5946,17z
+      if (lat == null) {
+        final match =
+            RegExp(r'/@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolvedUrl);
+        if (match != null) {
+          lat = double.tryParse(match.group(1) ?? '');
+          lng = double.tryParse(match.group(2) ?? '');
+        }
+      }
+    }
+
+    debugPrint('Extracted → lat: $lat, lng: $lng');
+
+    if (lat == null || lng == null) {
+      debugPrint('Could not extract lat/lng from shared URL');
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    if (user != null) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddLocationScreen(
+            accountId: '',
+            subAccountId: '',
+            sovId: '',
+            // pass lat/lng if your screen accepts them
+          ),
+        ),
+        (route) => false,
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  void _handleDeepLink() async {
+    _appLinks = AppLinks();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null && uri.host == 'qa.risksphere.ai') {
+        _routeFromDeepLink(uri);
+      }
+    });
+
+    _appLinks.uriLinkStream.listen((uri) {
+      if (uri.host == 'qa.risksphere.ai') {
+        _routeFromDeepLink(uri);
+      }
+    });
+  }
+
+  //
+  void _routeFromDeepLink(Uri uri) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    if (user != null) {
+      PendingDeepLink.isDeepLinkPending = true;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddLocationScreen(
+            accountId: '',
+            subAccountId: '',
+            sovId: '',
+          ),
+        ),
+        (route) => false,
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -268,7 +487,6 @@ Future<void> initFCM(String userId) async {
     print('FCM Token: $token');
 
     if (token != null) {
-      print("Subscribenotification1");
       SharedPreferenceService.saveFcmToken(token);
       bool isSubscribed =
           await SharedPreferenceService.getNotificationSubscription();
@@ -278,7 +496,7 @@ Future<void> initFCM(String userId) async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
 
-      print("📩 Foreground message received: ${notification?.title}");
+      print(" Foreground message received: ${notification?.title}");
 
       Fluttertoast.showToast(
         msg: notification?.title ?? "Notification",
@@ -350,4 +568,15 @@ class CustomToast {
       );
     }
   }
+}
+
+class PendingDeepLink {
+  static bool isDeepLinkPending = false;
+}
+
+class PendingSharedLocation {
+  static String? sharedText;
+  static bool wasLaunchedViaShare = false;
+
+  static bool get hasSharedText => sharedText != null && sharedText!.isNotEmpty;
 }

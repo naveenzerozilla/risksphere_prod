@@ -27,7 +27,7 @@ class UserData {
   int? rating;
   String? email;
   String? displayImageUrl;
-  String? displayName;
+  dynamic displayName;
   bool? isVerified;
   String? userId;
   String? referralCode;
@@ -37,7 +37,7 @@ class UserData {
   bool? isIndividual;
   String? countryCode;
   String? phone;
-  String? name;
+  dynamic name;
   List<Roles>? role;
   LastSelectedRole? lastSelectedRole;
   List<AcceptedRole>? acceptedRole;

@@ -36,7 +36,7 @@ class ProfileImageWidget extends StatelessWidget {
                     },
                   ),
                 )
-              : FallbackAvatar(name: userProfile.userData.name ?? 'A'),
+              : FallbackAvatar(name: userProfile.userData.name.toString() ?? 'A'),
         );
       },
     );

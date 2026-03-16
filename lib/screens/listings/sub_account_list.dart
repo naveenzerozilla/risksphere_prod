@@ -36,6 +36,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+// Add a new controller at the top of the state class:
+  TextEditingController _subAccountSearchController = TextEditingController();
   bool showCheckbox = false;
   bool isLoading = false;
 
@@ -288,7 +290,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
                                 // Header Row
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10.0),
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: Row(
@@ -298,9 +301,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             Navigator.pushAndRemoveUntil(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (_) => AccountListScreen(),
+                                                builder: (_) =>
+                                                    AccountListScreen(),
                                               ),
-                                                  (route) => false,
+                                              (route) => false,
                                             );
                                           },
                                           child: Text(
@@ -316,7 +320,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           style: typography.InputLabel,
                                         ),
                                         Text(
-                                          LanguageService.getTranslated(context, "sub_accounts"),
+                                          LanguageService.getTranslated(
+                                              context, "sub_accounts"),
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Colors.white,
@@ -399,8 +404,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                 controller: _scrollController,
                                                 scrollDirection:
                                                     Axis.horizontal,
-                                                child:
-                                                TabBar(
+                                                child: TabBar(
                                                   onTap: (index) {
                                                     debugPrint(
                                                         'Tab clicked: $index');
@@ -676,11 +680,10 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           });
 
         },*/
+        // In _buildSubAccountCard, replace the onTap navigation block:
         onTap: isDisabled
             ? null
             : () {
-                // On tap of card
-
                 if (showCheckbox) {
                   setState(() {
                     subAccountListProvider.subAccountList[index].isChecked =
@@ -689,37 +692,83 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                             false);
                   });
                 }
-                // if all are unselected then hide checkbox
                 if (subAccountListProvider.subAccountList
                     .every((element) => element.isChecked == false)) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    setState(() {
-                      showCheckbox = false;
-                    });
+                    setState(() => showCheckbox = false);
                   });
                 }
+
+                // ✅ FIX: Clear stale location data BEFORE navigating
+                final locationProvider =
+                    Provider.of<MyLocationListProvider>(context, listen: false);
+                locationProvider.myLocationList.clear();
+                locationProvider.certifiedLocationList.clear();
+                locationProvider.page = 1;
+                locationProvider.certifiedPage = 1;
+
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => MyLocationList(
-                              accountID: subAccountListProvider
-                                  .subAccountList[index].accountId
-                                  .toString(),
-                              subAccountID: subAccountListProvider
-                                  .subAccountList[index].subAccountId
-                                  .toString(),
-                              accountName: widget.accountName ?? "",
-                              subAccountName: subAccountListProvider
-                                      .subAccountList[index].name ??
-                                  "",
-                            )));
-                // Navigator.push(context, MaterialPageRoute(builder: (context) {
-                //   return /* LocationProfile(
-                //     account: accountListProvider.accountList[index],
-                //   );*/
-                //     MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
-                // }));
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MyLocationList(
+                      accountID: subAccountListProvider
+                          .subAccountList[index].accountId
+                          .toString(),
+                      subAccountID: subAccountListProvider
+                          .subAccountList[index].subAccountId
+                          .toString(),
+                      accountName: widget.accountName ?? "",
+                      subAccountName:
+                          subAccountListProvider.subAccountList[index].name ??
+                              "",
+                    ),
+                  ),
+                );
               },
+        // onTap: isDisabled
+        //     ? null
+        //     : () {
+        //         // On tap of card
+        //
+        //         if (showCheckbox) {
+        //           setState(() {
+        //             subAccountListProvider.subAccountList[index].isChecked =
+        //                 !(subAccountListProvider
+        //                         .subAccountList[index].isChecked ??
+        //                     false);
+        //           });
+        //         }
+        //         // if all are unselected then hide checkbox
+        //         if (subAccountListProvider.subAccountList
+        //             .every((element) => element.isChecked == false)) {
+        //           WidgetsBinding.instance.addPostFrameCallback((_) {
+        //             setState(() {
+        //               showCheckbox = false;
+        //             });
+        //           });
+        //         }
+        //         Navigator.push(
+        //             context,
+        //             MaterialPageRoute(
+        //                 builder: (context) => MyLocationList(
+        //                       accountID: subAccountListProvider
+        //                           .subAccountList[index].accountId
+        //                           .toString(),
+        //                       subAccountID: subAccountListProvider
+        //                           .subAccountList[index].subAccountId
+        //                           .toString(),
+        //                       accountName: widget.accountName ?? "",
+        //                       subAccountName: subAccountListProvider
+        //                               .subAccountList[index].name ??
+        //                           "",
+        //                     )));
+        //         // Navigator.push(context, MaterialPageRoute(builder: (context) {
+        //         //   return /* LocationProfile(
+        //         //     account: accountListProvider.accountList[index],
+        //         //   );*/
+        //         //     MyLocationList(accountID: widget.accountId, subAccountID: subAccountListProvider.subAccountList[index].subAccountId ?? "", accountName: widget.accountName??"", subAccountName: subAccountListProvider.subAccountList[index].name??"",);
+        //         // }));
+        //       },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -747,6 +796,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                         ),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             SizedBox(
                               width: CustomSpacing.two,
@@ -1023,19 +1073,105 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                             SizedBox(
                                               width: CustomSpacing.two,
                                             ),
-                                            Text(
-                                                /*accountListProvider.accountList[index].locationCount?.toString() ??
-                                              ""*/
-                                                subAccountListProvider
-                                                        .subAccountList[index]
-                                                        .owner
-                                                        ?.name ??
-                                                    "",
-                                                style: typography.Caption),
+                                            Container(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width /
+                                                  1.8,
+                                              child: Text(
+                                                  subAccountListProvider
+                                                          .subAccountList[index]
+                                                          .owner
+                                                          ?.name
+                                                          .toString() ??
+                                                      "",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: typography.Caption),
+                                            ),
                                           ],
                                         ),
                                 ],
                               ),
+                            ),
+                            // Favourite icon on the right side corner
+                            Consumer<SubAccountListProvider>(
+                              builder: (context, provider, child) {
+                                final subAccount =
+                                    provider.subAccountList[index];
+
+                                return Container(
+                                  padding: EdgeInsets.only(bottom: 4),
+                                  child:
+                                      // provider.loadingSubAccountId ==
+                                      //         subAccount.subAccountId
+                                      //     ? SizedBox(
+                                      //         height: 26,
+                                      //         width: 26,
+                                      //         child: CircularProgressIndicator(
+                                      //             strokeWidth: 2),
+                                      //       )
+                                      //     :
+                                      IconButton(
+                                    icon: Icon(
+                                      subAccount.isDefault == true
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      size: 26,
+                                      color: subAccount.isDefault == true
+                                          ? AppColors.primaryMain
+                                          : AppColors.primaryMain,
+                                    ),
+                                    onPressed: () async {
+                                      final hasExistingFavorite = provider
+                                          .subAccountList
+                                          .any((e) => e.isDefault == true);
+
+                                      if (!hasExistingFavorite) {
+                                        _showSubAccountBottomSheet(
+                                          context: context,
+                                          provider: provider,
+                                          accountId: widget.accountId,
+                                          subAccountId:
+                                              subAccount.subAccountId!,
+                                          currentStatus:
+                                              subAccount.isDefault ?? false,
+                                          title: "Mark as Favorite?",
+                                          description:
+                                              "This sub-account will be saved as your preferred view and will be redirected to this page by default on future logins. The parent account will be automatically marked as favorite.",
+                                        );
+                                      } else if (subAccount.isDefault == true) {
+                                        _showSubAccountBottomSheet(
+                                          context: context,
+                                          provider: provider,
+                                          accountId: widget.accountId,
+                                          subAccountId:
+                                              subAccount.subAccountId!,
+                                          currentStatus:
+                                              subAccount.isDefault ?? false,
+                                          title: "Remove Favorite Sub-Account?",
+                                          description:
+                                              "Removing the favorite status from this sub-account will update your default landing view. If no other sub-accounts under this account are marked as favorite, the parent account will also lose its favorite status.",
+                                        );
+                                      } else {
+                                        _showSubAccountBottomSheet(
+                                          context: context,
+                                          provider: provider,
+                                          accountId: widget.accountId,
+                                          subAccountId:
+                                              subAccount.subAccountId!,
+                                          currentStatus:
+                                              subAccount.isDefault ?? false,
+                                          title: "Change Favorite Sub-Account?",
+                                          description:
+                                              "This sub-account will be saved as your preferred view and will be redirected to this page by default on future logins. The parent account will be automatically marked as favorite.",
+                                        );
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -2134,31 +2270,52 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
         ),
         SizedBox(height: CustomSpacing.four),
         // Search
-        SizedBox(
-          height: 50,
-          child: TextField(
-            controller: _textEditingController,
-            onChanged: (query) {
-              accountsSearchClient(query);
-            },
-            decoration: InputDecoration(
-              suffixIcon: _subAccountQuery.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(Icons.clear),
-                      onPressed: () {
-                        _textEditingController.clear();
-                        accountsSearchClient("");
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              hintText: LanguageService.getTranslated(context, "search"),
-              hintStyle: typography.Body2,
-            ),
+        TextField(
+          controller: _subAccountSearchController, // ✅ dedicated controller
+          onChanged: (query) {
+            accountsSearchClient(query);
+          },
+          decoration: InputDecoration(
+            suffixIcon: _subAccountQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear),
+                    onPressed: () {
+                      _subAccountSearchController
+                          .clear(); // ✅ clear correct controller
+                      accountsSearchClient("");
+                    },
+                  )
+                : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            hintText: LanguageService.getTranslated(context, "search"),
+            hintStyle: typography.Body2,
           ),
         ),
+        // SizedBox(
+        //   height: 50,
+        //   child: TextField(
+        //     controller: _textEditingController,
+        //     onChanged: (query) {
+        //       accountsSearchClient(query);
+        //     },
+        //     decoration: InputDecoration(
+        //       suffixIcon: _subAccountQuery.isNotEmpty
+        //           ? IconButton(
+        //               icon: Icon(Icons.clear),
+        //               onPressed: () {
+        //                 _textEditingController.clear();
+        //                 accountsSearchClient("");
+        //               },
+        //             )
+        //           : null,
+        //       border: OutlineInputBorder(
+        //         borderRadius: BorderRadius.circular(8),
+        //       ),
+        //       hintText: LanguageService.getTranslated(context, "search"),
+        //       hintStyle: typography.Body2,
+        //     ),
+        //   ),
+        // ),
         SizedBox(height: CustomSpacing.two),
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -2233,6 +2390,13 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     "sub account list: ${subAccountListProvider.subAccountList}");
                                 return Column(
                                   children: [
+                                    // Text(widget.accountId.toString()),
+                                    // Text(subAccountListProvider
+                                    //     .subAccountList[0].subAccountId
+                                    //     .toString()),Text(subAccountListProvider
+                                    //     .subAccountList[1].subAccountId
+                                    //     .toString()),
+                                    // Text(subAccountListProvider.subaccooun.toString()),
                                     _buildSubAccountCard(
                                         index, subAccountListProvider),
                                     Padding(
@@ -2308,4 +2472,145 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
       ),
     );
   }
+}
+
+void _showSubAccountBottomSheet({
+  required BuildContext context,
+  required SubAccountListProvider provider,
+  required String accountId,
+  required String subAccountId,
+  required bool currentStatus,
+  required String title,
+  required String description,
+}) {
+  bool isLoading = false;
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isDismissible: !isLoading,
+    enableDrag: !isLoading,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 80),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8BB8E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setModalState(() {
+                              isLoading = true;
+                            });
+
+                            final success =
+                                await provider.updateDefaultSubAccount(
+                              context,
+                              accountId,
+                              subAccountId,
+                              currentStatus,
+                            );
+
+                            if (success) {
+                              Navigator.pop(context);
+                            } else {
+                              setModalState(() {
+                                isLoading = false;
+                              });
+                            }
+                          },
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            "Confirm",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// CANCEL
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: isLoading ? null : () => Navigator.pop(context),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }

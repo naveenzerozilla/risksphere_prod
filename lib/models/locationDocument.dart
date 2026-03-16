@@ -18,14 +18,28 @@ class LocationDocument {
   });
 
   factory LocationDocument.fromJson(Map<String, dynamic> json) {
+    List<String> parsedUrls = [];
+
+    final rawUrl = json['url'];
+
+    if (rawUrl is List) {
+      parsedUrls = rawUrl
+          .where((e) => e != null)
+          .map((e) => e.toString())
+          .toList();
+    } else if (rawUrl is String) {
+      parsedUrls = [rawUrl];
+    }
+
     return LocationDocument(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      urls: List<String>.from(json['url'] ?? []),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      urls: parsedUrls,
       size: json['size'] ?? 0,
       isLocationMedia: json['is_location_media'] ?? false,
-      uploadedBy: json['uploadedBy'],
-      createdAt: json['created_at'] != null
+      uploadedBy: json['uploadedBy']?.toString(),
+      createdAt: json['created_at'] != null &&
+          json['created_at']['_seconds'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
         json['created_at']['_seconds'] * 1000,
       )

@@ -50,7 +50,7 @@ class AuthNotifier extends ChangeNotifier {
       tenant: "common",
       clientId: "eb81a783-765c-482d-8fcb-6440ab1d1201",
       scope: "openid profile offline_access email User.Read",
-      redirectUri: "msauth.com.sonofthunder.risksphere://auth",
+      redirectUri: "msauth.com.risksphere.green://auth",
       navigatorKey: navigatorKey,
     ),
   );
@@ -1070,9 +1070,9 @@ class AuthNotifier extends ChangeNotifier {
         notifyListeners();
       });
       await _secureStorage.deleteAll();
-      final _googleSignIn = GoogleSignIn();
-      var isSignedIn = await _googleSignIn.isSignedIn();
-      if (isSignedIn) await _googleSignIn.disconnect();
+      // final _googleSignIn = GoogleSignIn();
+      // var isSignedIn = await _googleSignIn.isSignedIn();
+      // if (isSignedIn) await _googleSignIn.disconnect();
       await _auth.signOut();
       _user = null;
       userProfile = null;
@@ -1180,6 +1180,80 @@ class AuthNotifier extends ChangeNotifier {
         'authData': userCredential.toJson(),
         "country_code": selectedCountryCode,
         'phone': phone,
+        'is_email_password': false,
+        'isIndividual': true,
+        'uId': userCredential.user?.uid,
+      };
+      log("body: ${jsonEncode(body)}");
+
+      // Call the Firebase Cloud Function
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+      final result = await callable.call(body);
+
+      print('Cloud Function result: ${result.data}');
+
+      _user = userCredential.user;
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      return result.data;
+    } on FirebaseAuthException catch (e) {
+      _isSigningUp = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      // Handle error
+      print('Error signing up: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message!),
+        ),
+      );
+
+      return '';
+    }
+  }
+
+  // signUpIndividualWithApple(
+  // emailController.text,
+  // passwordController.text,
+  // nameController.text,
+  // displayNameController.text,
+  // mobileController.value?.nsn ?? "",
+  // mobileController.value?.countryCode ??
+  // "",
+  // _selectedRoles,
+  //
+  // _selectedRoles,
+  // context,
+  // );
+  Future<String> signUpIndividualWithApple(
+      String? email,
+      String? password,
+      String? name,
+      String? displayname,
+      String? mobile,
+      String? countryCode,
+      List<Categories> selectedRoles,
+      UserCredential? userCredential,
+      BuildContext context) async {
+    try {
+      _isSigningUp = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+
+      var body = {
+        'email': email,
+        'name': email,
+        'displayName': email,
+        'roles': selectedRoles.map((role) => role.toJson()).toList(),
+        'authData': userCredential!.toJson(),
+        "country_code": countryCode,
+        'phone': mobile,
         'is_email_password': false,
         'isIndividual': true,
         'uId': userCredential.user?.uid,
@@ -2264,6 +2338,12 @@ class AuthNotifier extends ChangeNotifier {
                     ? data['has_hazard_license_count']['left_credits']
                     : 0)
                 .toString()),
+        SharedPreferenceService.setHasImpromentLicenseCount(
+            (data['has_improvement_license_count'] != null &&
+                        data['has_improvement_license_count'] is Map
+                    ? data['has_improvement_license_count']['left_credits']
+                    : 0)
+                .toString()),
         SharedPreferenceService.setHazardHubLicense(
             (data['has_hazard_hub_license'] != null &&
                         data['has_hazard_hub_license'] is Map
@@ -2303,6 +2383,14 @@ class AuthNotifier extends ChangeNotifier {
             data['last_account_name'] ?? ""),
         SharedPreferenceService.setSovSubAccountName(
             data['last_sub_account_name'] ?? ""),
+        SharedPreferenceService.setTrialPeriodStartDate(
+          data['trial_period_start_date'] != null
+              ? Timestamp(
+                  data['trial_period_start_date']['_seconds'],
+                  data['trial_period_start_date']['_nanoseconds'],
+                )
+              : null,
+        )
       ]);
 
       // Parallel trial info saving

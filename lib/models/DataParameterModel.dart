@@ -811,14 +811,16 @@ class Reference {
   dynamic tags;
   dynamic size;
   String? name;
+  String ? uploadedBy;
 
-  Reference({this.url, this.tags, this.size, this.name});
+  Reference({this.url, this.tags, this.size, this.name,this.uploadedBy});
 
   Reference.fromJson(Map<String, dynamic> json) {
     url = json['url'];
     tags = json['tags'];
     size = json['size'];
     name = json['name'];
+      uploadedBy = json['uploaded_by'];
   }
 
   Map<String, dynamic> toJson() {
@@ -827,6 +829,7 @@ class Reference {
     data['tags'] = this.tags;
     data['size'] = this.size;
     data['name'] = this.name;
+    data['uploaded_by'] = this.uploadedBy;
     return data;
   }
 }

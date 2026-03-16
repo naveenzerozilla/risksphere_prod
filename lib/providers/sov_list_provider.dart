@@ -26,6 +26,10 @@ SovListModel parseSovList(Map<String, dynamic> json) {
 
 class SOVListProvider extends ChangeNotifier {
   bool _isLoading = false;
+  bool isRequestSent = false;
+  final Set<String> requestedUserIds = {};
+
+  bool isConnectRequestLoading = false;
 
   bool get isLoading => _isLoading;
 
@@ -479,7 +483,9 @@ class SOVListProvider extends ChangeNotifier {
       notifyListeners(); // ✅ REQUIRED
     }
   }
+
   List<Result> allVendorList = [];
+
   //
   // Future<void> fetchvendorList(
   //   BuildContext context,
@@ -530,12 +536,12 @@ class SOVListProvider extends ChangeNotifier {
   // }
 
   Future<void> fetchvendorList(
-      BuildContext context,
-      String query,
-      int page,
-      int pageSize,
-      String? type,
-      ) async {
+    BuildContext context,
+    String query,
+    int page,
+    int pageSize,
+    String? type,
+  ) async {
     if (isLoading || isNextPageLoading) return;
 
     try {
@@ -557,8 +563,7 @@ class SOVListProvider extends ChangeNotifier {
 
       final response = await apiService.get(query);
 
-      final SovListModel sovListModel =
-      await compute(parseSovList, response);
+      final SovListModel sovListModel = await compute(parseSovList, response);
 
       /// Metadata
       filterlist = sovListModel.filters;
@@ -570,7 +575,7 @@ class SOVListProvider extends ChangeNotifier {
       allVendorList.addAll(results);
 
       /// 🔥 UI LIST (filtered view)
-      filteredAutoCompleteList1= sovListModel.results ?? [];
+      filteredAutoCompleteList1 = sovListModel.results ?? [];
       // filteredAutoCompleteList1 = results;
       // filteredAutoCompleteList2 = List.from(allVendorList);
 
@@ -593,11 +598,11 @@ class SOVListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void clearVendorList() {
     allVendorList.clear();
     filteredAutoCompleteList1.clear();
   }
-
 
   //
   // Future<void> fetchvendorList(
@@ -702,42 +707,59 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Duplicate sov
-  Future<void> duplicateSov(BuildContext context, String sovId) async {
+  /// Duplicate SOV
+  Future<bool> duplicateSov(BuildContext context, String sovId) async {
     var typography = CustomTypography(context);
+
+    if (isDuplicateLoading) return false;
+
     try {
       isDuplicateLoading = true;
+      notifyListeners();
 
-      ApiService apiService = ApiService(AppConstant.DUPLICATE_SUB_ACCOUNT +
-          "/undefined/subaccount/undefined/sov");
-      var response = await apiService.post({
+      ApiService apiService = ApiService(
+        "${AppConstant.DUPLICATE_SUB_ACCOUNT}/undefined/subaccount/undefined/sov",
+      );
+
+      final response = await apiService.post({
         'data': {
           'sov_id': sovId,
           'duplicate': true,
         }
       });
+
       log(response.toString());
 
-      // Parse the response to get the duplicated SOV account
-      Result duplicatedSovAccount = Result.fromJson(response['updated_record']);
+      /// Parse response
+      final Result duplicatedSovAccount =
+          Result.fromJson(response['updated_record']);
 
-      // Prepend the duplicated SOV account to the beginning of the list
+      /// Prepend duplicated SOV
       sovList = [duplicatedSovAccount, ...sovList];
 
       isDuplicateLoading = false;
-    } on BackendException catch (e, stack) {
-      isDuplicateLoading = false;
+      notifyListeners();
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.Body1),
-      ));
-    } catch (e, stack) {
-      print(e);
-      print(stack);
+      return true;
+    } on BackendException catch (e) {
       isDuplicateLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.Body1),
-      ));
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message, style: typography.Body1)),
+      );
+      return false;
+    } catch (e, stack) {
+      log(e.toString());
+      log(stack.toString());
+
+      isDuplicateLoading = false;
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString(), style: typography.Body1)),
+      );
+      return false;
     }
   }
 
@@ -1427,4 +1449,63 @@ class SOVListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> sendConnectionRequest(
+      BuildContext context, {
+        required String userId,
+        required String message,
+      }) async {
+    var typography = CustomTypography(context);
+
+    // 🔒 Prevent double click
+    if (isConnectRequestLoading) return false;
+
+    try {
+      isConnectRequestLoading = true;
+      notifyListeners();
+
+      print("🔥 API CALL STARTED FOR USER: $userId");
+
+      ApiService apiService = ApiService(
+        "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/user_management",
+      );
+
+      final response = await apiService.post({
+        "data": {
+          "action": "send_request",
+          "user_id": userId,
+          "message": message,
+        }
+      });
+      requestedUserIds.add(userId);
+      isConnectRequestLoading = false;
+      notifyListeners();
+      return true;
+    } on BackendException catch (e) {
+      isConnectRequestLoading = false;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message, style: typography.Body1),
+        ),
+      );
+
+      return false;
+    } catch (e, stack) {
+      debugPrint("❌ ERROR: $e");
+      debugPrint("❌ STACK: $stack");
+
+      isConnectRequestLoading = false;
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Something went wrong", style: typography.Body1),
+        ),
+      );
+
+      return false;
+    }
+  }
+
 }

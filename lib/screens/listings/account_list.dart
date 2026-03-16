@@ -24,6 +24,7 @@ class _AccountListScreenState extends State<AccountListScreen>
   bool _showNotificationDot = true;
 
   bool isHasAnyPlan = false;
+  String? trialMap;
   TabController? _tabController;
   Screens _selectedScreen = Screens.accountList;
   TextEditingController _textEditingController = TextEditingController();
@@ -174,6 +175,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     isSuperAdmin = adminValues[2] ?? false;
     isHasAnyPlan = adminValues[4] ?? false;
 
+    trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     if (mounted) setState(() {});
   }
 
@@ -311,8 +313,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                             child: MessageCard(
                               messageTextSpans: [
                                 TextSpan(
-                                  text: trialStatus,
-                                  // 'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                                  text:
+                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                                   style: typography.Body1,
                                 ),
                                 // tappable
@@ -379,7 +381,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                                       //
                                       SizedBox(height: CustomSpacing.two),
 
-                                      SizedBox(height: CustomSpacing.two),
                                       Container(
                                         height: 50,
                                         decoration: BoxDecoration(
@@ -816,196 +817,256 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisSize: MainAxisSize.max,
                                     children: [
-                                      Flexible(
-                                        child: Text(
-                                          (accountListProvider
-                                                          .accountList[index]
-                                                          .accountName ??
-                                                      "")
-                                                  .isNotEmpty
-                                              ? accountListProvider
-                                                  .accountList[index]
-                                                  .accountName!
-                                              : "",
-                                          style: typography.Body2.copyWith(
-                                            color:
-                                                Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? AppColors.white
-                                                    : AppColors.black,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      // Add edit icon and on tap show edit dialog
-                                      SizedBox(
-                                        width: CustomSpacing.two,
-                                      ),
-                                      isDisabled
-                                          ? SizedBox()
-                                          : InkWell(
-                                              onTap: () {
-                                                _accountEditNameController
-                                                    .text = (accountListProvider
+                                      Expanded(
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                (accountListProvider
                                                                 .accountList[
                                                                     index]
                                                                 .accountName ??
                                                             "")
                                                         .isNotEmpty
                                                     ? accountListProvider
-                                                            .accountList[index]
-                                                            .accountName!
-                                                            .substring(0, 1)
-                                                            .toUpperCase() +
-                                                        accountListProvider
-                                                            .accountList[index]
-                                                            .accountName!
-                                                            .substring(1)
-                                                    : "";
-                                                // Show edit dialog
-                                                showDialog(
-                                                  barrierDismissible: false,
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return AlertDialog(
-                                                      title: Text(
-                                                        LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "edit_account"),
-                                                        style: typography
-                                                            .H5_Regular,
-                                                      ),
-                                                      content: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          TextField(
-                                                            controller:
-                                                                _accountEditNameController,
-                                                            decoration:
-                                                                InputDecoration(
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                              labelText: LanguageService
-                                                                  .getTranslated(
-                                                                      context,
-                                                                      "account_name"),
-                                                              labelStyle:
-                                                                  typography
-                                                                      .Body1,
-                                                              hintText:
-                                                                  'Enter Account Name',
-                                                              hintStyle:
-                                                                  typography
-                                                                      .Body1,
-                                                            ),
-                                                          ),
-                                                          SizedBox(
-                                                            height:
-                                                                CustomSpacing
-                                                                    .two,
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Expanded(
-                                                                child:
-                                                                    CustomButton(
-                                                                  onPressed:
-                                                                      () {
-                                                                    // Cancel
-                                                                    Navigator.pop(
-                                                                        context);
-                                                                  },
-                                                                  child: Text(
-                                                                    LanguageService.getTranslated(
-                                                                        context,
-                                                                        "cancel"),
-                                                                    style: typography
-                                                                        .ButtonLarge,
-                                                                  ),
-                                                                  type:
-                                                                      ButtonType
-                                                                          .text,
-                                                                ),
-                                                              ),
-                                                              Consumer<
-                                                                      AccountListProvider>(
-                                                                  builder: (context,
-                                                                      accountListProvider,
-                                                                      _) {
-                                                                return accountListProvider
-                                                                        .isRenameLoading
-                                                                    ? const Expanded(
-                                                                        child:
-                                                                            Row(
-                                                                          mainAxisAlignment:
-                                                                              MainAxisAlignment.center,
-                                                                          children: [
-                                                                            SizedBox(
-                                                                                width: 25,
-                                                                                height: 25,
-                                                                                child: CircularProgressIndicator()),
-                                                                          ],
-                                                                        ),
-                                                                      )
-                                                                    : Expanded(
-                                                                        child:
-                                                                            CustomButton(
-                                                                          onPressed:
-                                                                              () async {
-                                                                            if (_accountEditNameController.text.isEmpty) {
-                                                                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                                                                  content: Text(
-                                                                                LanguageService.getTranslated(context, "account_list_app_rename_account_empty_text_error"),
-                                                                                style: typography.Body1,
-                                                                              )));
-                                                                              return;
-                                                                            }
-                                                                            // Update account details
-                                                                            await accountListProvider.renameAccount(
-                                                                                context,
-                                                                                accountListProvider.accountList[index].accountId!,
-                                                                                _accountEditNameController.text);
-                                                                            Navigator.pop(context);
-                                                                          },
-                                                                          child:
-                                                                              Text(
-                                                                            LanguageService.getTranslated(context,
-                                                                                "submit"),
-                                                                            style:
-                                                                                typography.ButtonLargeBlack,
-                                                                          ),
-                                                                          type:
-                                                                              ButtonType.elevated,
-                                                                        ),
-                                                                      );
-                                                              }),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(10.0),
-                                                child: Icon(
-                                                  Icons.edit,
+                                                        .accountList[index]
+                                                        .accountName!
+                                                    : "",
+                                                style:
+                                                    typography.Body2.copyWith(
                                                   color: Theme.of(context)
                                                               .brightness ==
                                                           Brightness.dark
-                                                      ? AppColors.primaryMain
-                                                      : AppColors.primaryMain,
-                                                  size:
-                                                      16, // icon size stays same
+                                                      ? AppColors.white
+                                                      : AppColors.black,
                                                 ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
+                                            SizedBox(width: CustomSpacing.two),
+                                            if (!isDisabled)
+                                              InkWell(
+                                                onTap: () {
+                                                  _accountEditNameController
+                                                      .text = (accountListProvider
+                                                                  .accountList[
+                                                                      index]
+                                                                  .accountName ??
+                                                              "")
+                                                          .isNotEmpty
+                                                      ? accountListProvider
+                                                              .accountList[
+                                                                  index]
+                                                              .accountName!
+                                                              .substring(0, 1)
+                                                              .toUpperCase() +
+                                                          accountListProvider
+                                                              .accountList[
+                                                                  index]
+                                                              .accountName!
+                                                              .substring(1)
+                                                      : "";
+                                                  showDialog(
+                                                    barrierDismissible: false,
+                                                    context: context,
+                                                    builder: (context) {
+                                                      return AlertDialog(
+                                                        title: Text(
+                                                          LanguageService
+                                                              .getTranslated(
+                                                                  context,
+                                                                  "edit_account"),
+                                                          style: typography
+                                                              .H5_Regular,
+                                                        ),
+                                                        content: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            TextField(
+                                                              controller:
+                                                                  _accountEditNameController,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                                labelText: LanguageService
+                                                                    .getTranslated(
+                                                                        context,
+                                                                        "account_name"),
+                                                                labelStyle:
+                                                                    typography
+                                                                        .Body1,
+                                                                hintText:
+                                                                    'Enter Account Name',
+                                                                hintStyle:
+                                                                    typography
+                                                                        .Body1,
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                                height:
+                                                                    CustomSpacing
+                                                                        .two),
+                                                            Row(
+                                                              children: [
+                                                                Expanded(
+                                                                  child:
+                                                                      CustomButton(
+                                                                    onPressed:
+                                                                        () {
+                                                                      Navigator.pop(
+                                                                          context);
+                                                                    },
+                                                                    child: Text(
+                                                                      LanguageService.getTranslated(
+                                                                          context,
+                                                                          "cancel"),
+                                                                      style: typography
+                                                                          .ButtonLarge,
+                                                                    ),
+                                                                    type: ButtonType
+                                                                        .text,
+                                                                  ),
+                                                                ),
+                                                                Consumer<
+                                                                        AccountListProvider>(
+                                                                    builder:
+                                                                        (context,
+                                                                            accountListProvider,
+                                                                            _) {
+                                                                  return accountListProvider
+                                                                          .isRenameLoading
+                                                                      ? const Expanded(
+                                                                          child:
+                                                                              Row(
+                                                                            mainAxisAlignment:
+                                                                                MainAxisAlignment.center,
+                                                                            children: [
+                                                                              SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
+                                                                            ],
+                                                                          ),
+                                                                        )
+                                                                      : Expanded(
+                                                                          child:
+                                                                              CustomButton(
+                                                                            onPressed:
+                                                                                () async {
+                                                                              if (_accountEditNameController.text.isEmpty) {
+                                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                                                  content: Text(
+                                                                                    LanguageService.getTranslated(context, "account_list_app_rename_account_empty_text_error"),
+                                                                                    style: typography.Body1,
+                                                                                  ),
+                                                                                ));
+                                                                                return;
+                                                                              }
+                                                                              await accountListProvider.renameAccount(context, accountListProvider.accountList[index].accountId!, _accountEditNameController.text);
+                                                                              Navigator.pop(context);
+                                                                            },
+                                                                            child:
+                                                                                Text(
+                                                                              LanguageService.getTranslated(context, "submit"),
+                                                                              style: typography.ButtonLargeBlack,
+                                                                            ),
+                                                                            type:
+                                                                                ButtonType.elevated,
+                                                                          ),
+                                                                        );
+                                                                }),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(
+                                                      10.0),
+                                                  child: Icon(
+                                                    Icons.edit,
+                                                    color:
+                                                        AppColors.primaryMain,
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      Spacer(),
+                                      Consumer<AccountListProvider>(
+                                        builder: (context, provider, child) {
+                                          final account =
+                                              provider.accountList[index];
+
+                                          return Container(
+                                            padding: EdgeInsets.only(bottom: 4),
+                                            child:
+                                                // provider.loadingAccountId ==
+                                                //         account.accountId
+                                                //     ? SizedBox(
+                                                //         height: 26,
+                                                //         width: 26,
+                                                //         child:
+                                                //             CircularProgressIndicator(
+                                                //                 strokeWidth: 2),
+                                                //       )
+                                                //     :
+                                                IconButton(
+                                              icon: Icon(
+                                                account.isDefault == true
+                                                    ? Icons.star
+                                                    : Icons.star_border,
+                                                size: 26,
+                                                color: account.isDefault == true
+                                                    ? AppColors.primaryMain
+                                                    : AppColors.primaryMain,
+                                              ),
+                                              onPressed: () async {
+                                                if (account.isDefault == true) {
+                                                  /// If already favourite → show bottom sheet
+                                                  _showRemoveFavoriteBottomSheet(
+                                                    context,
+                                                    provider,
+                                                    account.accountId!,
+                                                    account.isDefault ?? false,
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(SnackBar(
+                                                    content: Text(
+                                                      "Favorite status is controlled at the sub-account level. Mark a sub-account as favorite to set this account as favorite.",
+                                                      style: typography
+                                                          .ButtonLargeBlack,
+                                                    ),
+                                                  ));
+
+                                                  /// If not favourite → directly make favourite
+                                                  await provider
+                                                      .updateDefaultAccount(
+                                                    context,
+                                                    account.accountId!,
+                                                    account.isDefault ?? false,
+                                                  );
+                                                }
+                                              },
+
+                                              // onPressed: () async {
+                                              //   await provider.updateDefaultAccount(
+                                              //     context,
+                                              //     account.accountId!,
+                                              //     account.isDefault ?? false,
+                                              //   );
+                                              // },
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ],
                                   ),
                                   !accountListProvider.showSubAccountCount
@@ -1101,15 +1162,25 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             SizedBox(
                                               width: CustomSpacing.two,
                                             ),
-                                            Text(
-                                                /*accountListProvider.accountList[index].locationCount?.toString() ??
-                                              ""*/
-                                                accountListProvider
-                                                        .accountList[index]
-                                                        .owner
-                                                        ?.name ??
-                                                    "",
-                                                style: typography.Caption),
+                                            Container(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width /
+                                                  1.5,
+                                              child: Text(
+                                                  /*accountListProvider.accountList[index].locationCount?.toString() ??
+                                                ""*/
+                                                  accountListProvider
+                                                          .accountList[index]
+                                                          .owner
+                                                          ?.name
+                                                          .toString() ??
+                                                      "",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: typography.Caption),
+                                            ),
                                           ],
                                         ),
                                 ],
@@ -2059,4 +2130,147 @@ class _AccountListScreenState extends State<AccountListScreen>
       ],
     );
   }
+}
+
+void _showRemoveFavoriteBottomSheet(
+  BuildContext context,
+  AccountListProvider provider,
+  String accountId,
+  bool currentStatus,
+) {
+  bool isLoading = false;
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isDismissible: !isLoading,
+    enableDrag: !isLoading,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+
+                const Text(
+                  "Remove Favorite Status?",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                const Text(
+                  "This account is a favorite because of its sub-accounts. "
+                  "Removing it here will remove it from all sub-accounts. "
+                  "To reapply, mark the sub-account as a favorite in the Sub-Account page.",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.white70,
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 100),
+
+                /// CONFIRM BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8BB8E8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setModalState(() {
+                              isLoading = true;
+                            });
+
+                            final success = await provider.updateDefaultAccount(
+                              context,
+                              accountId,
+                              currentStatus,
+                            );
+
+                            if (success) {
+                              Navigator.pop(context); // close sheet
+                            } else {
+                              setModalState(() {
+                                isLoading = false;
+                              });
+                            }
+                          },
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            "Confirm",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// CANCEL BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                          },
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }

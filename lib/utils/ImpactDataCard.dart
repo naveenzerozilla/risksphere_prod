@@ -102,11 +102,12 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           ...widget.dataElements.asMap().entries.map((entry) {
             int index = entry.key;
             ImpactDataElement element = entry.value;
             final isExpanded = expandedElementName == element.name;
+            final references = element.parameterValue?.reference;
+            final rawValue = element.parameterValue?.value;
 
             return Column(
               children: [
@@ -153,158 +154,344 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                 child: Text(
                                   element.name,
                                   style: TextStyle(
-                                    color: !isNullOrEmpty(
-                                            element.parameterValue.value)
-                                        ? Color(
-                                            0xFF66BB6A) // GREEN when value exists
-                                        : Colors.red,
-                                    // Default color when value is null/empty
+                                    color: isParameterEmpty(rawValue)
+                                        ? Colors.red
+                                        : const Color(0xFF66BB6A),
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
+                              //                   Expanded(
+                              //                     child: Text(
+                              // element.parameterValue.value.toString(),
+                              //                       // element.name,
+                              //                       style: TextStyle(
+                              //                         color: !isNullOrEmpty(
+                              //                                 element.parameterValue.value)
+                              //                             ? Color(
+                              //                                 0xFF66BB6A) // GREEN when value exists
+                              //                             : Colors.red,
+                              //                         // Default color when value is null/empty
+                              //                         fontSize: 16,
+                              //                         fontWeight: FontWeight.w500,
+                              //                       ),
+                              //                     ),
+                              //                   ),
 
-                              (element.parameterValue.value == null ||
-                                      element.parameterValue.value
-                                          .toString()
-                                          .trim()
-                                          .isEmpty)
+                              (isParameterEmpty(element.parameterValue?.value))
                                   ? Row(
                                       children: [
                                         if (!isExpanded) ...[
                                           ConstrainedBox(
-                                            constraints: BoxConstraints(
+                                            constraints: const BoxConstraints(
                                                 maxWidth: 100, maxHeight: 40),
-                                            child: TextFormField(
-                                              textAlign: TextAlign.center,
-                                              initialValue:
-                                                  element
-                                                                  .parameterValue
-                                                                  .reference !=
-                                                              null &&
-                                                          element
-                                                              .parameterValue!
-                                                              .reference!
-                                                              .isNotEmpty &&
-                                                          element
-                                                                  .parameterValue!
-                                                                  .reference!
-                                                                  .first
-                                                                  .url !=
-                                                              null &&
-                                                          element
-                                                              .parameterValue!
-                                                              .reference!
-                                                              .first
-                                                              .url!
-                                                              .any((u) =>
-                                                                  u != null &&
-                                                                  u
-                                                                      .toString()
-                                                                      .trim()
-                                                                      .isNotEmpty)
-                                                      ? ""
-                                                      : "---",
-                                              readOnly: true,
-                                              onTap: () {
-                                                setState(() {
-                                                  expandedElementName =
-                                                      isExpanded
-                                                          ? null
-                                                          : element.name;
-                                                });
-                                              },
-                                              // since screenshot looks non-editable; remove if needed
-                                              decoration: InputDecoration(
-                                                filled: true,
-                                                fillColor:
-                                                    const Color(0xFF2B0000),
-                                                // darker red background like screenshot
-                                                isDense: true,
+                                            child: Builder(
+                                              builder: (context) {
+                                                final references = element
+                                                        .parameterValue
+                                                        ?.reference ??
+                                                    [];
 
-                                                // contentPadding:
-                                                //     const EdgeInsets.symmetric(
-                                                //         vertical: 10,
-                                                //         horizontal: 12),
-                                                prefixIcon:
-                                                    element.parameterValue
-                                                                    .reference !=
-                                                                null &&
-                                                            element
-                                                                .parameterValue!
-                                                                .reference!
-                                                                .isNotEmpty &&
-                                                            element
-                                                                    .parameterValue!
-                                                                    .reference!
-                                                                    .first
-                                                                    .url !=
-                                                                null &&
-                                                            element
-                                                                .parameterValue!
-                                                                .reference!
-                                                                .first
-                                                                .url!
-                                                                .any((u) =>
-                                                                    u != null &&
-                                                                    u
-                                                                        .toString()
-                                                                        .trim()
-                                                                        .isNotEmpty)
+                                                // 🔥 Count all valid URLs safely
+                                                final int fileCount = references
+                                                    .expand(
+                                                        (ref) => ref.url ?? [])
+                                                    .where((u) =>
+                                                        u != null &&
+                                                        u
+                                                            .toString()
+                                                            .trim()
+                                                            .isNotEmpty)
+                                                    .length;
+
+                                                final bool hasFiles =
+                                                    fileCount > 0;
+
+                                                return TextFormField(
+                                                  textAlign: TextAlign.center,
+                                                  readOnly: true,
+                                                  initialValue:
+                                                      hasFiles ? "" : "---",
+                                                  onTap: () {
+                                                    setState(() {
+                                                      expandedElementName =
+                                                          isExpanded
+                                                              ? null
+                                                              : element.name;
+                                                    });
+                                                  },
+                                                  decoration: InputDecoration(
+                                                    filled: true,
+                                                    fillColor:
+                                                        const Color(0xFF2B0000),
+                                                    isDense: true,
+
+                                                    // ✅ Show icon + count only if files exist
+                                                    prefixIcon: hasFiles
                                                         ? Padding(
                                                             padding:
                                                                 const EdgeInsets
-                                                                    .only(
-                                                                    left: 2,
-                                                                    right: 2),
-                                                            child: Icon(
-                                                              Icons.description,
-                                                              size: 18,
-                                                              color: Color(
-                                                                  0xFFFF6666),
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        6),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                const Icon(
+                                                                  Icons
+                                                                      .description,
+                                                                  size: 18,
+                                                                  color: Color(
+                                                                      0xFFFF6666),
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 4),
+                                                                Text(
+                                                                  "($fileCount)",
+                                                                  style:
+                                                                      const TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    color: Color(
+                                                                        0xFFFF6666),
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           )
-                                                        : Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                                    left: 0,
-                                                                    right: 0),
-                                                            child: Text(""),
-                                                          ),
-                                                enabledBorder:
-                                                    OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  borderSide: const BorderSide(
-                                                      color: Color(0xFFB00000),
-                                                      width: 0.6),
-                                                ),
+                                                        : null,
 
-                                                // Border (focused)
-                                                focusedBorder:
-                                                    OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                  borderSide: const BorderSide(
-                                                      color: Color(0xFFFF3333),
-                                                      width: 0.6),
-                                                ),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                        color:
+                                                            Color(0xFFB00000),
+                                                        width: 0.6,
+                                                      ),
+                                                    ),
 
-                                                // No label / clean field
-                                                hintText: null,
-                                              ),
-
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color: Color(0xFFFF9999),
-                                                // faint red text, similar to screenshot
-                                                letterSpacing:
-                                                    1.0, // gives that spaced “---” effect
-                                              ),
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                        color:
+                                                            Color(0xFFFF3333),
+                                                        width: 0.6,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Color(0xFFFF9999),
+                                                    letterSpacing: 1.0,
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
+                                          // ConstrainedBox(
+                                          //   constraints: BoxConstraints(
+                                          //       maxWidth: 100, maxHeight: 40),
+                                          //   child: TextFormField(
+                                          //     textAlign: TextAlign.center,
+                                          //     initialValue:
+                                          //         element
+                                          //                         .parameterValue
+                                          //                         .reference !=
+                                          //                     null &&
+                                          //                 element
+                                          //                     .parameterValue!
+                                          //                     .reference!
+                                          //                     .isNotEmpty &&
+                                          //                 element
+                                          //                         .parameterValue!
+                                          //                         .reference!
+                                          //                         .first
+                                          //                         .url !=
+                                          //                     null &&
+                                          //                 element
+                                          //                     .parameterValue!
+                                          //                     .reference!
+                                          //                     .first
+                                          //                     .url!
+                                          //                     .any((u) =>
+                                          //                         u != null &&
+                                          //                         u
+                                          //                             .toString()
+                                          //                             .trim()
+                                          //                             .isNotEmpty)
+                                          //             ? ""
+                                          //             :fileCount >0 ?"": "---",
+                                          //     readOnly: true,
+                                          //     onTap: () {
+                                          //       setState(() {
+                                          //         expandedElementName =
+                                          //             isExpanded
+                                          //                 ? null
+                                          //                 : element.name;
+                                          //       });
+                                          //     },
+                                          //     // since screenshot looks non-editable; remove if needed
+                                          //     decoration: InputDecoration(
+                                          //       filled: true,
+                                          //       fillColor:
+                                          //           const Color(0xFF2B0000),
+                                          //       // darker red background like screenshot
+                                          //       isDense: true,
+                                          //
+                                          //       // contentPadding:
+                                          //       //     const EdgeInsets.symmetric(
+                                          //       //         vertical: 10,
+                                          //       //         horizontal: 12),
+                                          //       prefixIcon: Builder(
+                                          //         builder: (context) {
+                                          //           final references = element
+                                          //               .parameterValue
+                                          //               ?.reference;
+                                          //
+                                          //           if (references != null &&
+                                          //               references.isNotEmpty) {
+                                          //             // 🔥 Count ALL valid urls across all reference blocks
+                                          //             final int fileCount =
+                                          //                 references
+                                          //                     .expand((ref) =>
+                                          //                         ref.url ?? [])
+                                          //                     .where((u) =>
+                                          //                         u != null &&
+                                          //                         u
+                                          //                             .toString()
+                                          //                             .trim()
+                                          //                             .isNotEmpty)
+                                          //                     .length;
+                                          //
+                                          //             if (fileCount > 0) {
+                                          //               return Padding(
+                                          //                 padding:
+                                          //                     const EdgeInsets
+                                          //                         .symmetric(
+                                          //                         horizontal:
+                                          //                             4),
+                                          //                 child: Row(
+                                          //                   mainAxisSize:
+                                          //                       MainAxisSize
+                                          //                           .min,
+                                          //                   children: [
+                                          //                     const Icon(
+                                          //                       Icons
+                                          //                           .description,
+                                          //                       size: 18,
+                                          //                       color: Color(
+                                          //                           0xFFFF6666),
+                                          //                     ),
+                                          //                     const SizedBox(
+                                          //                         width: 4),
+                                          //                     Text(
+                                          //                       "($fileCount)",
+                                          //                       // 👈 Shows (5)
+                                          //                       style:
+                                          //                           const TextStyle(
+                                          //                         fontSize: 13,
+                                          //                         color: Color(
+                                          //                             0xFFFF6666),
+                                          //                       ),
+                                          //                     ),
+                                          //                   ],
+                                          //                 ),
+                                          //               );
+                                          //             }
+                                          //           }
+                                          //
+                                          //           return const SizedBox();
+                                          //         },
+                                          //       ),
+                                          //       // prefixIcon:
+                                          //       //     element.parameterValue
+                                          //       //                     .reference !=
+                                          //       //                 null &&
+                                          //       //             element
+                                          //       //                 .parameterValue!
+                                          //       //                 .reference!
+                                          //       //                 .isNotEmpty &&
+                                          //       //             element
+                                          //       //                     .parameterValue!
+                                          //       //                     .reference!
+                                          //       //                     .first
+                                          //       //                     .url !=
+                                          //       //                 null &&
+                                          //       //             element
+                                          //       //                 .parameterValue!
+                                          //       //                 .reference!
+                                          //       //                 .first
+                                          //       //                 .url!
+                                          //       //                 .any((u) =>
+                                          //       //                     u != null &&
+                                          //       //                     u
+                                          //       //                         .toString()
+                                          //       //                         .trim()
+                                          //       //                         .isNotEmpty)
+                                          //       //         ? Padding(
+                                          //       //             padding:
+                                          //       //                 const EdgeInsets
+                                          //       //                     .only(
+                                          //       //                     left: 2,
+                                          //       //                     right: 2),
+                                          //       //             child: Icon(
+                                          //       //               Icons.description,
+                                          //       //               size: 18,
+                                          //       //               color: Color(
+                                          //       //                   0xFFFF6666),
+                                          //       //             ),
+                                          //       //           )
+                                          //       //         : Container(
+                                          //       //             padding:
+                                          //       //                 const EdgeInsets
+                                          //       //                     .only(
+                                          //       //                     left: 0,
+                                          //       //                     right: 0),
+                                          //       //             child: Text(""),
+                                          //       //           ),
+                                          //       enabledBorder:
+                                          //           OutlineInputBorder(
+                                          //         borderRadius:
+                                          //             BorderRadius.circular(8),
+                                          //         borderSide: const BorderSide(
+                                          //             color: Color(0xFFB00000),
+                                          //             width: 0.6),
+                                          //       ),
+                                          //
+                                          //       // Border (focused)
+                                          //       focusedBorder:
+                                          //           OutlineInputBorder(
+                                          //         borderRadius:
+                                          //             BorderRadius.circular(10),
+                                          //         borderSide: const BorderSide(
+                                          //             color: Color(0xFFFF3333),
+                                          //             width: 0.6),
+                                          //       ),
+                                          //
+                                          //       // No label / clean field
+                                          //       hintText: null,
+                                          //     ),
+                                          //
+                                          //     style: const TextStyle(
+                                          //       fontSize: 13,
+                                          //       color: Color(0xFFFF9999),
+                                          //       // faint red text, similar to screenshot
+                                          //       letterSpacing:
+                                          //           1.0, // gives that spaced “---” effect
+                                          //     ),
+                                          //   ),
+                                          // ),
                                         ],
                                         PopupMenuButton<String>(
                                           icon: Icon(
@@ -385,66 +572,282 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                 });
                                               },
                                               decoration: InputDecoration(
-                                                  isDense: true,
-                                                  contentPadding:
-                                                      EdgeInsets.symmetric(
-                                                    vertical: 8,
-                                                    horizontal: 10,
-                                                  ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            5),
-                                                  ),
-                                                  prefixIcon: (element
-                                                                  .parameterValue?.reference !=
-                                                              null &&
-                                                          element
-                                                              .parameterValue!
-                                                              .reference!
-                                                              .isNotEmpty &&
-                                                          element
-                                                                  .parameterValue!
-                                                                  .reference!
-                                                                  .first
-                                                                  .url !=
-                                                              null &&
-                                                          element
-                                                              .parameterValue!
-                                                              .reference!
-                                                              .first
-                                                              .url!
-                                                              .any((u) =>
+                                                isDense: true,
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                  horizontal: 10,
+                                                ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(5),
+                                                ),
+                                                prefixIcon: Builder(
+                                                  builder: (context) {
+                                                    final rawValue = element
+                                                        .parameterValue?.value;
+
+                                                    String? displayValue;
+
+                                                    try {
+                                                      if (rawValue != null &&
+                                                          rawValue
+                                                              .toString()
+                                                              .trim()
+                                                              .isNotEmpty) {
+                                                        dynamic decoded =
+                                                            rawValue;
+
+                                                        // Decode if JSON string
+                                                        if (decoded is String &&
+                                                            decoded
+                                                                .trim()
+                                                                .startsWith(
+                                                                    "{") &&
+                                                            decoded
+                                                                .trim()
+                                                                .endsWith(
+                                                                    "}")) {
+                                                          decoded = jsonDecode(
+                                                              decoded);
+                                                        }
+
+                                                        // Handle nested {"value":"{...}"}
+                                                        if (decoded is Map &&
+                                                            decoded["value"]
+                                                                is String &&
+                                                            decoded["value"]
+                                                                .toString()
+                                                                .trim()
+                                                                .startsWith(
+                                                                    "{")) {
+                                                          decoded["value"] =
+                                                              jsonDecode(
+                                                                  decoded[
+                                                                      "value"]);
+                                                        }
+
+                                                        // Handle {"value":{...}}
+                                                        if (decoded is Map &&
+                                                            decoded["value"]
+                                                                is Map) {
+                                                          displayValue =
+                                                              decoded["value"]
+                                                                      ["value"]
+                                                                  ?.toString();
+                                                        }
+                                                        // Handle {"value":12,...}
+                                                        else if (decoded
+                                                                is Map &&
+                                                            decoded.containsKey(
+                                                                "value")) {
+                                                          displayValue =
+                                                              decoded["value"]
+                                                                  ?.toString();
+                                                        }
+                                                      }
+                                                    } catch (e) {
+                                                      displayValue =
+                                                          rawValue?.toString();
+                                                    }
+
+// 🔥 Show only actual numeric value
+                                                    if (displayValue != null &&
+                                                        displayValue
+                                                            .trim()
+                                                            .isNotEmpty &&
+                                                        displayValue.trim() !=
+                                                            "null") {
+                                                      return Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(6),
+                                                        alignment: Alignment
+                                                            .centerLeft,
+                                                        child: Text(
+                                                          displayValue,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      );
+                                                    }
+                                                    // final rawValue = element
+                                                    //     .parameterValue?.value;
+                                                    // final displayValue =
+                                                    //     _extractCleanValue(
+                                                    //         rawValue);
+                                                    //
+                                                    // // 🔥 PRIORITY 1: Show VALUE if exists
+                                                    // if (displayValue != null &&
+                                                    //     displayValue
+                                                    //         .toString()
+                                                    //         .trim()
+                                                    //         .isNotEmpty) {
+                                                    //   return Container(
+                                                    //     padding:
+                                                    //         const EdgeInsets
+                                                    //             .all(6),
+                                                    //     alignment: Alignment
+                                                    //         .centerLeft,
+                                                    //     child: Text(
+                                                    //       displayValue.toString(),
+                                                    //       maxLines: 1,
+                                                    //       overflow: TextOverflow
+                                                    //           .ellipsis,
+                                                    //     ),
+                                                    //   );
+                                                    // }
+
+                                                    // 🔥 PRIORITY 2: Show FILE COUNT with brackets like (5)
+                                                    final references = element
+                                                        .parameterValue
+                                                        ?.reference;
+
+                                                    if (references != null &&
+                                                        references.isNotEmpty) {
+                                                      final int fileCount =
+                                                          references
+                                                              .expand((ref) =>
+                                                                  ref.url ?? [])
+                                                              .where((u) =>
                                                                   u != null &&
                                                                   u
                                                                       .toString()
                                                                       .trim()
-                                                                      .isNotEmpty))
-                                                      ? Icon(
-                                                          Icons.description,
-                                                          size: 20,
-                                                          color: Colors.grey,
-                                                        )
-                                                      : Container(
+                                                                      .isNotEmpty)
+                                                              .length;
+
+                                                      if (fileCount > 0) {
+                                                        return Container(
                                                           padding:
-                                                              EdgeInsets.all(6),
-                                                          child: Text(
-                                                            element.parameterValue
-                                                                        .paramType
-                                                                        .toString()
-                                                                        .toUpperCase() ==
-                                                                    "JSON"
-                                                                ? "JSON"
-                                                                : _extractCleanValue(
-                                                                    element
-                                                                        .parameterValue
-                                                                        ?.value),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      6),
+                                                          alignment: Alignment
+                                                              .centerLeft,
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .description,
+                                                                size: 18,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                              const SizedBox(
+                                                                  width: 4),
+                                                              Text(
+                                                                "($fileCount)",
+                                                                style:
+                                                                    const TextStyle(
+                                                                  fontSize: 13,
+                                                                  color: Colors
+                                                                      .grey,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                        )),
+                                                        );
+                                                      }
+                                                    }
+
+                                                    return const SizedBox();
+                                                  },
+                                                ),
+                                                // prefixIcon: Builder(
+                                                //   builder: (context) {
+                                                //     final rawValue = element.parameterValue?.value;
+                                                //
+                                                //     final displayValue = _extractCleanValue(rawValue);
+                                                //
+                                                //     // ✅ If value exists and not empty → show value
+                                                //     if (displayValue != null &&
+                                                //         displayValue.toString().trim().isNotEmpty) {
+                                                //       return Container(
+                                                //         padding: const EdgeInsets.all(6),
+                                                //         alignment: Alignment.centerLeft,
+                                                //         child: Text(
+                                                //           displayValue,
+                                                //           maxLines: 1,
+                                                //           overflow: TextOverflow.ellipsis,
+                                                //         ),
+                                                //       );
+                                                //     }
+                                                //
+                                                //     // ❌ Only show document icon if value is empty
+                                                //     final hasDocument =
+                                                //         element.parameterValue?.reference != null &&
+                                                //             element.parameterValue!.reference!.isNotEmpty &&
+                                                //             element.parameterValue!.reference!.first.url != null &&
+                                                //             element.parameterValue!.reference!.first.url!
+                                                //                 .any((u) => u != null && u.toString().trim().isNotEmpty);
+                                                //
+                                                //     if (hasDocument) {
+                                                //       return const Icon(
+                                                //         Icons.description,
+                                                //         size: 20,
+                                                //         color: Colors.grey,
+                                                //       );
+                                                //     }
+                                                //
+                                                //     return const SizedBox();
+                                                //   },
+                                                // ),
+                                                // prefixIcon: (element
+                                                //                 .parameterValue?.reference !=
+                                                //             null &&
+                                                //         element
+                                                //             .parameterValue!
+                                                //             .reference!
+                                                //             .isNotEmpty &&
+                                                //         element
+                                                //                 .parameterValue!
+                                                //                 .reference!
+                                                //                 .first
+                                                //                 .url !=
+                                                //             null &&
+                                                //         element
+                                                //             .parameterValue!
+                                                //             .reference!
+                                                //             .first
+                                                //             .url!
+                                                //             .any((u) =>
+                                                //                 u != null &&
+                                                //                 u
+                                                //                     .toString()
+                                                //                     .trim()
+                                                //                     .isNotEmpty))
+                                                //     ? Icon(
+                                                //         Icons.description,
+                                                //         size: 20,
+                                                //         color: Colors.grey,
+                                                //       )
+                                                //     : Container(
+                                                //         padding:
+                                                //             EdgeInsets.all(6),
+                                                //         child: Text(
+                                                //           element.parameterValue
+                                                //                       .paramType
+                                                //                       .toString()
+                                                //                       .toUpperCase() ==
+                                                //                   "JSON"
+                                                //               ? "JSON"
+                                                //               : _extractCleanValue(
+                                                //                   element
+                                                //                       .parameterValue
+                                                //                       ?.value),
+                                                //           maxLines: 1,
+                                                //           overflow:
+                                                //               TextOverflow
+                                                //                   .ellipsis,
+                                                //         ),
+                                                //       )
+                                              ),
                                               style: TextStyle(fontSize: 14),
                                             ),
                                           )
@@ -535,6 +938,38 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
         ],
       ),
     );
+  }
+
+  bool isParameterEmpty(dynamic rawValue) {
+    if (rawValue == null) return true;
+
+    try {
+      dynamic decoded = rawValue;
+
+      // Case 1: If value is JSON string
+      if (decoded is String &&
+          decoded.trim().startsWith("{") &&
+          decoded.trim().endsWith("}")) {
+        decoded = jsonDecode(decoded);
+      }
+
+      // Case 2: {"value":{...}}
+      if (decoded is Map && decoded["value"] is Map) {
+        final inner = decoded["value"]["value"];
+        return inner == null || inner.toString().trim().isEmpty;
+      }
+
+      // Case 3: {"value":396}
+      if (decoded is Map && decoded.containsKey("value")) {
+        final inner = decoded["value"];
+        return inner == null || inner.toString().trim().isEmpty;
+      }
+
+      // Case 4: direct value
+      return decoded.toString().trim().isEmpty;
+    } catch (e) {
+      return true;
+    }
   }
 
   void _showHelpDialog(BuildContext context, element) {

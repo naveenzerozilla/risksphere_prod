@@ -1146,7 +1146,8 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
       {"code": "ZMK", "name": "Zambian Kwacha"},
       {"code": "ZWL", "name": "Zimbabwean Dollar"},
     ];
-
+    final isIntegerField =
+        param.parameterType?.name?.toLowerCase() == "integer";
     final String? selectedCurrency = currencyJson.any(
       (c) => c['code'] == currencyController.text,
     )
@@ -1194,6 +1195,10 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
           /// VALUE
           TextField(
             controller: _getController("value"),
+            keyboardType:
+                isIntegerField ? TextInputType.number : TextInputType.text,
+            inputFormatters:
+                isIntegerField ? [FilteringTextInputFormatter.digitsOnly] : [],
             decoration: _buildDecoration(
               _hasError("value"),
               param.parameterNameA ?? "Value",
@@ -1203,6 +1208,17 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
               setState(() {});
             },
           ),
+          // TextField(
+          //   controller: _getController("value"),
+          //   decoration: _buildDecoration(
+          //     _hasError("value"),
+          //     param.parameterNameA ?? "Value",
+          //   ),
+          //   onChanged: (v) {
+          //     _setError("value", v.trim().isEmpty);
+          //     setState(() {});
+          //   },
+          // ),
 
           const SizedBox(height: 14),
           if (hasCurrency) ...[

@@ -134,6 +134,9 @@ class _LocationProfileState extends State<LocationProfile>
   Set<Marker> _markers = {};
 
   bool hasAnyPlan = false;
+  List<Map<String, dynamic>> galleryMedia = [];
+  bool isGalleryLoading = false;
+  bool isGalleryLoaded = false;
 
   // Google Maps
   bool _mapIsReady = false;
@@ -578,9 +581,8 @@ class _LocationProfileState extends State<LocationProfile>
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       markerId: markerId,
       infoWindow: InfoWindow(
-        title: 'Click here',
+        title: '',
         onTap: () {
-          // Handle info window tap if needed
           print('Info window tapped');
         },
       ),
@@ -681,39 +683,92 @@ class _LocationProfileState extends State<LocationProfile>
   }
 
   Future<void> _pickDocuments() async {
-    // Let user pick multiple documents
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg'],
+      withData: true,
     );
 
-    if (result != null) {
-      // Convert paths to File objects
-      final files = result.paths.map((path) => File(path!)).toList();
+    if (result == null) return;
 
-      setState(() {
-        _images.addAll(files); // Assuming _images is your File list
-      });
+    bool exceeded = false;
 
-      // Upload files
-      for (var file in files) {
-        var provider =
-            Provider.of<MyLocationListProvider>(context, listen: false);
-        await provider.uploadImage(
-          context,
-          file.path,
-          widget.accountId,
-          widget.subAccountId,
-          widget.sovId,
-          provider.locationProfile?.finalAddress?.locationId ?? "",
-        );
+    for (var file in result.files) {
+      if (file.size > maxFileSize) {
+        exceeded = true;
       }
-    } else {
-      // User canceled the picker
-      print('No file selected');
+    }
+
+    setState(() {
+      _selectedFiles = result.files;
+      _isSizeExceeded = exceeded;
+    });
+
+    if (exceeded) {
+      _showSizeExceededDialog();
     }
   }
+
+  void _showSizeExceededDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text("Upload Documents"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.red),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Total File Size Limit Exceeded",
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Maximum allowed size per file is 200MB.",
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 10),
+                  ..._selectedFiles
+                      .where((f) => f.size > maxFileSize)
+                      .map(
+                        (f) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            "${f.name} (${(f.size / (1024 * 1024)).toStringAsFixed(2)} MB)",
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const int maxFileSize = 200 * 1024 * 1024; // 200MB
+
+  List<PlatformFile> _selectedFiles = [];
+  bool _isSizeExceeded = false;
 
   @override
   void dispose() {
@@ -1031,6 +1086,20 @@ class _LocationProfileState extends State<LocationProfile>
                                                                       .ellipsis,
                                                             ),
                                                           ),
+                                                          const Text(
+                                                            ' > ',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                          const Text(
+                                                            'Location Profile',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                color: Colors
+                                                                    .white),
+                                                          ),
                                                         ]
 
                                                         // ---------- ACCOUNT FLOW ----------
@@ -1107,173 +1176,53 @@ class _LocationProfileState extends State<LocationProfile>
                                                                       .ellipsis,
                                                             ),
                                                           ),
+                                                          const Text(
+                                                            ' > ',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                          InkWell(
+                                                            onTap: () {
+                                                              if (!bottomsheetopened) {
+                                                                Navigator.pop(
+                                                                    context);
+                                                              }
+                                                            },
+                                                            child: Text(
+                                                              '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white60,
+                                                              ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                          const Text(
+                                                            ' > ',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                          const Text(
+                                                            'Location Profile',
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white),
+                                                          ),
                                                         ],
-
-                                                        const Text(
-                                                          ' > ',
-                                                          style: TextStyle(
-                                                              fontSize: 12,
-                                                              color: Colors
-                                                                  .white70),
-                                                        ),
-                                                        const Text(
-                                                          'Location Profile',
-                                                          style: TextStyle(
-                                                              fontSize: 12,
-                                                              color:
-                                                                  Colors.white),
-                                                        ),
                                                       ],
                                                     ),
                                                   ),
                                                 ),
-                                              )
-
-                                              // Expanded(
-                                              //   child: Container(
-                                              //     alignment: Alignment.center,
-                                              //     padding: const EdgeInsets
-                                              //         .symmetric(
-                                              //         vertical: 5.0,
-                                              //         horizontal: 0),
-                                              //     child: Row(
-                                              //       mainAxisAlignment:
-                                              //           MainAxisAlignment.start,
-                                              //       crossAxisAlignment:
-                                              //           CrossAxisAlignment
-                                              //               .center,
-                                              //       children: [
-                                              //         Padding(
-                                              //           padding:
-                                              //               const EdgeInsets
-                                              //                   .only(
-                                              //                   top: 5.0,
-                                              //                   bottom: 6),
-                                              //           child: Row(
-                                              //             children: [
-                                              //               if (widget.sovId
-                                              //                       .isNotEmpty ||
-                                              //                   widget.sovId
-                                              //                           .toString() ==
-                                              //                       "null") ...[
-                                              //                 // Text(widget.sovName),
-                                              //                 InkWell(
-                                              //                   onTap: () {
-                                              //                     if (!bottomsheetopened) {
-                                              //                       Navigator.pop(
-                                              //                           context);
-                                              //                     }
-                                              //                   },
-                                              //                   child: Text(
-                                              //                     widget
-                                              //                         .sovName,
-                                              //                     style: TextStyle(
-                                              //                         fontSize:
-                                              //                         14,
-                                              //                         color: Colors
-                                              //                             .white60),
-                                              //                   ),
-                                              //                 ),
-                                              //                 InkWell(
-                                              //                   onTap: () {
-                                              //                     if (!bottomsheetopened) {
-                                              //                       Navigator.pop(
-                                              //                           context);
-                                              //                     }
-                                              //                   },
-                                              //                   child: Text(
-                                              //                     widget
-                                              //                         .sovName,
-                                              //                     style: TextStyle(
-                                              //                         fontSize:
-                                              //                             14,
-                                              //                         color: Colors
-                                              //                             .white60),
-                                              //                   ),
-                                              //                 ),
-                                              //               ] else ...[
-                                              //                 InkWell(
-                                              //                   onTap: () {
-                                              //                     if (!bottomsheetopened) {
-                                              //                       Navigator
-                                              //                           .pushAndRemoveUntil(
-                                              //                         context,
-                                              //                         MaterialPageRoute(
-                                              //                             builder: (context) =>
-                                              //                                 AccountListScreen()),
-                                              //                         (route) =>
-                                              //                             false,
-                                              //                       );
-                                              //                     }
-                                              //                   },
-                                              //                   child: Text(
-                                              //                     widget
-                                              //                         .accountName,
-                                              //                     style: TextStyle(
-                                              //                         fontSize:
-                                              //                             12,
-                                              //                         color: Colors
-                                              //                             .white70),
-                                              //                   ),
-                                              //                 ),
-                                              //                 Text(' > ',
-                                              //                     style: TextStyle(
-                                              //                         fontSize:
-                                              //                             12,
-                                              //                         color: Colors
-                                              //                             .white70)),
-                                              //                 InkWell(
-                                              //                   onTap: () {
-                                              //                     if (!bottomsheetopened) {
-                                              //                       Navigator
-                                              //                           .pushAndRemoveUntil(
-                                              //                         context,
-                                              //                         MaterialPageRoute(
-                                              //                           builder:
-                                              //                               (context) =>
-                                              //                                   SubAccountListScreen(
-                                              //                             accountId:
-                                              //                                 widget.accountId ?? "",
-                                              //                             accountName:
-                                              //                                 widget.subAccountName ?? "",
-                                              //                           ),
-                                              //                         ),
-                                              //                         (route) =>
-                                              //                             false,
-                                              //                       );
-                                              //                     }
-                                              //                   },
-                                              //                   child: Text(
-                                              //                     widget
-                                              //                         .subAccountName,
-                                              //                     style: TextStyle(
-                                              //                         fontSize:
-                                              //                             12,
-                                              //                         color: Colors
-                                              //                             .white70),
-                                              //                   ),
-                                              //                 ),
-                                              //               ],
-                                              //               Text(' > ',
-                                              //                   style: TextStyle(
-                                              //                       fontSize:
-                                              //                           12,
-                                              //                       color: Colors
-                                              //                           .white70)),
-                                              //               Text(
-                                              //                 "Location Profile",
-                                              //                 style: TextStyle(
-                                              //                     fontSize: 12,
-                                              //                     color: Colors
-                                              //                         .white),
-                                              //               ),
-                                              //             ],
-                                              //           ),
-                                              //         ),
-                                              //       ],
-                                              //     ),
-                                              //   ),
-                                              // ),
+                                              ),
                                             ],
                                           ),
                                           Row(
@@ -1285,7 +1234,6 @@ class _LocationProfileState extends State<LocationProfile>
                                                   children: [
                                                     Text(
                                                       '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
-                                                      // '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
                                                       style: typography.H6
                                                           .copyWith(
                                                               height: 1.0),
@@ -1315,7 +1263,6 @@ class _LocationProfileState extends State<LocationProfile>
                                                   ],
                                                 ),
                                               ),
-
                                               IconButton(
                                                 icon: Icon(
                                                   Icons.edit,
@@ -1390,31 +1337,11 @@ class _LocationProfileState extends State<LocationProfile>
                                                     ),
                                                   );
 
-                                                  /// 🔹 Refresh profile after successful update
-                                                  if (value == true &&
-                                                      mounted) {
-                                                    await locationProfileProvider
-                                                        .fetchIndividualLocationProfile(
-                                                      context,
-                                                      locationProfile.id!,
-                                                    );
-                                                    setState(() {});
+                                                  if (value != null) {
+                                                    _refreshData();
                                                   }
                                                 },
                                               ),
-                                              // IconButton(
-                                              //     splashRadius: 1,
-                                              //     padding: EdgeInsets.zero,
-                                              //     icon: Icon(Icons.edit,
-                                              //         color: Theme.of(context)
-                                              //             .colorScheme
-                                              //             .primary),
-                                              //     onPressed: () {
-                                              //       bottomsheetopened != true
-                                              //           ? _editName(
-                                              //               locationProfileProvider)
-                                              //           : null;
-                                              //     }),
                                             ],
                                           ),
                                         ],
@@ -1430,6 +1357,578 @@ class _LocationProfileState extends State<LocationProfile>
                                   ],
                                 ),
                               ),
+                              // Padding(
+                              //   padding: const EdgeInsets.symmetric(
+                              //       horizontal: 10.0),
+                              //   child: Row(
+                              //     mainAxisAlignment:
+                              //         MainAxisAlignment.spaceBetween,
+                              //     crossAxisAlignment: CrossAxisAlignment.center,
+                              //     children: [
+                              //       // Left Column
+                              //       Expanded(
+                              //         child: Column(
+                              //           crossAxisAlignment:
+                              //               CrossAxisAlignment.start,
+                              //           children: [
+                              //             Row(
+                              //               mainAxisAlignment:
+                              //                   MainAxisAlignment.center,
+                              //               crossAxisAlignment:
+                              //                   CrossAxisAlignment.center,
+                              //               children: [
+                              //                 InkWell(
+                              //                   onTap: () {
+                              //                     if (!bottomsheetopened)
+                              //                       Navigator.pop(
+                              //                           context, false);
+                              //                   },
+                              //                   child: Container(
+                              //                     alignment:
+                              //                         Alignment.centerLeft,
+                              //                     height: 35,
+                              //                     width: 35,
+                              //                     decoration: BoxDecoration(
+                              //                       borderRadius:
+                              //                           BorderRadius.circular(
+                              //                               10),
+                              //                     ),
+                              //                     child: Icon(
+                              //                         Icons.arrow_back_ios_new,
+                              //                         size: 18),
+                              //                   ),
+                              //                 ),
+                              //                 // SizedBox(width: 8),
+                              //                 Expanded(
+                              //                   child: Container(
+                              //                     alignment:
+                              //                         Alignment.centerLeft,
+                              //                     padding: const EdgeInsets
+                              //                         .symmetric(vertical: 5),
+                              //                     child: SingleChildScrollView(
+                              //                       scrollDirection:
+                              //                           Axis.horizontal,
+                              //                       // ✅ prevents overflow
+                              //                       child: Row(
+                              //                         crossAxisAlignment:
+                              //                             CrossAxisAlignment
+                              //                                 .center,
+                              //                         children: [
+                              //                           // ---------- SOV FLOW ----------
+                              //                           if (widget.sovId !=
+                              //                                   null &&
+                              //                               widget.sovId!
+                              //                                   .isNotEmpty) ...[
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.sovName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                     const TextStyle(
+                              //                                   fontSize: 14,
+                              //                                   color: Colors
+                              //                                       .white60,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                     TextOverflow
+                              //                                         .ellipsis,
+                              //                               ),
+                              //                             ),
+                              //                             const Text(
+                              //                               ' > ',
+                              //                               style: TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70),
+                              //                             ),
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.sovName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                 const TextStyle(
+                              //                                   fontSize: 14,
+                              //                                   color: Colors
+                              //                                       .white60,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                 TextOverflow
+                              //                                     .ellipsis,
+                              //                               ),
+                              //                             ),
+                              //                             const Text(
+                              //                               ' > ',
+                              //                               style: TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70),
+                              //                             ),
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.locationName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                     const TextStyle(
+                              //                                   fontSize: 14,
+                              //                                   color: Colors
+                              //                                       .white60,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                     TextOverflow
+                              //                                         .ellipsis,
+                              //                               ),
+                              //                             ),     const Text(
+                              //                               ' > ',
+                              //                               style: TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70),
+                              //                             ),
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator.pop(
+                              //                                       context);
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.locationName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                     const TextStyle(
+                              //                                   fontSize: 14,
+                              //                                   color: Colors
+                              //                                       .white60,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                     TextOverflow
+                              //                                         .ellipsis,
+                              //                               ),
+                              //                             ),
+                              //                           ]
+                              //
+                              //                           // ---------- ACCOUNT FLOW ----------
+                              //                           else ...[
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator
+                              //                                       .pushAndRemoveUntil(
+                              //                                     context,
+                              //                                     MaterialPageRoute(
+                              //                                         builder:
+                              //                                             (_) =>
+                              //                                                 AccountListScreen()),
+                              //                                     (route) =>
+                              //                                         false,
+                              //                                   );
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.accountName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                     const TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                     TextOverflow
+                              //                                         .ellipsis,
+                              //                               ),
+                              //                             ),
+                              //                             const Text(
+                              //                               ' > ',
+                              //                               style: TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70),
+                              //                             ),
+                              //                             InkWell(
+                              //                               onTap: () {
+                              //                                 if (!bottomsheetopened) {
+                              //                                   Navigator
+                              //                                       .pushAndRemoveUntil(
+                              //                                     context,
+                              //                                     MaterialPageRoute(
+                              //                                       builder: (_) =>
+                              //                                           SubAccountListScreen(
+                              //                                         accountId:
+                              //                                             widget.accountId ??
+                              //                                                 "",
+                              //                                         accountName:
+                              //                                             widget.subAccountName ??
+                              //                                                 "",
+                              //                                       ),
+                              //                                     ),
+                              //                                     (route) =>
+                              //                                         false,
+                              //                                   );
+                              //                                 }
+                              //                               },
+                              //                               child: Text(
+                              //                                 widget.subAccountName ??
+                              //                                     "",
+                              //                                 style:
+                              //                                     const TextStyle(
+                              //                                   fontSize: 12,
+                              //                                   color: Colors
+                              //                                       .white70,
+                              //                                 ),
+                              //                                 overflow:
+                              //                                     TextOverflow
+                              //                                         .ellipsis,
+                              //                               ),
+                              //                             ),
+                              //                           ],
+                              //
+                              //                           const Text(
+                              //                             ' > ',
+                              //                             style: TextStyle(
+                              //                                 fontSize: 12,
+                              //                                 color: Colors
+                              //                                     .white70),
+                              //                           ),
+                              //                           const Text(
+                              //                             'Location Profile',
+                              //                             style: TextStyle(
+                              //                                 fontSize: 12,
+                              //                                 color:
+                              //                                     Colors.white),
+                              //                           ),
+                              //                         ],
+                              //                       ),
+                              //                     ),
+                              //                   ),
+                              //                 )
+                              //
+                              //                 // Expanded(
+                              //                 //   child: Container(
+                              //                 //     alignment: Alignment.center,
+                              //                 //     padding: const EdgeInsets
+                              //                 //         .symmetric(
+                              //                 //         vertical: 5.0,
+                              //                 //         horizontal: 0),
+                              //                 //     child: Row(
+                              //                 //       mainAxisAlignment:
+                              //                 //           MainAxisAlignment.start,
+                              //                 //       crossAxisAlignment:
+                              //                 //           CrossAxisAlignment
+                              //                 //               .center,
+                              //                 //       children: [
+                              //                 //         Padding(
+                              //                 //           padding:
+                              //                 //               const EdgeInsets
+                              //                 //                   .only(
+                              //                 //                   top: 5.0,
+                              //                 //                   bottom: 6),
+                              //                 //           child: Row(
+                              //                 //             children: [
+                              //                 //               if (widget.sovId
+                              //                 //                       .isNotEmpty ||
+                              //                 //                   widget.sovId
+                              //                 //                           .toString() ==
+                              //                 //                       "null") ...[
+                              //                 //                 // Text(widget.sovName),
+                              //                 //                 InkWell(
+                              //                 //                   onTap: () {
+                              //                 //                     if (!bottomsheetopened) {
+                              //                 //                       Navigator.pop(
+                              //                 //                           context);
+                              //                 //                     }
+                              //                 //                   },
+                              //                 //                   child: Text(
+                              //                 //                     widget
+                              //                 //                         .sovName,
+                              //                 //                     style: TextStyle(
+                              //                 //                         fontSize:
+                              //                 //                         14,
+                              //                 //                         color: Colors
+                              //                 //                             .white60),
+                              //                 //                   ),
+                              //                 //                 ),
+                              //                 //                 InkWell(
+                              //                 //                   onTap: () {
+                              //                 //                     if (!bottomsheetopened) {
+                              //                 //                       Navigator.pop(
+                              //                 //                           context);
+                              //                 //                     }
+                              //                 //                   },
+                              //                 //                   child: Text(
+                              //                 //                     widget
+                              //                 //                         .sovName,
+                              //                 //                     style: TextStyle(
+                              //                 //                         fontSize:
+                              //                 //                             14,
+                              //                 //                         color: Colors
+                              //                 //                             .white60),
+                              //                 //                   ),
+                              //                 //                 ),
+                              //                 //               ] else ...[
+                              //                 //                 InkWell(
+                              //                 //                   onTap: () {
+                              //                 //                     if (!bottomsheetopened) {
+                              //                 //                       Navigator
+                              //                 //                           .pushAndRemoveUntil(
+                              //                 //                         context,
+                              //                 //                         MaterialPageRoute(
+                              //                 //                             builder: (context) =>
+                              //                 //                                 AccountListScreen()),
+                              //                 //                         (route) =>
+                              //                 //                             false,
+                              //                 //                       );
+                              //                 //                     }
+                              //                 //                   },
+                              //                 //                   child: Text(
+                              //                 //                     widget
+                              //                 //                         .accountName,
+                              //                 //                     style: TextStyle(
+                              //                 //                         fontSize:
+                              //                 //                             12,
+                              //                 //                         color: Colors
+                              //                 //                             .white70),
+                              //                 //                   ),
+                              //                 //                 ),
+                              //                 //                 Text(' > ',
+                              //                 //                     style: TextStyle(
+                              //                 //                         fontSize:
+                              //                 //                             12,
+                              //                 //                         color: Colors
+                              //                 //                             .white70)),
+                              //                 //                 InkWell(
+                              //                 //                   onTap: () {
+                              //                 //                     if (!bottomsheetopened) {
+                              //                 //                       Navigator
+                              //                 //                           .pushAndRemoveUntil(
+                              //                 //                         context,
+                              //                 //                         MaterialPageRoute(
+                              //                 //                           builder:
+                              //                 //                               (context) =>
+                              //                 //                                   SubAccountListScreen(
+                              //                 //                             accountId:
+                              //                 //                                 widget.accountId ?? "",
+                              //                 //                             accountName:
+                              //                 //                                 widget.subAccountName ?? "",
+                              //                 //                           ),
+                              //                 //                         ),
+                              //                 //                         (route) =>
+                              //                 //                             false,
+                              //                 //                       );
+                              //                 //                     }
+                              //                 //                   },
+                              //                 //                   child: Text(
+                              //                 //                     widget
+                              //                 //                         .subAccountName,
+                              //                 //                     style: TextStyle(
+                              //                 //                         fontSize:
+                              //                 //                             12,
+                              //                 //                         color: Colors
+                              //                 //                             .white70),
+                              //                 //                   ),
+                              //                 //                 ),
+                              //                 //               ],
+                              //                 //               Text(' > ',
+                              //                 //                   style: TextStyle(
+                              //                 //                       fontSize:
+                              //                 //                           12,
+                              //                 //                       color: Colors
+                              //                 //                           .white70)),
+                              //                 //               Text(
+                              //                 //                 "Location Profile",
+                              //                 //                 style: TextStyle(
+                              //                 //                     fontSize: 12,
+                              //                 //                     color: Colors
+                              //                 //                         .white),
+                              //                 //               ),
+                              //                 //             ],
+                              //                 //           ),
+                              //                 //         ),
+                              //                 //       ],
+                              //                 //     ),
+                              //                 //   ),
+                              //                 // ),
+                              //               ],
+                              //             ),
+                              //             Row(
+                              //               children: [
+                              //                 Expanded(
+                              //                   child: Column(
+                              //                     crossAxisAlignment:
+                              //                         CrossAxisAlignment.start,
+                              //                     children: [
+                              //                       Text(
+                              //                         '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
+                              //                         // '${locationProfileProvider.locationProfile?.finalAddress?.locationName ?? ''} ${formatLocationText((int.tryParse(widget.page) ?? 1), (int.tryParse(widget.totalPages!) ?? 1))}',
+                              //                         style: typography.H6
+                              //                             .copyWith(
+                              //                                 height: 1.0),
+                              //                         overflow: TextOverflow
+                              //                             .ellipsis, // Handle overflow
+                              //                       ),
+                              //                       SizedBox(
+                              //                           height:
+                              //                               CustomSpacing.two),
+                              //                       Text(
+                              //                         locationProfileProvider
+                              //                                 .locationProfile
+                              //                                 ?.finalAddress
+                              //                                 ?.address ??
+                              //                             '',
+                              //                         maxLines: 2,
+                              //                         style: typography
+                              //                             .Subtitle2.copyWith(
+                              //                           fontWeight:
+                              //                               FontWeight.w500,
+                              //                           color: AppColors
+                              //                               .primaryMain,
+                              //                         ),
+                              //                         overflow:
+                              //                             TextOverflow.ellipsis,
+                              //                       ),
+                              //                     ],
+                              //                   ),
+                              //                 ),
+                              //
+                              //                 IconButton(
+                              //                   icon: Icon(
+                              //                     Icons.edit,
+                              //                     color: Theme.of(context)
+                              //                         .colorScheme
+                              //                         .primary,
+                              //                   ),
+                              //                   onPressed: () async {
+                              //                     final locationProfile =
+                              //                         locationProfileProvider
+                              //                             .locationProfile;
+                              //
+                              //                     if (locationProfile == null)
+                              //                       return;
+                              //
+                              //                     final score = locationProfile
+                              //                         .finalAddress?.score;
+                              //                     print(score);
+                              //
+                              //                     /// 🔹 CASE 1: Score == 5 → Edit name only
+                              //                     if (score.toString() == "5") {
+                              //                       _editName(
+                              //                           locationProfileProvider);
+                              //                       return;
+                              //                     }
+                              //
+                              //                     /// 🔹 CASE 2: Full edit
+                              //                     final value =
+                              //                         await Navigator.of(
+                              //                                 context)
+                              //                             .push(
+                              //                       MaterialPageRoute(
+                              //                         builder: (_) =>
+                              //                             AddLocationScreen(
+                              //                           accountId:
+                              //                               widget.accountId,
+                              //                           subAccountId:
+                              //                               widget.subAccountId,
+                              //                           sovId: widget.sovId,
+                              //                           accountName:
+                              //                               widget.accountName,
+                              //                           subAccountName: widget
+                              //                               .subAccountName,
+                              //                           sovName: widget.sovName,
+                              //                           locationId:
+                              //                               locationProfile.id,
+                              //                           // nullable-safe
+                              //                           locationName: locationProfile
+                              //                                   .finalAddress
+                              //                                   ?.locationName ??
+                              //                               "",
+                              //                           locationIdForRef:
+                              //                               locationProfile
+                              //                                       .finalAddress
+                              //                                       ?.locationIdForRef ??
+                              //                                   "",
+                              //                           searchQuery: widget
+                              //                                   .searchQuery ??
+                              //                               "",
+                              //                           page: widget.page,
+                              //                           totalPages: widget
+                              //                                       .locationId
+                              //                                       ?.isNotEmpty ==
+                              //                                   true
+                              //                               ? ((locationProfileProvider
+                              //                                               .resetTotalPage ??
+                              //                                           1) -
+                              //                                       1)
+                              //                                   .toString()
+                              //                               : widget.totalPages,
+                              //                         ),
+                              //                       ),
+                              //                     );
+                              //                     if (value == true) {
+                              //                       _refreshData();
+                              //                     }
+                              //
+                              //                     /// 🔹 Refresh profile after successful update
+                              //                     // if (value == true &&
+                              //                     //     mounted) {
+                              //                     //   await locationProfileProvider
+                              //                     //       .fetchIndividualLocationProfile(
+                              //                     //     context,
+                              //                     //     locationProfile.id!,
+                              //                     //   );
+                              //                     //   setState(() {});
+                              //                     // }
+                              //                   },
+                              //                 ),
+                              //                 // IconButton(
+                              //                 //     splashRadius: 1,
+                              //                 //     padding: EdgeInsets.zero,
+                              //                 //     icon: Icon(Icons.edit,
+                              //                 //         color: Theme.of(context)
+                              //                 //             .colorScheme
+                              //                 //             .primary),
+                              //                 //     onPressed: () {
+                              //                 //       bottomsheetopened != true
+                              //                 //           ? _editName(
+                              //                 //               locationProfileProvider)
+                              //                 //           : null;
+                              //                 //     }),
+                              //               ],
+                              //             ),
+                              //           ],
+                              //         ),
+                              //       ),
+                              //
+                              //       // Right Column
+                              //       Column(
+                              //         children: [
+                              //           SizedBox(height: CustomSpacing.four),
+                              //         ],
+                              //       ),
+                              //     ],
+                              //   ),
+                              // ),
                               SizedBox(
                                 height: CustomSpacing.two,
                               ),
@@ -1678,124 +2177,6 @@ class _LocationProfileState extends State<LocationProfile>
                                               );
                                             },
                                           ),
-                                    // Consumer2<MyLocationListProvider,
-                                    //         SubaccountParameterProvider>(
-                                    //         builder: (context,
-                                    //             locationProfileProvider,
-                                    //             provider,
-                                    //             child) {
-                                    //           dynamic rawScore;
-                                    //
-                                    //           try {
-                                    //             if (tabIndex == 0) {
-                                    //               rawScore =
-                                    //                   locationProfileProvider
-                                    //                           .locationProfile
-                                    //                           ?.geocodingScore ??
-                                    //                       1;
-                                    //             } else if (tabIndex == 1) {
-                                    //               rawScore =
-                                    //                   locationProfileProvider
-                                    //                           .locationProfile
-                                    //                           ?.overallScore ??
-                                    //                       5;
-                                    //               if (rawScore == 0)
-                                    //                 rawScore = 5;
-                                    //             } else {
-                                    //               rawScore =
-                                    //                   locationProfileProvider
-                                    //                           .locationProfile
-                                    //                           ?.dataCompleteness ??
-                                    //                       1;
-                                    //
-                                    //               if (provider.updatedScore !=
-                                    //                   null) {
-                                    //                 rawScore =
-                                    //                     provider.updatedScore;
-                                    //               }
-                                    //             }
-                                    //           } catch (_) {
-                                    //             rawScore = 1;
-                                    //           }
-                                    //
-                                    //           final int rating =
-                                    //               scoreToColorIndex(rawScore);
-                                    //           final rawScore1 =
-                                    //               locationProfileProvider
-                                    //                   .locationProfile
-                                    //                   ?.dataCompleteness;
-                                    //           final completeness =
-                                    //               locationProfileProvider
-                                    //                       .locationProfile
-                                    //                       ?.dataCompleteness ??
-                                    //                   0;
-                                    //           final colorIndex =
-                                    //               scoreToColorIndex(rawScore1);
-                                    //           return Row(
-                                    //             children: [
-                                    //               /// BAR INDICATOR
-                                    //               VerticalBarIndicator(
-                                    //                   score:
-                                    //                   locationProfileProvider
-                                    //                               .locationProfile
-                                    //                               ?.dataCompleteness
-                                    //                               .toString() ==
-                                    //                           "0"
-                                    //                       ? 1
-                                    //                       : locationProfileProvider
-                                    //                           .locationProfile
-                                    //                           ?.dataCompleteness
-                                    //
-                                    //               ),
-                                    //
-                                    //               const SizedBox(width: 8),
-                                    //
-                                    //               /// CERTIFIED OR SCORE BADGE
-                                    //               rating == 5
-                                    //                   ? SvgPicture.asset(
-                                    //                       'assets/images/certified_five.svg',
-                                    //                       width: 24,
-                                    //                       height: 24,
-                                    //                     )
-                                    //                   : Container(
-                                    //                       width: 22,
-                                    //                       height: 22,
-                                    //                       decoration:
-                                    //                           BoxDecoration(
-                                    //                         color: scoreColors[
-                                    //                             colorIndex],
-                                    //                         shape:
-                                    //                             BoxShape.circle,
-                                    //                       ),
-                                    //                       alignment:
-                                    //                           Alignment.center,
-                                    //                       child: Text(
-                                    //                         completeness == 0
-                                    //                             ? '1'
-                                    //                             : completeness
-                                    //                                 .toString(),
-                                    //                         textAlign: TextAlign
-                                    //                             .center,
-                                    //                         style: TextStyle(
-                                    //                           fontWeight:
-                                    //                               FontWeight
-                                    //                                   .bold,
-                                    //                           fontSize: 11,
-                                    //                           color: ThemeData.estimateBrightnessForColor(
-                                    //                                       scoreColors[
-                                    //                                           colorIndex]) ==
-                                    //                                   Brightness
-                                    //                                       .dark
-                                    //                               ? Colors.white
-                                    //                               : Colors
-                                    //                                   .black,
-                                    //                         ),
-                                    //                       ),
-                                    //                     ),
-                                    //             ],
-                                    //           );
-                                    //         },
-                                    //       ),
                                   ],
                                 ),
                               ),
@@ -2010,6 +2391,66 @@ class _LocationProfileState extends State<LocationProfile>
                       child: _locationProfileBody(),
                     ),
                   if (_selectedMarker != null) _buildCustomInfoWindow(),
+                  Positioned(
+                    bottom: 70, // adjust above SpeedDial
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => _ChatbotBottomSheet(
+                            locationId: locationProfileProvider
+                                .locationProfile?.finalAddress?.locationId
+                                .toString(),
+                          ),
+                        );
+                        // showModalBottomSheet(
+                        //   context: context,
+                        //   isScrollControlled: true,
+                        //   useSafeArea: true,
+                        //   backgroundColor: Colors.transparent,
+                        //   builder: (_) => _ChatbotBottomSheet(
+                        //     locationId: locationProfileProvider
+                        //         .locationProfile?.finalAddress?.locationId
+                        //         .toString(),
+                        //   ),
+                        // );
+                      },
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Need Help?",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            SizedBox(width: 8),
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: AppColors.primaryMain,
+                              child: Icon(Icons.smart_toy,
+                                  color: Colors.white, size: 18),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
             }),
@@ -2334,14 +2775,14 @@ class _LocationProfileState extends State<LocationProfile>
                         locationProfileProvider
                                 .locationProfile?.finalAddress?.address ??
                             'N/A',
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: typography.Body1,
                       ),
                     )
                   ],
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 2),
                 DefaultTabController(
                   length: 5, // Number of tabs
                   child: Column(
@@ -2363,8 +2804,22 @@ class _LocationProfileState extends State<LocationProfile>
                             provider.fetchLocations();
                           }
 
+                          /// GALLERY TAB ✅ ADD THIS
+                          if (index == 1) {
+                            final locationId = provider
+                                .locationProfile?.finalAddress?.locationId;
+                            if (locationId != null && locationId.isNotEmpty) {
+                              provider.fetchGalleryMedia(
+                                context: context,
+                                locationId: locationId,
+                                forceRefresh:
+                                    true, // forces reload every time tab is clicked
+                              );
+                            }
+                          }
+
                           /// DOCUMENTS TAB
-                          if (index == 2) {
+                          if (index == 4) {
                             final locationId =
                                 provider.locationProfile?.locationId;
 
@@ -2376,6 +2831,32 @@ class _LocationProfileState extends State<LocationProfile>
                             }
                           }
                         },
+                        // onTap: (index) {
+                        //   if (!mounted) return;
+                        //
+                        //   final provider = Provider.of<MyLocationListProvider>(
+                        //       context,
+                        //       listen: false);
+                        //
+                        //   /// CAMPUS TAB
+                        //   if (index == 0) {
+                        //     setState(() => tabIndex = 0);
+                        //     provider.fetchLocations();
+                        //   }
+                        //
+                        //   /// DOCUMENTS TAB
+                        //   if (index == 4) {
+                        //     final locationId =
+                        //         provider.locationProfile?.locationId;
+                        //
+                        //     if (locationId != null && locationId.isNotEmpty) {
+                        //       provider.fetchDocuments(
+                        //         context: context,
+                        //         locationId: locationId,
+                        //       );
+                        //     }
+                        //   }
+                        // },
                         tabs: [
                           Tab(
                             text: LanguageService.getTranslated(
@@ -2385,7 +2866,6 @@ class _LocationProfileState extends State<LocationProfile>
                             text: LanguageService.getTranslated(
                                 context, "gallery"),
                           ),
-                          Tab(text: "Documents"),
                           Tab(
                             text: LanguageService.getTranslated(
                                 context, "activity_log"),
@@ -2394,6 +2874,7 @@ class _LocationProfileState extends State<LocationProfile>
                             text: LanguageService.getTranslated(
                                 context, "comments"),
                           ),
+                          Tab(text: "Documents"),
                         ],
 
                         labelPadding: EdgeInsets.only(left: 0, right: 30),
@@ -2405,17 +2886,17 @@ class _LocationProfileState extends State<LocationProfile>
                         constraints: BoxConstraints(
                           minHeight: 10,
                           maxHeight: Platform.isAndroid
-                              ? MediaQuery.of(context).size.height * 0.50
-                              : MediaQuery.of(context).size.height * 0.50,
+                              ? MediaQuery.of(context).size.height * 0.48
+                              : MediaQuery.of(context).size.height * 0.48,
                         ),
                         child: TabBarView(
                           physics: NeverScrollableScrollPhysics(),
                           children: [
                             _campusWidget(),
                             _mediaImageWidget(),
-                            _mediaDocumentWidget(),
                             _activityLogWidget(),
-                            _activityCommentsWidget()
+                            _activityCommentsWidget(),
+                            _mediaDocumentWidget(),
                           ],
                         ),
                       ),
@@ -3539,11 +4020,61 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
+  bool _shouldShowGoogleImage(MyLocationListProvider provider) {
+    final profile = provider.locationProfile;
+
+    final hasScreenshots = profile?.screenshots?.isNotEmpty ?? false;
+
+    return !hasScreenshots && profile?.geocodingScore == 5;
+  }
+
+  Widget _buildLocalImage(File image, int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.file(
+              image,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 10,
+            right: 10,
+            child: _deleteIcon(
+              onTap: () {
+                setState(() {
+                  _images.removeAt(index);
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _mediaImageWidget() {
     final typography = CustomTypography(context);
 
     return Consumer<MyLocationListProvider>(
       builder: (context, provider, _) {
+        final profile = provider.locationProfile;
+        final bool showGoogleImage = profile?.geocodingScore == 5;
+
+        final int galleryCount = provider.galleryMedia.length;
+        final int screenshotsCount = profile?.screenshots?.length ?? 0;
+
+        // ✅ All three sources combined
+        final int totalItemCount = _images.length +
+            galleryCount +
+            screenshotsCount +
+            (showGoogleImage ? 1 : 0);
+
         return Stack(
           children: [
             if (_isBottomSheetExpanded)
@@ -3554,7 +4085,6 @@ class _LocationProfileState extends State<LocationProfile>
                   children: [
                     const SizedBox(height: 10),
 
-                    /// HEADER
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
@@ -3566,19 +4096,14 @@ class _LocationProfileState extends State<LocationProfile>
                     const SizedBox(height: 20),
 
                     /// LOADING
-                    if (provider.isUploadingImage)
-                      Center(
-                        child: Container(
-                          height: MediaQuery.of(context).size.height / 3.5,
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(),
-                        ),
+                    if (provider.isGalleryLoading || provider.isUploadingImage)
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height / 3.5,
+                        child: const Center(child: CircularProgressIndicator()),
                       )
 
                     /// IMAGES
-                    else if (_images.isNotEmpty ||
-                        (provider.locationProfile?.screenshots?.isNotEmpty ??
-                            false))
+                    else if (totalItemCount > 0)
                       Column(
                         children: [
                           Container(
@@ -3587,91 +4112,89 @@ class _LocationProfileState extends State<LocationProfile>
                               color: Theme.of(context).colorScheme.surface,
                             ),
                             child: PageView.builder(
-                              controller: PageController(viewportFraction: 0.9),
-                              itemCount: _images.length +
-                                  (provider.locationProfile?.screenshots
-                                          ?.length ??
-                                      0),
+                              itemCount: totalItemCount,
                               itemBuilder: (context, index) {
-                                /// LOCAL IMAGES
+                                /// 1️⃣ LOCAL IMAGES (picked, not yet uploaded)
                                 if (index < _images.length) {
-                                  final localImage = _images[index];
+                                  return _buildLocalImage(
+                                      _images[index], index);
+                                }
 
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          child: Image.file(
-                                            localImage,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 10,
-                                          right: 10,
-                                          child: _deleteIcon(
-                                            onTap: () {
-                                              setState(() {
-                                                _images.removeAt(index);
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ],
+                                /// 2️⃣ GALLERY MEDIA FROM API
+                                final galleryStartIndex = _images.length;
+                                final galleryEndIndex =
+                                    _images.length + galleryCount;
+
+                                if (index >= galleryStartIndex &&
+                                    index < galleryEndIndex) {
+                                  final galleryIndex = index - _images.length;
+                                  final item =
+                                      provider.galleryMedia[galleryIndex];
+
+                                  final String? imageUrl =
+                                      item['url'] as String?;
+                                  final String name = item['name'] ?? '';
+                                  final String isMedia =
+                                      item['is_location_media'].toString();
+                                  final String date = item['date'] ?? '';
+                                  final String time = item['time'] ?? '';
+
+                                  // ✅ Skip rendering if no URL, but slot is still counted
+                                  if (imageUrl == null || imageUrl.isEmpty) {
+                                    return const Center(
+                                      child: Icon(Icons.broken_image_outlined,
+                                          size: 48),
+                                    );
+                                  }
+
+                                  return _buildServerImage(
+                                    isMedia,
+                                    Screenshots(
+                                      imageUrl: imageUrl,
+                                      name: name,
+                                      date: date,
+                                      time: time,
                                     ),
+                                    galleryIndex,
+                                    provider,
                                   );
                                 }
 
-                                /// SERVER IMAGES
-                                final screenshotIndex = index - _images.length;
-                                final screenshot = provider.locationProfile
-                                    ?.screenshots?[screenshotIndex];
+                                /// 3️⃣ SCREENSHOTS FROM PROFILE
+                                final screenshotsStartIndex = galleryEndIndex;
+                                final screenshotsEndIndex =
+                                    galleryEndIndex + screenshotsCount;
 
-                                if (screenshot == null) {
-                                  return const SizedBox();
+                                if (index >= screenshotsStartIndex &&
+                                    index < screenshotsEndIndex) {
+                                  final screenshotIndex =
+                                      index - screenshotsStartIndex;
+                                  final screenshot =
+                                      profile!.screenshots![screenshotIndex];
+
+                                  // ✅ Handle missing imageUrl in screenshots too
+                                  if (screenshot.imageUrl == null ||
+                                      screenshot.imageUrl!.isEmpty) {
+                                    return const Center(
+                                      child: Icon(Icons.broken_image_outlined,
+                                          size: 48),
+                                    );
+                                  }
+
+                                  return _buildServerImage(
+                                    '1',
+                                    screenshot,
+                                    screenshotIndex,
+                                    provider,
+                                  );
                                 }
 
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  child: GestureDetector(
-                                    onTap: () => _showImagePreviewFromUrl(
-                                        screenshot.imageUrl ?? ''),
-                                    child: Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          child: Image.network(
-                                            screenshot.imageUrl ?? '',
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 10,
-                                          right: 10,
-                                          child: _deleteIcon(
-                                            onTap: () {
-                                              setState(() {
-                                                provider.locationProfile
-                                                    ?.screenshots
-                                                    ?.removeAt(screenshotIndex);
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                /// 4️⃣ GOOGLE STREET VIEW (only if geocodingScore == 5)
+                                if (showGoogleImage) {
+                                  return _buildGoogleImage(profile);
+                                }
+
+                                return const SizedBox();
                               },
                             ),
                           ),
@@ -3681,10 +4204,9 @@ class _LocationProfileState extends State<LocationProfile>
 
                     /// EMPTY
                     else
-                      Center(
-                        child: Container(
-                          height: MediaQuery.of(context).size.height / 3,
-                          alignment: Alignment.center,
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height / 3,
+                        child: Center(
                           child: Text(
                             LanguageService.getTranslated(context, "no_images"),
                             style: typography.Body1,
@@ -3734,6 +4256,498 @@ class _LocationProfileState extends State<LocationProfile>
           ],
         );
       },
+    );
+  }
+
+  // Widget _mediaImageWidget() {
+  //   final typography = CustomTypography(context);
+  //
+  //   return Consumer<MyLocationListProvider>(
+  //     builder: (context, provider, _) {
+  //       final profile = provider.locationProfile;
+  //       final bool showGoogleImage = profile?.geocodingScore == 5;
+  //
+  //       final int galleryCount = provider.galleryMedia.length;
+  //
+  //       // ✅ FIXED: include galleryCount in totalItemCount
+  //       final int totalItemCount =
+  //           _images.length + galleryCount + (showGoogleImage ? 1 : 0);
+  //
+  //       return Stack(
+  //         children: [
+  //           Text(profile!.screenshots!.length.toString()),
+  //
+  //           if (_isBottomSheetExpanded)
+  //             Scrollbar(
+  //               thumbVisibility: true,
+  //               child: ListView(
+  //                 padding: const EdgeInsets.only(bottom: 100),
+  //                 children: [
+  //                   const SizedBox(height: 10),
+  //
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                     child: Text(
+  //                       LanguageService.getTranslated(context, "images"),
+  //                       style: typography.H6.copyWith(height: 1.2),
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(height: 20),
+  //
+  //                   /// LOADING
+  //                   if (provider.isGalleryLoading || provider.isUploadingImage)
+  //                     SizedBox(
+  //                       height: MediaQuery.of(context).size.height / 3.5,
+  //                       child: const Center(child: CircularProgressIndicator()),
+  //                     )
+  //
+  //                   /// IMAGES
+  //                   else if (totalItemCount > 0)
+  //                     Column(
+  //                       children: [
+  //                         Container(
+  //                           height: MediaQuery.of(context).size.height / 3.5,
+  //                           decoration: BoxDecoration(
+  //                             color: Theme.of(context).colorScheme.surface,
+  //                           ),
+  //                           child: PageView.builder(
+  //                             itemCount: totalItemCount,
+  //                             itemBuilder: (context, index) {
+  //                               /// 1️⃣ LOCAL IMAGES (picked, not yet uploaded)
+  //                               if (index < _images.length) {
+  //                                 return _buildLocalImage(
+  //                                     _images[index], index);
+  //                               }
+  //
+  //                               /// 2️⃣ GALLERY MEDIA FROM API
+  //                               final galleryStartIndex = _images.length;
+  //                               final galleryEndIndex =
+  //                                   _images.length + galleryCount;
+  //
+  //                               if (index >= galleryStartIndex &&
+  //                                   index < galleryEndIndex) {
+  //                                 final galleryIndex = index - _images.length;
+  //                                 final item =
+  //                                     provider.galleryMedia[galleryIndex];
+  //
+  //                                 // ✅ Exact field names from API response
+  //                                 final String? imageUrl =
+  //                                     item['url'] as String?;
+  //                                 final String name = item['name'] ?? '';
+  //                                 final String isMedia =
+  //                                     item['is_location_media'].toString();
+  //                                 final String date = item['date'] ?? '';
+  //                                 final String time = item['time'] ?? '';
+  //
+  //                                 if (imageUrl == null || imageUrl.isEmpty) {
+  //                                   return const SizedBox();
+  //                                 }
+  //
+  //                                 return _buildServerImage(
+  //                                   isMedia,
+  //                                   Screenshots(
+  //                                     imageUrl: imageUrl,
+  //                                     name: name,
+  //                                     date: date,
+  //                                     time: time,
+  //                                   ),
+  //                                   galleryIndex,
+  //                                   provider,
+  //                                 );
+  //                               }
+  //
+  //                               /// 3️⃣ GOOGLE STREET VIEW (only if geocodingScore == 5)
+  //                               if (showGoogleImage) {
+  //                                 return _buildGoogleImage(profile);
+  //                               }
+  //
+  //                               return const SizedBox();
+  //                             },
+  //                           ),
+  //                         ),
+  //                         const SizedBox(height: 50),
+  //                       ],
+  //                     )
+  //
+  //                   /// EMPTY
+  //                   else
+  //                     SizedBox(
+  //                       height: MediaQuery.of(context).size.height / 3,
+  //                       child: Center(
+  //                         child: Text(
+  //                           LanguageService.getTranslated(context, "no_images"),
+  //                           style: typography.Body1,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                 ],
+  //               ),
+  //             ),
+  //
+  //           /// UPLOAD BUTTON
+  //           if (_isBottomSheetExpanded)
+  //             Positioned(
+  //               left: 0,
+  //               right: 0,
+  //               bottom: 0,
+  //               child: SafeArea(
+  //                 top: false,
+  //                 child: Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                       horizontal: 30, vertical: 12),
+  //                   color: Theme.of(context).scaffoldBackgroundColor,
+  //                   child: CustomButton(
+  //                     type: ButtonType.elevated,
+  //                     onPressed: _pickImage,
+  //                     child: Row(
+  //                       mainAxisAlignment: MainAxisAlignment.center,
+  //                       children: [
+  //                         const Icon(Icons.upload_sharp,
+  //                             color: Colors.black, size: 20),
+  //                         const SizedBox(width: 10),
+  //                         Text(
+  //                           LanguageService.getTranslated(
+  //                               context, "upload_relevant_images"),
+  //                           style: const TextStyle(
+  //                             fontWeight: FontWeight.w600,
+  //                             fontSize: 16,
+  //                             color: Colors.black,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  void removeGalleryMedia(int index) {
+    if (index >= 0 && index < galleryMedia.length) {
+      galleryMedia.removeAt(index);
+      // notifyListeners();
+    }
+  }
+
+  Widget _buildServerImage(
+    String isMedia,
+    Screenshots screenshot,
+    int screenshotIndex,
+    MyLocationListProvider provider,
+  ) {
+    final String? url = screenshot.imageUrl;
+
+    if (url == null || url.isEmpty) {
+      return const Center(
+        child: Icon(Icons.broken_image, size: 40),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(Icons.broken_image, size: 40),
+                  );
+                },
+              ),
+            ),
+            // Text(isMedia.toString()),
+
+            /// DELETE ICON
+            Positioned(
+                top: 10,
+                right: 10,
+                child: isMedia == "false"
+                    ? const SizedBox() // Don't show delete icon for location media
+                    : _deleteIcon(
+                        onTap: () async {
+                          final item = provider.galleryMedia[screenshotIndex];
+                          final String? imageId = item['id'] as String?;
+                          final locationId = provider
+                              .locationProfile?.finalAddress?.locationId;
+
+                          if (imageId == null || locationId == null) return;
+
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Delete Image?'),
+                              content:
+                                  const Text('This action cannot be undone.'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancel')),
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Delete')),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed != true) return;
+
+                          await provider.deleteGalleryImage(
+                            context: context,
+                            locationId: locationId,
+                            imageId: imageId,
+                            imageUrl: url,
+                            // <-- pass image_url from galleryMedia item
+                            index: screenshotIndex,
+                          );
+                          // await provider.deleteGalleryImage(
+                          //   context: context,
+                          //   locationId: locationId,
+                          //   imageId: imageId,        // <-- passing imageId just like documentId
+                          //   index: screenshotIndex,
+                          // );
+                        },
+                      )),
+
+            /// BOTTOM INFO OVERLAY
+            Positioned(
+              left: 8,
+              bottom: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// NAME
+                    Text(
+                      isMedia == "false"
+                          ? screenshot.name?.isNotEmpty == true
+                              ? "data parameter : " + screenshot.name!
+                              : 'Unknown'
+                          : screenshot.name?.isNotEmpty == true
+                              ? screenshot.name!
+                              : 'Unknown',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (isMedia == "false") ...[
+                      const SizedBox(height: 4),
+
+                      /// DATE + TIME
+                      Text(
+                        '${screenshot.date ?? ''} ${screenshot.time ?? ''}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget _buildServerImage(Screenshots screenshot,
+  //     int screenshotIndex,
+  //     MyLocationListProvider provider,) {
+  //   final String? url = screenshot.imageUrl;
+  //
+  //   if (url == null || url.isEmpty) {
+  //     return const Center(
+  //       child: Icon(Icons.broken_image, size: 40),
+  //     );
+  //   }
+  //
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8),
+  //     child: ClipRRect(
+  //       borderRadius: BorderRadius.circular(16),
+  //       child: Stack(
+  //         children: [
+  //
+  //           /// IMAGE
+  //           Positioned.fill(
+  //             child: Image.network(
+  //               url,
+  //               fit: BoxFit.cover,
+  //               loadingBuilder: (context, child, progress) {
+  //                 if (progress == null) return child;
+  //                 return const Center(
+  //                   child: CircularProgressIndicator(),
+  //                 );
+  //               },
+  //               errorBuilder: (context, error, stackTrace) {
+  //                 return const Center(
+  //                   child: Icon(Icons.broken_image, size: 40),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //
+  //           /// DELETE ICON
+  //           Positioned(
+  //             top: 10,
+  //             right: 10,
+  //             child: _deleteIcon(
+  //               onTap: () {
+  //                 final screenshots = provider.locationProfile?.screenshots;
+  //
+  //                 if (screenshots != null &&
+  //                     screenshotIndex >= 0 &&
+  //                     screenshotIndex < screenshots.length) {
+  //                   setState(() {
+  //                     screenshots.removeAt(screenshotIndex);
+  //                   });
+  //                 }
+  //               },
+  //             ),
+  //           ),
+  //
+  //           /// BOTTOM INFO OVERLAY
+  //           Positioned(
+  //             left: 8,
+  //             bottom: 8,
+  //             child: Container(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 12,
+  //                 vertical: 8,
+  //               ),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.black.withOpacity(0.65),
+  //                 borderRadius: BorderRadius.circular(12),
+  //               ),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 mainAxisSize: MainAxisSize.min, // 🔥 Important
+  //                 children: [
+  //
+  //                   /// NAME
+  //                   Text(
+  //                     screenshot.name?.isNotEmpty == true
+  //                         ? screenshot.name!
+  //                         : 'Unknown',
+  //                     maxLines: 1,
+  //                     overflow: TextOverflow.ellipsis,
+  //                     style: const TextStyle(
+  //                       color: Colors.white,
+  //                       fontWeight: FontWeight.bold,
+  //                       fontSize: 14,
+  //                     ),
+  //                   ),
+  //
+  //                   const SizedBox(height: 4),
+  //
+  //                   /// DATE + TIME
+  //                   Text(
+  //                     '${screenshot.date ?? ''} ${screenshot.time ?? ''}',
+  //                     style: const TextStyle(
+  //                       color: Colors.white70,
+  //                       fontSize: 12,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildGoogleImage(MyLocation? profile) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            /// IMAGE
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl:
+                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${profile?.finalAddress?.latitude ?? 0},${profile?.finalAddress?.longitude ?? 0}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                errorWidget: (context, url, error) =>
+                    const Center(child: Icon(Icons.location_on, size: 40)),
+              ),
+            ),
+
+            /// GOOGLE TEXT OVERLAY (FIXED)
+            Positioned(
+              left: 8,
+              right: 200,
+              bottom: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: const [
+                    Text(
+                      '@',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Resource from Google',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -3791,7 +4805,8 @@ class _LocationProfileState extends State<LocationProfile>
                   )
 
                 /// EMPTY
-                else if (provider.documents.isEmpty)
+                else if (provider.documents.isEmpty &&
+                    !provider.isDocumentsLoading)
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 60),
@@ -3799,7 +4814,7 @@ class _LocationProfileState extends State<LocationProfile>
                     ),
                   )
 
-                /// LIST
+                /// EXISTING DOCUMENT LIST
                 else
                   ListView.builder(
                     shrinkWrap: true,
@@ -3808,110 +4823,195 @@ class _LocationProfileState extends State<LocationProfile>
                     itemBuilder: (context, index) {
                       final doc = provider.documents[index];
 
-                      return InkWell(
-                        onTap: doc.urls.isEmpty
-                            ? null
-                            : () => _previewDocument(
-                                  doc.urls.first,
-                                ),
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                /// TITLE + DELETE
-                                Row(
-                                  children: [
-                                    const Icon(Icons.description),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        doc.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (doc.createdAt != null)
-                                      provider.isDeleting(doc.id)
-                                          ? const SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                  strokeWidth: 2),
-                                            )
-                                          : IconButton(
-                                              icon: const Icon(Icons.close,
-                                                  color: Colors.red),
-                                              onPressed: doc.urls.isEmpty
-                                                  ? null
-                                                  : () {
-                                                      provider.deleteDocument(
-                                                        context: context,
-                                                        locationId: provider
-                                                            .locationProfile!
-                                                            .locationId!,
-                                                        documentId: doc.id,
-                                                        imageUrl:
-                                                            doc.urls.first,
-                                                      );
-                                                    },
-                                            ),
-                                  ],
-                                ),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.description),
+                              const SizedBox(width: 10),
+                              // Text(doc.
 
-                                const SizedBox(height: 6),
-
-                                if (doc.createdAt != null)
-                                  Text(
-                                    _formatTimestamp(
-                                      doc.createdAt!.millisecondsSinceEpoch ~/
-                                          1000,
-                                    ),
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                              /// DOCUMENT NAME
+                              Expanded(
+                                child: InkWell(
+                                  onTap: doc.url!.isEmpty
+                                      ? null
+                                      : () => _previewDocument(doc.url!),
+                                  child: Text(
+                                    doc.name!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
+                                ),
+                              ),
+                              if (doc.isLocationMedia!) ...[
+                                provider.deletingDocumentId == doc.id
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () async {
+                                          final locationId = provider
+                                              .locationProfile!.locationId!;
 
-                                const SizedBox(height: 12),
+                                          await provider.deleteDocument(
+                                            context: context,
+                                            locationId: locationId,
+                                            documentId: doc.id!,
+                                            imageUrl: doc.url!.isNotEmpty
+                                                ? doc.url!
+                                                : "",
+                                          );
+                                        },
+                                      ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
                       );
                     },
                   ),
 
+                /// SELECTED FILE PREVIEW
+                if (_selectedFiles.isNotEmpty) ...[
+                  // const SizedBox(height: 20),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                  //   child: Text(
+                  //     "Selected Files",
+                  //     style: typography.H6,
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 10),
+                  ..._selectedFiles.map((file) {
+                    final isTooLarge = file.size > maxFileSize;
+
+                    return Card(
+                      color: Colors.grey[900],
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.insert_drive_file,
+                            color: Colors.white),
+                        title: Text(
+                          file.name,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          "${(file.size / (1024 * 1024)).toStringAsFixed(2)} MB",
+                          style: TextStyle(
+                            color: isTooLarge ? Colors.red : Colors.white70,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _selectedFiles.remove(file);
+                              _isSizeExceeded = _selectedFiles
+                                  .any((f) => f.size > maxFileSize);
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+
                 const SizedBox(height: 30),
 
-                /// UPLOAD BUTTON
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: CustomButton(
-                    type: ButtonType.elevated,
-                    onPressed: () async {
-                      await _pickDocuments();
+                  child: Consumer<MyLocationListProvider>(
+                    builder: (context, provider, _) {
+                      return CustomButton(
+                        type: ButtonType.elevated,
+                        onPressed: (_isSizeExceeded ||
+                                provider.isUploadingDocument)
+                            ? null
+                            : () async {
+                                /// STEP 1: Pick files
+                                await _pickDocuments();
 
-                      /// AUTO REFRESH AFTER UPLOAD
-                      await provider.fetchDocuments(
-                        context: context,
-                        locationId: provider.locationProfile!.locationId!,
+                                if (_isSizeExceeded || _selectedFiles.isEmpty) {
+                                  return;
+                                }
+
+                                final locationId =
+                                    provider.locationProfile!.locationId!;
+
+                                /// STEP 2: Upload each file
+                                for (var file in _selectedFiles) {
+                                  try {
+                                    if (file.path != null) {
+                                      await provider.uploadDocument(
+                                        context: context,
+                                        locationId: locationId,
+                                        file: File(file.path!),
+                                        fileName: file.name,
+                                      );
+                                    } else if (file.bytes != null) {
+                                      await provider.uploadDocumentFromBytes(
+                                        context: context,
+                                        locationId: locationId,
+                                        bytes: file.bytes!,
+                                        fileName: file.name,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    debugPrint("Upload error: $e");
+                                  }
+                                }
+
+                                /// STEP 3: Clear selected files
+                                setState(() {
+                                  _selectedFiles.clear();
+                                });
+
+                                /// STEP 4: Refresh document list
+                                await provider.fetchDocuments(
+                                  context: context,
+                                  locationId: locationId,
+                                  forceRefresh: true,
+                                );
+                              },
+                        child: provider.isUploadingDocument
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black,
+                                ),
+                              )
+                            : Row(
+                                children: const [
+                                  Icon(Icons.upload_sharp, color: Colors.black),
+                                  SizedBox(width: 20),
+                                  Text(
+                                    "Upload relevant document(s)",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       );
                     },
-                    child: Row(
-                      children: const [
-                        Icon(Icons.upload_sharp, color: Colors.black),
-                        SizedBox(width: 20),
-                        Text(
-                          "Upload relevant document(s)",
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
 
@@ -3924,181 +5024,258 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  //
   // Widget _mediaDocumentWidget() {
   //   final typography = CustomTypography(context);
   //
   //   return Consumer<MyLocationListProvider>(
-  //     builder: (context, provider, child) {
-  //       return Stack(
-  //         children: [
-  //           if (_isBottomSheetExpanded)
-  //             Scrollbar(
-  //               thumbVisibility: true,
-  //               child: ListView(
-  //                 children: [
-  //                   const SizedBox(height: 10),
+  //     builder: (context, provider, _) {
+  //       return RefreshIndicator(
+  //         onRefresh: () async {
+  //           await provider.fetchDocuments(
+  //             context: context,
+  //             locationId: provider.locationProfile!.locationId!,
+  //             forceRefresh: true,
+  //           );
+  //         },
+  //         child: Scrollbar(
+  //           thumbVisibility: true,
+  //           child: ListView(
+  //             physics: const AlwaysScrollableScrollPhysics(),
+  //             children: [
+  //               const SizedBox(height: 10),
   //
-  //                   /// HEADER
-  //                   Padding(
-  //                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-  //                     child: Text(
-  //                       'Documents',
-  //                       style: typography.H6.copyWith(height: 1.2),
-  //                     ),
+  //               /// HEADER
+  //               Padding(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                 child: Text(
+  //                   "Documents",
+  //                   style: typography.H6.copyWith(height: 1.2),
+  //                 ),
+  //               ),
+  //
+  //               const SizedBox(height: 20),
+  //
+  //               /// LOADING
+  //               if (provider.isDocumentsLoading)
+  //                 const Padding(
+  //                   padding: EdgeInsets.symmetric(vertical: 40),
+  //                   child: Center(child: CircularProgressIndicator()),
+  //                 )
+  //
+  //               /// EMPTY
+  //               else if (provider.documents.isEmpty &&
+  //                   !provider.isDocumentsLoading)
+  //                 Center(
+  //                   child: Padding(
+  //                     padding: const EdgeInsets.symmetric(vertical: 60),
+  //                     child: Text("No Documents", style: typography.Body1),
   //                   ),
+  //                 )
   //
-  //                   const SizedBox(height: 20),
+  //               /// EXISTING DOCUMENT LIST
+  //               else
+  //                 ListView.builder(
+  //                   shrinkWrap: true,
+  //                   physics: const NeverScrollableScrollPhysics(),
+  //                   itemCount: provider.documents.length,
+  //                   itemBuilder: (context, index) {
+  //                     final doc = provider.documents[index];
   //
-  //                   /// LOADING
-  //                   if (provider.isDocumentsLoading)
-  //                     const Center(
+  //                     return Card(
+  //                       margin: const EdgeInsets.symmetric(
+  //                           horizontal: 16, vertical: 8),
+  //                       shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(12)),
   //                       child: Padding(
-  //                         padding: EdgeInsets.symmetric(vertical: 40),
-  //                         child: CircularProgressIndicator(),
-  //                       ),
-  //                     )
+  //                         padding: const EdgeInsets.all(12),
+  //                         child: Row(
+  //                           children: [
+  //                             const Icon(Icons.description),
+  //                             const SizedBox(width: 10),
   //
-  //                   /// EMPTY STATE
-  //                   else if (provider.documents.isEmpty)
-  //                     Center(
-  //                       child: Container(
-  //                         height: MediaQuery.of(context).size.height / 3,
-  //                         alignment: Alignment.center,
-  //                         child: Text(
-  //                           'No Documents',
-  //                           style: typography.Body1,
-  //                         ),
-  //                       ),
-  //                     )
-  //
-  //                   /// DOCUMENT LIST
-  //                   else
-  //                     Column(
-  //                       children: [
-  //                         ListView.builder(
-  //                           shrinkWrap: true,
-  //                           physics: const NeverScrollableScrollPhysics(),
-  //                           itemCount: provider.documents.length,
-  //                           itemBuilder: (context, index) {
-  //                             final doc = provider.documents[index];
-  //
-  //                             return Card(
-  //                               margin: const EdgeInsets.symmetric(
-  //                                   horizontal: 16, vertical: 8),
-  //                               shape: RoundedRectangleBorder(
-  //                                   borderRadius: BorderRadius.circular(12)),
-  //                               child: Padding(
-  //                                 padding: const EdgeInsets.all(12),
-  //                                 child: Column(
-  //                                   crossAxisAlignment:
-  //                                       CrossAxisAlignment.start,
-  //                                   children: [
-  //                                     /// HEADER ROW
-  //                                     Row(
-  //                                       children: [
-  //                                         const Icon(Icons.description),
-  //                                         const SizedBox(width: 10),
-  //
-  //                                         /// TITLE
-  //                                         Expanded(
-  //                                           child: Text(
-  //                                             doc.name,
-  //                                             maxLines: 2,
-  //                                             overflow: TextOverflow.ellipsis,
-  //                                             style: Theme.of(context)
-  //                                                 .textTheme
-  //                                                 .bodyMedium,
-  //                                           ),
-  //                                         ),
-  //
-  //                                         /// DELETE ICON (optional)
-  //                                         if (doc.createdAt != null)
-  //                                           IconButton(
-  //                                             icon: const Icon(
-  //                                                 Icons.close_outlined,
-  //                                                 color: Colors.red),
-  //                                             onPressed: () {
-  //                                               final provider = Provider.of<
-  //                                                       MyLocationListProvider>(
-  //                                                   context,
-  //                                                   listen: false);
-  //
-  //                                               provider.deleteDocument(
-  //                                                 context: context,
-  //                                                 locationId: provider
-  //                                                     .locationProfile!
-  //                                                     .locationId!,
-  //                                                 documentId: doc.id,
-  //                                                 imageUrl: doc.urls.first,
-  //                                               );
-  //                                             },
-  //                                           ),
-  //                                         // const SizedBox(height: 12),
-  //                                         // InkWell(
-  //                                         //   onTap: doc.urls.isEmpty
-  //                                         //       ? null
-  //                                         //       : () => _previewDocument(doc.urls.first),
-  //                                         //   child:
-  //                                         //   Icon(Icons.visibility),
-  //                                         //
-  //                                         // ),
-  //                                       ],
-  //                                     ),
-  //
-  //                                     const SizedBox(height: 6),
-  //
-  //                                     /// DATE
-  //                                     if (doc.createdAt != null)
-  //                                       Text(
-  //                                         _formatTimestamp(
-  //                                           doc.createdAt!
-  //                                                   .millisecondsSinceEpoch ~/
-  //                                               1000,
-  //                                         ),
-  //                                         style: Theme.of(context)
-  //                                             .textTheme
-  //                                             .bodySmall,
-  //                                       ),
-  //                                   ],
+  //                             /// DOCUMENT NAME
+  //                             Expanded(
+  //                               child: InkWell(
+  //                                 onTap: doc.urls.isEmpty
+  //                                     ? null
+  //                                     : () => _previewDocument(doc.urls.first),
+  //                                 child: Text(
+  //                                   doc.name,
+  //                                   maxLines: 2,
+  //                                   overflow: TextOverflow.ellipsis,
   //                                 ),
   //                               ),
-  //                             );
-  //                           },
-  //                         ),
-  //                         const SizedBox(height: 50),
-  //                       ],
-  //                     ),
-  //
-  //                   /// UPLOAD BUTTON
-  //                   Container(
-  //                     margin: const EdgeInsets.symmetric(horizontal: 30),
-  //                     child: CustomButton(
-  //                       type: ButtonType.elevated,
-  //                       onPressed: _pickDocuments,
-  //                       child: Row(
-  //                         children: const [
-  //                           Icon(Icons.upload_sharp,
-  //                               color: Colors.black, size: 20),
-  //                           SizedBox(width: 20),
-  //                           Text(
-  //                             'Upload relevant document(s)',
-  //                             style: TextStyle(
-  //                               color: Colors.black,
-  //                               fontWeight: FontWeight.w600,
-  //                               fontSize: 16,
   //                             ),
-  //                           ),
-  //                         ],
+  //
+  //                             /// DELETE / LOADER
+  //                             provider.deletingDocumentId == doc.id
+  //                                 ? const SizedBox(
+  //                                     height: 24,
+  //                                     width: 24,
+  //                                     child: CircularProgressIndicator(
+  //                                       strokeWidth: 2,
+  //                                     ),
+  //                                   )
+  //                                 : IconButton(
+  //                                     icon: const Icon(
+  //                                       Icons.delete,
+  //                                       color: Colors.red,
+  //                                     ),
+  //                                     onPressed: () async {
+  //                                       final locationId = provider
+  //                                           .locationProfile!.locationId!;
+  //
+  //                                       await provider.deleteDocument(
+  //                                         context: context,
+  //                                         locationId: locationId,
+  //                                         documentId: doc.id,
+  //                                         imageUrl: doc.urls.isNotEmpty
+  //                                             ? doc.urls.first
+  //                                             : "",
+  //                                       );
+  //                                     },
+  //                                   ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     );
+  //                   },
+  //                 ),
+  //
+  //               /// SELECTED FILE PREVIEW
+  //               if (_selectedFiles.isNotEmpty) ...[
+  //                 // const SizedBox(height: 20),
+  //                 // Padding(
+  //                 //   padding: const EdgeInsets.symmetric(horizontal: 16),
+  //                 //   child: Text(
+  //                 //     "Selected Files",
+  //                 //     style: typography.H6,
+  //                 //   ),
+  //                 // ),
+  //                 // const SizedBox(height: 10),
+  //                 ..._selectedFiles.map((file) {
+  //                   final isTooLarge = file.size > maxFileSize;
+  //
+  //                   return Card(
+  //                     color: Colors.grey[900],
+  //                     margin: const EdgeInsets.symmetric(
+  //                         horizontal: 16, vertical: 6),
+  //                     child: ListTile(
+  //                       leading: const Icon(Icons.insert_drive_file,
+  //                           color: Colors.white),
+  //                       title: Text(
+  //                         file.name,
+  //                         style: const TextStyle(color: Colors.white),
+  //                       ),
+  //                       subtitle: Text(
+  //                         "${(file.size / (1024 * 1024)).toStringAsFixed(2)} MB",
+  //                         style: TextStyle(
+  //                           color: isTooLarge ? Colors.red : Colors.white70,
+  //                         ),
+  //                       ),
+  //                       trailing: IconButton(
+  //                         icon: const Icon(Icons.delete, color: Colors.red),
+  //                         onPressed: () {
+  //                           setState(() {
+  //                             _selectedFiles.remove(file);
+  //                             _isSizeExceeded = _selectedFiles
+  //                                 .any((f) => f.size > maxFileSize);
+  //                           });
+  //                         },
   //                       ),
   //                     ),
-  //                   ),
+  //                   );
+  //                 }).toList(),
+  //               ],
   //
-  //                   const SizedBox(height: 20),
-  //                 ],
+  //               const SizedBox(height: 30),
+  //
+  //               Padding(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 30),
+  //                 child: Consumer<MyLocationListProvider>(
+  //                   builder: (context, provider, _) {
+  //                     return CustomButton(
+  //                       type: ButtonType.elevated,
+  //                       onPressed: (_isSizeExceeded ||
+  //                               provider.isUploadingDocument)
+  //                           ? null
+  //                           : () async {
+  //                               /// STEP 1: Pick files
+  //                               await _pickDocuments();
+  //
+  //                               if (_isSizeExceeded || _selectedFiles.isEmpty) {
+  //                                 return;
+  //                               }
+  //
+  //                               final locationId =
+  //                                   provider.locationProfile!.locationId!;
+  //
+  //                               /// STEP 2: Upload each file
+  //                               for (var file in _selectedFiles) {
+  //                                 try {
+  //                                   if (file.path != null) {
+  //                                     await provider.uploadDocument(
+  //                                       context: context,
+  //                                       locationId: locationId,
+  //                                       file: File(file.path!),
+  //                                       fileName: file.name,
+  //                                     );
+  //                                   } else if (file.bytes != null) {
+  //                                     await provider.uploadDocumentFromBytes(
+  //                                       context: context,
+  //                                       locationId: locationId,
+  //                                       bytes: file.bytes!,
+  //                                       fileName: file.name,
+  //                                     );
+  //                                   }
+  //                                 } catch (e) {
+  //                                   debugPrint("Upload error: $e");
+  //                                 }
+  //                               }
+  //
+  //                               /// STEP 3: Clear selected files
+  //                               setState(() {
+  //                                 _selectedFiles.clear();
+  //                               });
+  //
+  //                               /// STEP 4: Refresh document list
+  //                               await provider.fetchDocuments(
+  //                                 context: context,
+  //                                 locationId: locationId,
+  //                                 forceRefresh: true,
+  //                               );
+  //                             },
+  //                       child: provider.isUploadingDocument
+  //                           ? const SizedBox(
+  //                               height: 20,
+  //                               width: 20,
+  //                               child: CircularProgressIndicator(
+  //                                 strokeWidth: 2,
+  //                                 color: Colors.black,
+  //                               ),
+  //                             )
+  //                           : Row(
+  //                               children: const [
+  //                                 Icon(Icons.upload_sharp, color: Colors.black),
+  //                                 SizedBox(width: 20),
+  //                                 Text(
+  //                                   "Upload relevant document(s)",
+  //                                   style: TextStyle(
+  //                                     fontSize: 16,
+  //                                     fontWeight: FontWeight.w600,
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                     );
+  //                   },
+  //                 ),
   //               ),
-  //             ),
-  //         ],
+  //
+  //               const SizedBox(height: 30),
+  //             ],
+  //           ),
+  //         ),
   //       );
   //     },
   //   );
@@ -4182,321 +5359,6 @@ class _LocationProfileState extends State<LocationProfile>
     );
   }
 
-  // Widget _mediaDocumentWidget() {
-  //   var typography = CustomTypography(context);
-  //   return Consumer<MyLocationListProvider>(
-  //     builder: (context, locationProfileProvider, child) {
-  //       return Builder(
-  //         builder: (context) {
-  //           return Stack(
-  //             children: [
-  //               if (_isBottomSheetExpanded)
-  //                 Scrollbar(
-  //                   thumbVisibility: true,
-  //                   child: ListView(
-  //                     children: [
-  //                       SizedBox(height: 10),
-  //                       // Removed Expanded from here
-  //                       Padding(
-  //                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-  //                         child: Row(
-  //                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                           children: [
-  //                             Text(
-  //                               'Documents',
-  //                               style: typography.H6.copyWith(height: 1.2),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ),
-  //                       SizedBox(height: 20),
-  //                       locationProfileProvider.isUploadingImage
-  //                           ? Center(
-  //                               child: Container(
-  //                                 height: 200,
-  //                                 alignment: Alignment.center,
-  //                                 child: CircularProgressIndicator(),
-  //                               ),
-  //                             )
-  //                           : _images.isNotEmpty ||
-  //                                   locationProfileProvider.locationProfile
-  //                                           ?.screenshots?.isNotEmpty ==
-  //                                       true
-  //                               ? Column(
-  //                                   // Wrapped in Column instead of Expanded
-  //                                   children: [
-  //                                     Container(
-  //                                       height:
-  //                                           MediaQuery.of(context).size.height /
-  //                                               3.5,
-  //                                       decoration: BoxDecoration(
-  //                                         color: Theme.of(context)
-  //                                             .colorScheme
-  //                                             .surface,
-  //                                       ),
-  //                                       child: PageView.builder(
-  //                                         key: ValueKey(
-  //                                           _images.length +
-  //                                               (locationProfileProvider
-  //                                                       .locationProfile
-  //                                                       ?.screenshots
-  //                                                       ?.length ??
-  //                                                   0),
-  //                                         ),
-  //                                         controller: PageController(
-  //                                             viewportFraction: 0.9),
-  //                                         itemCount: _images.length +
-  //                                             (locationProfileProvider
-  //                                                     .locationProfile
-  //                                                     ?.screenshots
-  //                                                     ?.length ??
-  //                                                 0),
-  //                                         itemBuilder: (BuildContext context,
-  //                                             int itemIndex) {
-  //                                           if (itemIndex < _images.length) {
-  //                                             final localImage =
-  //                                                 _images[itemIndex];
-  //
-  //                                             return Padding(
-  //                                               padding:
-  //                                                   const EdgeInsets.symmetric(
-  //                                                       horizontal: 8.0),
-  //                                               child: Column(
-  //                                                 crossAxisAlignment:
-  //                                                     CrossAxisAlignment.start,
-  //                                                 children: [
-  //                                                   Expanded(
-  //                                                     child: Stack(
-  //                                                       children: [
-  //                                                         Center(
-  //                                                           child: ClipRRect(
-  //                                                             borderRadius:
-  //                                                                 BorderRadius
-  //                                                                     .circular(
-  //                                                                         16),
-  //                                                             child: Image.file(
-  //                                                               localImage,
-  //                                                               width: double
-  //                                                                   .infinity,
-  //                                                               height: double
-  //                                                                   .infinity,
-  //                                                               fit: BoxFit
-  //                                                                   .cover,
-  //                                                             ),
-  //                                                           ),
-  //                                                         ),
-  //                                                         Positioned(
-  //                                                           top: 8,
-  //                                                           right: 8,
-  //                                                           child: IconButton(
-  //                                                             icon: Icon(
-  //                                                                 Icons.delete,
-  //                                                                 color: Colors
-  //                                                                     .red),
-  //                                                             onPressed: () {
-  //                                                               print(
-  //                                                                   localImage ??
-  //                                                                       '');
-  //                                                               setState(() {
-  //                                                                 _images.removeAt(
-  //                                                                     itemIndex);
-  //                                                               });
-  //                                                             },
-  //                                                           ),
-  //                                                         ),
-  //                                                       ],
-  //                                                     ),
-  //                                                   ),
-  //                                                   const SizedBox(height: 2),
-  //                                                   const Padding(
-  //                                                     padding: EdgeInsets.only(
-  //                                                         left: 10.0),
-  //                                                     child: Text(
-  //                                                       '',
-  //                                                       style:
-  //                                                           TextStyle(), // You can add styling if needed
-  //                                                     ),
-  //                                                   ),
-  //                                                   Padding(
-  //                                                     padding:
-  //                                                         const EdgeInsets.only(
-  //                                                             left: 10.0),
-  //                                                     child: Text(
-  //                                                       "",
-  //                                                       // _formatTimestamp(DateTime.now().second),
-  //                                                       style: Theme.of(context)
-  //                                                           .textTheme
-  //                                                           .bodyMedium,
-  //                                                     ),
-  //                                                   ),
-  //                                                 ],
-  //                                               ),
-  //                                             );
-  //                                           } else {
-  //                                             final screenshotIndex =
-  //                                                 itemIndex - _images.length;
-  //                                             final screenshot =
-  //                                                 locationProfileProvider
-  //                                                         .locationProfile
-  //                                                         ?.screenshots?[
-  //                                                     screenshotIndex];
-  //
-  //                                             if (screenshot == null)
-  //                                               return const SizedBox();
-  //
-  //                                             return Padding(
-  //                                               padding:
-  //                                                   const EdgeInsets.symmetric(
-  //                                                       horizontal: 8.0),
-  //                                               child: GestureDetector(
-  //                                                 onTap: () =>
-  //                                                     _showImagePreviewFromUrl(
-  //                                                         screenshot.imageUrl ??
-  //                                                             ''),
-  //                                                 child: Column(
-  //                                                   crossAxisAlignment:
-  //                                                       CrossAxisAlignment
-  //                                                           .start,
-  //                                                   children: [
-  //                                                     Expanded(
-  //                                                       child: Stack(
-  //                                                         children: [
-  //                                                           Center(
-  //                                                             child: ClipRRect(
-  //                                                               borderRadius:
-  //                                                                   BorderRadius
-  //                                                                       .circular(
-  //                                                                           16),
-  //                                                               child: Image
-  //                                                                   .network(
-  //                                                                 screenshot
-  //                                                                         .imageUrl ??
-  //                                                                     '',
-  //                                                                 width: double
-  //                                                                     .infinity,
-  //                                                                 height: double
-  //                                                                     .infinity,
-  //                                                                 fit: BoxFit
-  //                                                                     .cover,
-  //                                                               ),
-  //                                                             ),
-  //                                                           ),
-  //                                                           Positioned(
-  //                                                             top: 8,
-  //                                                             right: 8,
-  //                                                             child: IconButton(
-  //                                                               icon: Icon(
-  //                                                                   Icons
-  //                                                                       .delete,
-  //                                                                   color: Colors
-  //                                                                       .red),
-  //                                                               onPressed: () {
-  //                                                                 print(screenshot
-  //                                                                         .imageUrl ??
-  //                                                                     '');
-  //                                                                 setState(() {
-  //                                                                   locationProfileProvider
-  //                                                                       .locationProfile
-  //                                                                       ?.screenshots
-  //                                                                       ?.removeAt(
-  //                                                                           screenshotIndex);
-  //                                                                 });
-  //                                                               },
-  //                                                             ),
-  //                                                           ),
-  //                                                         ],
-  //                                                       ),
-  //                                                     ),
-  //                                                     const SizedBox(height: 2),
-  //                                                     Padding(
-  //                                                       padding:
-  //                                                           const EdgeInsets
-  //                                                               .only(
-  //                                                               left: 10.0),
-  //                                                       child: Text(
-  //                                                         '${screenshot.name ?? ''} (@)',
-  //                                                         style:
-  //                                                             Theme.of(context)
-  //                                                                 .textTheme
-  //                                                                 .bodyMedium,
-  //                                                       ),
-  //                                                     ),
-  //                                                     Padding(
-  //                                                       padding:
-  //                                                           const EdgeInsets
-  //                                                               .only(
-  //                                                               left: 10.0),
-  //                                                       child: Text(
-  //                                                         _formatTimestamp(
-  //                                                             screenshot
-  //                                                                 .createdAt
-  //                                                                 ?.iSeconds),
-  //                                                         style:
-  //                                                             Theme.of(context)
-  //                                                                 .textTheme
-  //                                                                 .bodyMedium,
-  //                                                       ),
-  //                                                     ),
-  //                                                   ],
-  //                                                 ),
-  //                                               ),
-  //                                             );
-  //                                           }
-  //                                         },
-  //                                       ),
-  //                                     ),
-  //                                     SizedBox(height: 50),
-  //                                   ],
-  //                                 )
-  //                               : Center(
-  //                                   child: Container(
-  //                                     height:
-  //                                         MediaQuery.of(context).size.height /
-  //                                             3,
-  //                                     alignment: Alignment.center,
-  //                                     child: Text(
-  //                                       'No Documents',
-  //                                       style: typography.Body1,
-  //                                     ),
-  //                                   ),
-  //                                 ),
-  //
-  //                       Container(
-  //                         margin: EdgeInsets.symmetric(horizontal: 30),
-  //                         child: CustomButton(
-  //                           type: ButtonType.elevated,
-  //                           onPressed: _pickImage,
-  //                           child: Row(
-  //                             mainAxisAlignment: MainAxisAlignment.start,
-  //                             crossAxisAlignment: CrossAxisAlignment.center,
-  //                             children: [
-  //                               Icon(Icons.upload_sharp,
-  //                                   color: Colors.black, size: 20),
-  //                               SizedBox(width: 20),
-  //                               InkWell(
-  //                                 onTap: _pickDocuments,
-  //                                 child: Text('Upload relevant document(s)',
-  //                                     style: TextStyle(
-  //                                       color: Colors.black,
-  //                                       fontWeight: FontWeight.w600,
-  //                                       fontSize: 16,
-  //                                     )),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _activityLogWidget() {
     return Consumer<MyLocationListProvider>(
       builder: (context, provider, child) {
@@ -4508,79 +5370,70 @@ class _LocationProfileState extends State<LocationProfile>
                 child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: DottedBorder(
-                      options: const RectDottedBorderOptions(
-                        padding: EdgeInsets.all(16),
-                        color: Colors.white24,
-                        strokeWidth: 2,
-                        dashPattern: [4, 4],
-                      ),
-                      child: Column(
-                        children: List.generate(
-                            provider.allAcitivityLogs.length, (index) {
-                          final log = provider.allAcitivityLogs[index];
+                    child: Column(
+                      children: List.generate(provider.allAcitivityLogs.length,
+                          (index) {
+                        final log = provider.allAcitivityLogs[index];
 
-                          final action = log.action ?? "";
-                          final targetId = log.targetId?.toString() ?? "";
-                          final time = log.at?.iSeconds ?? 0;
+                        final action = log.action ?? "";
+                        final targetId = log.targetId?.toString() ?? "";
+                        final time = log.at?.iSeconds ?? 0;
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.grey[800],
-                                  child: const Text(
-                                    "N",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.grey[800],
+                                child: const Text(
+                                  "N",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      action,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        action,
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
+                                    // const SizedBox(height: 4),
+                                    // Text(
+                                    //   "Location • $targetId",
+                                    //   maxLines: 2,
+                                    //   overflow: TextOverflow.ellipsis,
+                                    //   style: TextStyle(
+                                    //     color: Colors.grey[400],
+                                    //     fontSize: 13,
+                                    //   ),
+                                    // ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatTimestamp(time),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      // const SizedBox(height: 4),
-                                      // Text(
-                                      //   "Location • $targetId",
-                                      //   maxLines: 2,
-                                      //   overflow: TextOverflow.ellipsis,
-                                      //   style: TextStyle(
-                                      //     color: Colors.grey[400],
-                                      //     fontSize: 13,
-                                      //   ),
-                                      // ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        _formatTimestamp(time),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ),
@@ -4917,7 +5770,7 @@ class _LocationProfileState extends State<LocationProfile>
                             }
 
                             /// 🔹 CASE 2: Full edit
-                            final value = await Navigator.of(context).push(
+                            final result = await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => AddLocationScreen(
                                   accountId: widget.accountId,
@@ -4927,7 +5780,6 @@ class _LocationProfileState extends State<LocationProfile>
                                   subAccountName: widget.subAccountName,
                                   sovName: widget.sovName,
                                   locationId: locationProfile.id,
-                                  // nullable-safe
                                   locationName: locationProfile
                                           .finalAddress?.locationName ??
                                       "",
@@ -4936,27 +5788,24 @@ class _LocationProfileState extends State<LocationProfile>
                                       "",
                                   searchQuery: widget.searchQuery ?? "",
                                   page: widget.page,
-                                  totalPages:
-                                      widget.locationId?.isNotEmpty == true
-                                          ? ((locationProfileProvider
-                                                          .resetTotalPage ??
-                                                      1) -
-                                                  1)
-                                              .toString()
-                                          : widget.totalPages,
+                                  totalPages: widget.totalPages,
                                 ),
                               ),
                             );
 
-                            /// 🔹 Refresh profile after successful update
-                            if (value == true && mounted) {
-                              await locationProfileProvider
-                                  .fetchIndividualLocationProfile(
-                                context,
-                                locationProfile.id!,
-                              );
-                              setState(() {});
+                            if (result == true) {
+                              _refreshData();
                             }
+
+                            /// 🔹 Refresh profile after successful update
+                            // if (value == true && mounted) {
+                            //   await locationProfileProvider
+                            //       .fetchIndividualLocationProfile(
+                            //     context,
+                            //     locationProfile.id!,
+                            //   );
+                            //   setState(() {});
+                            // }
                           },
                         ),
                       ],
@@ -5223,7 +6072,9 @@ class _LocationProfileState extends State<LocationProfile>
                                           ),
                                         ),
                                       );
-
+                                      if (value != null) {
+                                        _refreshData();
+                                      }
                                       /*if(value == true) {
                                     if (mounted) {
                                       Navigator.pushAndRemoveUntil(
@@ -5324,8 +6175,9 @@ class _LocationProfileState extends State<LocationProfile>
                                 ),
                               ),
                             );
-
-                            // You can handle the result of navigation here using `value`, if needed
+                            if (value == true) {
+                              _refreshData();
+                            }
                           },
                           child: Icon(Icons.edit),
                         ),
@@ -5419,7 +6271,7 @@ class _LocationProfileState extends State<LocationProfile>
                               child:
                                   Text('No Campus', style: typography.Body1)))
                       : Container(
-                          height: 200,
+                          height: 210,
                           child: PageView.builder(
                             controller: PageController(viewportFraction: 0.9),
                             itemCount: (locationProfileProvider
@@ -5625,7 +6477,7 @@ class _LocationProfileState extends State<LocationProfile>
                                     },
                                   ),
                                 ),
-                                SizedBox(height: 16),
+                                SizedBox(height: 14),
                               ],
                             )
                           : Center(
@@ -5668,6 +6520,7 @@ class _LocationProfileState extends State<LocationProfile>
       final dynamicLeft = screenWidth * 0.37;
       double latitude =
           locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
+
       double longitude =
           locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
 
@@ -6833,6 +7686,616 @@ class LocationComment {
     return LocationComment(
       commentId: json['comment_id'],
       comment: json['comment'],
+    );
+  }
+}
+
+class _ChatbotContent extends StatefulWidget {
+  final String? locationId;
+
+  const _ChatbotContent({this.locationId});
+
+  @override
+  State<_ChatbotContent> createState() => _ChatbotContentState();
+}
+
+class _ChatbotContentState extends State<_ChatbotContent> {
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String? _sessionId;
+  bool _isTyping = false;
+  bool _hasText = false;
+  bool _showEligibilityButton = true;
+  bool _showLocationsButton = true;
+  List<Map<String, dynamic>> messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionId = const Uuid().v4();
+    messages.add({
+      "isBot": true,
+      "text":
+          "Hi, I'm RiskBuddy your personalized Assistant.\n\nI can help you understand risk data, eligibility, and guide you through premium features like HazardHub.",
+    });
+    _controller.addListener(() {
+      final hasText = _controller.text.trim().isNotEmpty;
+      if (hasText != _hasText) setState(() => _hasText = hasText);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  String _currentTime() {
+    final now = DateTime.now();
+    final hour = now.hour > 12
+        ? now.hour - 12
+        : now.hour == 0
+            ? 12
+            : now.hour;
+    final minute = now.minute.toString().padLeft(2, '0');
+    final period = now.hour >= 12 ? "PM" : "AM";
+    return "$hour:$minute $period";
+  }
+
+  Future<void> _sendMessage() async {
+    if (_controller.text.trim().isEmpty) return;
+    final userMessage = _controller.text.trim();
+
+    setState(() {
+      messages.add({"isBot": false, "text": userMessage});
+      _isTyping = true;
+    });
+
+    _controller.clear();
+    _scrollToBottom();
+
+    final provider =
+        Provider.of<MyLocationListProvider>(context, listen: false);
+
+    try {
+      final reply = await provider.sendChatMessage(
+        context: context,
+        message: userMessage,
+        locationId: widget.locationId ?? "",
+        sessionId: _sessionId!,
+      );
+      setState(() {
+        _isTyping = false;
+        messages.add({"isBot": true, "text": reply ?? "No response"});
+      });
+      _scrollToBottom();
+    } catch (e) {
+      setState(() => _isTyping = false);
+    }
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        /// ── Header ──
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primaryMain,
+                child:
+                    const Icon(Icons.smart_toy, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "RiskBuddy",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        "assets/images/ai.svg",
+                        color: AppColors.primaryMain,
+                        width: 12,
+                        height: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        "Smarter decisions, lower risk.",
+                        style: TextStyle(color: Colors.grey, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  // IconButton(
+                  //   icon: const Icon(Icons.open_in_full,
+                  //       color: Colors.grey, size: 18),
+                  //   onPressed: () {
+                  //     // Navigator.pop(context);
+                  //     // Navigator.push(
+                  //     //   context,
+                  //     //   MaterialPageRoute(
+                  //     //     builder: (_) =>
+                  //     //         ChatbotPage(locationId: widget.locationId),
+                  //     //   ),
+                  //     // );
+                  //   },
+                  // ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(color: Color(0xFF2A2A2A), height: 1),
+
+        /// ── Messages ──
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            itemCount: messages.length + (_isTyping ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (_isTyping && index == messages.length) {
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Text("...",
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                );
+              }
+
+              final message = messages[index];
+              final isBot = message["isBot"] as bool;
+
+              return Column(
+                crossAxisAlignment:
+                    isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isBot
+                          ? const Color(0xFF1E1E1E)
+                          : const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: isBot
+                        ? _buildFormattedText(context, message["text"])
+                        : Text(
+                            message["text"],
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13),
+                          ),
+                    // child: Text(
+                    //   message["text"],
+                    //   style: const TextStyle(color: Colors.white, fontSize: 13),
+                    // ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      _currentTime(),
+                      style: const TextStyle(color: Colors.grey, fontSize: 10),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+
+        /// ── Quick Actions ──
+        // if (_showEligibilityButton || _showLocationsButton)
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        //     child: Row(
+        //       children: [
+        //         if (_showEligibilityButton)
+        //           Expanded(
+        //             child: Container(
+        //               height: 38,
+        //               decoration: BoxDecoration(
+        //                 color: const Color(0xFF2A2A2A),
+        //                 borderRadius: BorderRadius.circular(22),
+        //               ),
+        //               child: TextButton(
+        //                 onPressed: () {
+        //                   setState(() => _showEligibilityButton = false);
+        //                   _controller.text = "Check HazardHub Eligibility";
+        //                   _sendMessage();
+        //                 },
+        //                 child: const Text(
+        //                   "Check Eligibility",
+        //                   style: TextStyle(color: Colors.white, fontSize: 11),
+        //                   overflow: TextOverflow.ellipsis,
+        //                 ),
+        //               ),
+        //             ),
+        //           ),
+        //         if (_showEligibilityButton && _showLocationsButton)
+        //           const SizedBox(width: 8),
+        //         if (_showLocationsButton)
+        //           Expanded(
+        //             child: Container(
+        //               height: 38,
+        //               decoration: BoxDecoration(
+        //                 color: const Color(0xFF2A2A2A),
+        //                 borderRadius: BorderRadius.circular(22),
+        //               ),
+        //               child: TextButton(
+        //                 onPressed: () {
+        //                   setState(() => _showLocationsButton = false);
+        //                   _controller.text = "Show Eligible Locations";
+        //                   _sendMessage();
+        //                 },
+        //                 child: const Text(
+        //                   "Eligible Locations",
+        //                   style: TextStyle(color: Colors.white, fontSize: 11),
+        //                   overflow: TextOverflow.ellipsis,
+        //                 ),
+        //               ),
+        //             ),
+        //           ),
+        //       ],
+        //     ),
+        //   ),
+
+        /// ── Input Bar ──
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          color: Colors.black,
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2A2A),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFF3A3A3A), width: 1),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: const InputDecoration(
+                      hintText: "Ask about risk data, eligibility...",
+                      hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _hasText ? _sendMessage : null,
+                  child: Icon(
+                    Icons.telegram_sharp,
+                    color: _hasText ? AppColors.primaryMain : Colors.grey,
+                    size: 38,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 25,
+        )
+      ],
+    );
+  }
+}
+
+Widget _buildFormattedText(BuildContext context, String rawText) {
+  final text = rawText.replaceAll('**', '');
+  final lines = text.split('\n');
+  final List<Widget> elements = [];
+
+  for (int i = 0; i < lines.length; i++) {
+    final trimmed = lines[i].trim();
+
+    // Skip lines that are just "4." etc.
+    if (RegExp(r'^\d+\.$').hasMatch(trimmed)) continue;
+
+    if (trimmed.isEmpty) {
+      elements.add(const SizedBox(height: 8));
+      continue;
+    }
+
+    if (trimmed.endsWith(':') && !trimmed.startsWith('*')) {
+      // 🔵 BLUE — header label ending with ':'
+      elements.add(Padding(
+        padding: EdgeInsets.only(top: i > 0 ? 8.0 : 0, bottom: 4),
+        child: Text(
+          trimmed,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: AppColors.primaryMain, // ✅ Always blue, not theme-dependent
+          ),
+        ),
+      ));
+    } else if (trimmed.startsWith('*')) {
+      // • Bullet point — white text
+      final bulletText = trimmed.substring(1).trim();
+      elements.add(Padding(
+        padding: const EdgeInsets.only(left: 8, bottom: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '• ',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                bulletText,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ));
+    } else {
+      // 🔴 RED for lines containing 'Very High' or 'High', else white
+      final isHighRisk =
+          trimmed.contains('Very High') || trimmed.contains('High');
+      elements.add(Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          trimmed,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: isHighRisk
+                ? Colors.white // 🔴 Visible red on dark background
+                : Colors.white, // ✅ Explicit white, not onSurface
+          ),
+        ),
+      ));
+    }
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: elements,
+  );
+}
+// Widget _buildFormattedText(BuildContext context,String rawText) {
+//   final text = rawText.replaceAll('**', '');
+//   final lines = text.split('\n');
+//   final List<Widget> elements = [];
+//
+//   for (int i = 0; i < lines.length; i++) {
+//     final trimmed = lines[i].trim();
+//
+//     // Skip lines that are just "4." etc.
+//     if (RegExp(r'^\d+\.$').hasMatch(trimmed)) continue;
+//
+//     if (trimmed.isEmpty) {
+//       elements.add(const SizedBox(height: 8));
+//       continue;
+//     }
+//
+//     if (trimmed.endsWith(':') && !trimmed.startsWith('*')) {
+//       // 🔵 BLUE header label
+//       elements.add(Padding(
+//         padding: EdgeInsets.only(top: i > 0 ? 8.0 : 0, bottom: 4),
+//         child: Text(
+//           trimmed,
+//           style: TextStyle(
+//             fontWeight: FontWeight.w600,
+//             fontSize: 13,
+//             color: Theme.of(context).colorScheme.primary, // Blue
+//           ),
+//         ),
+//       ));
+//     } else if (trimmed.startsWith('*')) {
+//       // Bullet point
+//       final bulletText = trimmed.substring(1).trim();
+//       elements.add(Padding(
+//         padding: const EdgeInsets.only(left: 8, bottom: 3),
+//         child: Row(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text('• ',
+//                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+//             Expanded(
+//               child: Text(bulletText,
+//                   style: const TextStyle(fontSize: 13, height: 1.4)),
+//             ),
+//           ],
+//         ),
+//       ));
+//     } else {
+//       // 🔴 RED for High/Very High, otherwise normal text
+//       final isHighRisk =
+//           trimmed.contains('Very High') || trimmed.contains('High');
+//       elements.add(Padding(
+//         padding: const EdgeInsets.only(bottom: 4),
+//         child: Text(
+//           trimmed,
+//           style: TextStyle(
+//             fontSize: 13,
+//             height: 1.5,
+//             color: isHighRisk
+//                 ? Theme.of(context).colorScheme.error // 🔴 Red
+//                 : Theme.of(context).colorScheme.onSurface, // Normal
+//           ),
+//         ),
+//       ));
+//     }
+//   }
+//
+//   return Column(
+//     crossAxisAlignment: CrossAxisAlignment.start,
+//     children: elements,
+//   );
+// }
+// Widget _buildFormattedText(String text) {
+//   // Normalize literal \n escape sequences
+//   final normalized = text.replaceAll(r'\n', '\n');
+//   final lines = normalized.split('\n');
+//
+//   return Column(
+//     crossAxisAlignment: CrossAxisAlignment.start,
+//     children: lines.map((line) {
+//       if (line.trim().isEmpty) return const SizedBox(height: 6);
+//
+//       // Parse inline **bold** segments
+//       final spans = <InlineSpan>[];
+//       final boldPattern = RegExp(r'\*\*(.*?)\*\*');
+//       int lastEnd = 0;
+//
+//       for (final match in boldPattern.allMatches(line)) {
+//         if (match.start > lastEnd) {
+//           spans.add(TextSpan(
+//             text: line.substring(lastEnd, match.start),
+//             style: const TextStyle(color: Colors.white, fontSize: 13),
+//           ));
+//         }
+//         spans.add(TextSpan(
+//           text: match.group(1),
+//           style: const TextStyle(
+//             color: Colors.white,
+//             fontSize: 13,
+//             fontWeight: FontWeight.bold,
+//           ),
+//         ));
+//         lastEnd = match.end;
+//       }
+//
+//       if (lastEnd < line.length) {
+//         spans.add(TextSpan(
+//           text: line.substring(lastEnd),
+//           style: const TextStyle(color: Colors.white, fontSize: 13),
+//         ));
+//       }
+//
+//       return Padding(
+//         padding: const EdgeInsets.only(bottom: 2),
+//         child: RichText(text: TextSpan(children: spans)),
+//       );
+//     }).toList(),
+//   );
+// }
+
+class _ChatbotBottomSheet extends StatefulWidget {
+  final String? locationId;
+
+  const _ChatbotBottomSheet({this.locationId});
+
+  @override
+  State<_ChatbotBottomSheet> createState() => _ChatbotBottomSheetState();
+}
+
+class _ChatbotBottomSheetState extends State<_ChatbotBottomSheet> {
+  bool _isFullScreen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Padding(
+      // ✅ This is the KEY fix - automatically pushes content above keyboard
+      padding: MediaQuery.of(context).viewInsets,
+      child: Container(
+        height: _isFullScreen ? screenHeight : screenHeight * 0.62,
+        decoration: const BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            /// ── Drag Handle + Expand/Collapse ──
+            GestureDetector(
+              onTap: () => setState(() => _isFullScreen = !_isFullScreen),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade600,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Icon(
+                      _isFullScreen
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            /// ── Chatbot Content ──
+            Expanded(
+              child: _ChatbotContent(locationId: widget.locationId),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

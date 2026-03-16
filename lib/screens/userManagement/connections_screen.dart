@@ -220,8 +220,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         true;
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllConnections(context, widget.userId);
+    await Provider.of<ConnectionsProvider>(context, listen: false)
+        .getUserSuggestions(context, "query");
+    Provider.of<ConnectionsProvider>(context, listen: false)
+        .getAllConnections(context, widget.userId);
     Provider.of<ConnectionsProvider>(context, listen: false)
         .getAllRequests(context, widget.userId);
+
     filterRoleList = await Provider.of<RoleProvider>(context, listen: false)
         .getAllRoles(context);
   }
@@ -411,9 +416,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                   ),
                                                   DropdownMenuItem(
                                                     child: Text(
-                                                      LanguageService.getTranslated(
-                                                          context,
-                                                          "non_corporate"),
+                                                      LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "non_corporate"),
                                                       style: typography
                                                           .BottomNavigationActiveLabel,
                                                     ),
@@ -1931,7 +1937,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           connectionsProvider.requestUsers[index].role != null
                               ? Text(
                                   connectionsProvider
-                                          .requestUsers[index].role ??
+                                          .requestUsers[index].role[0]
+                                          .toString() ??
                                       "",
                                   /* .map((e) =>
                                           e[0].toUpperCase() + e.substring(1))
@@ -2154,7 +2161,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             ),
                           ],
                         )
-                      : ListView.builder(
+                      : GridView.builder(
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisExtent: 180, // ✅ CONTROL HEIGHT HERE
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
                           itemCount: connectionsProvider.networkingUsers.length,
                           itemBuilder: (context, index) {
                             return _networkingCardUI(
@@ -2175,175 +2190,62 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         child: Card(
+          clipBehavior: Clip.antiAlias, // 👈 IMPORTANT for rounded bottom
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: CustomSpacing.two,
+              // 🔹 TOP CONTENT
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _headerRow(connectionsProvider, index),
+                    const SizedBox(height: 8),
+                    _companyInfo(connectionsProvider, index),
+                  ],
+                ),
               ),
-              Row(
-                children: [
-                  SizedBox(
-                    width: CustomSpacing.four,
-                  ),
-                  CircleAvatar(
-                    child: connectionsProvider
-                                    .networkingUsers[index].displayImageUrl !=
-                                null &&
-                            connectionsProvider
-                                    .networkingUsers[index].displayImageUrl !=
-                                ''
-                        ? ClipOval(
-                            child: Image.network(
-                              connectionsProvider
-                                  .networkingUsers[index].displayImageUrl!,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : Text(
-                            connectionsProvider.networkingUsers[index].name
-                                    ?.substring(0, 1)
-                                    .toUpperCase() ??
-                                "",
-                          ),
-                  ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (connectionsProvider.networkingUsers[index].name
-                                      ?.substring(0, 1)
-                                      .toUpperCase() ??
-                                  "") +
-                              (connectionsProvider.networkingUsers[index].name
-                                      ?.substring(1) ??
-                                  ""),
-                          style: typography.Body2.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? AppColors.white
-                                  : AppColors.black),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                            connectionsProvider
-                                    .networkingUsers[index].companyTypeName ??
-                                "",
-                            style: typography.Caption),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                  // show like 4 (Star icon)
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            connectionsProvider.networkingUsers[index].rating
-                                    ?.toString() ??
-                                "",
-                            style: typography.Body1,
-                          ),
-                          Icon(
-                            Icons.star,
-                            color: Colors.yellow,
-                            size: 20,
-                          ),
-                          Text(
-                            '\'s',
-                            style: typography.Body1,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    width: CustomSpacing.two,
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: CustomSpacing.four,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                      Text(
-                        connectionsProvider
-                                .networkingUsers[index].companyName ??
-                            "",
-                        style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black),
-                      ),
-                      // , separated roles with 1st letter capital
-                      connectionsProvider.networkingUsers[index].role != null
-                          ? Text(
-                              connectionsProvider.networkingUsers[index].role!
-                                  .map((e) =>
-                                      e[0].toUpperCase() + e.substring(1))
-                                  .join(', '),
-                              style: typography.Caption)
-                          : SizedBox(),
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+
+              // 🔹 PUSH BUTTON TO BOTTOM
+              const Spacer(),
+
+              // 🔹 BOTTOM ACTION BAR
               Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceVariant,
-                  // bottom left and right corners curved
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(8),
-                    bottomRight: Radius.circular(8),
-                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Icon with text
-                    TextButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) {
-                            return AlertDialog(
-                              content: _addNetworkDialogUI(
-                                  dialogContext, connectionsProvider, index),
-                            );
-                          },
-                        );
-                      },
-                      icon: Icon(Icons.add_circle_outline),
-                      label: Text(
-                          LanguageService.getTranslated(context,
-                              "connections_user_connection_connect_btn"),
-                          style: typography.Caption.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? AppColors.white
-                                  : AppColors.black)),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            content: _addNetworkDialogUI(
+                              dialogContext,
+                              connectionsProvider,
+                              index,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: Text(
+                      LanguageService.getTranslated(
+                        context,
+                        "connections_user_connection_connect_btn",
+                      ),
+                      style:
+                          TextStyle(color: AppColors.primaryMain, fontSize: 14),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -2409,82 +2311,86 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           // ),
           // SizedBox(height: CustomSpacing.four),
           // Personalized Message make it bigger in size
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Text('Personalized Message (Optional)', style: typography.Body2),
-            ],
-          ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.start,
+          //   children: [
+          //     Text('Personalized Message (Optional)', style: typography.Body2),
+          //   ],
+          // ),
           TextFormField(
             maxLines: 4,
             controller: _messageController,
             decoration: InputDecoration(
-              hintText: 'Say something nice!',
+              hintText: 'Personalized Message (Optional)',
+              hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
           ),
           SizedBox(height: CustomSpacing.two),
+
+          SizedBox(height: CustomSpacing.two),
           // Cancel and Send Request Buttons
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    _messageController.clear();
-                    // Handle submit button
-                    Navigator.of(dialogContext).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                  ),
-                  child: Text(
-                    LanguageService.getTranslated(
-                        context, "connections_user_connection_cancel"),
-                    style: typography.ButtonLarge,
-                  ),
-                ),
-              ),
-              SizedBox(width: CustomSpacing.two),
-              Expanded(
-                child: connectionsProvider.isConnectLoading
-                    ? Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : CustomButton(
-                        onPressed: () {
-                          connectionsProvider
-                              .connectUser(
-                                  context,
-                                  connectionsProvider
-                                          .networkingUsers[index].id ??
-                                      "",
-                                  _messageController.text)
-                              .then((value) {
-                            if (value) {
-                              _getData();
-                              Navigator.of(dialogContext).pop();
-                              _messageController.clear();
-                            }
-                          });
-                        },
-                        type: ButtonType.filled,
-                        child: Text(
-                          'Send',
-                          style: typography.ButtonLarge,
-                        ),
+              // 🔹 SEND BUTTON / LOADER
+              connectionsProvider.isConnectLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(),
                       ),
+                    )
+                  : CustomButton(
+                      onPressed: () {
+                        connectionsProvider
+                            .connectUser(
+                          context,
+                          connectionsProvider.networkingUsers[index].id ?? "",
+                          _messageController.text,
+                        )
+                            .then((value) {
+                          if (value) {
+                            _getData();
+                            Navigator.of(dialogContext).pop();
+                            _messageController.clear();
+                          }
+                        });
+                      },
+                      type: ButtonType.filled,
+                      child: Text(
+                        "Send",
+                        style: typography.ButtonLargeBlack,
+                      ),
+                    ),
+              SizedBox(height: CustomSpacing.two),
+              // 🔹 CANCEL BUTTON
+              OutlinedButton(
+                onPressed: () {
+                  _messageController.clear();
+                  Navigator.of(dialogContext).pop();
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                ),
+                child: Text(
+                  LanguageService.getTranslated(
+                    context,
+                    "connections_user_connection_cancel",
+                  ),
+                  style: typography.ButtonLarge,
+                ),
               ),
             ],
           ),
+
           SizedBox(height: CustomSpacing.two),
         ],
       ),
@@ -2521,6 +2427,98 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _headerRow(
+    ConnectionsProvider connectionsProvider,
+    int index,
+  ) {
+    final user = connectionsProvider.networkingUsers[index];
+    final typography = CustomTypography(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child:
+              user.displayImageUrl != null && user.displayImageUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        user.displayImageUrl!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Text(
+                      (user.name?.substring(0, 1).toUpperCase() ?? ""),
+                      style: typography.Body2,
+                    ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.name ?? "",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.Body2.copyWith(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.white
+                      : AppColors.black,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                user.companyTypeName ?? "",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.Caption,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _companyInfo(
+    ConnectionsProvider connectionsProvider,
+    int index,
+  ) {
+    final user = connectionsProvider.networkingUsers[index];
+    final typography = CustomTypography(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          user.companyName ?? "",
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: typography.Body2.copyWith(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.white
+                : AppColors.black,
+          ),
+        ),
+        if (user.role != null && user.role!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            user.role!
+                .map((e) => e[0].toUpperCase() + e.substring(1))
+                .join(', '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.Caption,
+          ),
+        ],
+      ],
     );
   }
 

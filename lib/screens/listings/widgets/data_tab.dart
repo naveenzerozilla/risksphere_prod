@@ -7,9 +7,10 @@ import 'package:dio/dio.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -30,7 +31,7 @@ import '../../../utils/ImpactDataCard.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' hide Reference;
-
+import 'package:http/http.dart' as http;
 import '../processing_summary.dart';
 
 class DataTab extends StatefulWidget {
@@ -1863,7 +1864,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   Expanded(
                                       child: Text(file.path.split('/').last)),
                                   IconButton(
-                                    icon: Icon(Icons.clear, color: Colors.red),
+                                    icon: Icon(Icons.delete, color: Colors.red),
                                     onPressed: () async {
                                       setModalState(() {
                                         selectedImages.remove(file);
@@ -1871,32 +1872,18 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                         tagControllers.remove(file);
                                       });
 
-                                      await provider.deleteParameterImage(
-                                        context: context,
-                                        selectedParameterList:
-                                            widget.selectedParameterList,
-                                        locationId: widget.locationId,
-                                        sovId: widget.sovId,
-                                        campusId: widget.campusId,
-                                        subaccountId: widget.subAccountId,
-                                        parameterId:
-                                            widget.result.dataCategoryId!,
-                                        // 🔥 REQUIRED
-                                        imageObject: {
-                                          "url": [
-                                            file.absolute.path,
-                                          ],
-                                          // MUST be a LIST of URLs
-                                          "tags": fileTags,
-                                          // "name": widget.result.parameterValue!
-                                          //     .reference!.first.name,
-                                          // MUST be LIST (not string)
-                                          "size": widget.result.parameterValue!
-                                              .reference!.first.size
-                                              .toString()
-                                          // MUST be INT
-                                        },
-                                      );
+                                      // await provider.deleteParameterImage(
+                                      //     context: context,
+                                      //     selectedParameterList:
+                                      //         widget.selectedParameterList,
+                                      //     locationId: widget.locationId,
+                                      //     sovId: widget.sovId,
+                                      //     campusId: widget.campusId,
+                                      //     subaccountId: widget.subAccountId,
+                                      //     parameterId:
+                                      //         widget.result.dataCategoryId!,
+                                      //    updatedReferences: "file.path.split('/').last.toString()"
+                                      // );
 
                                       setState(() {
                                         _userEditedFields.clear();
@@ -1975,28 +1962,9 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                           onPressed: isUploading
                               ? null
                               : () async {
-                                  List<String> existingUrls = [];
-
-                                  final refs =
-                                      widget.result.parameterValue?.reference;
-
-                                  // COLLECT EXISTING URLS
-                                  if (refs != null && refs.isNotEmpty) {
-                                    for (var ref in refs) {
-                                      if (ref.url != null &&
-                                          ref.url!.isNotEmpty) {
-                                        existingUrls.addAll(
-                                            List<String>.from(ref.url!));
-                                      }
-                                    }
-                                  }
-
-                                  // NO IMAGES SELECTED
-                                  if (selectedImages.isEmpty &&
-                                      existingUrls.isEmpty) {
+                                  if (selectedImages.isEmpty) {
                                     Fluttertoast.showToast(
-                                      msg:
-                                          "Please select file(s) or provide an existing image URL",
+                                      msg: "Please select file(s)",
                                     );
                                     return;
                                   }
@@ -2004,80 +1972,64 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   setModalState(() => isUploading = true);
 
                                   try {
-                                    List<String> downloadUrls = [];
+                                    print("===== REST UPLOAD STARTED =====");
 
-                                    // UPLOAD NEW IMAGES
+                                    List<String> uploadedUrls = [];
+
+                                    // 🔥 STEP 1: Upload each file
                                     for (File file in selectedImages) {
-                                      final fileName =
-                                          file.path.split('/').last;
-                                      final storageRef =
-                                          FirebaseStorage.instance.ref().child(
-                                              'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName');
-
-                                      final uploadTask =
-                                          storageRef.putFile(file);
-                                      final snapshot = await uploadTask;
-                                      final downloadUrl =
-                                          await snapshot.ref.getDownloadURL();
-                                      downloadUrls.add(downloadUrl);
+                                      final url =
+                                          await uploadFileToFirebaseRest(file);
+                                      print("🔥 Uploaded URL: $url");
+                                      uploadedUrls.add(url);
                                     }
 
-                                    // BUILD REFERENCES (RAW MAP)
-                                    final List<Map<String, dynamic>>
-                                        referenceMaps = [];
+                                    // 🔥 STEP 2: Merge existing + new references
+                                    final List<Reference> references = [];
 
-                                    // EXISTING IMAGES
-                                    if (existingUrls.isNotEmpty) {
-                                      for (var url in existingUrls) {
-                                        referenceMaps.add({
-                                          "url": [url],
-                                          "tags": [],
-                                          // "name": url.split('/').last,
-                                          "size": 0,
-                                        });
-                                      }
+                                    final existingRefs =
+                                        widget.result.parameterValue?.reference;
+
+                                    if (existingRefs != null &&
+                                        existingRefs.isNotEmpty) {
+                                      references.addAll(existingRefs);
                                     }
 
-                                    // NEW UPLOADED IMAGES
                                     for (int i = 0;
                                         i < selectedImages.length;
                                         i++) {
                                       final file = selectedImages[i];
-                                      referenceMaps.add({
-                                        "url": [downloadUrls[i]],
-                                        "tags": fileTags[file] ?? [],
-                                        // "name": file.path.split('/').last,
-                                        "size": file.lengthSync(),
-                                      });
+
+                                      references.add(
+                                        Reference(
+                                          url: [uploadedUrls[i]],
+                                          // Keep as list if backend expects list
+                                          tags: fileTags[file] ?? [],
+                                          name: file.path.split('/').last,
+                                          size: await file.length(),
+                                        ),
+                                      );
                                     }
 
-                                    // ---- CONVERT TO List<Reference> FOR UI ----
-                                    final List<Reference> referenceModels =
-                                        referenceMaps.map((m) {
-                                      return Reference(
-                                        url: List<String>.from(m["url"] ?? []),
-                                        tags:
-                                            List<String>.from(m["tags"] ?? []),
-                                        name: m["name"]?.toString(),
-                                        size: m["size"] is int ? m["size"] : 0,
-                                      );
-                                    }).toList();
-
                                     final updatedFields = {
-                                      "value": "",
-                                      "param_type": "Files",
-                                      "reference": referenceMaps,
-                                      // backend accepts map format
+                                      "value": "{}",
+                                      "is_reference_updated": true,
+                                      "param_type": "Number",
+                                      "reference": references
+                                          .map((e) => e.toJson())
+                                          .toList(),
                                     };
 
-                                    final provider = Provider.of<
+                                    print("===== PATCH API PAYLOAD =====");
+                                    print(updatedFields);
+
+                                    final subProvider = Provider.of<
                                         SubaccountParameterProvider>(
                                       context,
                                       listen: false,
                                     );
 
-                                    // API CALL
-                                    await provider.submitParameterUpdate(
+                                    await subProvider.submitParameterUpdate(
                                       context: context,
                                       subaccountId: widget.subAccountId,
                                       locationId: widget.locationId,
@@ -2089,40 +2041,33 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                       selectedParameterList:
                                           widget.selectedParameterList,
                                     );
-
-                                    // UPDATE UI IMMEDIATELY
                                     setState(() {
-                                      widget.result.parameterValue?.reference =
-                                          referenceModels;
-                                      this.references = referenceModels;
+                                      _userEditedFields.clear();
                                     });
 
-                                    // REFRESH LIST
-                                    await Provider.of<MyLocationListProvider>(
-                                            context,
-                                            listen: false)
-                                        .fetchLocationList(
-                                            context,
-                                            "",
-                                            1,
-                                            10,
-                                            widget.accountId,
-                                            widget.subAccountId,
-                                            "",
-                                            "",
-                                            '');
+                                    locationListProvider.fetchLocationList(
+                                        context,
+                                        "",
+                                        1,
+                                        5,
+                                        widget.accountId,
+                                        widget.subAccountId,
+                                        "",
+                                        "",
+                                        widget.sovId);
 
-                                    if (context.mounted) {
+                                    if (widget.onRefresh != null) {
+                                      await widget.onRefresh!();
                                       Navigator.pop(context);
                                     }
                                   } catch (e) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text("Upload failed: $e")),
-                                      );
-                                    }
+                                    print(" Upload Error: $e");
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text("Upload failed: $e"),
+                                      ),
+                                    );
                                   } finally {
                                     if (context.mounted) {
                                       setModalState(() => isUploading = false);
@@ -2130,177 +2075,16 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   }
                                 },
                           child: isUploading
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2),
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 )
-                              : Text("Submit"),
+                              : const Text("Submit"),
                         ),
-
-//                         ElevatedButton(
-//                           onPressed: isUploading
-//                               ? null
-//                               : () async {
-//                                   List<String> existingUrls = [];
-//
-//                                   final refs =
-//                                       widget.result.parameterValue?.reference;
-//
-//                                   if (refs != null && refs.isNotEmpty) {
-//                                     for (var ref in refs) {
-//                                       if (ref.url != null &&
-//                                           ref.url!.isNotEmpty) {
-//                                         existingUrls.addAll(List<String>.from(
-//                                             ref.url!)); // ✅ fix applied here
-//                                       }
-//                                     }
-//                                   }
-//
-//                                   if (selectedImages.isEmpty &&
-//                                       existingUrls.isEmpty) {
-//                                     Fluttertoast.showToast(
-//                                       msg:
-//                                           "Please select file(s) or provide an existing image URL",
-//                                     );
-//                                     return;
-//                                   }
-//
-//                                   setModalState(() => isUploading = true);
-//
-//                                   try {
-//                                     List<String> downloadUrls = [];
-//
-//                                     // Upload newly selected images
-//                                     for (File file in selectedImages) {
-//                                       final fileName =
-//                                           file.path.split('/').last;
-//                                       final storageRef =
-//                                           FirebaseStorage.instance.ref().child(
-//                                               'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName');
-//
-//                                       final uploadTask =
-//                                           storageRef.putFile(file);
-//                                       final snapshot = await uploadTask;
-//                                       final downloadUrl =
-//                                           await snapshot.ref.getDownloadURL();
-//                                       downloadUrls.add(downloadUrl);
-//                                     }
-//
-//                                     final List<Map<String, dynamic>> references = [];
-//
-//                                     // Add existing images
-//                                     // Add existing images
-//                                     if (existingUrls.isNotEmpty) {
-//                                       for (var url in existingUrls) {
-//                                         references.add({
-//                                           "url": [url],
-//                                           "tags": [],
-//                                           "name": url.split('/').last,   // FIXED
-//                                           "size": 0                      // FIXED
-//                                         });
-//                                       }
-//                                     }
-// // Add newly uploaded images
-//                                     for (int i = 0; i < selectedImages.length; i++) {
-//                                       final file = selectedImages[i];
-//                                       references.add({
-//                                         "url": [downloadUrls[i]],
-//                                         "tags": fileTags[file] ?? [],
-//                                         "name": file.path.split('/').last,
-//                                         "size": file.lengthSync()
-//                                       });
-//                                     }
-//
-//                                     final updatedFields = {
-//                                       "value": "",
-//                                       "param_type": "Files",
-//                                       "reference": references,
-//                                     };
-//
-//                                     final provider = Provider.of<
-//                                         SubaccountParameterProvider>(
-//                                       context,
-//                                       listen: false,
-//                                     );
-//
-//                                     await provider.submitParameterUpdate(
-//                                         context: context,
-//                                         subaccountId: widget.subAccountId,
-//                                         locationId: widget.locationId,
-//                                         sovId: widget.sovId,
-//                                         campusId: widget.campusId,
-//                                         parameterId:
-//                                             widget.result.dataCategoryId!,
-//                                         updatedFields: updatedFields,
-//                                         selectedParameterList:
-//                                             widget.selectedParameterList);
-//
-//
-//                                     // UPDATE UI IMMEDIATELY
-//                                     setState(() {
-//                                       widget.result.parameterValue?.reference = references;
-//                                       this.references = references;
-//                                     });
-//                                     await Provider.of<MyLocationListProvider>(
-//                                             context,
-//                                             listen: false)
-//                                         .fetchLocationList(
-//                                             context,
-//                                             "",
-//                                             1,
-//                                             10,
-//                                             widget.accountId,
-//                                             widget.subAccountId,
-//                                             "",
-//                                             "",
-//                                             '');
-//
-//                                     if (context.mounted) {
-//                                       WidgetsBinding.instance
-//                                           .addPostFrameCallback((_) {
-//                                         final locationListProvider =
-//                                             Provider.of<MyLocationListProvider>(
-//                                           context,
-//                                           listen: false,
-//                                         );
-//                                         locationListProvider.fetchLocationList(
-//                                             context,
-//                                             "",
-//                                             1,
-//                                             5,
-//                                             widget.accountId,
-//                                             widget.subAccountId,
-//                                             "",
-//                                             "",
-//                                             '');
-//                                       });
-//
-//                                       Navigator.pop(context);
-//                                     }
-//                                   } catch (e) {
-//                                     if (context.mounted) {
-//                                       ScaffoldMessenger.of(context)
-//                                           .showSnackBar(
-//                                         SnackBar(
-//                                             content: Text("Upload failed: $e")),
-//                                       );
-//                                     }
-//                                   } finally {
-//                                     if (context.mounted) {
-//                                       setModalState(() => isUploading = false);
-//                                     }
-//                                   }
-//                                 },
-//                           child: isUploading
-//                               ? SizedBox(
-//                                   width: 20,
-//                                   height: 20,
-//                                   child: CircularProgressIndicator(
-//                                       color: Colors.white, strokeWidth: 2))
-//                               : Text("Submit"),
-//                         ),
                       ],
                     ),
                   ],
@@ -2312,6 +2096,109 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       ),
     );
   }
+
+  Future<String> uploadFileToFirebaseRest(File file) async {
+    const bucket = "project-green-r5-1-qa.firebasestorage.app";
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception("User not authenticated.");
+    }
+
+    final idToken = await user.getIdToken();
+
+    final fileName = file.path.split('/').last;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final storagePath = "uploads/$timestamp-$fileName";
+
+    final encodedPath = Uri.encodeComponent(storagePath);
+
+    final uri = Uri.parse(
+      "https://firebasestorage.googleapis.com/v0/b/$bucket/o"
+      "?uploadType=media&name=$encodedPath",
+    );
+
+    final bytes = await file.readAsBytes();
+
+    final response = await http.post(
+      uri,
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Authorization": "Bearer $idToken",
+      },
+      body: bytes,
+    );
+
+    if (response.statusCode != 200) {
+      print("❌ Upload Error: ${response.body}");
+      throw Exception("Upload failed: ${response.statusCode}");
+    }
+
+    final jsonResponse = jsonDecode(response.body);
+    final downloadToken = jsonResponse["downloadTokens"];
+
+    if (downloadToken == null) {
+      throw Exception("Download token missing.");
+    }
+
+    // ✅ Correct public URL (same as getDownloadURL in web)
+    return "https://firebasestorage.googleapis.com/v0/b/"
+        "$bucket/o/$encodedPath?alt=media&token=$downloadToken";
+  }
+
+  // Future<String> uploadFileToFirebaseRest(File file) async {
+  //   const bucket = "project-green-r5-1-qa.firebasestorage.app";
+  //
+  //   // 🔹 Ensure user is authenticated
+  //   final user = FirebaseAuth.instance.currentUser;
+  //
+  //   if (user == null) {
+  //     throw Exception("User not authenticated. Please login first.");
+  //   }
+  //
+  //   // 🔹 Get Firebase ID Token
+  //   final idToken = await user.getIdToken();
+  //
+  //   final fileName = file.path.split('/').last;
+  //   final timestamp = DateTime.now().millisecondsSinceEpoch;
+  //   final storagePath = "uploads/$timestamp-$fileName";
+  //
+  //   final encodedPath = Uri.encodeComponent(storagePath);
+  //
+  //   final uri = Uri.parse(
+  //     "https://firebasestorage.googleapis.com/v0/b/$bucket/o"
+  //     "?uploadType=media&name=$encodedPath",
+  //   );
+  //
+  //   final bytes = await file.readAsBytes();
+  //   IdTokenResult? token =
+  //   await FirebaseAuth.instance.currentUser?.getIdTokenResult();
+  //   var headers = {
+  //     'Authorization': 'Bearer ${token?.token ?? ""}',
+  //     'Content-Type': 'multipart/form-data',
+  //   };
+  //   final response = await http.post(
+  //     uri,
+  //     headers: {
+  //       "Content-Type": "application/octet-stream",
+  //       "Authorization": "Bearer $idToken", // 🔥 IMPORTANT
+  //     },
+  //     body: bytes,
+  //   );
+  //
+  //   if (response.statusCode != 200) {
+  //     print("❌ Upload Error Body: ${response.body}");
+  //     throw Exception(
+  //       "Upload failed: ${response.statusCode}",
+  //     );
+  //   }
+  //
+  //   print("✅ Upload Success");
+  //
+  //   // Return same style URL your web uses
+  //   return "https://firebasestorage.googleapis.com/v0/b/"
+  //       "$bucket/o?name=$encodedPath";
+  // }
 
   void deleteImage(int index) {
     setState(() {
@@ -2419,25 +2306,39 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       if (raw != null) {
         try {
           DateTime? dt;
+          dynamic decoded = raw;
 
-          // Check if it's a Map (Firestore timestamp)
-          if (raw is Map && raw.containsKey("_seconds")) {
-            final sec = raw["_seconds"];
+          // 🔥 STEP 1: Decode if JSON string
+          if (decoded is String &&
+              decoded.trim().startsWith("{") &&
+              decoded.trim().endsWith("}")) {
+            decoded = jsonDecode(decoded);
+          }
+
+          // 🔥 STEP 2: Handle nested {"value":"{...}"}
+          if (decoded is Map &&
+              decoded["value"] is String &&
+              decoded["value"].toString().trim().startsWith("{")) {
+            decoded["value"] = jsonDecode(decoded["value"]);
+          }
+
+          // 🔥 STEP 3: Extract inner ISO value
+          if (decoded is Map && decoded["value"] is Map) {
+            final isoString = decoded["value"]["value"];
+            if (isoString != null) {
+              dt = DateTime.tryParse(isoString);
+            }
+          }
+
+          // 🔥 STEP 4: Firestore timestamp fallback
+          else if (decoded is Map && decoded.containsKey("_seconds")) {
+            final sec = decoded["_seconds"];
             dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
           }
-          // Check if it's a string
-          else if (raw is String) {
-            // Check for Firestore timestamp string
-            if (raw.contains("_seconds")) {
-              final match = RegExp(r'_seconds[\s:]*(\d+)').firstMatch(raw);
-              if (match != null) {
-                final sec = int.parse(match.group(1)!);
-                dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
-              }
-            } else {
-              // Try to parse as ISO string
-              dt = DateTime.tryParse(raw);
-            }
+
+          // 🔥 STEP 5: Direct ISO string fallback
+          else if (decoded is String) {
+            dt = DateTime.tryParse(decoded);
           }
 
           if (dt != null) {
@@ -2447,7 +2348,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
 
-              // Format for display (dd/MM/yyyy hh:mm a)
               timestampController.text =
                   "${selectedTimestampDate!.day.toString().padLeft(2, '0')}/"
                   "${selectedTimestampDate!.month.toString().padLeft(2, '0')}/"
@@ -2570,7 +2470,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                 "timestamp") ...[
               GestureDetector(
                 onTap: () async {
-                  // -------- PICK DATE FIRST --------
                   DateTime? pickedDate = await showDatePicker(
                     context: context,
                     initialDate: selectedTimestampDate ?? DateTime.now(),
@@ -2659,52 +2558,88 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                 SizedBox(width: 2),
                 GestureDetector(
                   onTap: () {
-                    // Check if selectedImageData is not null before accessing its 'url' field
-                    if (selectedImageData != null &&
-                        selectedImageData!['url'] != null) {
-                      String existingImageUrl = selectedImageData!['url'] ?? '';
+                    final existingImageUrl =
+                        selectedImageData?['url']?.toString() ?? '';
 
-                      if (existingImageUrl.isNotEmpty) {
-                        // Call the addImage method and pass the existing image URL
-                        addImage(context, existingImageUrl);
-                      } else {
-                        // Handle case where the URL is empty
-                        addImage(context, existingImageUrl);
-                        print("No image URL to send");
-                      }
-                    } else {
-                      // Handle case where selectedImageData is null or URL is not available
+                    if (existingImageUrl.isEmpty) {
                       print("No image data available");
-                      addImage(context,
-                          ''); // Send an empty string or appropriate fallback data
                     }
-                  },
 
-                  // onTap: addImage,
+                    addImage(context, existingImageUrl);
+                  },
                   child: Container(
-                    padding: EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(5),
                     width: MediaQuery.of(context).size.width / 4,
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(5),
                       border: Border.all(width: 0.8, color: Colors.white38),
                     ),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add, color: Colors.blueAccent, size: 22),
-                          SizedBox(width: 6),
-                          Text("Upload",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14)),
-                        ],
-                      ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, color: Colors.blueAccent, size: 22),
+                        SizedBox(width: 6),
+                        Text(
+                          "Upload",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                // GestureDetector(
+                //   onTap: () {
+                //     // Check if selectedImageData is not null before accessing its 'url' field
+                //     if (selectedImageData != null &&
+                //         selectedImageData!['url'] != null) {
+                //       String existingImageUrl = selectedImageData!['url'] ?? '';
+                //
+                //       if (existingImageUrl.isNotEmpty) {
+                //         // Call the addImage method and pass the existing image URL
+                //         addImage(context, existingImageUrl);
+                //       } else {
+                //         // Handle case where the URL is empty
+                //         addImage(context, existingImageUrl);
+                //         print("No image URL to send");
+                //       }
+                //     } else {
+                //       // Handle case where selectedImageData is null or URL is not available
+                //       print("No image data available");
+                //       addImage(context,
+                //           ''); // Send an empty string or appropriate fallback data
+                //     }
+                //   },
+                //
+                //   // onTap: addImage,
+                //   child: Container(
+                //     padding: EdgeInsets.all(5),
+                //     width: MediaQuery.of(context).size.width / 4,
+                //     decoration: BoxDecoration(
+                //       color: Colors.transparent,
+                //       borderRadius: BorderRadius.circular(5),
+                //       border: Border.all(width: 0.8, color: Colors.white38),
+                //     ),
+                //     child: Center(
+                //       child: Row(
+                //         mainAxisAlignment: MainAxisAlignment.center,
+                //         children: [
+                //           Icon(Icons.add, color: Colors.blueAccent, size: 22),
+                //           SizedBox(width: 6),
+                //           Text("Upload",
+                //               style: TextStyle(
+                //                   color: Colors.white,
+                //                   fontWeight: FontWeight.bold,
+                //                   fontSize: 14)),
+                //         ],
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
             // SizedBox(height: 16),
@@ -2834,46 +2769,95 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                             if (_isDeletingImage) return;
 
                                             setState(() {
-                                              _isDeletingImage =
-                                                  true; // show loader
+                                              _isDeletingImage = true;
                                             });
 
                                             final provider = Provider.of<
-                                                    SubaccountParameterProvider>(
-                                                context,
-                                                listen: false);
+                                                SubaccountParameterProvider>(
+                                              context,
+                                              listen: false,
+                                            );
                                             final locationListProvider =
                                                 Provider.of<
-                                                        MyLocationListProvider>(
-                                                    context,
-                                                    listen: false);
+                                                    MyLocationListProvider>(
+                                              context,
+                                              listen: false,
+                                            );
 
-                                            // Extract URL
+                                            // ── Extract the clicked image URL ──
                                             final rawUrl =
                                                 selectedImageData?['url'];
                                             String imageUrl = "";
-
                                             if (rawUrl is String)
                                               imageUrl = rawUrl;
-                                            if (rawUrl is List &&
+                                            else if (rawUrl is List &&
                                                 rawUrl.isNotEmpty)
                                               imageUrl = rawUrl.first;
 
+                                            // ── Extract Firebase storage path from URL ──
+                                            // Firebase URL: .../o/uploads%2F1772...-filename.png?alt=media&token=xxx
+                                            // We need: "uploads/1772...-filename.png"
+                                            String storageName = "";
+                                            try {
+                                              final uri = Uri.parse(imageUrl);
+                                              final encodedPath = uri
+                                                  .pathSegments
+                                                  .last; // "uploads%2F1772...-filename.png"
+                                              storageName = Uri.decodeComponent(
+                                                  encodedPath); // "uploads/1772...-filename.png"
+                                            } catch (e) {
+                                              storageName =
+                                                  selectedImageData?['name'] ??
+                                                      'Unknown';
+                                              print(
+                                                  "⚠️ storageName fallback: $e");
+                                            }
+
+                                            // ── Extract uploadedBy (filename only, not full path) ──
+                                            // Web sends: "Screenshot 2026-02-12 at 10.48.21 AM-4ABC.PNG"
+                                            // i.e. just the filename portion after the timestamp prefix
+                                            String uploadedBy = "";
+                                            try {
+                                              // storageName = "uploads/1772...-filename.png"
+                                              // Split on first "-" after timestamp to get original filename
+                                              final filenameFull = storageName
+                                                  .split('/')
+                                                  .last; // "1772...-filename.png"
+                                              final dashIndex =
+                                                  filenameFull.indexOf('-');
+                                              uploadedBy = dashIndex != -1
+                                                  ? filenameFull.substring(
+                                                      dashIndex +
+                                                          1) // "filename.png"
+                                                  : filenameFull;
+                                            } catch (e) {
+                                              uploadedBy =
+                                                  storageName.split('/').last;
+                                            }
+
+                                            // ✅ Match web payload EXACTLY — only this one image
                                             final Map<String, dynamic>
                                                 imageObject = {
                                               "url": [imageUrl],
+                                              // ✅ list with single URL
                                               "tags":
                                                   selectedImageData?['tags'] ??
                                                       [],
                                               "size":
                                                   selectedImageData?['size'] ??
                                                       0,
+                                              "name": uploadedBy,
+                                              // ✅ "uploads/1772...-filename.png"
+                                              "uploadedBy": "",
+                                              // ✅ "filename.png" (just the name)
                                             };
 
-                                            // ❌ DO NOT CLEAR UI HERE (this causes expansion collapse)
+                                            print(
+                                                "🗑️ DELETE imageObject: ${jsonEncode(imageObject)}");
 
-                                            // 2️⃣ DELETE API
-                                            await provider.deleteParameterImage(
+                                            // ── Call DELETE API (NOT submitParameterUpdate) ──
+                                            final success = await provider
+                                                .deleteParameterImage(
                                               context: context,
                                               selectedParameterList:
                                                   widget.selectedParameterList,
@@ -2883,85 +2867,104 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                               subaccountId: widget.subAccountId,
                                               parameterId:
                                                   widget.result.dataCategoryId!,
-                                              imageObject: imageObject,
+                                              imageObject:
+                                                  imageObject, // ✅ single image object
                                             );
 
-                                            // 3️⃣ REFRESH LIST
-                                            _userEditedFields.clear();
-                                            await locationListProvider
-                                                .fetchLocationList(
-                                              context,
-                                              "",
-                                              1,
-                                              5,
-                                              widget.accountId,
-                                              widget.subAccountId,
-                                              "",
-                                              "",
-                                              widget.sovId,
-                                            );
+                                            if (success) {
+                                              // ── Remove deleted image from local references ──
+                                              setState(() {
+                                                references =
+                                                    references?.where((ref) {
+                                                  final urls = ref.url ?? [];
+                                                  return !urls
+                                                      .contains(imageUrl);
+                                                }).toList();
 
-                                            if (widget.onRefresh != null) {
-                                              await widget.onRefresh!();
+                                                selectedImageData = null;
+                                                _isDeletingImage = false;
+                                              });
+
+                                              _userEditedFields.clear();
+
+                                              await locationListProvider
+                                                  .fetchLocationList(
+                                                context,
+                                                "",
+                                                1,
+                                                5,
+                                                widget.accountId,
+                                                widget.subAccountId,
+                                                "",
+                                                "",
+                                                widget.sovId,
+                                              );
+
+                                              if (widget.onRefresh != null) {
+                                                await widget.onRefresh!();
+                                              }
+                                            } else {
+                                              setState(() {
+                                                _isDeletingImage = false;
+                                              });
                                             }
-
-                                            // 4️⃣ NOW SAFE TO CLEAR (after rebuild)
-                                            setState(() {
-                                              selectedImageData = null;
-                                              _isDeletingImage = false;
-                                            });
                                           },
-
                                           // onTap: () async {
-                                          //   if (_isDeletingImage)
-                                          //     return; // prevent double tap
+                                          //   if (_isDeletingImage) return;
                                           //
                                           //   setState(() {
-                                          //     _isDeletingImage =
-                                          //         true; // show loader
+                                          //     _isDeletingImage = true;
                                           //   });
                                           //
                                           //   final provider = Provider.of<
-                                          //           SubaccountParameterProvider>(
-                                          //       context,
-                                          //       listen: false);
+                                          //       SubaccountParameterProvider>(
+                                          //     context,
+                                          //     listen: false,
+                                          //   );
+                                          //
                                           //   final locationListProvider =
                                           //       Provider.of<
-                                          //               MyLocationListProvider>(
-                                          //           context,
-                                          //           listen: false);
+                                          //           MyLocationListProvider>(
+                                          //     context,
+                                          //     listen: false,
+                                          //   );
                                           //
                                           //   final rawUrl =
                                           //       selectedImageData?['url'];
                                           //   String imageUrl = "";
                                           //
-                                          //   if (rawUrl is String)
+                                          //   if (rawUrl is String) {
                                           //     imageUrl = rawUrl;
-                                          //   if (rawUrl is List &&
-                                          //       rawUrl.isNotEmpty)
+                                          //   } else if (rawUrl is List &&
+                                          //       rawUrl.isNotEmpty) {
                                           //     imageUrl = rawUrl.first;
+                                          //   }
                                           //
-                                          //   final Map<String, dynamic>
-                                          //       imageObject = {
-                                          //     "url": [imageUrl],
-                                          //     "tags":
-                                          //         selectedImageData?['tags'] ??
-                                          //             [],
-                                          //     // "name": selectedImageData?[
-                                          //     //         'name'] ??
-                                          //     //     'Unknown',
-                                          //     "size":
-                                          //         selectedImageData?['size'] ??
-                                          //             0,
-                                          //   };
+                                          //   final List<Map<String, dynamic>>
+                                          //       updatedReferences =
+                                          //       (references ?? [])
+                                          //           .where((ref) =>
+                                          //               !(ref.url ?? [])
+                                          //                   .contains(imageUrl))
+                                          //           .map<Map<String, dynamic>>(
+                                          //               (ref) {
+                                          //     return {
+                                          //       "url": List<String>.from(
+                                          //           ref.url ?? []),
+                                          //       "tags": List<dynamic>.from(
+                                          //           ref.tags ?? []),
+                                          //       "size": ref.size ?? 0,
+                                          //       "name": ref.name ?? "",
+                                          //       "uploadedBy": (ref.uploadedBy ==
+                                          //                   null ||
+                                          //               ref.uploadedBy!.isEmpty)
+                                          //           ? ref.name ?? ""
+                                          //           : ref.uploadedBy,
+                                          //     };
+                                          //   }).toList();
                                           //
-                                          //   // 1️⃣ CLEAR PREVIEW
-                                          //   setState(() {
-                                          //     selectedImageData = null;
-                                          //   });
-                                          //
-                                          //   // 2️⃣ CALL DELETE API
-                                          //   await provider.deleteParameterImage(
+                                          //   final success = await provider
+                                          //       .deleteParameterImage(
                                           //     context: context,
                                           //     selectedParameterList:
                                           //         widget.selectedParameterList,
@@ -2971,35 +2974,49 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                           //     subaccountId: widget.subAccountId,
                                           //     parameterId:
                                           //         widget.result.dataCategoryId!,
-                                          //     imageObject: imageObject,
+                                          //     updatedReferences:
+                                          //         updatedReferences, // 👈 send FULL LIST
                                           //   );
                                           //
-                                          //   // 3️⃣ REFRESH PAGE
-                                          //   _userEditedFields.clear();
-                                          //   await locationListProvider
-                                          //       .fetchLocationList(
-                                          //     context,
-                                          //     "",
-                                          //     1,
-                                          //     5,
-                                          //     widget.accountId,
-                                          //     widget.subAccountId,
-                                          //     "",
-                                          //     "",
-                                          //     widget.sovId,
-                                          //   );
+                                          //   if (success) {
+                                          //     setState(() {
+                                          //       references =
+                                          //           references?.where((ref) {
+                                          //         final urls = ref.url ?? [];
+                                          //         return !urls
+                                          //             .contains(imageUrl);
+                                          //       }).toList();
                                           //
-                                          //   if (widget.onRefresh != null) {
-                                          //     await widget.onRefresh!();
+                                          //       selectedImageData = null;
+                                          //       _isDeletingImage = false;
+                                          //     });
+                                          //
+                                          //     _userEditedFields.clear();
+                                          //
+                                          //     await locationListProvider
+                                          //         .fetchLocationList(
+                                          //       context,
+                                          //       "",
+                                          //       1,
+                                          //       5,
+                                          //       widget.accountId,
+                                          //       widget.subAccountId,
+                                          //       "",
+                                          //       "",
+                                          //       widget.sovId,
+                                          //     );
+                                          //
+                                          //     if (widget.onRefresh != null) {
+                                          //       await widget.onRefresh!();
+                                          //     }
+                                          //   } else {
+                                          //     setState(() {
+                                          //       _isDeletingImage = false;
+                                          //     });
                                           //   }
-                                          //
-                                          //   // 4️⃣ HIDE LOADER
-                                          //   setState(() {
-                                          //     _isDeletingImage = false;
-                                          //   });
                                           // },
                                           child: _isDeletingImage
-                                              ? SizedBox(
+                                              ? const SizedBox(
                                                   height: 20,
                                                   width: 20,
                                                   child:
@@ -3009,21 +3026,151 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                   ),
                                                 )
                                               : Container(
-                                                  decoration: BoxDecoration(
+                                                  decoration:
+                                                      const BoxDecoration(
                                                     shape: BoxShape.circle,
                                                     color: Colors.white,
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                          color: Colors.black26,
-                                                          blurRadius: 2),
-                                                    ],
                                                   ),
-                                                  padding: EdgeInsets.all(3),
-                                                  child: Icon(Icons.close,
-                                                      color: Colors.red),
+                                                  padding:
+                                                      const EdgeInsets.all(3),
+                                                  child: const Icon(
+                                                    Icons.delete,
+                                                    color: Colors.red,
+                                                  ),
                                                 ),
                                         ),
                                       ),
+                                    // Positioned(
+                                    //   top: 1,
+                                    //   right: 1,
+                                    //   child: InkWell(
+                                    //     onTap: () async {
+                                    //       if (_isDeletingImage) return;
+                                    //
+                                    //       setState(() {
+                                    //         _isDeletingImage =
+                                    //             true; // show loader
+                                    //       });
+                                    //
+                                    //       final provider = Provider.of<
+                                    //               SubaccountParameterProvider>(
+                                    //           context,
+                                    //           listen: false);
+                                    //       final locationListProvider =
+                                    //           Provider.of<
+                                    //                   MyLocationListProvider>(
+                                    //               context,
+                                    //               listen: false);
+                                    //
+                                    //       // Extract URL
+                                    //       final rawUrl =
+                                    //           selectedImageData?['url'];
+                                    //       String imageUrl = "";
+                                    //
+                                    //       if (rawUrl is String)
+                                    //         imageUrl = rawUrl;
+                                    //       if (rawUrl is List &&
+                                    //           rawUrl.isNotEmpty)
+                                    //         imageUrl = rawUrl.first;
+                                    //
+                                    //       final Map<String, dynamic>
+                                    //           imageObject = {
+                                    //         "url": [imageUrl],
+                                    //         "tags":
+                                    //             selectedImageData?['tags'] ??
+                                    //                 [],
+                                    //         "size":
+                                    //             selectedImageData?['size'] ??
+                                    //                 0,
+                                    //         "name":
+                                    //             selectedImageData?['name'] ??
+                                    //                 'Unknown',
+                                    //         "uploadedBy": selectedImageData?[
+                                    //                 'uploadedBy'] ??
+                                    //             'Unknown',
+                                    //       };
+                                    //
+                                    //       // ❌ DO NOT CLEAR UI HERE (this causes expansion collapse)
+                                    //
+                                    //       // 2️⃣ DELETE API
+                                    //       await provider.deleteParameterImage(
+                                    //           context: context,
+                                    //           selectedParameterList: widget
+                                    //               .selectedParameterList,
+                                    //           locationId: widget.locationId,
+                                    //           sovId: widget.sovId,
+                                    //           campusId: widget.campusId,
+                                    //           subaccountId:
+                                    //               widget.subAccountId,
+                                    //           parameterId: widget
+                                    //               .result.dataCategoryId!,
+                                    //           imageObject: imageObject);
+                                    //
+                                    //       // await provider.deleteParameterImage(
+                                    //       //   context: context,
+                                    //       //   selectedParameterList:
+                                    //       //       widget.selectedParameterList,
+                                    //       //   locationId: widget.locationId,
+                                    //       //   sovId: widget.sovId,
+                                    //       //   campusId: widget.campusId,
+                                    //       //   subaccountId: widget.subAccountId,
+                                    //       //   parameterId:
+                                    //       //       widget.result.dataCategoryId!,
+                                    //       //   imageObject: imageObject,
+                                    //       // );
+                                    //
+                                    //       // 3️⃣ REFRESH LIST
+                                    //       _userEditedFields.clear();
+                                    //       await locationListProvider
+                                    //           .fetchLocationList(
+                                    //         context,
+                                    //         "",
+                                    //         1,
+                                    //         5,
+                                    //         widget.accountId,
+                                    //         widget.subAccountId,
+                                    //         "",
+                                    //         "",
+                                    //         widget.sovId,
+                                    //       );
+                                    //
+                                    //       if (widget.onRefresh != null) {
+                                    //         await widget.onRefresh!();
+                                    //       }
+                                    //
+                                    //       // 4️⃣ NOW SAFE TO CLEAR (after rebuild)
+                                    //       setState(() {
+                                    //         selectedImageData = null;
+                                    //         _isDeletingImage = false;
+                                    //       });
+                                    //     },
+                                    //
+                                    //     child: _isDeletingImage
+                                    //         ? SizedBox(
+                                    //             height: 20,
+                                    //             width: 20,
+                                    //             child:
+                                    //                 CircularProgressIndicator(
+                                    //               strokeWidth: 2,
+                                    //               color: Colors.red,
+                                    //             ),
+                                    //           )
+                                    //         : Container(
+                                    //             decoration: BoxDecoration(
+                                    //               shape: BoxShape.circle,
+                                    //               color: Colors.white,
+                                    //               boxShadow: [
+                                    //                 BoxShadow(
+                                    //                     color: Colors.black26,
+                                    //                     blurRadius: 2),
+                                    //               ],
+                                    //             ),
+                                    //             padding: EdgeInsets.all(3),
+                                    //             child: Icon(Icons.deblur_outlined,
+                                    //                 color: Colors.red),
+                                    //           ),
+                                    //   ),
+                                    // ),
                                   ],
                                 ),
 
@@ -3051,7 +3198,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                         FontWeight.bold)),
                                             Text(selectedImageData?['dateTime']
                                                     ?.toString() ??
-                                                ''),
+                                                'NA'),
                                           ],
                                         )
                                       : SizedBox.shrink(),
@@ -3110,70 +3257,75 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                               final imgData = flattenedImages[i];
                               final refIndex = imgData['refIndex'] as int;
                               final imgIndex = imgData['imgIndex'] as int;
-                              final url = imgData['url'] as String;
 
-                              final isImage =
-                                  url.toLowerCase().contains(".jpg") ||
-                                      url.toLowerCase().contains(".jpeg") ||
-                                      url.toLowerCase().contains(".png");
+                              final String? url = imgData['url']?.toString();
+
+                              // 🔥 SAFE URL STRING
+                              final String safeUrl = (url ?? "").trim();
+                              final String lowerUrl = safeUrl.toLowerCase();
+
+                              final bool isImage = lowerUrl.endsWith(".jpg") ||
+                                  lowerUrl.endsWith(".jpeg") ||
+                                  lowerUrl.endsWith(".png");
+
+                              // 🔥 If URL is null or empty → show placeholder box
+                              if (safeUrl.isEmpty) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.grey.shade800,
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image,
+                                        color: Colors.white54),
+                                  ),
+                                );
+                              }
 
                               return Stack(
                                 children: [
                                   GestureDetector(
                                     onTap: () {
                                       final int? timestamp = widget.result
-                                          .parameterValue!.updatedAt?.iSeconds ?? 1;
-                                      final dateTime =
-                                          DateTime.fromMillisecondsSinceEpoch(
-                                              timestamp! * 1000);
-                                      final formattedDate =
-                                          DateFormat('dd/MM/yyyy HH:mm:ss')
-                                              .format(dateTime);
+                                          .parameterValue?.updatedAt?.iSeconds;
+
+                                      final formattedDate = timestamp != null
+                                          ? DateFormat('dd/MM/yyyy HH:mm:ss')
+                                              .format(DateTime
+                                                  .fromMillisecondsSinceEpoch(
+                                                      timestamp * 1000))
+                                          : "";
 
                                       setState(() {
                                         selectedImageData = {
-                                          'url': url,
+                                          'url': safeUrl,
                                           'uploadedBy':
-                                              references![refIndex].name,
-                                          'tags': references![refIndex].tags,
-                                          'size': references![refIndex].size,
+                                              references?[refIndex].name ?? "",
+                                          'tags':
+                                              references?[refIndex].tags ?? [],
+                                          'size':
+                                              references?[refIndex].size ?? 0,
                                           'dateTime': formattedDate,
                                         };
                                       });
-
-                                      // setState(() {
-                                      //   selectedImageUrl = url;
-                                      //   expandedCardsWithImage[0] = imgIndex;
-                                      //   selectedImageData = {
-                                      //     'url': url,
-                                      //     'uploadedBy':
-                                      //         references![refIndex].name,
-                                      //     'dateTime': formattedDate,
-                                      //     'tags': widget.result.parameterValue!
-                                      //         .reference!.first.tags,
-                                      //     'size': widget.result.parameterValue!
-                                      //         .reference!.first.size,
-                                      //     // 🔥 add this!
-                                      //   };
-                                      // });
                                     },
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: isImage
                                           ? CachedNetworkImage(
-                                              imageUrl: url,
-                                              width: 100,
-                                              height: 200,
+                                              imageUrl: safeUrl,
                                               fit: BoxFit.cover,
                                               placeholder: (context, url) =>
-                                                  CircularProgressIndicator(),
+                                                  const Center(
+                                                      child:
+                                                          CircularProgressIndicator()),
                                               errorWidget:
                                                   (context, url, error) =>
-                                                      Icon(Icons.broken_image),
+                                                      const Icon(
+                                                          Icons.broken_image),
                                             )
                                           : Container(
                                               color: Colors.grey.shade900,
-                                              width: double.infinity,
                                               padding: const EdgeInsets.all(8),
                                               child: Column(
                                                 mainAxisAlignment:
@@ -3187,7 +3339,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                   ),
                                                   const SizedBox(height: 8),
                                                   Text(
-                                                    getFileNameFromUrl(url),
+                                                    getFileNameFromUrl(safeUrl),
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -3202,99 +3354,202 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                             ),
                                     ),
                                   ),
-                                  // Positioned(
-                                  //   top: 4,
-                                  //   right: 4,
-                                  //   child: GestureDetector(
-                                  //     onTap: () async {
-                                  //       final provider = Provider.of<
-                                  //           SubaccountParameterProvider>(
-                                  //         context,
-                                  //         listen: false,
-                                  //       );
-                                  //       final locationListProvider =
-                                  //           Provider.of<MyLocationListProvider>(
-                                  //         context,
-                                  //         listen: false,
-                                  //       );
-                                  //       final rawUrl =
-                                  //           selectedImageData?['url'];
-                                  //       String imageUrl = "";
-                                  //
-                                  //       if (rawUrl is String) imageUrl = rawUrl;
-                                  //       if (rawUrl is List && rawUrl.isNotEmpty)
-                                  //         imageUrl = rawUrl.first;
-                                  //
-                                  //       /// Build image object required by backend
-                                  //       final Map<String, dynamic> imageObject =
-                                  //           {
-                                  //         "url": [imageUrl],
-                                  //         "tags":
-                                  //             selectedImageData?['tags'] ?? [],
-                                  //         "size":
-                                  //             selectedImageData?['size'] ?? 0,
-                                  //       };
-                                  //
-                                  //       // -------------------------
-                                  //       // 1️⃣ CLEAR PREVIEW FROM UI
-                                  //       // -------------------------
-                                  //       setState(() {
-                                  //         selectedImageData = null;
-                                  //       });
-                                  //
-                                  //       // -------------------------
-                                  //       // 2️⃣ CALL DELETE API
-                                  //       // -------------------------
-                                  //       await provider.deleteParameterImage(
-                                  //         context: context,
-                                  //         selectedParameterList:
-                                  //             widget.selectedParameterList,
-                                  //         locationId: widget.locationId,
-                                  //         sovId: widget.sovId,
-                                  //         campusId: widget.campusId,
-                                  //         subaccountId: widget.subAccountId,
-                                  //         parameterId:
-                                  //             widget.result.dataCategoryId!,
-                                  //         imageObject: imageObject,
-                                  //       );
-                                  //
-                                  //       // -------------------------
-                                  //       // 3️⃣ REFRESH AFTER DELETE
-                                  //       // -------------------------
-                                  //       await Provider.of<
-                                  //                   MyLocationListProvider>(
-                                  //               context,
-                                  //               listen: false)
-                                  //           .fetchLocationList(
-                                  //               context,
-                                  //               "",
-                                  //               1,
-                                  //               10,
-                                  //               widget.accountId,
-                                  //               widget.subAccountId,
-                                  //               "",
-                                  //               "",
-                                  //               '');
-                                  //     },
-                                  //     child: Container(
-                                  //       decoration: BoxDecoration(
-                                  //         shape: BoxShape.circle,
-                                  //         color: Colors.white,
-                                  //         boxShadow: [
-                                  //           BoxShadow(
-                                  //               color: Colors.black26,
-                                  //               blurRadius: 2),
-                                  //         ],
-                                  //       ),
-                                  //       padding: EdgeInsets.all(4),
-                                  //       child: Icon(Icons.delete,
-                                  //           size: 16, color: Colors.red),
-                                  //     ),
-                                  //   ),
-                                  // ),
                                 ],
                               );
                             },
+                            // itemBuilder: (context, i) {
+                            //   final imgData = flattenedImages[i];
+                            //   final refIndex = imgData['refIndex'] as int;
+                            //   final imgIndex = imgData['imgIndex'] as int;
+                            //   final url = imgData['url'];
+                            //
+                            //   final isImage =
+                            //       url.toLowerCase().contains(".jpg") ||
+                            //           url.toLowerCase().contains(".jpeg") ||
+                            //           url.toLowerCase().contains(".png");
+                            //
+                            //   return Stack(
+                            //     children: [
+                            //       GestureDetector(
+                            //         onTap: () {
+                            //           final int? timestamp = widget
+                            //                   .result
+                            //                   .parameterValue!
+                            //                   .updatedAt
+                            //                   ?.iSeconds ??
+                            //               1;
+                            //           final dateTime =
+                            //               DateTime.fromMillisecondsSinceEpoch(
+                            //                   timestamp! * 1000);
+                            //           final formattedDate =
+                            //               DateFormat('dd/MM/yyyy HH:mm:ss')
+                            //                   .format(dateTime);
+                            //
+                            //           setState(() {
+                            //             selectedImageData = {
+                            //               'url': url,
+                            //               'uploadedBy':
+                            //                   references![refIndex].name,
+                            //               'tags': references![refIndex].tags,
+                            //               'size': references![refIndex].size,
+                            //               'dateTime': formattedDate,
+                            //             };
+                            //           });
+                            //
+                            //           // setState(() {
+                            //           //   selectedImageUrl = url;
+                            //           //   expandedCardsWithImage[0] = imgIndex;
+                            //           //   selectedImageData = {
+                            //           //     'url': url,
+                            //           //     'uploadedBy':
+                            //           //         references![refIndex].name,
+                            //           //     'dateTime': formattedDate,
+                            //           //     'tags': widget.result.parameterValue!
+                            //           //         .reference!.first.tags,
+                            //           //     'size': widget.result.parameterValue!
+                            //           //         .reference!.first.size,
+                            //
+                            //           //   };
+                            //           // });
+                            //         },
+                            //         child: ClipRRect(
+                            //           borderRadius: BorderRadius.circular(8),
+                            //           child: isImage
+                            //               ? CachedNetworkImage(
+                            //                   imageUrl: url,
+                            //                   width: 100,
+                            //                   height: 200,
+                            //                   fit: BoxFit.cover,
+                            //                   placeholder: (context, url) =>
+                            //                       CircularProgressIndicator(),
+                            //                   errorWidget:
+                            //                       (context, url, error) =>
+                            //                           Icon(Icons.broken_image),
+                            //                 )
+                            //               : Container(
+                            //                   color: Colors.grey.shade900,
+                            //                   width: double.infinity,
+                            //                   padding: const EdgeInsets.all(8),
+                            //                   child: Column(
+                            //                     mainAxisAlignment:
+                            //                         MainAxisAlignment.center,
+                            //                     children: [
+                            //                       SvgPicture.asset(
+                            //                         'assets/images/files.svg',
+                            //                         color: Colors.white54,
+                            //                         width: 30,
+                            //                         height: 30,
+                            //                       ),
+                            //                       const SizedBox(height: 8),
+                            //                       Text(
+                            //                         getFileNameFromUrl(url),
+                            //                         maxLines: 1,
+                            //                         overflow:
+                            //                             TextOverflow.ellipsis,
+                            //                         textAlign: TextAlign.center,
+                            //                         style: const TextStyle(
+                            //                           color: Colors.white70,
+                            //                           fontSize: 14,
+                            //                         ),
+                            //                       ),
+                            //                     ],
+                            //                   ),
+                            //                 ),
+                            //         ),
+                            //       ),
+                            //       // Positioned(
+                            //       //   top: 4,
+                            //       //   right: 4,
+                            //       //   child: GestureDetector(
+                            //       //     onTap: () async {
+                            //       //       final provider = Provider.of<
+                            //       //           SubaccountParameterProvider>(
+                            //       //         context,
+                            //       //         listen: false,
+                            //       //       );
+                            //       //       final locationListProvider =
+                            //       //           Provider.of<MyLocationListProvider>(
+                            //       //         context,
+                            //       //         listen: false,
+                            //       //       );
+                            //       //       final rawUrl =
+                            //       //           selectedImageData?['url'];
+                            //       //       String imageUrl = "";
+                            //       //
+                            //       //       if (rawUrl is String) imageUrl = rawUrl;
+                            //       //       if (rawUrl is List && rawUrl.isNotEmpty)
+                            //       //         imageUrl = rawUrl.first;
+                            //       //
+                            //       //       /// Build image object required by backend
+                            //       //       final Map<String, dynamic> imageObject =
+                            //       //           {
+                            //       //         "url": [imageUrl],
+                            //       //         "tags":
+                            //       //             selectedImageData?['tags'] ?? [],
+                            //       //         "size":
+                            //       //             selectedImageData?['size'] ?? 0,
+                            //       //       };
+                            //       //
+                            //       //       // -------------------------
+                            //       //       // 1️⃣ CLEAR PREVIEW FROM UI
+                            //       //       // -------------------------
+                            //       //       setState(() {
+                            //       //         selectedImageData = null;
+                            //       //       });
+                            //       //
+                            //       //       // -------------------------
+                            //       //       // 2️⃣ CALL DELETE API
+                            //       //       // -------------------------
+                            //       //       await provider.deleteParameterImage(
+                            //       //         context: context,
+                            //       //         selectedParameterList:
+                            //       //             widget.selectedParameterList,
+                            //       //         locationId: widget.locationId,
+                            //       //         sovId: widget.sovId,
+                            //       //         campusId: widget.campusId,
+                            //       //         subaccountId: widget.subAccountId,
+                            //       //         parameterId:
+                            //       //             widget.result.dataCategoryId!,
+                            //       //         imageObject: imageObject,
+                            //       //       );
+                            //       //
+                            //       //       // -------------------------
+                            //       //       // 3️⃣ REFRESH AFTER DELETE
+                            //       //       // -------------------------
+                            //       //       await Provider.of<
+                            //       //                   MyLocationListProvider>(
+                            //       //               context,
+                            //       //               listen: false)
+                            //       //           .fetchLocationList(
+                            //       //               context,
+                            //       //               "",
+                            //       //               1,
+                            //       //               10,
+                            //       //               widget.accountId,
+                            //       //               widget.subAccountId,
+                            //       //               "",
+                            //       //               "",
+                            //       //               '');
+                            //       //     },
+                            //       //     child: Container(
+                            //       //       decoration: BoxDecoration(
+                            //       //         shape: BoxShape.circle,
+                            //       //         color: Colors.white,
+                            //       //         boxShadow: [
+                            //       //           BoxShadow(
+                            //       //               color: Colors.black26,
+                            //       //               blurRadius: 2),
+                            //       //         ],
+                            //       //       ),
+                            //       //       padding: EdgeInsets.all(4),
+                            //       //       child: Icon(Icons.delete,
+                            //       //           size: 16, color: Colors.red),
+                            //       //     ),
+                            //       //   ),
+                            //       // ),
+                            //     ],
+                            //   );
+                            // },
                           ),
                         ],
                       );
@@ -3541,57 +3796,475 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
   Widget _buildTextFormField(_FieldConfig config) {
     final rv = widget.result.parameterValue?.value;
-    // Pass the field name to extract the correct value
-    final cleaned = _extractCleanValue(rv, config.label);
-    final fieldKey = config.label; // Use label as unique identifier
+    final cleaned = _extractCleanValue(rv, config.label) ?? "";
+    final fieldKey = config.label;
 
-    // -------- CASE: multi-field JSON --------
-    if (_isJsonObject(cleaned)) {
-      final map = jsonDecode(cleaned) as Map<String, dynamic>;
-      final children = map.entries.map<Widget>((e) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: TextFormField(
-            controller: TextEditingController(text: e.value.toString()),
-            decoration: InputDecoration(
-              labelText: e.key,
-              border: OutlineInputBorder(),
-            ),
+    final paramType =
+        widget.result.parameterValue?.paramType?.toLowerCase() ?? "";
+
+    final isIntType = paramType == "int";
+    final isNumType = paramType == "number";
+
+    /// ---------------------------------------------------
+    /// CASE: Value comes like:
+    /// {value: 121, unit: , value_a: , value_b: , currency: , valuation_date: }
+    /// ---------------------------------------------------
+    if (cleaned.contains("value:")) {
+      final match = RegExp(r'value:\s*([^,}]+)').firstMatch(cleaned);
+
+      if (match != null) {
+        final extractedValue = match.group(1)?.trim() ?? "";
+
+        // ✅ Only set controller text if user hasn't edited this field
+        if (!_userEditedFields.contains(fieldKey)) {
+          config.controller.text = extractedValue;
+        }
+
+        return TextFormField(
+          controller: config.controller,
+          keyboardType: (isIntType || isNumType)
+              ? const TextInputType.numberWithOptions(decimal: true)
+              : config.keyboardType,
+          inputFormatters: isIntType
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : isNumType
+                  ? [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d*'),
+                      )
+                    ]
+                  : null,
+          decoration: InputDecoration(
+            labelText: config.label,
+            border: const OutlineInputBorder(),
           ),
+          onChanged: (value) {
+            // ✅ Mark field as user-edited so rebuilds don't reset it
+            if (!_userEditedFields.contains(fieldKey)) {
+              setState(() {
+                _userEditedFields.add(fieldKey);
+              });
+            }
+          },
         );
-      }).toList();
-      return Column(
-        children: children,
-      );
+      }
     }
 
-    // -------- CASE: simple field --------
-    // Initialize the controller value only once when widget is built
-    // if (!config.isInitialized) {
-    //   config.controller.text = cleaned;
-    //   config.isInitialized = true;
-    // }
+    /// ---------------------------------------------------
+    /// NORMAL SIMPLE FIELD
+    /// ---------------------------------------------------
+    if (!_userEditedFields.contains(fieldKey)) {
+      config.controller.text = cleaned;
+    }
 
     return TextFormField(
       controller: config.controller,
       readOnly: config.isDateField,
-      keyboardType: config.keyboardType,
-      maxLines: 1,
+      keyboardType: (isIntType || isNumType)
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : config.keyboardType,
+      inputFormatters: isIntType
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : isNumType
+              ? [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'^\d*\.?\d*'),
+                  )
+                ]
+              : null,
       decoration: InputDecoration(
         labelText: config.label,
-        border: OutlineInputBorder(),
+        border: const OutlineInputBorder(),
       ),
       onChanged: (value) {
-        // Mark this field as edited by user
         if (!_userEditedFields.contains(fieldKey)) {
           setState(() {
             _userEditedFields.add(fieldKey);
           });
         }
-        print("User typed: $value for field: $fieldKey");
       },
     );
   }
+
+  // Widget _buildTextFormField(_FieldConfig config) {
+  //   final rv = widget.result.parameterValue?.value;
+  //   final cleaned = _extractCleanValue(rv, config.label) ?? "";
+  //   final fieldKey = config.label;
+  //
+  //   final paramType =
+  //       widget.result.parameterValue?.paramType?.toLowerCase() ?? "";
+  //
+  //   final isIntType = paramType == "int";
+  //   final isNumType = paramType == "number";
+  //
+  //   /// ---------------------------------------------------
+  //   /// CASE: Value comes like:
+  //   /// {value: 121, unit: , value_a: , value_b: , currency: , valuation_date: }
+  //   /// ---------------------------------------------------
+  //   if (cleaned.contains("value:")) {
+  //     final match = RegExp(r'value:\s*([^,}]+)').firstMatch(cleaned);
+  //
+  //     if (match != null) {
+  //       final extractedValue = match.group(1)?.trim() ?? "";
+  //
+  //       return TextFormField(
+  //         controller: config.controller..text = extractedValue,
+  //         keyboardType: (isIntType || isNumType)
+  //             ? const TextInputType.numberWithOptions(decimal: true)
+  //             : config.keyboardType,
+  //         inputFormatters: isIntType
+  //             ? [FilteringTextInputFormatter.digitsOnly]
+  //             : isNumType
+  //                 ? [
+  //                     FilteringTextInputFormatter.allow(
+  //                       RegExp(r'^\d*\.?\d*'),
+  //                     )
+  //                   ]
+  //                 : null,
+  //         decoration: InputDecoration(
+  //           labelText: config.label,
+  //           border: const OutlineInputBorder(),
+  //         ),
+  //       );
+  //     }
+  //   }
+  //
+  //   /// ---------------------------------------------------
+  //   /// NORMAL SIMPLE FIELD
+  //   /// ---------------------------------------------------
+  //   if (!_userEditedFields.contains(fieldKey)) {
+  //     config.controller.text = cleaned;
+  //   }
+  //
+  //   return TextFormField(
+  //     controller: config.controller,
+  //     readOnly: config.isDateField,
+  //     keyboardType: (isIntType || isNumType)
+  //         ? const TextInputType.numberWithOptions(decimal: true)
+  //         : config.keyboardType,
+  //     inputFormatters: isIntType
+  //         ? [FilteringTextInputFormatter.digitsOnly]
+  //         : isNumType
+  //             ? [
+  //                 FilteringTextInputFormatter.allow(
+  //                   RegExp(r'^\d*\.?\d*'),
+  //                 )
+  //               ]
+  //             : null,
+  //     decoration: InputDecoration(
+  //       labelText: config.label,
+  //       border: const OutlineInputBorder(),
+  //     ),
+  //     onChanged: (value) {
+  //       if (!_userEditedFields.contains(fieldKey)) {
+  //         setState(() {
+  //           _userEditedFields.add(fieldKey);
+  //         });
+  //       }
+  //     },
+  //   );
+  // }
+
+//old to new changes
+  // Widget _buildTextFormField(_FieldConfig config) {
+  //   final rv = widget.result.parameterValue?.value;
+  //   // Pass the field name to extract the correct value
+  //   final cleaned = _extractCleanValue(rv, config.label);
+  //   final fieldKey = config.label; // Use label as unique identifier
+  //
+  //   // -------- CASE: multi-field JSON --------
+  //   if (_isJsonObject(cleaned)) {
+  //     final map = jsonDecode(cleaned) as Map<String, dynamic>;
+  //     final children = map.entries.map<Widget>((e) {
+  //       return Padding(
+  //         padding: const EdgeInsets.only(bottom: 12.0),
+  //         child: TextFormField(
+  //           keyboardType:
+  //               widget.result.parameterValue?.value.toString().toLowerCase() ==
+  //                       "int"
+  //                   ? TextInputType.number
+  //                   : config.keyboardType,
+  //           inputFormatters: widget.result.parameterValue!.paramType == "int"
+  //               ? [FilteringTextInputFormatter.digitsOnly]
+  //               : null,
+  //           controller: TextEditingController(text: e.value.toString()),
+  //           decoration: InputDecoration(
+  //             labelText: e.key,
+  //             border: OutlineInputBorder(),
+  //           ),
+  //         ),
+  //       );
+  //     }).toList();
+  //     return Column(
+  //       children: children,
+  //     );
+  //   }
+  //
+  //   // -------- CASE: simple field --------
+  //   // Initialize the controller value only once when widget is built
+  //   // if (!config.isInitialized) {
+  //   //   config.controller.text = cleaned;
+  //   //   config.isInitialized = true;
+  //   // }
+  //   final paramType =
+  //       widget.result.parameterValue?.paramType?.toLowerCase() ?? "";
+  //   final isIntType = paramType.toLowerCase() == "int";
+  //   final isNumType = paramType.toLowerCase() == "number";
+  //   return
+  //       // Container(child: Text(widget.result.parameterValue!.paramType.toString()),);
+  //       TextFormField(
+  //     controller: config.controller,
+  //     readOnly: config.isDateField,
+  //     keyboardType: (isIntType || isNumType)
+  //         ? const TextInputType.numberWithOptions(decimal: true)
+  //         : config.keyboardType,
+  //     inputFormatters: isIntType
+  //         ? [FilteringTextInputFormatter.digitsOnly]
+  //         : isNumType
+  //             ? [
+  //                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+  //               ]
+  //             : null,
+  //     maxLines: 1,
+  //     decoration: InputDecoration(
+  //       labelText: config.label,
+  //       border: OutlineInputBorder(),
+  //     ),
+  //     onChanged: (value) {
+  //       if (!_userEditedFields.contains(fieldKey)) {
+  //         setState(() {
+  //           _userEditedFields.add(fieldKey);
+  //         });
+  //       }
+  //       print("User typed: $value for field: $fieldKey");
+  //     },
+  //   );
+  // }
+
+  // Widget _buildTextFormField(_FieldConfig config) {
+  //   final rawValue = widget.result.parameterValue?.value;
+  //
+  //   // if (rawValue == null || rawValue.isEmpty) {
+  //   //   return _normalField(config, "");
+  //   // }
+  //
+  //   Map<String, dynamic>? finalMap;
+  //
+  //   try {
+  //     dynamic decoded = rawValue;
+  //
+  //     // Step 1: Decode if string JSON
+  //     if (decoded is String &&
+  //         decoded.trim().startsWith("{") &&
+  //         decoded.trim().endsWith("}")) {
+  //       decoded = jsonDecode(decoded);
+  //     }
+  //
+  //     // Step 2: Handle nested {"value":"{...}"}
+  //     if (decoded is Map &&
+  //         decoded["value"] is String &&
+  //         decoded["value"].toString().trim().startsWith("{")) {
+  //       decoded["value"] = jsonDecode(decoded["value"]);
+  //     }
+  //
+  //     // Step 3: Handle {"value":{...}}
+  //     if (decoded is Map && decoded["value"] is Map) {
+  //       finalMap = Map<String, dynamic>.from(decoded["value"]);
+  //     } else if (decoded is Map) {
+  //       finalMap = Map<String, dynamic>.from(decoded);
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Parsing failed: $e");
+  //   }
+  //
+  //   // ✅ SHOW ONLY NON-EMPTY FIELDS
+  //   if (finalMap != null && finalMap.isNotEmpty) {
+  //     final filteredEntries = finalMap.entries.where((entry) {
+  //       final val = entry.value;
+  //       return val != null &&
+  //           val.toString().trim().isNotEmpty &&
+  //           val.toString().trim() != "null";
+  //     }).toList();
+  //
+  //     if (filteredEntries.isEmpty) {
+  //       return _normalField(config, "");
+  //     }
+  //
+  //     final children = filteredEntries.map<Widget>((e) {
+  //       return Padding(
+  //         padding: const EdgeInsets.only(bottom: 12.0),
+  //         child: TextFormField(
+  //           controller: TextEditingController(text: e.value.toString()),
+  //           decoration: InputDecoration(
+  //             labelText: e.key,
+  //             border: const OutlineInputBorder(),
+  //           ),
+  //         ),
+  //       );
+  //     }).toList();
+  //
+  //     return Column(children: children);
+  //   }
+  //
+  //   return _normalField(config, rawValue);
+  // }
+
+  // Widget _buildTextFormField(_FieldConfig config) {
+  //   final rawValue = widget.result.parameterValue?.value;
+  //   final fieldKey = config.label;
+  //
+  //   if (rawValue == null || rawValue.isEmpty) {
+  //     return _normalField(config, "");
+  //   }
+  //
+  //   Map<String, dynamic>? finalMap;
+  //
+  //   try {
+  //     dynamic decoded = rawValue;
+  //
+  //     // 🔥 STEP 1: If string looks like JSON → decode
+  //     if (decoded is String &&
+  //         decoded.trim().startsWith("{") &&
+  //         decoded.trim().endsWith("}")) {
+  //       decoded = jsonDecode(decoded);
+  //     }
+  //
+  //     // 🔥 STEP 2: If decoded contains nested "value" as String → decode again
+  //     if (decoded is Map &&
+  //         decoded["value"] is String &&
+  //         decoded["value"].toString().trim().startsWith("{")) {
+  //       decoded["value"] = jsonDecode(decoded["value"]);
+  //     }
+  //
+  //     // 🔥 STEP 3: If still nested {value:{value:12}} → extract inner
+  //     if (decoded is Map && decoded["value"] is Map) {
+  //       finalMap = Map<String, dynamic>.from(decoded["value"]);
+  //     } else if (decoded is Map) {
+  //       finalMap = Map<String, dynamic>.from(decoded);
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Safe JSON parsing failed: $e");
+  //   }
+  //
+  //   // 🔥 CASE: Proper JSON Map parsed
+  //   if (finalMap != null && finalMap.isNotEmpty) {
+  //     final children = finalMap.entries.map<Widget>((e) {
+  //       return Padding(
+  //         padding: const EdgeInsets.only(bottom: 12.0),
+  //         child: TextFormField(
+  //           controller: TextEditingController(text: e.value?.toString() ?? ""),
+  //           decoration: InputDecoration(
+  //             labelText: e.key,
+  //             border: const OutlineInputBorder(),
+  //           ),
+  //         ),
+  //       );
+  //     }).toList();
+  //
+  //     return Column(children: children);
+  //   }
+  //
+  //   // 🔥 FALLBACK: Handle invalid format like {value: 12, unit: }
+  //   if (rawValue.trim().startsWith("{") && rawValue.trim().endsWith("}")) {
+  //     final Map<String, String> parsedMap = {};
+  //     final content = rawValue.substring(1, rawValue.length - 1);
+  //
+  //     final pairs = content.split(',');
+  //
+  //     for (var pair in pairs) {
+  //       final parts = pair.split(':');
+  //       if (parts.length >= 2) {
+  //         final key = parts[0].trim();
+  //         final value = parts.sublist(1).join(':').trim();
+  //         parsedMap[key] = value;
+  //       }
+  //     }
+  //
+  //     final children = parsedMap.entries.map<Widget>((e) {
+  //       return Padding(
+  //         padding: const EdgeInsets.only(bottom: 12.0),
+  //         child: TextFormField(
+  //           controller: TextEditingController(text: e.value),
+  //           decoration: InputDecoration(
+  //             labelText: e.key,
+  //             border: const OutlineInputBorder(),
+  //           ),
+  //         ),
+  //       );
+  //     }).toList();
+  //
+  //     return Column(children: children);
+  //   }
+  //
+  //   // 🔥 FINAL FALLBACK
+  //   return _normalField(config, rawValue);
+  // }
+
+  Widget _normalField(_FieldConfig config, String value) {
+    config.controller.text = value;
+
+    return TextFormField(
+      controller: config.controller,
+      decoration: InputDecoration(
+        labelText: config.label,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  // Widget _buildTextFormField(_FieldConfig config) {
+  //   final rv = widget.result.parameterValue?.value;
+  //   // Pass the field name to extract the correct value
+  //   final cleaned = _extractCleanValue(rv, config.label);
+  //   final fieldKey = config.label; // Use label as unique identifier
+  //
+  //   // -------- CASE: multi-field JSON --------
+  //   if (_isJsonObject(cleaned)) {
+  //     final map = jsonDecode(cleaned) as Map<String, dynamic>;
+  //     final children = map.entries.map<Widget>((e) {
+  //       return Padding(
+  //         padding: const EdgeInsets.only(bottom: 12.0),
+  //         child: TextFormField(
+  //           controller: TextEditingController(text: e.value.toString()),
+  //           decoration: InputDecoration(
+  //             labelText: e.key,
+  //             border: OutlineInputBorder(),
+  //           ),
+  //         ),
+  //       );
+  //     }).toList();
+  //     return Column(
+  //       children: children,
+  //     );
+  //   }
+  //
+  //   // -------- CASE: simple field --------
+  //   // Initialize the controller value only once when widget is built
+  //   // if (!config.isInitialized) {
+  //   //   config.controller.text = cleaned;
+  //   //   config.isInitialized = true;
+  //   // }
+  //
+  //   return TextFormField(
+  //     controller: config.controller,
+  //     readOnly: config.isDateField,
+  //     keyboardType: config.keyboardType,
+  //     maxLines: 1,
+  //     decoration: InputDecoration(
+  //       labelText: config.label,
+  //       border: OutlineInputBorder(),
+  //     ),
+  //     onChanged: (value) {
+  //       // Mark this field as edited by user
+  //       if (!_userEditedFields.contains(fieldKey)) {
+  //         setState(() {
+  //           _userEditedFields.add(fieldKey);
+  //         });
+  //       }
+  //       print("User typed: $value for field: $fieldKey");
+  //     },
+  //   );
+  // }
 
   // Widget _buildTextFormField(_FieldConfig config) {
   //   final rv = widget.result.parameterValue?.value;
@@ -3678,254 +4351,165 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
   Future<void> _handleSubmit() async {
     setState(() => isLoading = true);
+
     List<Map<String, dynamic>> referenceData = [];
 
-    final existingRef = widget.result.parameterValue?.reference;
-// If new image selected
-    if (selectedImageFile != null) {
-      referenceData = [
-        {
-          "url": [uploadedImageUrl], // <-- returned from your upload API
-          "tags": [],
-          // "name": "",
-          "size": selectedImageFile!.lengthSync(),
-        }
-      ];
-    }
-// If no new image, keep existing one
-    else if (existingRef != null && existingRef.isNotEmpty) {
-      referenceData = existingRef.map((ref) {
+    final currentRefs = references;
+
+    /// -------- HANDLE REFERENCES --------
+    if (currentRefs != null && currentRefs.isNotEmpty) {
+      referenceData = currentRefs.map<Map<String, dynamic>>((ref) {
         return {
           "url": ref.url ?? [],
           "tags": ref.tags ?? [],
-          // "name": ref.name ?? "",
+          "name": ref.name ?? "",
           "size": ref.size ?? 0,
+          "uploadedBy": ref.uploadedBy ?? ""
         };
       }).toList();
     }
-// If nothing exists
-    else {
-      referenceData = [];
-      // referenceData = [
-      //   {"url": [], "tags": [], "size": 0}
-      // ];
+
+    /// If new image uploaded add it
+    if (selectedImageFile != null && uploadedImageUrl != null) {
+      referenceData.add({
+        "url": [uploadedImageUrl],
+        "tags": [],
+        "name": "uploads/${DateTime.now().millisecondsSinceEpoch}.png",
+        "size": selectedImageFile!.lengthSync(),
+        "uploadedBy": "mobile"
+      });
     }
+
     try {
       dynamic value;
       final parameterType = widget.parametertype!.name!.toLowerCase();
 
+      /// ---------- TIME ----------
       if (parameterType == 'time') {
         if (selectedTime == null) {
-          _showError("Please select a time");
-          return;
+          value = "{}";
+        } else {
+          final hh = selectedTime!.hour.toString().padLeft(2, '0');
+          final mm = selectedTime!.minute.toString().padLeft(2, '0');
+
+          final formattedTime = "$hh:$mm:00";
+
+          value = json.encode({
+            "value": {"value": formattedTime}
+          });
         }
+      }
 
-        final hh = selectedTime!.hour.toString().padLeft(2, '0');
-        final mm = selectedTime!.minute.toString().padLeft(2, '0');
-
-        value = "$hh:$mm:00"; // <-- "13:05:00"
-      } else if (parameterType == 'timestamp') {
+      /// ---------- TIMESTAMP ----------
+      else if (parameterType == 'timestamp') {
         String raw = timestampController.text.trim();
 
         if (raw.isEmpty) {
-          _showError("Please select a timestamp");
-          return;
+          value = "{}";
+        } else {
+          try {
+            raw = raw
+                .replaceAll(
+                    RegExp(
+                        r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
+                    ' ')
+                .replaceAll(RegExp(r'\s+'), ' ')
+                .trim();
+
+            final parsed = DateFormat("dd/MM/yyyy hh:mm a").parseLoose(raw);
+
+            final utc = parsed.toUtc();
+
+            final formatted = "${utc.year.toString().padLeft(4, '0')}-"
+                "${utc.month.toString().padLeft(2, '0')}-"
+                "${utc.day.toString().padLeft(2, '0')}T"
+                "${utc.hour.toString().padLeft(2, '0')}:"
+                "${utc.minute.toString().padLeft(2, '0')}:00.000Z";
+
+            value = json.encode({
+              "value": {"value": formatted}
+            });
+          } catch (e) {
+            _showError("Invalid timestamp format");
+            return;
+          }
         }
+      }
 
-        try {
-          // ---------- CLEAN ----------
-          raw = raw
-              .replaceAll(
-                  RegExp(
-                      r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
-                  ' ')
-              .replaceAll(RegExp(r'[\u200B-\u200D]'), '') // zero width
-              .replaceAll(RegExp(r'[^\x00-\x7F]'), '') // remove non-ascii
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .trim();
-
-          // Example cleaned: "12/30/2025 11:55 PM" or "30/12/2025 11:55 PM"
-
-          // ---------- EXTRACT PARTS (date + time) ----------
-          // Accepts these common separators (slash, dash, dot)
-          final match = RegExp(
-                  r'([0-3]?\d)[\/\-\.\s]([0-1]?\d)[\/\-\.\s](\d{4})\s+(\d{1,2}:\d{2})\s*([AaPp][Mm])')
-              .firstMatch(raw);
-
-          if (match == null) {
-            // fallback: try a more permissive split (date and time separated by space)
-            final sp = raw.split(' ');
-            if (sp.length < 3)
-              throw FormatException('Unrecognized timestamp format');
-            final datePart = sp[0]; // could be dd/mm or mm/dd
-            final timePart = sp.sublist(1).join(' '); // "11:55 PM"
-            // try to parse with heuristics below
-            raw = "$datePart $timePart";
-          }
-
-          // If we have a regex match, rebuild normalized parts
-          String datePart;
-          String timePart;
-          if (match != null) {
-            final p1 = match.group(1)!; // first number
-            final p2 = match.group(2)!; // second number
-            final p3 = match.group(3)!; // year
-            datePart = "$p1/$p2/$p3";
-            timePart = "${match.group(4)!} ${match.group(5)!}";
-          } else {
-            // split fallback (eg. "12/30/2025 11:55 PM")
-            final parts = raw.split(' ');
-            datePart = parts[0];
-            timePart = parts.sublist(1).join(' ');
-          }
-
-          // ---------- DETECT ORDER (dd/mm vs mm/dd) ----------
-          final dateSegments = datePart.split(RegExp(r'[\/\-\.]'));
-          if (dateSegments.length != 3) throw FormatException('Bad date part');
-
-          final a = int.tryParse(dateSegments[0]) ?? 0;
-          final b = int.tryParse(dateSegments[1]) ?? 0;
-          final year = int.tryParse(dateSegments[2]) ?? 0;
-
-          int day;
-          int month;
-
-          // Heuristics:
-          // - if first segment > 12 => it's day (DD/MM/YYYY)
-          // - else if second segment > 12 => first is month (MM/DD/YYYY)
-          // - else default to DD/MM/YYYY (your earlier format), but you can change if desired
-          if (a > 12 && a <= 31) {
-            day = a;
-            month = b;
-          } else if (b > 12 && b <= 31) {
-            month = a;
-            day = b;
-          } else {
-            // ambiguous (e.g. 05/06). Default to DD/MM/YYYY as your UI used earlier.
-            day = a;
-            month = b;
-          }
-
-          // ---------- PARSE timePart using DateFormat.jm ----------
-          // normalize spaces, uppercase AM/PM
-          timePart =
-              timePart.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
-
-          final parsedTime =
-              DateFormat.jm().parseLoose(timePart); // more forgiving
-
-          final dtLocal = DateTime(
-            year,
-            month,
-            day,
-            parsedTime.hour,
-            parsedTime.minute,
-            0,
-          );
-
-          // ---------- CONVERT TO UTC and exact format ----------
-          final dtUtc = dtLocal.toUtc();
-          final formatted = "${dtUtc.year.toString().padLeft(4, '0')}-"
-              "${dtUtc.month.toString().padLeft(2, '0')}-"
-              "${dtUtc.day.toString().padLeft(2, '0')}T"
-              "${dtUtc.hour.toString().padLeft(2, '0')}:"
-              "${dtUtc.minute.toString().padLeft(2, '0')}:00.000Z";
-
-          value = formatted; // final value sent to backend
-        } catch (e) {
-          print("Timestamp parse error: $e");
-          _showError("Invalid timestamp format");
-          return;
-        }
-      } else if (parameterType.toLowerCase() == 'json') {
+      /// ---------- JSON ----------
+      else if (parameterType == 'json') {
         String rawText = jsonController.text.trim();
 
-        rawText = rawText
-            .replaceAll('“', '"')
-            .replaceAll('”', '"')
-            .replaceAll('‘', "'")
-            .replaceAll('’', "'");
+        if (rawText.isEmpty) {
+          value = "{}";
+        } else {
+          rawText = rawText
+              .replaceAll('\u201C', '"')
+              .replaceAll('\u201D', '"')
+              .replaceAll('\u2018', "'")
+              .replaceAll('\u2019', "'");
 
-        value = rawText;
-      }
-
-      // ---------------- NUMBER ----------------
-      else if (parameterType == 'number') {
-        final txt = paramAController.text.trim();
-        if (txt.isEmpty) {
-          _showError('Please enter a number');
-          return;
+          value = rawText;
         }
-
-        // Web sends: "{\"value\":\"99\"}"
-        // value = json.encode({"value": txt});
-        value = json.encode({
-          "value": paramAController.text.trim(),
-          "unit": unitController.text.trim().isEmpty
-              ? null
-              : unitController.text.trim(),
-          "parameterB": paramBController.text.trim().isEmpty
-              ? null
-              : paramBController.text.trim(),
-        });
       }
 
-      // ---------------- BOOLEAN ----------------
+      /// ---------- NUMBER ----------
+      else if (parameterType == 'number') {
+        final paramA = paramAController.text.trim();
+        final unit = unitController.text.trim();
+        final paramB = paramBController.text.trim();
+
+        /// If all empty send {}
+        if (paramA.isEmpty && unit.isEmpty && paramB.isEmpty) {
+          value = "{}";
+        } else {
+          value = json.encode({
+            "value": paramA,
+            "unit": unit.isEmpty ? null : unit,
+            "parameterB": paramB.isEmpty ? null : paramB,
+          });
+        }
+      }
+
+      /// ---------- BOOLEAN ----------
       else if (parameterType == 'boolean') {
         if (selectedBooleanValue == null) {
-          _showError('Please select Yes or No');
-          return;
+          value = "{}";
+        } else {
+          value = selectedBooleanValue;
         }
-
-        // Web sends boolean normally
-        value = selectedBooleanValue;
       }
 
-      // ---------------- DEFAULT TEXT / UNIT / PARAMETER A/B ----------------
+      /// ---------- DEFAULT ----------
       else {
         final paramA = paramAController.text.trim();
         final paramB = paramBController.text.trim();
         final unit = unitController.text.trim();
 
-        if (widget.result.parameterNameA!.trim().isNotEmpty && paramA.isEmpty) {
-          _showError(
-              'Please enter a value for ${widget.result.parameterNameA}');
-          return;
+        if (paramA.isEmpty && paramB.isEmpty && unit.isEmpty) {
+          value = "{}";
+        } else {
+          value = json.encode({
+            "value": paramA,
+            "unit": unit,
+            "parameterB": paramB,
+          });
         }
-
-        if (widget.result.parameterNameB!.trim().isNotEmpty && paramB.isEmpty) {
-          _showError(
-              'Please enter a value for ${widget.result.parameterNameB}');
-          return;
-        }
-
-        if (widget.result.unitName!.trim().isNotEmpty && unit.isEmpty) {
-          _showError('Please enter a value for ${widget.result.unitName}');
-          return;
-        }
-        value = json.encode({
-          "value": paramAController.text.trim(),
-          "unit": unitController.text.trim(),
-          "parameterB": paramBController.text.trim(),
-        });
       }
 
-      // ---------- MATCH WEB EXACTLY ----------
+      /// ---------- FINAL PAYLOAD ----------
       final updatedFields = {
-        "value": value, // always stringified JSON when number/json
+        "value": value,
         "param_type": widget.parametertype!.name,
+        "is_reference_updated": true,
         "reference": referenceData,
-
       };
 
-      final provider = Provider.of<SubaccountParameterProvider>(
-        context,
-        listen: false,
-      );
-      final locationListProvider = Provider.of<MyLocationListProvider>(
-        context,
-        listen: false,
-      );
+      final provider =
+          Provider.of<SubaccountParameterProvider>(context, listen: false);
+
+      final locationListProvider =
+          Provider.of<MyLocationListProvider>(context, listen: false);
 
       await provider.submitParameterUpdate(
         context: context,
@@ -3942,8 +4526,17 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
         _userEditedFields.clear();
       });
 
-      locationListProvider.fetchLocationList(context, "", 1, 5,
-          widget.accountId, widget.subAccountId, "", "", widget.sovId);
+      locationListProvider.fetchLocationList(
+        context,
+        "",
+        1,
+        5,
+        widget.accountId,
+        widget.subAccountId,
+        "",
+        "",
+        widget.sovId,
+      );
 
       if (widget.onRefresh != null) {
         await widget.onRefresh!();
@@ -3954,6 +4547,560 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
+  // Future<void> _handleSubmit() async {
+  //   setState(() => isLoading = true);
+  //   List<Map<String, dynamic>> referenceData = [];
+  //
+  //   // Use local `references` state variable (stays in sync with deletions/uploads)
+  //   final currentRefs = references;
+  //
+  //   if (selectedImageFile != null && uploadedImageUrl != null) {
+  //     // New image selected: preserve existing refs + add new one
+  //     if (currentRefs != null && currentRefs.isNotEmpty) {
+  //       referenceData = currentRefs.map<Map<String, dynamic>>((ref) {
+  //         return {
+  //           "url": ref.url ?? [],
+  //           "tags": ref.tags ?? [],
+  //           "name": ref.name ?? "",
+  //           "size": ref.size ?? 0,
+  //         };
+  //       }).toList();
+  //     }
+  //     referenceData.add({
+  //       "url": [uploadedImageUrl],
+  //       "tags": [],
+  //       "name": "",
+  //       "size": selectedImageFile!.lengthSync(),
+  //     });
+  //   } else if (currentRefs != null && currentRefs.isNotEmpty) {
+  //     // No new image: always preserve ALL existing references as-is
+  //     referenceData = currentRefs.map<Map<String, dynamic>>((ref) {
+  //       return {
+  //         "url": ref.url ?? [],
+  //         "tags": ref.tags ?? [],
+  //         "name": ref.name ?? "",
+  //         "size": ref.size ?? 0,
+  //       };
+  //     }).toList();
+  //   } else {
+  //     referenceData = [];
+  //   }
+  //
+  //   try {
+  //     dynamic value;
+  //     final parameterType = widget.parametertype!.name!.toLowerCase();
+  //
+  //     if (parameterType == 'time') {
+  //       if (selectedTime == null) {
+  //         _showError("Please select a time");
+  //         return;
+  //       }
+  //
+  //       final hh = selectedTime!.hour.toString().padLeft(2, '0');
+  //       final mm = selectedTime!.minute.toString().padLeft(2, '0');
+  //
+  //       final formattedTime = "$hh:$mm:00";
+  //
+  //       value = json.encode({
+  //         "value": {"value": formattedTime}
+  //       });
+  //     } else if (parameterType == 'timestamp') {
+  //       String raw = timestampController.text.trim();
+  //
+  //       if (raw.isEmpty) {
+  //         _showError("Please select a timestamp");
+  //         return;
+  //       }
+  //
+  //       try {
+  //         raw = raw
+  //             .replaceAll(
+  //                 RegExp(
+  //                     r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
+  //                 ' ')
+  //             .replaceAll(RegExp(r'[\u200B-\u200D]'), '')
+  //             .replaceAll(RegExp(r'[^\x00-\x7F]'), '')
+  //             .replaceAll(RegExp(r'\s+'), ' ')
+  //             .trim();
+  //
+  //         final match = RegExp(
+  //                 r'([0-3]?\d)[\/\-\.\s]([0-1]?\d)[\/\-\.\s](\d{4})\s+(\d{1,2}:\d{2})\s*([AaPp][Mm])')
+  //             .firstMatch(raw);
+  //
+  //         if (match == null) {
+  //           final sp = raw.split(' ');
+  //           if (sp.length < 3)
+  //             throw FormatException('Unrecognized timestamp format');
+  //           final datePart = sp[0];
+  //           final timePart = sp.sublist(1).join(' ');
+  //           raw = "$datePart $timePart";
+  //         }
+  //
+  //         String datePart;
+  //         String timePart;
+  //         if (match != null) {
+  //           final p1 = match.group(1)!;
+  //           final p2 = match.group(2)!;
+  //           final p3 = match.group(3)!;
+  //           datePart = "$p1/$p2/$p3";
+  //           timePart = "${match.group(4)!} ${match.group(5)!}";
+  //         } else {
+  //           final parts = raw.split(' ');
+  //           datePart = parts[0];
+  //           timePart = parts.sublist(1).join(' ');
+  //         }
+  //
+  //         final dateSegments = datePart.split(RegExp(r'[\/\-\.]'));
+  //         if (dateSegments.length != 3) throw FormatException('Bad date part');
+  //
+  //         final a = int.tryParse(dateSegments[0]) ?? 0;
+  //         final b = int.tryParse(dateSegments[1]) ?? 0;
+  //         final year = int.tryParse(dateSegments[2]) ?? 0;
+  //
+  //         int day;
+  //         int month;
+  //
+  //         if (a > 12 && a <= 31) {
+  //           day = a;
+  //           month = b;
+  //         } else if (b > 12 && b <= 31) {
+  //           month = a;
+  //           day = b;
+  //         } else {
+  //           day = a;
+  //           month = b;
+  //         }
+  //
+  //         timePart =
+  //             timePart.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
+  //
+  //         final parsedTime = DateFormat.jm().parseLoose(timePart);
+  //
+  //         final dtLocal = DateTime(
+  //           year,
+  //           month,
+  //           day,
+  //           parsedTime.hour,
+  //           parsedTime.minute,
+  //           0,
+  //         );
+  //
+  //         final dtUtc = dtLocal.toUtc();
+  //         final formatted = "${dtUtc.year.toString().padLeft(4, '0')}-"
+  //             "${dtUtc.month.toString().padLeft(2, '0')}-"
+  //             "${dtUtc.day.toString().padLeft(2, '0')}T"
+  //             "${dtUtc.hour.toString().padLeft(2, '0')}:"
+  //             "${dtUtc.minute.toString().padLeft(2, '0')}:00.000Z";
+  //
+  //         value = json.encode({
+  //           "value": {"value": formatted}
+  //         });
+  //       } catch (e) {
+  //         print("Timestamp parse error: $e");
+  //         _showError("Invalid timestamp format");
+  //         return;
+  //       }
+  //     } else if (parameterType.toLowerCase() == 'json') {
+  //       String rawText = jsonController.text.trim();
+  //
+  //       rawText = rawText
+  //           .replaceAll('\u201C', '"')
+  //           .replaceAll('\u201D', '"')
+  //           .replaceAll('\u2018', "'")
+  //           .replaceAll('\u2019', "'");
+  //
+  //       value = rawText;
+  //     }
+  //
+  //     // ---------------- NUMBER ----------------
+  //     else if (parameterType == 'number') {
+  //       value = json.encode({
+  //         "value": paramAController.text.trim(),
+  //         "unit": unitController.text.trim().isEmpty
+  //             ? null
+  //             : unitController.text.trim(),
+  //         "parameterB": paramBController.text.trim().isEmpty
+  //             ? null
+  //             : paramBController.text.trim(),
+  //       });
+  //     }
+  //
+  //     // ---------------- BOOLEAN ----------------
+  //     else if (parameterType == 'boolean') {
+  //       if (selectedBooleanValue == null) {
+  //         _showError('Please select Yes or No');
+  //         return;
+  //       }
+  //       value = selectedBooleanValue;
+  //     }
+  //
+  //     // ---------------- DEFAULT TEXT / UNIT / PARAMETER A/B ----------------
+  //     else {
+  //       final paramA = paramAController.text.trim();
+  //       final paramB = paramBController.text.trim();
+  //       final unit = unitController.text.trim();
+  //
+  //       if (widget.result.parameterNameA!.trim().isNotEmpty && paramA.isEmpty) {
+  //         _showError(
+  //             'Please enter a value for ${widget.result.parameterNameA}');
+  //         return;
+  //       }
+  //
+  //       if (widget.result.parameterNameB!.trim().isNotEmpty && paramB.isEmpty) {
+  //         _showError(
+  //             'Please enter a value for ${widget.result.parameterNameB}');
+  //         return;
+  //       }
+  //
+  //       if (widget.result.unitName!.trim().isNotEmpty && unit.isEmpty) {
+  //         _showError('Please enter a value for ${widget.result.unitName}');
+  //         return;
+  //       }
+  //
+  //       value = json.encode({
+  //         "value": paramAController.text.trim(),
+  //         "unit": unitController.text.trim(),
+  //         "parameterB": paramBController.text.trim(),
+  //       });
+  //     }
+  //
+  //     // ---------- BUILD FINAL PAYLOAD ----------
+  //     final updatedFields = {
+  //       "value": value,
+  //       "param_type": widget.parametertype!.name,
+  //       "reference": referenceData,
+  //     };
+  //
+  //     final provider = Provider.of<SubaccountParameterProvider>(
+  //       context,
+  //       listen: false,
+  //     );
+  //     final locationListProvider = Provider.of<MyLocationListProvider>(
+  //       context,
+  //       listen: false,
+  //     );
+  //
+  //     await provider.submitParameterUpdate(
+  //       context: context,
+  //       subaccountId: widget.subAccountId,
+  //       locationId: widget.locationId,
+  //       sovId: widget.sovId,
+  //       campusId: widget.campusId,
+  //       parameterId: widget.result.dataCategoryId!,
+  //       updatedFields: updatedFields,
+  //       selectedParameterList: widget.selectedParameterList!,
+  //     );
+  //
+  //     setState(() {
+  //       _userEditedFields.clear();
+  //     });
+  //
+  //     locationListProvider.fetchLocationList(
+  //       context,
+  //       "",
+  //       1,
+  //       5,
+  //       widget.accountId,
+  //       widget.subAccountId,
+  //       "",
+  //       "",
+  //       widget.sovId,
+  //     );
+  //
+  //     if (widget.onRefresh != null) {
+  //       await widget.onRefresh!();
+  //     }
+  //   } catch (e) {
+  //     _showError('Error: ${e.toString()}');
+  //   } finally {
+  //     if (mounted) setState(() => isLoading = false);
+  //   }
+  // }
+
+//   Future<void> _handleSubmit() async {
+//     setState(() => isLoading = true);
+//     List<Map<String, dynamic>> referenceData = [];
+//
+//     final existingRef = widget.result.parameterValue?.reference;
+// // If new image selected
+//     if (selectedImageFile != null) {
+//       referenceData = [
+//         {
+//           "url": [uploadedImageUrl], // <-- returned from your upload API
+//           "tags": [],
+//           // "name": "",
+//           "size": selectedImageFile!.lengthSync(),
+//         }
+//       ];
+//     }
+// // If no new image, keep existing one
+//     else if (existingRef != null && existingRef.isNotEmpty) {
+//       referenceData = existingRef.map((ref) {
+//         return {
+//           "url": ref.url ?? [],
+//           "tags": ref.tags ?? [],
+//           // "name": ref.name ?? "",
+//           "size": ref.size ?? 0,
+//         };
+//       }).toList();
+//     }
+// // If nothing exists
+//     else {
+//       referenceData = [];
+//       // referenceData = [
+//       //   {"url": [], "tags": [], "size": 0}
+//       // ];
+//     }
+//     try {
+//       dynamic value;
+//       final parameterType = widget.parametertype!.name!.toLowerCase();
+//
+//       if (parameterType == 'time') {
+//         if (selectedTime == null) {
+//           _showError("Please select a time");
+//           return;
+//         }
+//
+//         final hh = selectedTime!.hour.toString().padLeft(2, '0');
+//         final mm = selectedTime!.minute.toString().padLeft(2, '0');
+//
+//         final formattedTime = "$hh:$mm:00";
+//
+//         // 🔥 Wrap exactly like backend expects
+//         value = json.encode({
+//           "value": {"value": formattedTime}
+//         });
+//       } else if (parameterType == 'timestamp') {
+//         String raw = timestampController.text.trim();
+//
+//         if (raw.isEmpty) {
+//           _showError("Please select a timestamp");
+//           return;
+//         }
+//
+//         try {
+//           // ---------- CLEAN ----------
+//           raw = raw
+//               .replaceAll(
+//                   RegExp(
+//                       r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
+//                   ' ')
+//               .replaceAll(RegExp(r'[\u200B-\u200D]'), '') // zero width
+//               .replaceAll(RegExp(r'[^\x00-\x7F]'), '') // remove non-ascii
+//               .replaceAll(RegExp(r'\s+'), ' ')
+//               .trim();
+//
+//           // Example cleaned: "12/30/2025 11:55 PM" or "30/12/2025 11:55 PM"
+//
+//           // ---------- EXTRACT PARTS (date + time) ----------
+//           // Accepts these common separators (slash, dash, dot)
+//           final match = RegExp(
+//                   r'([0-3]?\d)[\/\-\.\s]([0-1]?\d)[\/\-\.\s](\d{4})\s+(\d{1,2}:\d{2})\s*([AaPp][Mm])')
+//               .firstMatch(raw);
+//
+//           if (match == null) {
+//             // fallback: try a more permissive split (date and time separated by space)
+//             final sp = raw.split(' ');
+//             if (sp.length < 3)
+//               throw FormatException('Unrecognized timestamp format');
+//             final datePart = sp[0]; // could be dd/mm or mm/dd
+//             final timePart = sp.sublist(1).join(' '); // "11:55 PM"
+//             // try to parse with heuristics below
+//             raw = "$datePart $timePart";
+//           }
+//
+//           // If we have a regex match, rebuild normalized parts
+//           String datePart;
+//           String timePart;
+//           if (match != null) {
+//             final p1 = match.group(1)!; // first number
+//             final p2 = match.group(2)!; // second number
+//             final p3 = match.group(3)!; // year
+//             datePart = "$p1/$p2/$p3";
+//             timePart = "${match.group(4)!} ${match.group(5)!}";
+//           } else {
+//             // split fallback (eg. "12/30/2025 11:55 PM")
+//             final parts = raw.split(' ');
+//             datePart = parts[0];
+//             timePart = parts.sublist(1).join(' ');
+//           }
+//
+//           // ---------- DETECT ORDER (dd/mm vs mm/dd) ----------
+//           final dateSegments = datePart.split(RegExp(r'[\/\-\.]'));
+//           if (dateSegments.length != 3) throw FormatException('Bad date part');
+//
+//           final a = int.tryParse(dateSegments[0]) ?? 0;
+//           final b = int.tryParse(dateSegments[1]) ?? 0;
+//           final year = int.tryParse(dateSegments[2]) ?? 0;
+//
+//           int day;
+//           int month;
+//
+//           // Heuristics:
+//           // - if first segment > 12 => it's day (DD/MM/YYYY)
+//           // - else if second segment > 12 => first is month (MM/DD/YYYY)
+//           // - else default to DD/MM/YYYY (your earlier format), but you can change if desired
+//           if (a > 12 && a <= 31) {
+//             day = a;
+//             month = b;
+//           } else if (b > 12 && b <= 31) {
+//             month = a;
+//             day = b;
+//           } else {
+//             // ambiguous (e.g. 05/06). Default to DD/MM/YYYY as your UI used earlier.
+//             day = a;
+//             month = b;
+//           }
+//
+//           // ---------- PARSE timePart using DateFormat.jm ----------
+//           // normalize spaces, uppercase AM/PM
+//           timePart =
+//               timePart.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
+//
+//           final parsedTime =
+//               DateFormat.jm().parseLoose(timePart); // more forgiving
+//
+//           final dtLocal = DateTime(
+//             year,
+//             month,
+//             day,
+//             parsedTime.hour,
+//             parsedTime.minute,
+//             0,
+//           );
+//
+//           final dtUtc = dtLocal.toUtc();
+//           final formatted = "${dtUtc.year.toString().padLeft(4, '0')}-"
+//               "${dtUtc.month.toString().padLeft(2, '0')}-"
+//               "${dtUtc.day.toString().padLeft(2, '0')}T"
+//               "${dtUtc.hour.toString().padLeft(2, '0')}:"
+//               "${dtUtc.minute.toString().padLeft(2, '0')}:00.000Z";
+//
+//           value = json.encode({
+//             "value": {"value": formatted}
+//           });
+//         } catch (e) {
+//           print("Timestamp parse error: $e");
+//           _showError("Invalid timestamp format");
+//           return;
+//         }
+//       } else if (parameterType.toLowerCase() == 'json') {
+//         String rawText = jsonController.text.trim();
+//
+//         rawText = rawText
+//             .replaceAll('“', '"')
+//             .replaceAll('”', '"')
+//             .replaceAll('‘', "'")
+//             .replaceAll('’', "'");
+//
+//         value = rawText;
+//       }
+//
+//       // ---------------- NUMBER ----------------
+//       else if (parameterType == 'number') {
+//         final txt = paramAController.text.trim();
+//         // if (txt.isEmpty) {
+//         //   _showError('Please enter a number');
+//         //   return;
+//         // }
+//
+//         // Web sends: "{\"value\":\"99\"}"
+//         // value = json.encode({"value": txt});
+//         value = json.encode({
+//           "value": paramAController.text.trim(),
+//           "unit": unitController.text.trim().isEmpty
+//               ? null
+//               : unitController.text.trim(),
+//           "parameterB": paramBController.text.trim().isEmpty
+//               ? null
+//               : paramBController.text.trim(),
+//         });
+//       }
+//
+//       // ---------------- BOOLEAN ----------------
+//       else if (parameterType == 'boolean') {
+//         if (selectedBooleanValue == null) {
+//           _showError('Please select Yes or No');
+//           return;
+//         }
+//
+//         // Web sends boolean normally
+//         value = selectedBooleanValue;
+//       }
+//
+//       // ---------------- DEFAULT TEXT / UNIT / PARAMETER A/B ----------------
+//       else {
+//         final paramA = paramAController.text.trim();
+//         final paramB = paramBController.text.trim();
+//         final unit = unitController.text.trim();
+//
+//         if (widget.result.parameterNameA!.trim().isNotEmpty && paramA.isEmpty) {
+//           _showError(
+//               'Please enter a value for ${widget.result.parameterNameA}');
+//           return;
+//         }
+//
+//         if (widget.result.parameterNameB!.trim().isNotEmpty && paramB.isEmpty) {
+//           _showError(
+//               'Please enter a value for ${widget.result.parameterNameB}');
+//           return;
+//         }
+//
+//         if (widget.result.unitName!.trim().isNotEmpty && unit.isEmpty) {
+//           _showError('Please enter a value for ${widget.result.unitName}');
+//           return;
+//         }
+//         value = json.encode({
+//           "value": paramAController.text.trim(),
+//           "unit": unitController.text.trim(),
+//           "parameterB": paramBController.text.trim(),
+//         });
+//       }
+//
+//       // ---------- MATCH WEB EXACTLY ----------
+//       final updatedFields = {
+//         "value": value, // always stringified JSON when number/json
+//         "param_type": widget.parametertype!.name,
+//         "reference": referenceData,
+//       };
+//
+//       final provider = Provider.of<SubaccountParameterProvider>(
+//         context,
+//         listen: false,
+//       );
+//       final locationListProvider = Provider.of<MyLocationListProvider>(
+//         context,
+//         listen: false,
+//       );
+//
+//       await provider.submitParameterUpdate(
+//         context: context,
+//         subaccountId: widget.subAccountId,
+//         locationId: widget.locationId,
+//         sovId: widget.sovId,
+//         campusId: widget.campusId,
+//         parameterId: widget.result.dataCategoryId!,
+//         updatedFields: updatedFields,
+//         selectedParameterList: widget.selectedParameterList!,
+//       );
+//
+//       setState(() {
+//         _userEditedFields.clear();
+//       });
+//
+//       locationListProvider.fetchLocationList(context, "", 1, 5,
+//           widget.accountId, widget.subAccountId, "", "", widget.sovId);
+//
+//       if (widget.onRefresh != null) {
+//         await widget.onRefresh!();
+//       }
+//     } catch (e) {
+//       _showError('Error: ${e.toString()}');
+//     } finally {
+//       if (mounted) setState(() => isLoading = false);
+//     }
+//   }
 
   void _showError(String message) {
     var typography = CustomTypography(context);
@@ -4407,6 +5554,7 @@ class PreviewPopup extends StatelessWidget {
     );
   }
 }
+
 String mapScoreToRiskLabel(String score) {
   switch (score.toUpperCase()) {
     case 'A':
@@ -4516,23 +5664,25 @@ class _HazardHubCardState extends State<HazardHubCard> {
                 final parsed = parseExpandedJson(expandedData);
                 final value = parsed['value'];
                 final rawScore =
-                value is Map ? value['score']?.toString() ?? 'NA' : 'NA';
+                    value is Map ? value['score']?.toString() ?? 'NA' : 'NA';
 
                 final score = mapScoreToRiskLabel(rawScore);
 
                 return Column(
                   children: [
                     // Text(expandedData.toString()),
-                    _mainRow(
-                      title: title,
-                      score: score,
-                      isExpanded: isExpanded,
-                      onTap: () {
-                        setState(() {
-                          expandedIndex = isExpanded ? -1 : index;
-                        });
-                      },
-                    ),
+                    score.toString() == 'NA'
+                        ? SizedBox.shrink()
+                        : _mainRow(
+                            title: title,
+                            score: score,
+                            isExpanded: isExpanded,
+                            onTap: () {
+                              setState(() {
+                                expandedIndex = isExpanded ? -1 : index;
+                              });
+                            },
+                          ),
                     if (isExpanded) _expandedSection(expandedData),
                     const Divider(height: 1, color: Colors.grey),
                   ],
@@ -4544,6 +5694,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ],
     );
   }
+
   Map<String, dynamic> parseExpandedJson(dynamic raw) {
     if (raw == null) return {};
 
@@ -4561,6 +5712,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
 
     return {};
   }
+
   String getScoreFromExpanded(dynamic raw) {
     final parsed = parseExpandedJson(raw);
 
@@ -4619,6 +5771,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
     );
   }
+
   Widget _expandedSection(Map<String, dynamic> data) {
     final dynamic value = data['value'];
 
@@ -4630,6 +5783,7 @@ class _HazardHubCardState extends State<HazardHubCard> {
 
     return _buildSingleValueTable(value);
   }
+
   Widget _buildSingleValueTable(dynamic value) {
     return Container(
       margin: const EdgeInsets.all(12),
@@ -4640,13 +5794,12 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
       child: Column(
         children: [
-
           Container(
             height: 48,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
               borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(8)),
+                  const BorderRadius.vertical(top: Radius.circular(8)),
             ),
             child: Row(
               children: [
@@ -4656,14 +5809,11 @@ class _HazardHubCardState extends State<HazardHubCard> {
               ],
             ),
           ),
-
           _dataRow("Value", value.toString()),
         ],
       ),
     );
   }
-
-
 
   Widget _buildTable(Map<String, dynamic> map) {
     final entries = map.entries.toList();
@@ -4677,13 +5827,12 @@ class _HazardHubCardState extends State<HazardHubCard> {
       ),
       child: Column(
         children: [
-
           Container(
             height: 48,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
               borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(8)),
+                  const BorderRadius.vertical(top: Radius.circular(8)),
             ),
             child: Row(
               children: [
@@ -4708,11 +5857,11 @@ class _HazardHubCardState extends State<HazardHubCard> {
               ],
             );
           }).toList(),
-
-       ],
+        ],
       ),
     );
   }
+
   Widget _buildRow(String key, dynamic value) {
     /// CASE 1: Map → nested table
     if (value is Map<String, dynamic>) {
@@ -4752,7 +5901,6 @@ class _HazardHubCardState extends State<HazardHubCard> {
               ),
             ),
             const SizedBox(height: 8),
-
             ...value.asMap().entries.map((entry) {
               final item = entry.value;
 
@@ -4782,36 +5930,34 @@ class _HazardHubCardState extends State<HazardHubCard> {
     );
   }
 
-
-    // Widget _buildRow(String key, dynamic value) {
-    //   /// Nested JSON → show sub-table
-    //   if (value is Map<String, dynamic>) {
-    //     return Padding(
-    //       padding: const EdgeInsets.all(8),
-    //       child: Column(
-    //         crossAxisAlignment: CrossAxisAlignment.start,
-    //         children: [
-    //           Text(
-    //             formatKey(key),
-    //             style: const TextStyle(
-    //               color: Colors.white,
-    //               fontWeight: FontWeight.bold,
-    //             ),
-    //           ),
-    //           const SizedBox(height: 8),
-    //           _buildTable(value),
-    //         ],
-    //       ),
-    //     );
-    //   }
-    //
-    //   /// Normal value
-    //   return _dataRow(
-    //     formatKey(key),
-    //     value?.toString() ?? '—',
-    //   );
-    // }
-
+  // Widget _buildRow(String key, dynamic value) {
+  //   /// Nested JSON → show sub-table
+  //   if (value is Map<String, dynamic>) {
+  //     return Padding(
+  //       padding: const EdgeInsets.all(8),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             formatKey(key),
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           _buildTable(value),
+  //         ],
+  //       ),
+  //     );
+  //   }
+  //
+  //   /// Normal value
+  //   return _dataRow(
+  //     formatKey(key),
+  //     value?.toString() ?? '—',
+  //   );
+  // }
 
   // Widget _expandedSection(Map<String, dynamic> data) {
   //   // Remove keys you don't want in expanded table
@@ -4984,15 +6130,13 @@ class _HazardHubCardState extends State<HazardHubCard> {
     return key
         .replaceAll('_', ' ')
         .replaceAllMapped(
-      RegExp(r'([a-z])([A-Z])'),
+          RegExp(r'([a-z])([A-Z])'),
           (m) => '${m[1]} ${m[2]}',
-    )
+        )
         .split(' ')
-        .map((e) =>
-    e.isEmpty ? e : '${e[0].toUpperCase()}${e.substring(1)}')
+        .map((e) => e.isEmpty ? e : '${e[0].toUpperCase()}${e.substring(1)}')
         .join(' ');
   }
-
 }
 
 /// ================= STYLES =================

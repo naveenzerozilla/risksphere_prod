@@ -24,7 +24,6 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
   }
 
   @override
@@ -104,7 +103,7 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                     dividerColor: Colors.transparent,
                     labelPadding: EdgeInsets.zero,
                     onTap: (_) => setState(() {}),
-                    tabs: List.generate(2, (index) {
+                    tabs: List.generate(1, (index) {
                       final bool isSelected = _tabController!.index == index;
 
                       return Tab(
@@ -120,16 +119,21 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                               border: isSelected
                                   ? null
                                   : Border.all(
-                                color: AppColors.primaryMain,
-                                width: 1,
-                              ),
+                                      color: AppColors.primaryMain,
+                                      width: 1,
+                                    ),
                             ),
                             child: Text(
-                              index == 0
-                                  ? LanguageService.getTranslated(context, "data_summary")
-                                  : LanguageService.getTranslated(context, "recommendations"),
-                              maxLines: 1, // ✅ prevent wrapping
-                              overflow: TextOverflow.ellipsis, // ✅ prevent hiding
+                              LanguageService.getTranslated(
+                                  context, "data_summary"),
+
+                              // index == 0
+                              //     ? LanguageService.getTranslated(context, "data_summary")
+                              //     : LanguageService.getTranslated(context, "recommendations"),
+                              maxLines: 1,
+                              // ✅ prevent wrapping
+                              overflow: TextOverflow.ellipsis,
+                              // ✅ prevent hiding
                               style: typography.Body1.copyWith(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 16, // ✅ responsive size
@@ -144,8 +148,6 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                     }),
                   ),
                 ),
-
-
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -158,7 +160,7 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                           widget.summaryData!,
                         ),
                       ),
-                      MissingParameterScreen(sovId: widget.sovId!),
+                      // MissingParameterScreen(sovId: widget.sovId!),
                     ],
                   ),
                 ),
@@ -519,10 +521,6 @@ class _ProcessSummaryPageState extends State<ProcessSummaryPage>
                   ],
                 ),
               ),
-
-
-
-
               Text(
                 count,
                 style: typography.Body1.copyWith(

@@ -6,9 +6,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:RiskSphere/models/my_location_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../../utils/global_imports.dart';
+import 'missing_parameter.dart';
 
 class SovLocationList extends StatefulWidget {
-
   final String? status;
   final String? accountID;
   final String? subAccountID;
@@ -218,13 +218,12 @@ class _SovLocationListState extends State<SovLocationList>
       });
     });
 
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController?.addListener(() {
       setState(() {
         selectedTab = _tabController?.index ?? 0;
       });
       if (_tabController?.index == 0) {
-        print("tan1");
         _selectedScreen = Screens.sovList;
         var locationListProvider =
             Provider.of<MyLocationListProvider>(context, listen: false);
@@ -495,23 +494,35 @@ class _SovLocationListState extends State<SovLocationList>
                               padding: EdgeInsets.symmetric(horizontal: 12),
                               child: Row(
                                 children: [
-                                  InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text(
-                                      widget.sovName.toString() + " > " ,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                  Container(
+                                    constraints: BoxConstraints(maxWidth: 111),
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text(
+                                        widget.sovName.toString(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
                                     ),
                                   ),
-
                                   Text(
-                                    "Location Listing"?? '',
+                                    " > ",
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  Text(
+                                    "Location Listing" ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -641,9 +652,9 @@ class _SovLocationListState extends State<SovLocationList>
                                             : "";
 
                                         return DataTab(
-                                            accountId: accountId,
+                                            accountId: widget.accountID,
                                             accountName: accountName,
-                                            subaccountId: subaccountId,
+                                            subaccountId: widget.subAccountID,
                                             sovId: widget.sovID,
                                             campusStatus: false,
                                             status: "sov",
@@ -716,7 +727,8 @@ class _SovLocationListState extends State<SovLocationList>
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    locationListProvider.selectedCount.toString(),
+                                    locationListProvider.selectedCount
+                                        .toString(),
                                     // locationListProvider.isGlobalSelectAll
                                     //     ? locationListProvider
                                     //         .totalLocationCount
@@ -735,7 +747,9 @@ class _SovLocationListState extends State<SovLocationList>
                                 InkWell(
                                   onTap: () {
                                     final provider =
-                                    Provider.of<MyLocationListProvider>(context, listen: false);
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
 
                                     if (provider.isGlobalSelectAll) {
                                       // ✅ DESELECT ALL
@@ -743,14 +757,17 @@ class _SovLocationListState extends State<SovLocationList>
                                     } else {
                                       // ✅ SELECT ALL (GLOBAL)
                                       provider.selectAllGlobal(
-                                        totalCount: _selectedScreen == Screens.certifiedLocationList
+                                        totalCount: _selectedScreen ==
+                                                Screens.certifiedLocationList
                                             ? provider.certifiedLocationHits
                                             : provider.locationHits,
                                       );
                                     }
                                   },
                                   child: Text(
-                                    provider.isGlobalSelectAll ? 'Deselect All' : 'Select All',
+                                    provider.isGlobalSelectAll
+                                        ? 'Deselect All'
+                                        : 'Select All',
                                     style: typography.Body1.copyWith(
                                       fontSize: 16,
                                       color: AppColors.primaryMain,
@@ -1036,27 +1053,33 @@ class _SovLocationListState extends State<SovLocationList>
                                 InkWell(
                                   onTap: () async {
                                     final provider =
-                                    Provider.of<MyLocationListProvider>(context, listen: false);
+                                        Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false);
 
-                                    final bool isGlobal = provider.isGlobalSelectAll;
+                                    final bool isGlobal =
+                                        provider.isGlobalSelectAll;
 
                                     /// ✅ CORRECT SOURCE OF IDS
                                     final List<String> locationIds = isGlobal
                                         ? provider.myLocationList
-                                        .map((e) => e.id)
-                                        .whereType<String>()
-                                        .toList() // 🔥 ALL IDS
+                                            .map((e) => e.id)
+                                            .whereType<String>()
+                                            .toList() // 🔥 ALL IDS
                                         : provider.selectedLocationIds.toList();
 
                                     /// 🔍 DEBUG PRINT (YOU WILL SEE IDS NOW)
                                     debugPrint("Is Global Select: $isGlobal");
-                                    debugPrint("Location IDs sent: $locationIds");
+                                    debugPrint(
+                                        "Location IDs sent: $locationIds");
 
                                     /// ❌ Nothing selected
                                     if (locationIds.isEmpty && !isGlobal) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         const SnackBar(
-                                          content: Text("Please select at least one location"),
+                                          content: Text(
+                                              "Please select at least one location"),
                                         ),
                                       );
                                       return;
@@ -1087,22 +1110,22 @@ class _SovLocationListState extends State<SovLocationList>
                                         widget.sovID,
                                       );
                                     } finally {
-                                      setState(() => provider.isLoading = false);
+                                      setState(
+                                          () => provider.isLoading = false);
                                     }
                                   },
-
                                   child: locationListProvider.isLoading
                                       ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
                                       : const Icon(
-                                    Symbols.done_all_rounded,
-                                    color: Colors.green,
-                                  ),
+                                          Symbols.done_all_rounded,
+                                          color: Colors.green,
+                                        ),
                                 ),
-
 
                                 // InkWell(
                                 //   onTap: () async {
@@ -1480,93 +1503,156 @@ class _SovLocationListState extends State<SovLocationList>
                       Expanded(
                         child: TabBarView(
                           controller: _mainTabController,
-                          physics: NeverScrollableScrollPhysics(),
+                          // physics: NeverScrollableScrollPhysics(),
                           children: [
                             // First Tab: List View with Nested Tabs
                             Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Consumer<MyLocationListProvider>(
                                   builder:
                                       (context, locationListProvider, child) {
-                                    return TabBar(
-                                      controller: _tabController,
-                                      labelStyle: typography
-                                          .BottomNavigationActiveLabel,
-                                      tabs: [
-                                        Tab(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                  LanguageService.getTranslated(
-                                                context,
-                                                "all",
-                                              )),
-                                              SizedBox(
-                                                  width: CustomSpacing.two),
-                                              SizedBox(
-                                                height: 25,
-                                                child: Chip(
-                                                  labelPadding: EdgeInsets.zero,
-                                                  materialTapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
-                                                  label: Text(
-                                                    locationListProvider
-                                                            .isLoading
-                                                        ? "0"
-                                                        : locationListProvider
-                                                            .locationHits
-                                                            .toString(),
-                                                    style: typography
-                                                            .BottomNavigationActiveLabel
-                                                        .copyWith(height: -0.6),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                    return Material(
+                                      color: Colors.transparent,
+                                      child: TabBar(
+                                        controller: _tabController,
+                                        isScrollable: true,
+                                        tabAlignment: TabAlignment.start,
+                                        padding: EdgeInsets.zero,
+                                        labelPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                        indicatorSize:
+                                            TabBarIndicatorSize.label,
+                                        tabs: [
+                                          _buildTab(
+                                            context,
+                                            typography: typography,
+                                            labelKey: "all",
+                                            count:
+                                                locationListProvider.isLoading
+                                                    ? 0
+                                                    : locationListProvider
+                                                        .locationHits,
                                           ),
-                                        ),
-                                        Tab(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                  LanguageService.getTranslated(
-                                                context,
-                                                "certified",
-                                              )),
-                                              SizedBox(
-                                                  width: CustomSpacing.two),
-                                              SizedBox(
-                                                height: 25,
-                                                child: Chip(
-                                                  labelPadding: EdgeInsets.zero,
-                                                  materialTapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
-                                                  label: Text(
-                                                    locationListProvider
-                                                            .isLoading
-                                                        ? "0"
-                                                        : locationListProvider
-                                                            .certifiedLocationHits
-                                                            .toString(),
-                                                    style: typography
-                                                            .BottomNavigationActiveLabel
-                                                        .copyWith(height: -0.6),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                          _buildTab(
+                                            context,
+                                            typography: typography,
+                                            labelKey: "certified",
+                                            count:
+                                                locationListProvider.isLoading
+                                                    ? 0
+                                                    : locationListProvider
+                                                        .certifiedLocationHits,
                                           ),
-                                        ),
-                                      ],
+                                          _buildTab(
+                                            context,
+                                            typography: typography,
+                                            labelKey: "Recommendations",
+                                            count:
+                                                locationListProvider.isLoading
+                                                    ? 0
+                                                    : locationListProvider
+                                                        .locationHits,
+                                          ),
+                                        ],
+                                      ),
                                     );
                                   },
                                 ),
+
+                                // Consumer<MyLocationListProvider>(
+                                //   builder:
+                                //       (context, locationListProvider, child) {
+                                //     return TabBar(
+                                //       controller: _tabController,
+                                //       labelStyle: typography
+                                //           .BottomNavigationActiveLabel,
+                                //       tabs: [
+                                //         Tab(
+                                //           child: Row(
+                                //             mainAxisAlignment:
+                                //                 MainAxisAlignment.center,
+                                //             children: [
+                                //               Text(
+                                //                   LanguageService.getTranslated(
+                                //                 context,
+                                //                 "all",
+                                //               )),
+                                //               SizedBox(
+                                //                   width: CustomSpacing.two),
+                                //               SizedBox(
+                                //                 height: 25,
+                                //                 child: Chip(
+                                //                   labelPadding: EdgeInsets.zero,
+                                //                   materialTapTargetSize:
+                                //                       MaterialTapTargetSize
+                                //                           .shrinkWrap,
+                                //                   label: Text(
+                                //                     locationListProvider
+                                //                             .isLoading
+                                //                         ? "0"
+                                //                         : locationListProvider
+                                //                             .locationHits
+                                //                             .toString(),
+                                //                     style: typography
+                                //                             .BottomNavigationActiveLabel
+                                //                         .copyWith(height: -0.6),
+                                //                   ),
+                                //                 ),
+                                //               ),
+                                //             ],
+                                //           ),
+                                //         ),
+                                //         Tab(
+                                //           child: Row(
+                                //             mainAxisAlignment:
+                                //                 MainAxisAlignment.center,
+                                //             children: [
+                                //               Text(
+                                //                   LanguageService.getTranslated(
+                                //                 context,
+                                //                 "certified",
+                                //               )),
+                                //               SizedBox(
+                                //                   width: CustomSpacing.two),
+                                //               SizedBox(
+                                //                 height: 25,
+                                //                 child: Chip(
+                                //                   labelPadding: EdgeInsets.zero,
+                                //                   materialTapTargetSize:
+                                //                       MaterialTapTargetSize
+                                //                           .shrinkWrap,
+                                //                   label: Text(
+                                //                     locationListProvider
+                                //                             .isLoading
+                                //                         ? "0"
+                                //                         : locationListProvider
+                                //                             .certifiedLocationHits
+                                //                             .toString(),
+                                //                     style: typography
+                                //                             .BottomNavigationActiveLabel
+                                //                         .copyWith(height: -0.6),
+                                //                   ),
+                                //                 ),
+                                //               ),
+                                //             ],
+                                //           ),
+                                //         ),
+                                //         Tab(
+                                //           child: Row(
+                                //             mainAxisAlignment:
+                                //                 MainAxisAlignment.center,
+                                //             children: [
+                                //               Text("Recommendations"),
+                                //             ],
+                                //           ),
+                                //         ),
+                                //       ],
+                                //     );
+                                //   },
+                                // ),
                                 SizedBox(height: CustomSpacing.four),
                                 Expanded(
                                   child: TabBarView(
@@ -1575,6 +1661,8 @@ class _SovLocationListState extends State<SovLocationList>
                                     children: [
                                       _getLocationListAllUI(),
                                       _getLocationListCertifiedUI(),
+                                      MissingParameterScreen(
+                                          sovId: widget.sovID!),
                                     ],
                                   ),
                                 ),
@@ -1584,6 +1672,7 @@ class _SovLocationListState extends State<SovLocationList>
                               // locations:
                               accountID: widget.accountID!,
                               subAccountID: widget.subAccountID!,
+                              sovId: widget.sovID!,
                               initialProcessId: widget.initialProcessId,
                               initialSubProcessId: widget.initialSubProcessId,
                             ),
@@ -2950,7 +3039,6 @@ class _SovLocationListState extends State<SovLocationList>
                 padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 child: Column(
                   children: [
-
                     Row(
                       children: [
                         Expanded(
@@ -3990,9 +4078,9 @@ class _SovLocationListState extends State<SovLocationList>
       int index,
       BuildContext context) {
     return MyLocationCard(
-      locationName:
-      locationListProvider.certifiedLocationList[index].finalAddress?.locationName ??
-              '',
+      locationName: locationListProvider
+              .certifiedLocationList[index].finalAddress?.locationName ??
+          '',
       imageUrl: locationListProvider
                   .certifiedLocationList[index].screenshots?.isNotEmpty ==
               true
@@ -4115,7 +4203,9 @@ class _SovLocationListState extends State<SovLocationList>
   MyLocationCard myLocationlist(MyLocationListProvider locationListProvider,
       int index, BuildContext context) {
     return MyLocationCard(
-      locationName: locationListProvider.myLocationList[index].finalAddress?.locationName ?? '',
+      locationName: locationListProvider
+              .myLocationList[index].finalAddress?.locationName ??
+          '',
       imageUrl:
           locationListProvider.myLocationList[index].screenshots?.isNotEmpty ==
                   true
@@ -4849,4 +4939,35 @@ Color _getPieColorByKey(String key) {
   if (k == 5) return Colors.green; // 80–100%
 
   return Colors.grey;
+}
+
+Tab _buildTab(
+  BuildContext context, {
+  required CustomTypography typography,
+  required String labelKey,
+  required int count,
+}) {
+  return Tab(
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          LanguageService.getTranslated(context, labelKey),
+        ),
+        const SizedBox(width: 6),
+        Chip(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          label: Text(
+            count.toString(),
+            style: typography.BottomNavigationActiveLabel.copyWith(
+              fontSize: 12,
+              height: 1.1,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

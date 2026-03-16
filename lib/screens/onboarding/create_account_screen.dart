@@ -15,6 +15,7 @@ import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:phone_input/phone_input_package.dart';
 import 'package:provider/provider.dart';
+import '../../appleauth.dart';
 import '../../constants/enums.dart';
 import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/components/social_media_button.dart';
@@ -31,8 +32,11 @@ import '../terms_privacy.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   final UserCredential? userCredential;
+  final String? email;
+  final String? user;
 
-  const CreateAccountScreen({super.key, this.userCredential});
+  const CreateAccountScreen(
+      {super.key, this.userCredential, this.email, this.user});
 
   @override
   State<CreateAccountScreen> createState() => _CreateAccountScreenState();
@@ -162,6 +166,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     _selectedOption = SignUpOptions.individual;
 
+    emailController.text = widget.email ?? "";
+
     // Call APIs as soon as possible with a single Provider instance
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
@@ -256,8 +262,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       Positioned.fill(
                         child: Center(
                             child: Text(
-                          LanguageService.getTranslated(
-                              context, "login_image_text"),
+                          "Set up your account",
+                          // LanguageService.getTranslated(
+                          //     context, "login_image_text"),
                           style: typography.H5_Regular,
                         )),
                       ),
@@ -381,7 +388,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     children: [
                       Expanded(
                         child: Container(
-                          height: 60,
+                          height: 50,
                           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                           child: authNotifier.isSigningUp
                               ? Center(child: CircularProgressIndicator())
@@ -437,6 +444,72 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                           mobileController.value?.countryCode ??
                                               "",
                                           _selectedRoles,
+                                          context,
+                                        );
+                                        if (result == 'role_assigned') {
+                                          /*Navigator.push(context, MaterialPageRoute(builder: (context) => */ /*Home(
+                                                useLightMode: false,
+                                                useMaterial3: true,
+                                                colorSelected: ColorSeed.baseColor,
+                                                imageSelected: ColorImageProvider.leaves,
+                                                handleBrightnessChange: handleBrightnessChange,
+                                                handleMaterialVersionChange: handleMaterialVersionChange,
+                                                handleColorSelect: handleColorSelect,
+                                                handleImageSelect: handleImageSelect,
+                                                colorSelectionMethod: ColorSelectionMethod.colorSeed,
+                                              )*/ /*HomeScreen()));*/
+                                          final _googleSignIn = GoogleSignIn();
+                                          var isSignedIn =
+                                              await _googleSignIn.isSignedIn();
+                                          if (isSignedIn)
+                                            await _googleSignIn.disconnect();
+                                          FirebaseAuth.instance.signOut();
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "register_non_corporate_success_status_title"),
+                                                  style: typography.ButtonLarge,
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pushReplacement(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  LoginScreen()));
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.arrow_back),
+                                                        SizedBox(
+                                                            width: CustomSpacing
+                                                                .four),
+                                                        Text('Back to Login'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        }
+                                      } else if (widget.user == "apple") {
+                                        String result = await authNotifier
+                                            .signUpIndividualWithApple(
+                                          emailController.text,
+                                          passwordController.text,
+                                          nameController.text,
+                                          displayNameController.text,
+                                          mobileController.value?.nsn ?? "",
+                                          mobileController.value?.countryCode ??
+                                              "",
+                                          _selectedRoles,
+                                          widget.userCredential!,
                                           context,
                                         );
                                         if (result == 'role_assigned') {
@@ -764,11 +837,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         children: [
           Center(
             child: Text(
-              _selectedOption == SignUpOptions.individual
-                  ? LanguageService.getTranslated(context,
-                      "register_non_corporate_create_user_account_title")
-                  : LanguageService.getTranslated(
-                      context, "register_corporate_create_corporate_act_title"),
+              "Create your personal account",
+              // _selectedOption == SignUpOptions.individual
+              //     ? LanguageService.getTranslated(context,
+              //     "register_non_corporate_create_user_account_title")
+              //     : LanguageService.getTranslated(
+              //     context, "register_corporate_create_corporate_act_title"),
               style: typography.H5_Regular.copyWith(
                   color: Theme.of(context).colorScheme.onBackground),
               textAlign: TextAlign.center,
@@ -776,89 +850,91 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ),
           SizedBox(height: CustomSpacing.eight),
           // In your _createAccountForm() method, update the radio buttons section:
-
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  // decoration: BoxDecoration(
-                  //   border: Border.all(
-                  //     color: _selectedOption == SignUpOptions.individual
-                  //         ? AppColors.primaryMain
-                  //         : Colors.grey,
-                  //     width: 2,
-                  //   ),
-                  //   borderRadius: BorderRadius.circular(8),
-                  // ),
-                  child: RadioListTile<SignUpOptions>(
-                    tileColor: _selectedOption == SignUpOptions.individual
-                        ? AppColors.primaryMain.withOpacity(0.1)
-                        : Colors.transparent,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      LanguageService.getTranslated(
-                          context, "register_non_corporate_radio_Individual"),
-                      style: TextStyle(
-                        fontWeight: _selectedOption == SignUpOptions.individual
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    value: SignUpOptions.individual,
-                    groupValue: _selectedOption,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedOption = value;
-                        _clearIndividualForm();
-                        _resetRoles();
-                      });
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Platform.isAndroid
-                  ? Expanded(
-                      child: Container(
-                        // decoration: BoxDecoration(
-                        //   border: Border.all(
-                        //     color: _selectedOption == SignUpOptions.corporate
-                        //         ? AppColors.primaryMain
-                        //         : Colors.grey,
-                        //     width: 2,
-                        //   ),
-                        //   borderRadius: BorderRadius.circular(8),
-                        // ),
-                        child: RadioListTile<SignUpOptions>(
-                          tileColor: _selectedOption == SignUpOptions.corporate
-                              ? AppColors.primaryMain.withOpacity(0.1)
-                              : Colors.transparent,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            LanguageService.getTranslated(context,
-                                "register_non_corporate_radio_Corporate"),
-                            style: TextStyle(
-                              fontWeight:
-                                  _selectedOption == SignUpOptions.corporate
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
-                          ),
-                          value: SignUpOptions.corporate,
-                          groupValue: _selectedOption,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedOption = value;
-                              _clearCorporateForm();
-                              _resetRoles();
-                            });
-                          },
+          if (Platform.isAndroid)
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    // decoration: BoxDecoration(
+                    //   border: Border.all(
+                    //     color: _selectedOption == SignUpOptions.individual
+                    //         ? AppColors.primaryMain
+                    //         : Colors.grey,
+                    //     width: 2,
+                    //   ),
+                    //   borderRadius: BorderRadius.circular(8),
+                    // ),
+                    child: RadioListTile<SignUpOptions>(
+                      tileColor: _selectedOption == SignUpOptions.individual
+                          ? AppColors.primaryMain.withOpacity(0.1)
+                          : Colors.transparent,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        LanguageService.getTranslated(
+                            context, "register_non_corporate_radio_Individual"),
+                        style: TextStyle(
+                          fontWeight:
+                              _selectedOption == SignUpOptions.individual
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                         ),
                       ),
-                    )
-                  : SizedBox(),
-            ],
-          ),
+                      value: SignUpOptions.individual,
+                      groupValue: _selectedOption,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedOption = value;
+                          _clearIndividualForm();
+                          _resetRoles();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Platform.isAndroid
+                    ? Expanded(
+                        child: Container(
+                          // decoration: BoxDecoration(
+                          //   border: Border.all(
+                          //     color: _selectedOption == SignUpOptions.corporate
+                          //         ? AppColors.primaryMain
+                          //         : Colors.grey,
+                          //     width: 2,
+                          //   ),
+                          //   borderRadius: BorderRadius.circular(8),
+                          // ),
+                          child: RadioListTile<SignUpOptions>(
+                            tileColor:
+                                _selectedOption == SignUpOptions.corporate
+                                    ? AppColors.primaryMain.withOpacity(0.1)
+                                    : Colors.transparent,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              LanguageService.getTranslated(context,
+                                  "register_non_corporate_radio_Corporate"),
+                              style: TextStyle(
+                                fontWeight:
+                                    _selectedOption == SignUpOptions.corporate
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                              ),
+                            ),
+                            value: SignUpOptions.corporate,
+                            groupValue: _selectedOption,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedOption = value;
+                                _clearCorporateForm();
+                                _resetRoles();
+                              });
+                            },
+                          ),
+                        ),
+                      )
+                    : SizedBox(),
+              ],
+            ),
 
           SizedBox(height: CustomSpacing.four),
           _selectedOption == SignUpOptions.individual
@@ -991,6 +1067,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         //     iconPath: 'assets/images/googleLogo.svg',
         //   );
         // }),
+        SizedBox(height: CustomSpacing.eight),
+        AppleSignInButton(),
+        SizedBox(height: CustomSpacing.two),
         Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
           return SocialMediaButton(
             onPressed: () async {
@@ -1036,21 +1115,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(
           height: CustomSpacing.one,
         ),
-        Consumer<AuthNotifier>(
-          builder: (context, authNotifier, child) {
-            return SocialMediaButton(
-              onPressed: () async {
-                await authNotifier.signInWithMicrosoft(context: context);
-                print(authNotifier.user.toString());
-                print(authNotifier.userProfile.toString());
-                print(authNotifier.isNewUser.toString());
-              },
-              buttonText: LanguageService.getTranslated(
-                  context, "login_microsoft_button"),
-              iconPath: 'assets/images/microsoftLogo.svg',
-            );
-          },
-        ),
+        if (Platform.isAndroid)
+          Consumer<AuthNotifier>(
+            builder: (context, authNotifier, child) {
+              return SocialMediaButton(
+                onPressed: () async {
+                  await authNotifier.signInWithMicrosoft(context: context);
+                  print(authNotifier.user.toString());
+                  print(authNotifier.userProfile.toString());
+                  print(authNotifier.isNewUser.toString());
+                },
+                buttonText: LanguageService.getTranslated(
+                    context, "login_microsoft_button"),
+                iconPath: 'assets/images/microsoftLogo.svg',
+              );
+            },
+          ),
 
         // if (Platform.isIOS)
         // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
@@ -1100,141 +1180,143 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           SizedBox(height: CustomSpacing.eight),
         ],
         // Name
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          decoration: InputDecoration(
-            label: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "user_profile_user_management_name_filed_label"), // Label text, // Black color for "Name"
-                  ),
-                  WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+        if (widget.user != "apple") ...[
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              label: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: LanguageService.getTranslated(context,
+                          "user_profile_user_management_name_filed_label"), // Label text, // Black color for "Name"
                     ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
-                ],
-              ),
-            ),
-            hintText: LanguageService.getTranslated(
-                context, "user_profile_user_management_name_placeholder"),
-            hintStyle: typography.Body1,
-            labelStyle: typography.Body1,
-            border: const OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null ||
-                value.isEmpty ||
-                value.contains(RegExp(r'[0-9]'))) {
-              return 'Name is required';
-            }
-            // You can add more specific email validation here if needed
-            return null;
-          },
-          controller: nameController,
-        ),
-        SizedBox(height: CustomSpacing.four),
-        // Display Name
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "usermanagement_display_name_field_label"),
-            label: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    // Display Name(Optional)
-                    text: LanguageService.getTranslated(context,
-                        "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
-                  ),
-                  WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    WidgetSpan(
+                      child: Text(
+                        " *",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      alignment: PlaceholderAlignment
+                          .bottom, // Center aligns the asterisk
                     ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
-                ],
+                  ],
+                ),
               ),
+              hintText: LanguageService.getTranslated(
+                  context, "user_profile_user_management_name_placeholder"),
+              hintStyle: typography.Body1,
+              labelStyle: typography.Body1,
+              border: const OutlineInputBorder(),
             ),
-            hintText: LanguageService.getTranslated(
-                context, "usermanagement_display_name_field_label"),
-            hintStyle: typography.Body1,
-            labelStyle: typography.Body1,
-            border: const OutlineInputBorder(),
+            validator: (value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value.contains(RegExp(r'[0-9]'))) {
+                return 'Name is required';
+              }
+              // You can add more specific email validation here if needed
+              return null;
+            },
+            controller: nameController,
           ),
-          validator: (value) {
-            if (value == null ||
-                value.isEmpty ||
-                value.startsWith(RegExp(r'[0-9]')) ||
-                value.contains(RegExp(r'[!@#<>?":_`~;[\]\\|=+)(*&^%0-9]'))) {
-              return 'Display name is required';
-            }
-            // You can add more specific email validation here if needed
-            return null;
-          },
-          controller: displayNameController,
-        ),
-        SizedBox(height: CustomSpacing.four),
-        // Email
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          decoration: InputDecoration(
-            // labelText: LanguageService.getTranslated(
-            //     context, "register_non_corporate_emailfield_label"),
-            label: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "register_non_corporate_emailfield_label"), // Label text, // Black color for "Name"
-                  ),
-                  WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+          SizedBox(height: CustomSpacing.four),
+          // Display Name
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              // labelText: LanguageService.getTranslated(
+              //     context, "usermanagement_display_name_field_label"),
+              label: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      // Display Name(Optional)
+                      text: LanguageService.getTranslated(context,
+                          "register_corporate_company_displayname_field_label"), // Label text, // Black color for "Name"
+                    ),
+                    WidgetSpan(
+                      child: Text(
+                        " *",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      alignment: PlaceholderAlignment
+                          .bottom, // Center aligns the asterisk
                     ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
-                ],
+                  ],
+                ),
               ),
+              hintText: LanguageService.getTranslated(
+                  context, "usermanagement_display_name_field_label"),
+              hintStyle: typography.Body1,
+              labelStyle: typography.Body1,
+              border: const OutlineInputBorder(),
             ),
-            hintText: LanguageService.getTranslated(
-                context, "register_non_corporate_emailfield_placeholder"),
-            hintStyle: typography.Body1,
-            labelStyle: typography.Body1,
-            border: const OutlineInputBorder(),
+            validator: (value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value.startsWith(RegExp(r'[0-9]')) ||
+                  value.contains(RegExp(r'[!@#<>?":_`~;[\]\\|=+)(*&^%0-9]'))) {
+                return 'Display name is required';
+              }
+              // You can add more specific email validation here if needed
+              return null;
+            },
+            controller: displayNameController,
           ),
-          keyboardType: TextInputType.emailAddress,
-          validator: (value) {
-            if (value == null || value.isEmpty || regextest(value) == false) {
-              return 'Enter a valid email address';
-            }
-            // You can add more specific email validation here if needed
-            return null;
-          },
-          controller: emailController,
-        ),
+          SizedBox(height: CustomSpacing.four),
+          // Email
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              // labelText: LanguageService.getTranslated(
+              //     context, "register_non_corporate_emailfield_label"),
+              label: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: LanguageService.getTranslated(context,
+                          "register_non_corporate_emailfield_label"), // Label text, // Black color for "Name"
+                    ),
+                    WidgetSpan(
+                      child: Text(
+                        " *",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      alignment: PlaceholderAlignment
+                          .bottom, // Center aligns the asterisk
+                    ),
+                  ],
+                ),
+              ),
+              hintText: LanguageService.getTranslated(
+                  context, "register_non_corporate_emailfield_placeholder"),
+              hintStyle: typography.Body1,
+              labelStyle: typography.Body1,
+              border: const OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty || regextest(value) == false) {
+                return 'Enter a valid email address';
+              }
+              // You can add more specific email validation here if needed
+              return null;
+            },
+            controller: emailController,
+          ),
+        ],
         SizedBox(height: CustomSpacing.four),
         // mobile (optional)
         Row(
@@ -1392,118 +1474,121 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // ),
         SizedBox(height: CustomSpacing.four),
         // Password
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          decoration: InputDecoration(
-            suffixIcon: IconButton(
-              icon: _showPasswordIndividual
-                  ? Icon(Icons.visibility)
-                  : Icon(Icons.visibility_off),
-              onPressed: () {
-                setState(() {
-                  _showPasswordIndividual = !_showPasswordIndividual;
-                });
-              },
-            ),
-            // labelText: LanguageService.getTranslated(
-            //     context, "register_non_corporate_passwordfield_label"),
-            label: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "register_non_corporate_passwordfield_label"), // Label text, // Black color for "Name"
-                  ),
-                  WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
-                ],
-              ),
-            ),
 
-            hintText: LanguageService.getTranslated(
-                context, "register_corporate_password_field_placeholder"),
-            border: const OutlineInputBorder(),
-          ),
-          obscureText: !_showPasswordIndividual,
-          validator: (value) {
-            if (value == null || value.isEmpty || value.length < 8) {
-              return 'Password must be at least 8 characters';
-            }
-            // You can add more specific password validation here if needed
-            return null;
-          },
-          controller: passwordController,
-        ),
-        SizedBox(height: CustomSpacing.four),
-
-        // Confirm Password
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          decoration: InputDecoration(
-            suffixIcon: IconButton(
-              icon: _showPasswordConfirmationIndividual
-                  ? Icon(Icons.visibility)
-                  : Icon(Icons.visibility_off),
-              onPressed: () {
-                setState(() {
-                  _showPasswordConfirmationIndividual =
-                      !_showPasswordConfirmationIndividual;
-                });
-              },
-            ),
-            // labelText: LanguageService.getTranslated(
-            //     context, "register_corporate_confirm_password_field_label"),
-            label: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: LanguageService.getTranslated(context,
-                        "register_corporate_confirm_password_field_label"), // Label text, // Black color for "Name"
-                  ),
-                  WidgetSpan(
-                    child: Text(
-                      " *",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    alignment: PlaceholderAlignment
-                        .bottom, // Center aligns the asterisk
-                  ),
-                ],
+        if (widget.user != "apple") ...[
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              suffixIcon: IconButton(
+                icon: _showPasswordIndividual
+                    ? Icon(Icons.visibility)
+                    : Icon(Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _showPasswordIndividual = !_showPasswordIndividual;
+                  });
+                },
               ),
+              // labelText: LanguageService.getTranslated(
+              //     context, "register_non_corporate_passwordfield_label"),
+              label: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: LanguageService.getTranslated(context,
+                          "register_non_corporate_passwordfield_label"), // Label text, // Black color for "Name"
+                    ),
+                    WidgetSpan(
+                      child: Text(
+                        " *",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      alignment: PlaceholderAlignment
+                          .bottom, // Center aligns the asterisk
+                    ),
+                  ],
+                ),
+              ),
+
+              hintText: LanguageService.getTranslated(
+                  context, "register_corporate_password_field_placeholder"),
+              border: const OutlineInputBorder(),
             ),
-            hintText: LanguageService.getTranslated(context,
-                "register_corporate_confirm_password_field_placeholder"),
-            border: const OutlineInputBorder(),
+            obscureText: !_showPasswordIndividual,
+            validator: (value) {
+              if (value == null || value.isEmpty || value.length < 8) {
+                return 'Password must be at least 8 characters';
+              }
+              // You can add more specific password validation here if needed
+              return null;
+            },
+            controller: passwordController,
           ),
-          obscureText: !_showPasswordConfirmationIndividual,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Confirm Password is required';
-            }
-            if (value.length < 8) {
-              return 'Password must be at least 8 characters';
-            }
-            if (value != passwordController.text) {
-              return 'Passwords do not match';
-            }
-            return null;
-          },
-          controller: confirmPasswordController,
-        ),
+          SizedBox(height: CustomSpacing.four),
+
+          // Confirm Password
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              suffixIcon: IconButton(
+                icon: _showPasswordConfirmationIndividual
+                    ? Icon(Icons.visibility)
+                    : Icon(Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _showPasswordConfirmationIndividual =
+                        !_showPasswordConfirmationIndividual;
+                  });
+                },
+              ),
+              // labelText: LanguageService.getTranslated(
+              //     context, "register_corporate_confirm_password_field_label"),
+              label: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: LanguageService.getTranslated(context,
+                          "register_corporate_confirm_password_field_label"), // Label text, // Black color for "Name"
+                    ),
+                    WidgetSpan(
+                      child: Text(
+                        " *",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      alignment: PlaceholderAlignment
+                          .bottom, // Center aligns the asterisk
+                    ),
+                  ],
+                ),
+              ),
+              hintText: LanguageService.getTranslated(context,
+                  "register_corporate_confirm_password_field_placeholder"),
+              border: const OutlineInputBorder(),
+            ),
+            obscureText: !_showPasswordConfirmationIndividual,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Confirm Password is required';
+              }
+              if (value.length < 8) {
+                return 'Password must be at least 8 characters';
+              }
+              if (value != passwordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
+            controller: confirmPasswordController,
+          ),
+        ],
 
         // TextFormField(       autovalidateMode: AutovalidateMode.onUserInteraction,
         //   decoration: InputDecoration(

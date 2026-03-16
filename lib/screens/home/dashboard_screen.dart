@@ -4,14 +4,26 @@ import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
 import '../../design_system/components/expandable_card_container.dart';
 import '../../providers/news_feed_provider.dart';
+import '../listings/my_location_list.dart';
 import '../payments/purchase_license.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String? newUser;
+  final String? defaultTab;
+  final bool openAddLocation;
+  final String? latitude;
+  final String? longitude;
 
-  DashboardScreen({super.key, this.newUser});
+  DashboardScreen({
+    super.key,
+    this.newUser,
+    this.defaultTab,
+    this.openAddLocation = false,
+    this.latitude,
+    this.longitude,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -22,6 +34,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isExpanded = false;
   bool _showNotificationDot = true;
   List<Map<String, dynamic>> subscriptionMeta = [];
+  late final String? accountId;
+  late final String? subAccountId;
+  late final String? accountName;
+  late final String? subAccountName;
+  late final String? sovName;
+  late final String? sovid;
 
   // Dashboard Body
   bool isCompanyOnboardingStatsExpanded = false;
@@ -47,6 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isSuperAdmin = false;
   bool isIndivudual = false;
   bool isHasAnyPlan = false;
+  String? trialMap;
   late ScrollController _scrollController;
   GlobalKey keyFeature1 = GlobalKey();
   GlobalKey keyFeature2 = GlobalKey();
@@ -57,16 +76,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? selectedRole;
   bool isLoadingRoleSwitch = false;
   bool _showOverlay = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
 
     _initialize();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleFirstTimeNavigation();
+      if (!_hasNavigated) {
+        _hasNavigated = true;
+
+        _handleFirstTimeNavigation();
+
+        // ✅ HANDLE SHARED LOCATION
+        if (widget.openAddLocation &&
+            widget.latitude != null &&
+            widget.longitude != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AddLocationScreen(
+                accountId: accountId,
+                subAccountId: subAccountId,
+                sovId: "",
+                accountName: accountName,
+                subAccountName: subAccountName,
+                sovName: "sovName",
+                locationId: "",
+
+                // nullable-safe
+                locationName:
+                    "locationProfile.finalAddress?.locationName ?? " "",
+
+                locationIdForRef: "",
+
+                searchQuery: "",
+                page: "1",
+
+                totalPages: "1",
+              ),
+            ),
+          );
+        }
+      }
     });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (!_hasNavigated) {
+    //     _hasNavigated = true;
+    //     _handleFirstTimeNavigation();
+    //   }
+    // });
   }
 
   Future<void> _initialize() async {
@@ -77,45 +136,122 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleFirstTimeNavigation() async {
     if (!mounted) return;
-    bool isNewUser = await SharedPreferenceService.getHasNewUser();
-    isNewUser = widget.newUser == "false" ? false : isNewUser;
-    print(isNewUser);
-
-    if (!isNewUser) return;
-
-    final String? accountId =
-        await SharedPreferenceService.getDefaultAccountID();
-    final String? subAccountId =
-        await SharedPreferenceService.getDefaultSubAccountID();
-    final String? accountName =
-        await SharedPreferenceService.GetDefaultAccountName();
-    final String? subAccountName =
-        await SharedPreferenceService.GetDefaultSUBAccountName();
-
-    if (accountId == null ||
-        subAccountId == null ||
-        accountName == null ||
-        subAccountName == null) {
-      debugPrint("First-time data not ready, skipping navigation");
+    if (widget.defaultTab == "dashboard") {
+      debugPrint("Default tab is dashboard. Staying on current page.");
       return;
     }
 
+    bool isNewUser = await SharedPreferenceService.getHasNewUser();
+    isNewUser = widget.newUser == "false" ? false : isNewUser;
+
+    accountId = await SharedPreferenceService.getDefaultAccountID();
+    subAccountId = await SharedPreferenceService.getDefaultSubAccountID();
+    accountName = await SharedPreferenceService.GetDefaultAccountName();
+    subAccountName = await SharedPreferenceService.GetDefaultSUBAccountName();
+
+    debugPrint("isNewUser: $isNewUser");
+    debugPrint("accountId: $accountId");
+    debugPrint("subAccountId: $subAccountId");
+
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddLocationScreen(
-          newUser: isNewUser.toString(),
-          accountId: accountId,
-          subAccountId: subAccountId,
-          accountName: accountName,
-          subAccountName: subAccountName,
-          sovId: '',
+    /// 🟢 CASE 1 → New user → AddLocationScreen
+    if (isNewUser) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => AddLocationScreen(
+            newUser: isNewUser.toString(),
+            accountId: accountId,
+            subAccountId: subAccountId,
+            accountName: accountName,
+            subAccountName: subAccountName,
+            sovId: '',
+          ),
         ),
-      ),
-    );
+        (route) => false,
+      );
+      return;
+    }
+
+    /// 🟢 CASE 2 → Existing user + valid IDs → MyLocationList
+    if (!isNewUser &&
+        accountId != null &&
+        accountId!.isNotEmpty &&
+        subAccountId != null &&
+        subAccountId!.isNotEmpty) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => MyLocationList(
+            accountID: accountId,
+            subAccountID: subAccountId,
+            accountName: accountName ?? "",
+            subAccountName: subAccountName ?? "",
+          ),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
+    /// 🟢 CASE 3 → Existing user but IDs empty → Stay on current page
+    debugPrint(
+        "Existing user but no account/subAccount ID. Staying on same page.");
   }
+
+  // Future<void> _handleFirstTimeNavigation() async {
+  //   if (!mounted) return;
+  //   bool isNewUser = await SharedPreferenceService.getHasNewUser();
+  //   isNewUser = widget.newUser == "false" ? false : isNewUser;
+  //
+  //   // if (!isNewUser) return;
+  //
+  //   final String? accountId =
+  //       await SharedPreferenceService.getDefaultAccountID();
+  //   final String? subAccountId =
+  //       await SharedPreferenceService.getDefaultSubAccountID();
+  //   final String? accountName =
+  //       await SharedPreferenceService.GetDefaultAccountName();
+  //   final String? subAccountName =
+  //       await SharedPreferenceService.GetDefaultSUBAccountName();
+  //   print("accountId");
+  //   print(isNewUser);
+  //   print(accountId);
+  //   print(accountId);
+  //   print("accountId");
+  //
+  //   if (accountId == null ||
+  //       subAccountId == null ||
+  //       accountName == null ||
+  //       subAccountName == null) {
+  //     debugPrint("First-time data not ready, skipping navigation");
+  //     return;
+  //   }
+  //
+  //   if (!mounted) return;
+  //
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => AddLocationScreen(
+  //         newUser: isNewUser.toString(),
+  //         accountId: accountId,
+  //         subAccountId: subAccountId,
+  //         accountName: accountName,
+  //         subAccountName: subAccountName,
+  //         sovId: '',
+  //       ),
+  //     ),
+  //   );
+  //   Navigator.push(
+  //       context,
+  //       MaterialPageRoute(
+  //           builder: (context) => MyLocationList(
+  //                 accountID: accountId,
+  //                 subAccountID: subAccountId,
+  //                 accountName: accountName ?? "",
+  //                 subAccountName: subAccountName ?? "",
+  //               )));
+  // }
 
   Future<void> _checkFirstTimeLoader() async {
     final pref = await SharedPreferences.getInstance();
@@ -173,7 +309,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     isSuperAdmin = adminValues[2] ?? false;
     isIndivudual = adminValues[3] ?? false;
     isHasAnyPlan = adminValues[4] ?? false;
-
+    trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     if (mounted) setState(() {});
   }
 
@@ -667,7 +803,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         messageTextSpans: [
                                           TextSpan(
                                             text:
-                                                'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 24, 2025. After this date, we will need to delete your data. Thank you for being with us!',
+                                                'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                                             style: typography.Body1,
                                           ),
                                           // tappable

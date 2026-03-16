@@ -16,7 +16,6 @@ import '../../../service/language_service.dart';
 import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
-
   final String? locationName;
   final String? hasAnyPlan;
   final Map<String, HazardDetails>? hazards;
@@ -99,7 +98,8 @@ class MyLocationCard extends StatefulWidget {
     this.onNavigateBack,
     this.conflict,
     this.isHazardCanStart,
-    this.role, required,
+    this.role,
+    required,
   });
 
   @override
@@ -340,6 +340,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 8),
+                  // Text(widget.companyName.toString()),
+                  widget.companyName.toString().isNotEmpty?
                   RichText(
                     text: TextSpan(
                       children: [
@@ -355,7 +357,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                           ),
                         ),
                         TextSpan(
-                          text: widget.companyName ?? "",
+                          text: widget.companyName.toString() ?? "",
                           style: typography.Body2.copyWith(
                             color:
                                 Theme.of(context).brightness == Brightness.dark
@@ -369,7 +371,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                       ],
                     ),
                     overflow: TextOverflow.ellipsis,
-                  ),
+                  ):Container(),
                   SizedBox(height: 8),
                   if (widget.role != null &&
                       widget.role.toString() != "null" &&
@@ -568,43 +570,43 @@ class _MyLocationCardState extends State<MyLocationCard> {
             ),
           ],
         ),
-        if (chipLabels.length == 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildChip(context, chipLabels[0], isCampus: true),
-            ],
-          ),
-        if (chipLabels.length > 1)
-          // Scrollable chip list with scrollbar for multiple chips
-          Scrollbar(
+        // if (chipLabels.length == 0)
+        //   Row(
+        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //     children: [
+        //       _buildChip(context, chipLabels[0], isCampus: true),
+        //     ],
+        //   ),
+        // if (chipLabels.length > 1)
+        // Scrollable chip list with scrollbar for multiple chips
+        Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          thickness: 2,
+          child: SingleChildScrollView(
             controller: _scrollController,
-            thumbVisibility: true,
-            thickness: 2,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Row(
-                  children: chipLabels
-                      .map(
-                        (label) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: _buildChip(
-                            context,
-                            label,
-                            isCampus: label ==
-                                chipLabels[
-                                    0], // Assuming the first chip is campus
-                          ),
+            scrollDirection: Axis.horizontal,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: Row(
+                children: chipLabels
+                    .map(
+                      (label) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: _buildChip(
+                          context,
+                          label,
+                          isCampus: label ==
+                              chipLabels[
+                                  0], // Assuming the first chip is campus
                         ),
-                      )
-                      .toList(),
-                ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -614,22 +616,22 @@ class _MyLocationCardState extends State<MyLocationCard> {
     return Chip(
       labelStyle: CustomTypography(context).InputLabel,
       label: Text(label),
-      backgroundColor: isCampus
-          ? AppColors.primaryMain.withOpacity(0.2)
-          : Theme.of(context).colorScheme.surfaceContainerHighest,
-      deleteIcon: isCampus ? null : Icon(Icons.close, size: 16),
-      onDeleted: isCampus
-          ? null
-          : () {
-              Provider.of<MyLocationListProvider>(context, listen: false)
-                  .showDeleteTagDialog(
-                context,
-                widget.accountId ?? "",
-                widget.subAccountId ?? "",
-                widget.locationId,
-                label,
-              );
-            },
+      backgroundColor:
+          // isCampus
+          //     ? AppColors.primaryMain.withOpacity(0.2)
+          //     :
+          Theme.of(context).colorScheme.surfaceContainerHighest,
+      deleteIcon: Icon(Icons.close, size: 16),
+      onDeleted: () {
+        Provider.of<MyLocationListProvider>(context, listen: false)
+            .showDeleteTagDialog(
+          context,
+          widget.accountId ?? "",
+          widget.subAccountId ?? "",
+          widget.locationId,
+          label,
+        );
+      },
     );
   }
 
@@ -1121,7 +1123,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
                       // scoreColors[score].withOpacity(0.6),
                       child: Center(
                         child: Text(
-                          scoreInt.toString()=="0"?"1":scoreInt.toString(),
+                          scoreInt.toString() == "0"
+                              ? "1"
+                              : scoreInt.toString(),
                           style: typography.Body1.copyWith(
                             color: Colors.white,
                             fontSize: 10,

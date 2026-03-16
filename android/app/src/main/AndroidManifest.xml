@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.risksphere.green.qa">
+    package="com.risksphere.green">
+
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:node="remove" />
+
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_VIDEO"
+        tools:node="remove" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -8,29 +16,30 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <uses-feature
-        android:name="android.hardware.location.gps"
-        android:required="false" />
 
     <application
         android:enableOnBackInvokedCallback="true"
+        android:hardwareAccelerated="true"
         android:icon="@mipmap/launcher_icon"
         android:label="RiskSphere"
-        android:requestLegacyExternalStorage="true">
+        android:usesCleartextTraffic="true">
 
+        <!-- Google Sign-In -->
         <meta-data
             android:name="com.google.android.gms.auth.api.signin.v2.DEFAULT_SIGN_IN"
             android:value="true" />
+
+        <!-- Firebase Performance -->
         <meta-data
             android:name="firebase_performance_logcat_enabled"
             android:value="true" />
-        <meta-data
 
+        <!-- Google Maps -->
+        <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
+
         <meta-data
             android:name="com.google.android.gms.wallet.api.enabled"
             android:value="true" />
@@ -53,13 +62,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Receive Shared Text (Google Maps link) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="text/plain" />
+
+            </intent-filter>
 
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-            <!-- Deep Link & App Link Configuration -->
+            <!-- Deep Link -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -67,11 +85,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="web.risksphere.site"
-                    android:pathPrefix="/learner"
+                    android:host="qa.risksphere.ai"
+                    android:pathPrefix="/login"
                     android:scheme="https" />
+                <!--                <data-->
+                <!--                    android:host="web.risksphere.site"-->
+                <!--                    android:pathPrefix="/learner"-->
+                <!--                    android:scheme="https" />-->
             </intent-filter>
-
 
         </activity>
 
@@ -87,27 +108,10 @@
                 <data
                     android:host="auth"
                     android:scheme="msal184459ca-bb23-407f-845c-720d49b25768" />
-                <!--                    android:scheme="msaleb81a783-765c-482d-8fcb-6440ab1d1201" />-->
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="net.openid.appauth.RedirectUriReceiverActivity"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.Translucent.NoTitleBar"
-            tools:node="replace">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="oauth2redirect"
-                    android:scheme="com.risksphere.green.qa" />
-            </intent-filter>
-        </activity>
-
+        <!-- Firebase Messaging -->
         <service
             android:name="com.google.firebase.messaging.FirebaseMessagingService"
             android:exported="true"

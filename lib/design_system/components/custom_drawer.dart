@@ -47,7 +47,7 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  late final ScrollController _scrollController;
+  // final ScrollController _scrollController = ScrollController();
   bool showCorporateManagementTab = true;
   String selectedSovMenu = "";
   bool showNonCorporateManagementTab = true;
@@ -70,6 +70,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showUserOnboardingStats = false;
   bool showVerificationRequests = false;
   String isMaintenance = "";
+  String? trialMap;
 
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer = Debouncer(milliseconds: 200);
@@ -78,15 +79,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
     _setClaims();
     _getClaims();
-  }
-
-  Future<void> _initializeData() async {
-    await Future.wait([
-      _setClaims(),
-    ]);
   }
 
   Future<void> _setClaims() async {
@@ -133,6 +127,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
     bool showCorporateVerificationRequests = results[5] ?? false;
     bool showUserVerificationRequests = results[6] ?? false;
     isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
+
+    trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     showVerificationRequests =
         showCorporateVerificationRequests || showUserVerificationRequests;
 
@@ -143,12 +139,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
   Future<void> _getMaintainancePeriod() async {
     isMaintenance =
         await SharedPreferenceService.getScheduleInProgress() ?? "false";
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   _getClaims() async {
@@ -234,7 +224,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   messageTextSpans: [
                                     TextSpan(
                                       text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
+                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                                       style: typography.Body1,
                                     ),
                                     // tappable
@@ -306,13 +296,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
                               // Clear results
                               provider.searchLocationList = [];
-                              print(location.accountId);
-                              print(location.subAccountId);
-                              print(location.subAccountName);
-                              print(location.locationId);
-                              print(location.placeId);
 
-                              // ✅ Navigate with RESPONSE DATA
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => LocationProfile(
@@ -361,6 +345,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     return Center(child: CircularProgressIndicator());
                   }
                   return ListView(
+                    // controller: _scrollController,
                     physics: ClampingScrollPhysics(),
                     padding: EdgeInsets.only(top: 0),
                     children: <Widget>[
@@ -375,7 +360,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                                 builder: (_) => DashboardScreen(
-                                      newUser: "false",
+                                      newUser: "true",
+                                     defaultTab: "dashboard",
+
                                     )),
                           );
                         },
@@ -784,78 +771,78 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                                                   ),
                                                                   const SizedBox(
                                                                       width: 8),
-                                                                  Consumer<
-                                                                      AuthNotifier>(
-                                                                    builder: (context,
-                                                                        authNotifier,
-                                                                        child) {
-                                                                      return ElevatedButton(
-                                                                        style: ElevatedButton
-                                                                            .styleFrom(
-                                                                          backgroundColor:
-                                                                              Colors.red,
-                                                                          foregroundColor:
-                                                                              Colors.white,
-                                                                          padding: const EdgeInsets
-                                                                              .symmetric(
-                                                                              horizontal: 20,
-                                                                              vertical: 12),
-                                                                          shape:
-                                                                              RoundedRectangleBorder(
-                                                                            borderRadius:
-                                                                                BorderRadius.circular(6),
-                                                                          ),
-                                                                        ),
-                                                                        onPressed: isDeleting
-                                                                            ? null // disable while deleting
-                                                                            : () async {
-                                                                                setState(() => isDeleting = true);
-
-                                                                                try {
-                                                                                  final googleSignIn = GoogleSignIn();
-                                                                                  if (await googleSignIn.isSignedIn()) {
-                                                                                    await googleSignIn.disconnect();
-                                                                                  }
-                                                                                  await authNotifier.signOut();
-
-                                                                                  Navigator.pushAndRemoveUntil(
-                                                                                    context,
-                                                                                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                                                                                    (route) => false,
-                                                                                  );
-
-                                                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                                                    const SnackBar(
-                                                                                      content: Text("Account deleted successfully"),
-                                                                                    ),
-                                                                                  );
-                                                                                } catch (e) {
-                                                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                                                    SnackBar(content: Text("Delete failed: $e")),
-                                                                                  );
-                                                                                  setState(() => isDeleting = false);
-                                                                                }
-                                                                              },
-                                                                        child: isDeleting
-                                                                            ? const SizedBox(
-                                                                                height: 20,
-                                                                                width: 20,
-                                                                                child: CircularProgressIndicator(
-                                                                                  strokeWidth: 2,
-                                                                                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                                                                                ),
-                                                                              )
-                                                                            : Text(
-                                                                                LanguageService.getTranslated(context, "delete"),
-                                                                                style: TextStyle(
-                                                                                  color: Colors.white,
-                                                                                  fontSize: 18,
-                                                                                  fontWeight: FontWeight.bold,
-                                                                                ),
-                                                                              ),
-                                                                      );
-                                                                    },
-                                                                  ),
+                                                                  // Consumer<
+                                                                  //     AuthNotifier>(
+                                                                  //   builder: (context,
+                                                                  //       authNotifier,
+                                                                  //       child) {
+                                                                  //     return ElevatedButton(
+                                                                  //       style: ElevatedButton
+                                                                  //           .styleFrom(
+                                                                  //         backgroundColor:
+                                                                  //             Colors.red,
+                                                                  //         foregroundColor:
+                                                                  //             Colors.white,
+                                                                  //         padding: const EdgeInsets
+                                                                  //             .symmetric(
+                                                                  //             horizontal: 20,
+                                                                  //             vertical: 12),
+                                                                  //         shape:
+                                                                  //             RoundedRectangleBorder(
+                                                                  //           borderRadius:
+                                                                  //               BorderRadius.circular(6),
+                                                                  //         ),
+                                                                  //       ),
+                                                                  //       onPressed: isDeleting
+                                                                  //           ? null // disable while deleting
+                                                                  //           : () async {
+                                                                  //               setState(() => isDeleting = true);
+                                                                  //
+                                                                  //               try {
+                                                                  //                 final googleSignIn = GoogleSignIn();
+                                                                  //                 if (await googleSignIn.isSignedIn()) {
+                                                                  //                   await googleSignIn.disconnect();
+                                                                  //                 }
+                                                                  //                 await authNotifier.signOut();
+                                                                  //
+                                                                  //                 Navigator.pushAndRemoveUntil(
+                                                                  //                   context,
+                                                                  //                   MaterialPageRoute(builder: (_) => LoginScreen()),
+                                                                  //                   (route) => false,
+                                                                  //                 );
+                                                                  //
+                                                                  //                 ScaffoldMessenger.of(context).showSnackBar(
+                                                                  //                   const SnackBar(
+                                                                  //                     content: Text("Account deleted successfully"),
+                                                                  //                   ),
+                                                                  //                 );
+                                                                  //               } catch (e) {
+                                                                  //                 ScaffoldMessenger.of(context).showSnackBar(
+                                                                  //                   SnackBar(content: Text("Delete failed: $e")),
+                                                                  //                 );
+                                                                  //                 setState(() => isDeleting = false);
+                                                                  //               }
+                                                                  //             },
+                                                                  //       child: isDeleting
+                                                                  //           ? const SizedBox(
+                                                                  //               height: 20,
+                                                                  //               width: 20,
+                                                                  //               child: CircularProgressIndicator(
+                                                                  //                 strokeWidth: 2,
+                                                                  //                 valueColor: AlwaysStoppedAnimation(Colors.white),
+                                                                  //               ),
+                                                                  //             )
+                                                                  //           : Text(
+                                                                  //               LanguageService.getTranslated(context, "delete"),
+                                                                  //               style: TextStyle(
+                                                                  //                 color: Colors.white,
+                                                                  //                 fontSize: 18,
+                                                                  //                 fontWeight: FontWeight.bold,
+                                                                  //               ),
+                                                                  //             ),
+                                                                  //     );
+                                                                  //   },
+                                                                  // ),
                                                                 ],
                                                               ),
                                                             ],
@@ -1018,15 +1005,15 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                         setState(() => isLoggingOut = true);
 
                                         /// 1️⃣ Google SignOut (ONLY if signed in)
-                                        final GoogleSignIn googleSignIn =
-                                            GoogleSignIn();
-
-                                        if (await googleSignIn.isSignedIn()) {
-                                          await googleSignIn.signOut();
-
-                                          // ⚠️ Do NOT call disconnect() on Android unless required
-                                          // await googleSignIn.disconnect(); ❌ REMOVE
-                                        }
+                                        // final GoogleSignIn googleSignIn =
+                                        //     GoogleSignIn();
+                                        //
+                                        // if (await googleSignIn.isSignedIn()) {
+                                        //   await googleSignIn.signOut();
+                                        //
+                                        //   // ⚠️ Do NOT call disconnect() on Android unless required
+                                        //   // await googleSignIn.disconnect(); ❌ REMOVE
+                                        // }
 
                                         /// 2️⃣ Firebase sign out (AFTER Google)
                                         await FirebaseAuth.instance.signOut();

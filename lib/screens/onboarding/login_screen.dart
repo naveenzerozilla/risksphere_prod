@@ -150,8 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Positioned.fill(
                       child: Center(
                         child: Text(
-                          LanguageService.getTranslated(
-                              context, "login_image_text"),
+                          "Set up your account",
+                          // LanguageService.getTranslated(
+                          //     context, "login_image_text"),
                           style: typography.H5_Regular,
                         ),
                       ),
@@ -240,24 +241,10 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(height: CustomSpacing.eight),
             // AppleSignInButton(),
             // Social Media Buttons
-            // if (Platform.isAndroid)...[
-            // SignInWithAppleButton(
-            //   style: SignInWithAppleButtonStyle.whiteOutlined,
-            //   borderRadius: BorderRadius.circular(8),
-            //   onPressed: () async {
-            //     try {
-            //       final credential = await SignInWithApple.getAppleIDCredential(
-            //         scopes: [
-            //           AppleIDAuthorizationScopes.email,
-            //           AppleIDAuthorizationScopes.fullName,
-            //         ],
-            //       );
-            //     } catch (error) {
-            //       debugPrint("Apple Sign In Failed: $error");
-            //     }
-            //   },
-            // ),
-            // SizedBox(height: CustomSpacing.two),
+            // if (Platform.isIOS) ...[
+            AppleSignInButton(),
+            // ],
+            SizedBox(height: CustomSpacing.two),
             // Social Media Buttons
             // if (Platform.isAndroid) ...[
             Consumer<AuthNotifier>(
@@ -288,21 +275,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
             SizedBox(height: CustomSpacing.three),
 
-            Consumer<AuthNotifier>(
-              builder: (context, authNotifier, child) {
-                return SocialMediaButton(
-                  onPressed: () async {
-                    await authNotifier.signInWithMicrosoft(context: context);
-                    print(authNotifier.user.toString());
-                    print(authNotifier.userProfile.toString());
-                    print(authNotifier.isNewUser.toString());
-                  },
-                  buttonText: LanguageService.getTranslated(
-                      context, "login_microsoft_button"),
-                  iconPath: 'assets/images/microsoftLogo.svg',
-                );
-              },
-            ),
+            if (Platform.isAndroid)
+              Consumer<AuthNotifier>(
+                builder: (context, authNotifier, child) {
+                  return SocialMediaButton(
+                    onPressed: () async {
+                      await authNotifier.signInWithMicrosoft(context: context);
+                      print(authNotifier.user.toString());
+                      print(authNotifier.userProfile.toString());
+                      print(authNotifier.isNewUser.toString());
+                    },
+                    buttonText: LanguageService.getTranslated(
+                        context, "login_microsoft_button"),
+                    iconPath: 'assets/images/microsoftLogo.svg',
+                  );
+                },
+              ),
             // Consumer<AuthNotifier>(
             //   builder: (context, authNotifier, _) {
             //     return AppleSignInButton(
@@ -337,8 +325,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 SizedBox(width: CustomSpacing.three),
                 Text(
-                  LanguageService.getTranslated(
-                      context, "register_non_corporate_register_manually"),
+                  "Sign in",
+                  // LanguageService.getTranslated(
+                  //     context, "register_non_corporate_register_manually"),
                   style: typography.Subtitle1.copyWith(
                       color: Theme.of(context).colorScheme.onSurface),
                 ),
@@ -468,6 +457,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 }),
               ],
             ),
+            // SizedBox(height: CustomSpacing.four),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(height: CustomSpacing.onePointFive),
+                Text(
+                  LanguageService.getTranslated(
+                      context, 'login_dont_hv_account'),
+                  style: typography.Body1.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  ' ',
+                  style: typography.Body1.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => CreateAccountScreen()),
+                    );
+                  },
+                  child: Text(
+                    LanguageService.getTranslated(
+                        context, 'login_register_now'),
+                    style: typography.Subtitle1.copyWith(
+                      color: AppColors.primaryMain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 16),
             /*SizedBox(height: CustomSpacing.four),
@@ -498,7 +524,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
             ),*/
-            SizedBox(height: CustomSpacing.four),
+            SizedBox(height: CustomSpacing.eight),
 
             Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
               return Row(
@@ -595,43 +621,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               );
             }),
-            SizedBox(height: CustomSpacing.four),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: CustomSpacing.onePointFive),
-                Text(
-                  LanguageService.getTranslated(
-                      context, 'login_dont_hv_account'),
-                  style: typography.Body1.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  ' ',
-                  style: typography.Body1.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => CreateAccountScreen()),
-                    );
-                  },
-                  child: Text(
-                    LanguageService.getTranslated(
-                        context, 'login_register_now'),
-                    style: typography.Subtitle1.copyWith(
-                      color: AppColors.primaryMain,
-                    ),
-                  ),
-                ),
-              ],
-            ),
 
             // Row(
             //   mainAxisAlignment: MainAxisAlignment.start,

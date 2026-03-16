@@ -20,6 +20,7 @@ import '../utils/toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
   /// Firestore listeners per location
+  String? loadingAccountId;
   final Map<String, StreamSubscription<DocumentSnapshot>> _sovListeners = {};
   final Map<String, Map<String, dynamic>?> sovMeta = {};
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -99,21 +100,6 @@ class AccountListProvider extends ChangeNotifier {
     _blockedLocationIds.remove(locationId);
     notifyListeners();
   }
-
-  // void startUpdating(String locationId) {
-  //   blockedLocationIds.add(locationId);
-  //   notifyListeners();
-  // }
-  //
-  // void stopUpdating(String locationId) {
-  //   blockedLocationIds.remove(locationId);
-  //   notifyListeners();
-  // }
-
-  // void stopUpdating() {
-  //   isUpdating = false;
-  //   notifyListeners();
-  // }
 
   bool hasLoadedOnce = false;
   String lastQuery = "";
@@ -243,67 +229,6 @@ class AccountListProvider extends ChangeNotifier {
     });
   }
 
-  //
-  // void listenToLocationRecommendations(String? sovId) {
-  //   _locRecSub?.cancel();
-  //   _locRecSub = null;
-  //   _listeningSovId = null;
-  //
-  //   if (sovId == null || sovId.isEmpty) {
-  //     locRecMetaData = null;
-  //     notifyListeners();
-  //     return;
-  //   }
-  //
-  //   _listeningSovId = sovId;
-  //
-  //   final docRef = firestore.collection('location_recommendations').doc(sovId);
-  //
-  //   _locRecSub = docRef.snapshots().listen(
-  //     (snapshot) async {
-  //       if (!snapshot.exists) {
-  //         locRecMetaData = null;
-  //         notifyListeners();
-  //         return;
-  //       }
-  //
-  //       final data = snapshot.data() as Map<String, dynamic>;
-  //
-  //       /// 🔥 CURRENT blocked locations from Firestore
-  //       final List<dynamic> blocked = data['blocked_locations'] ?? [];
-  //       final Set<String> currentBlockedIds =
-  //           blocked.map((e) => e.toString()).toSet();
-  //
-  //       /// 🔥 FIND locations that JUST finished processing
-  //       final Set<String> completedLocationIds =
-  //           _previousBlockedLocationIds.difference(currentBlockedIds);
-  //
-  //       /// 🔄 Update meta used by UI
-  //       locRecMetaData = {
-  //         'is_stale': data['is_stale'] ?? false,
-  //         'refresh_pending': data['refresh_pending'] ?? false,
-  //         'refresh_triggered_at': data['refresh_triggered_at'],
-  //         'refresh_completed_at': data['refresh_completed_at'],
-  //         'refresh_failed_at': data['refresh_failed_at'],
-  //         'blocked_locations': blocked,
-  //       };
-  //
-  //       _previousBlockedLocationIds = currentBlockedIds;
-  //
-  //       notifyListeners();
-  //
-  //       // for (final locationId in completedLocationIds) {
-  //       //   await _reloadSingleLocation(sovId, '');
-  //       // }
-  //     },
-  //     onError: (error) {
-  //       debugPrint(
-  //           'Error listening to location_recommendations/$sovId: $error');
-  //       locRecMetaData = null;
-  //       notifyListeners();
-  //     },
-  //   );
-  // }
   void listenToLocationRecommendations(String? sovId) {
     _locRecSub?.cancel();
     _locRecSub = null;
@@ -333,11 +258,9 @@ class AccountListProvider extends ChangeNotifier {
         final Set<String> currentBlockedIds =
             blocked.map((e) => e.toString()).toSet();
 
-        /// 🔥 LOCATIONS THAT JUST FINISHED PROCESSING
         final Set<String> completedLocationIds =
             _previousBlockedLocationIds.difference(currentBlockedIds);
 
-        /// 🔄 UPDATE META
         locRecMetaData = {
           'is_stale': data['is_stale'] ?? false,
           'refresh_pending': data['refresh_pending'] ?? false,
@@ -351,7 +274,6 @@ class AccountListProvider extends ChangeNotifier {
 
         notifyListeners();
 
-        /// ✅ 🔥 RELOAD API WHEN PROCESSING COMPLETES
         if (completedLocationIds.isNotEmpty) {
           debugPrint(
               "Processing completed for locations: $completedLocationIds");
@@ -488,18 +410,6 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
-
-  // Pagination
-  // int _page = 1;
-  //
-  // int get page => _page;
-  //
-  // set page(int value) {
-  //   _page = value;
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     notifyListeners();
-  //   });
-  // }
 
   int _totalPages = 1;
 
@@ -1213,6 +1123,113 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateDefaultAccount(
+    BuildContext context,
+    String accountId,
+    bool currentStatus,
+  ) async {
+    try {
+      final bool newStatus = !currentStatus;
+
+      /// ✅ Show loader ONLY when UNFAVOURITING
+      if (currentStatus) {
+        loadingAccountId = accountId;
+        notifyListeners();
+      }
+
+      ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
+
+      final response = await apiService.patch({
+        'data': {
+          "account_id": accountId,
+          "update_default_account": true,
+          "default_status": newStatus,
+        }
+      });
+
+      /// You can optionally check response status here
+      /// if (response.statusCode != 200) return false;
+
+      /// ✅ Reset all accounts
+      for (var element in accountList) {
+        element.isDefault = false;
+      }
+
+      /// ✅ If making favourite
+      if (newStatus) {
+        int selectedIndex =
+            accountList.indexWhere((e) => e.accountId == accountId);
+
+        if (selectedIndex != -1) {
+          accountList[selectedIndex].isDefault = true;
+
+          /// Move to top only when favourite
+          var selectedItem = accountList.removeAt(selectedIndex);
+          accountList.insert(0, selectedItem);
+        }
+      }
+
+      notifyListeners();
+      return true; // ✅ SUCCESS
+    } catch (e) {
+      debugPrint("updateDefaultAccount Error: $e");
+      return false; // ❌ FAILURE
+    } finally {
+      loadingAccountId = null;
+      notifyListeners();
+    }
+  }
+
+  // Future<void> updateDefaultAccount(
+  //     BuildContext context,
+  //     String accountId,
+  //     bool currentStatus,
+  //     ) async {
+  //   try {
+  //     bool newStatus = !currentStatus;
+  //
+  //     /// ✅ Show loader ONLY when UNFAVOURITING
+  //     if (currentStatus) {
+  //       loadingAccountId = accountId;
+  //       notifyListeners();
+  //     }
+  //
+  //     ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
+  //
+  //     await apiService.patch({
+  //       'data': {
+  //         "account_id": accountId,
+  //         "update_default_account": true,
+  //         "default_status": newStatus
+  //       }
+  //     });
+  //
+  //     /// Reset all
+  //     for (var element in accountList) {
+  //       element.isDefault = false;
+  //     }
+  //
+  //     if (newStatus) {
+  //       int selectedIndex =
+  //       accountList.indexWhere((e) => e.accountId == accountId);
+  //
+  //       if (selectedIndex != -1) {
+  //         accountList[selectedIndex].isDefault = true;
+  //
+  //         /// Move to top only when favourite
+  //         var selectedItem = accountList.removeAt(selectedIndex);
+  //         accountList.insert(0, selectedItem);
+  //       }
+  //     }
+  //
+  //     loadingAccountId = null;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     loadingAccountId = null;
+  //     notifyListeners();
+  //   }
+  // }
+
   Future<void> renameSov(
       BuildContext context, String sovId, String newName) async {
     var typography = CustomTypography(context);
@@ -1368,7 +1385,7 @@ class AccountListProvider extends ChangeNotifier {
 
       print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      String url = '?search=$searchQuery';
+      String url = '?account_name=$searchQuery';
       var response = await apiService.get(url);
       log(response.toString());
 

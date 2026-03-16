@@ -163,6 +163,19 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
   TutorialCoachMark? tutorialCoachMark;
   bool _showOverlay = false;
 
+  Future<void> _getData(String sovId) async {
+    final accountListProvider =
+        Provider.of<AccountListProvider>(context, listen: false);
+    String? hazardLicenseStatus =
+        await SharedPreferenceService.getHazardHubLicense();
+    setState(() {
+      hasHazardHubCount = hazardLicenseStatus;
+    });
+
+    await accountListProvider.fetchMissingParameterList(context, sovId);
+    setState(() => _selectedScreen = Screens.accountList);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -199,19 +212,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     setState(() {
       hasHazardHubCount = credits;
     });
-  }
-
-  Future<void> _getData(String sovId) async {
-    final accountListProvider =
-        Provider.of<AccountListProvider>(context, listen: false);
-    String? hazardLicenseStatus =
-        await SharedPreferenceService.getHazardHubLicense();
-    setState(() {
-      hasHazardHubCount = hazardLicenseStatus;
-    });
-
-    await accountListProvider.fetchMissingParameterList(context, sovId);
-    setState(() => _selectedScreen = Screens.accountList);
   }
 
   @override
@@ -318,11 +318,19 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                   },
                                   onFinish: () async {
                                     setState(() {
-                                      _optimisticProcessingIds
-                                          .removeAll(selectedHazardLocationIds);
+                                      _optimisticUnlockedHazards.clear();
+                                      _optimisticProcessingIds.clear();
+                                      selectedHazardLocationIds.clear();
                                     });
 
-                                    selectedHazardLocationIds.clear();
+                                    await context
+                                        .read<AccountListProvider>()
+                                        .fetchMissingParameterList(
+                                          context,
+                                          widget.sovId!,
+                                          isRefresh: true,
+                                        );
+
                                     await _refreshHazardHubCredits();
                                     await _getData(widget.sovId);
                                   },
@@ -362,8 +370,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     );
   }
 
-
-
   Widget _buildMissingParameterCard(
     Data item,
     Map<String, String> accountMap,
@@ -390,11 +396,27 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
       /// future implementations
       onLongPress: () {
         if (item.usFlag == true && item.hasVendorHazards != true) {
+          if (selectedHazardLocationIds.length >= 5) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("You can select a maximum of 5 locations."),
+              ),
+            );
+            return;
+          }
+
           setState(() {
             selectedHazardLocationIds.add(locationId);
           });
         }
       },
+      // onLongPress: () {
+      //   if (item.usFlag == true && item.hasVendorHazards != true) {
+      //     setState(() {
+      //       selectedHazardLocationIds.add(locationId);
+      //     });
+      //   }
+      // },
       onTap: () {
         if (!canSelect) return;
 
@@ -402,10 +424,30 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
           if (isSelected) {
             selectedHazardLocationIds.remove(locationId);
           } else {
+            if (selectedHazardLocationIds.length >= 5) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("You can select a maximum of 5 locations."),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
             selectedHazardLocationIds.add(locationId);
           }
         });
       },
+      // onTap: () {
+      //   if (!canSelect) return;
+      //
+      //   setState(() {
+      //     if (isSelected) {
+      //       selectedHazardLocationIds.remove(locationId);
+      //     } else {
+      //       selectedHazardLocationIds.add(locationId);
+      //     }
+      //   });
+      // },
 
       child: Container(
           padding: const EdgeInsets.all(10),
@@ -446,7 +488,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                               const Icon(Icons.error),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
                       Container(
                         // color: Colors.red,
                         child: Column(
@@ -515,35 +557,34 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                                       });
                                                     },
                                                     onFinish: () async {
-                                                      if (!mounted) return;
-
                                                       setState(() {
-                                                        _optimisticProcessingIds
-                                                            .remove(locationId);
-
-                                                        /// 🔥 INSTANT UI UPDATE
                                                         _optimisticUnlockedHazards
-                                                            .add(locationId);
+                                                            .clear();
+                                                        _optimisticProcessingIds
+                                                            .clear();
+                                                        selectedHazardLocationIds
+                                                            .clear();
                                                       });
 
-                                                      /// Background refresh (no UI wait)
-                                                      _refreshHazardHubCredits();
-                                                    },
+                                                      await context
+                                                          .read<
+                                                              AccountListProvider>()
+                                                          .fetchMissingParameterList(
+                                                            context,
+                                                            widget.sovId!,
+                                                            isRefresh: true,
+                                                          );
 
-                                                    // onFinish: () async {
-                                                    //   if (!mounted) return;
-                                                    //   setState(() {
-                                                    //     _optimisticProcessingIds
-                                                    //         .remove(locationId);
-                                                    //   });
-                                                    //   await _refreshHazardHubCredits();
-                                                    // },
+                                                      await _refreshHazardHubCredits();
+                                                      await _getData(
+                                                          widget.sovId);
+                                                    },
                                                   );
                                                 }
                                               },
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 6),
+                                              horizontal: 6, vertical: 6),
                                           decoration: BoxDecoration(
                                             borderRadius:
                                                 BorderRadius.circular(20),
@@ -573,26 +614,24 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    const SizedBox(
-                                                      width: 6,
-                                                      height: 6,
-                                                      child: DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color:
-                                                              Color(0xFF2ECC71),
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 2),
+                                                    // const SizedBox(
+                                                    //   width: 6,
+                                                    //   height: 6,
+                                                    //   child: DecoratedBox(
+                                                    //     decoration:
+                                                    //         BoxDecoration(
+                                                    //       color:
+                                                    //           Color(0xFF2ECC71),
+                                                    //       shape:
+                                                    //           BoxShape.circle,
+                                                    //     ),
+                                                    //   ),
+                                                    // ),
 
-                                                    const SizedBox(width: 2),
                                                     Text(
                                                       hasHazard
-                                                          ? 'View Hazard'
-                                                          : 'Unlock Hazard',
+                                                          ? 'View HazardHub'
+                                                          : 'Unlock HazardHub',
                                                       style: const TextStyle(
                                                         color:
                                                             Color(0xFF2ECC71),
@@ -675,30 +714,74 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                       type: ButtonType.elevated,
                       onPressed: isBlocked
                           ? null
-                          : () {
-                              // if (item.usFlag == true) {
-                              //   showInsufficientCreditsBottomSheet(
-                              //     context,
-                              //     hasHazardHubCount: hasHazardHubCount,
-                              //     selectedLocationIds:
-                              //         selectedHazardLocationIds.toList(),
-                              //     onSuccess: () async {
-                              //       // 🔄 reload data after unlock
-                              //       await _getData(widget.sovId);
-                              //       selectedHazardLocationIds.clear();
-                              //       setState(() {});
-                              //     },
-                              //   );
-                              // } else {
-                              Navigator.push(
+                          : () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       UpdateParameterScreen(item: item),
                                 ),
                               );
-                              // }
+
+                              setState(() {
+                                _optimisticUnlockedHazards.clear();
+                                _optimisticProcessingIds.clear();
+                                selectedHazardLocationIds.clear();
+                              });
+
+                              await context
+                                  .read<AccountListProvider>()
+                                  .fetchMissingParameterList(
+                                    context,
+                                    widget.sovId!,
+                                    isRefresh: true,
+                                  );
+
+                              await _refreshHazardHubCredits();
                             },
+                      // onPressed: isBlocked
+                      //     ? null
+                      //     : () {
+                      //         // if (item.usFlag == true) {
+                      //         //   showInsufficientCreditsBottomSheet(
+                      //         //     context,
+                      //         //     hasHazardHubCount: hasHazardHubCount,
+                      //         //     selectedLocationIds:
+                      //         //         selectedHazardLocationIds.toList(),
+                      //         //     onSuccess: () async {
+                      //         //       // 🔄 reload data after unlock
+                      //         //       await _getData(widget.sovId);
+                      //         //       selectedHazardLocationIds.clear();
+                      //         //       setState(() {});
+                      //         //     },
+                      //         //   );
+                      //         // } else {
+                      //         Navigator.push(
+                      //           context,
+                      //           MaterialPageRoute(
+                      //             builder: (_) =>
+                      //                 UpdateParameterScreen(item: item),
+                      //           ),
+                      //         ).then(value){
+                      //           setState(() {
+                      //             _optimisticUnlockedHazards.clear();
+                      //             _optimisticProcessingIds.clear();
+                      //             selectedHazardLocationIds.clear();
+                      //           });
+                      //
+                      //           await context
+                      //               .read<AccountListProvider>()
+                      //               .fetchMissingParameterList(
+                      //             context,
+                      //             widget.sovId!,
+                      //             isRefresh: true,
+                      //           );
+                      //
+                      //           await _refreshHazardHubCredits();
+                      //         }
+                      //
+                      //         // }
+                      //       },
                       child: Text(
                         // item.usFlag == true ? "Unlock" : "Update",
                         "Update",
@@ -893,8 +976,6 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     }
   }
 
-
-
   List<Data> _applyLocationFilter(List<Data> list) {
     switch (selectedLocation) {
       case "HazardHub Eligible":
@@ -923,42 +1004,68 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
         children: [
           Row(
             children: [
-              Builder(
-                builder: (context) {
-                  final provider = context.watch<AccountListProvider>();
+              // Builder(
+              //   builder: (context) {
+              //     final provider = context.watch<AccountListProvider>();
+              //
+              //     final allItems = provider.missingParameterList
+              //         .where((e) => (e.totalUnfilledParameters ?? 0) > 0)
+              //         .toList();
+              //
+              //     final visibleItems = _applyLocationFilter(allItems);
+              //     final visibleIds = _getVisibleLocationIds(visibleItems);
+              //
+              //     IconData icon;
+              //     if (_isAllSelected(visibleIds)) {
+              //       icon = Icons.check_box;
+              //     } else if (_isPartiallySelected(visibleIds)) {
+              //       icon = Icons.indeterminate_check_box;
+              //     } else {
+              //       icon = Icons.check_box_outline_blank;
+              //     }
+              //
+              //     return GestureDetector(
+              //       onTap: () {
+              //         setState(() {
+              //           /// If all selected → unselect
+              //           if (_isAllSelected(visibleIds)) {
+              //             selectedHazardLocationIds.removeAll(visibleIds);
+              //           } else {
+              //             /// Remaining slots available
+              //             final remaining =
+              //                 5 - selectedHazardLocationIds.length;
+              //
+              //             if (remaining <= 0) {
+              //               ScaffoldMessenger.of(context).showSnackBar(
+              //                 const SnackBar(
+              //                   content: Text(
+              //                       "You can select a maximum of 5 locations."),
+              //                   duration: Duration(seconds: 2),
+              //                 ),
+              //               );
+              //               return;
+              //             }
+              //
+              //             /// Only add up to remaining limit
+              //             final idsToAdd = visibleIds
+              //                 .where((id) =>
+              //                     !selectedHazardLocationIds.contains(id))
+              //                 .take(remaining);
+              //
+              //             selectedHazardLocationIds.addAll(idsToAdd);
+              //           }
+              //         });
+              //       },
+              //       child: Icon(
+              //         icon,
+              //         color: Colors.white,
+              //         size: 22,
+              //       ),
+              //     );
+              //   },
+              // ),
 
-                  final allItems = provider.missingParameterList
-                      .where((e) => (e.totalUnfilledParameters ?? 0) > 0)
-                      .toList();
-
-                  final visibleItems = _applyLocationFilter(allItems);
-                  final visibleIds = _getVisibleLocationIds(visibleItems);
-
-                  IconData icon;
-                  if (_isAllSelected(visibleIds)) {
-                    icon = Icons.check_box;
-                  } else if (_isPartiallySelected(visibleIds)) {
-                    icon = Icons.indeterminate_check_box;
-                  } else {
-                    icon = Icons.check_box_outline_blank;
-                  }
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_isAllSelected(visibleIds)) {
-                          selectedHazardLocationIds.removeAll(visibleIds);
-                        } else {
-                          selectedHazardLocationIds.addAll(visibleIds);
-                        }
-                      });
-                    },
-                    child: Icon(icon, color: Colors.white, size: 22),
-                  );
-                },
-              ),
               const SizedBox(width: 8),
-
               Text(
                 LanguageService.getTranslated(context, "missing_parameter"),
                 style: typography.Body1,
@@ -1054,7 +1161,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
 
                 final List<Data> filteredList = _applyLocationFilter(allItems);
 
-                if (isLoading || filteredList.isEmpty) {
+                if (isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
@@ -1073,6 +1180,12 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
 
                 return RefreshIndicator(
                   onRefresh: () async {
+                    setState(() {
+                      _optimisticUnlockedHazards.clear();
+                      _optimisticProcessingIds.clear();
+                      selectedHazardLocationIds.clear();
+                    });
+
                     await context
                         .read<AccountListProvider>()
                         .fetchMissingParameterList(
@@ -1080,6 +1193,16 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                           widget.sovId!,
                           isRefresh: true,
                         );
+
+                    await _refreshHazardHubCredits();
+
+                    // await context
+                    //     .read<AccountListProvider>()
+                    //     .fetchMissingParameterList(
+                    //       context,
+                    //       widget.sovId!,
+                    //       isRefresh: true,
+                    //     );
                   },
                   child: ListView.builder(
                     key: const PageStorageKey('missingParameterListView'),
@@ -1113,16 +1236,21 @@ void showInsufficientCreditsBottomSheet(
   BuildContext context, {
   required String? hasHazardHubCount,
   required List<String> selectedLocationIds,
-  required VoidCallback onConfirmStart, // 👈 NEW
-  required VoidCallback onFinish, // 👈 NEW
+  required VoidCallback onConfirmStart,
+  required VoidCallback onFinish,
 }) {
-  bool isChecked = true;
-
   final int length = selectedLocationIds.length;
   final int availableCredits = int.tryParse(hasHazardHubCount ?? '0') ?? 0;
+
   final int remainingCredits = availableCredits;
   final int remainingAfterUnlock = remainingCredits - length;
-  final bool noCredits = remainingCredits == 0;
+
+  final bool insufficientCredits = remainingAfterUnlock < 0;
+
+  /// how many locations we can unlock
+  final int unlockableCount =
+      availableCredits.clamp(0, selectedLocationIds.length);
+
   bool understandResetChecked = false;
 
   showModalBottomSheet(
@@ -1151,10 +1279,10 @@ void showInsufficientCreditsBottomSheet(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      remainingCredits == 0
+                      insufficientCredits
                           ? "Insufficient Credits"
                           : "Confirm Unlock HazardHub Data",
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -1164,9 +1292,9 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 12),
 
                     Text(
-                      remainingCredits == 0
-                          ? "You've selected 1 location, but only 0 credits are available."
-                          : "You are about to unlock HazardHub data for this locations.",
+                      insufficientCredits
+                          ? "You've selected $length locations, but only $availableCredits credits are available."
+                          : "You are about to unlock HazardHub data for these locations.",
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -1176,8 +1304,8 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 16),
 
                     Text(
-                      remainingCredits == 0
-                          ? " To continue, you can purchase more credits."
+                      insufficientCredits
+                          ? "To continue, you can purchase more credits."
                           : "This action will consume $length credits from your available balance.",
                       style: const TextStyle(
                         color: Colors.white,
@@ -1189,30 +1317,18 @@ void showInsufficientCreditsBottomSheet(
                     const SizedBox(height: 10),
 
                     Text(
-                      remainingCredits == 0
+                      insufficientCredits
                           ? "During payment, your current location selection will not be saved. After purchase, you'll need to reselect locations to unlock HazardHub data."
-                          : 'Credits remaining after unlock: ' +
-                              remainingAfterUnlock.toString(),
+                          : "Credits remaining after unlock: $remainingAfterUnlock",
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    const Text(
-                      "Please ensure you want to proceed with this action.",
-                      style: TextStyle(
-                        color: Colors.white60,
                         fontSize: 16,
                       ),
                     ),
 
                     const SizedBox(height: 20),
-                    const SizedBox(height: 10),
 
-                    if (noCredits)
+                    if (insufficientCredits)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
@@ -1245,177 +1361,137 @@ void showInsufficientCreditsBottomSheet(
                         ),
                       ),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: Consumer<AccountListProvider>(
-                        builder: (context, provider, _) {
-                          return ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: understandResetChecked
-                                  ? Colors.grey
-                                      .shade700 // 🔒 disabled look (like screenshot)
-                                  : const Color(0xFF8EC9FF),
-                              foregroundColor:
-                                  noCredits ? Colors.white70 : Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                    const SizedBox(height: 20),
+
+                    /// BUTTON SECTION
+                    if (insufficientCredits)
+                      Row(
+                        children: [
+                          /// Cancel
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.shade600),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                               ),
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
                             ),
-                            onPressed: (!provider.isUpdating && !noCredits ||
-                                    understandResetChecked)
-                                ? () async {
-                                    try {
-                                      if (noCredits) {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const PurchaseLicensePage()));
-                                      } else {
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// Buy Credit
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8EC9FF),
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: understandResetChecked
+                                  ? () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const PurchaseLicensePage(),
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              child: const Text("Buy Credit"),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// Unlock available credits
+                          Expanded(
+                            child: Consumer<AccountListProvider>(
+                              builder: (context, provider, _) {
+                                return ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: const Color(0xFF8EC9FF),
+                                    side: const BorderSide(
+                                        color: Color(0xFF8EC9FF)),
+                                  ),
+                                  onPressed: (!provider.isUpdating &&
+                                          unlockableCount > 0)
+                                      ? () async {
+                                          try {
+                                            onConfirmStart();
+
+                                            await provider.unlockHazardHubData(
+                                              context,
+                                              locationIds: selectedLocationIds
+                                                  .take(unlockableCount)
+                                                  .toList(),
+                                            );
+
+                                            Navigator.pop(context);
+                                            onFinish();
+                                          } catch (e) {
+                                            onFinish();
+                                          }
+                                        }
+                                      : null,
+                                  child: provider.isUpdating
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : Text("Unlock $unlockableCount"),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: Consumer<AccountListProvider>(
+                          builder: (context, provider, _) {
+                            return ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8EC9FF),
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: (!provider.isUpdating)
+                                  ? () async {
+                                      try {
                                         onConfirmStart();
+
                                         await provider.unlockHazardHubData(
                                           context,
                                           locationIds: selectedLocationIds,
                                         );
-                                        Navigator.of(context).pop();
+
+                                        Navigator.pop(context);
                                         onFinish();
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                "HazardHub unlocked successfully"),
-                                          ),
-                                        );
+                                      } catch (e) {
+                                        onFinish();
                                       }
-                                    } catch (e) {
-                                      onFinish();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                              Text("Unlock failed. Try again"),
-                                        ),
-                                      );
                                     }
-                                  }
-                                : null,
-                            child: provider.isUpdating
-                                ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.black),
-                                    ),
-                                  )
-                                : Text(
-                                    noCredits ? "Buy Credit" : "Confirm Unlock",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // SizedBox(
-                    //   width: double.infinity,
-                    //   height: 48,
-                    //   child: Consumer<AccountListProvider>(
-                    //     builder: (context, provider, _) {
-                    //       return ElevatedButton(
-                    //         style: ElevatedButton.styleFrom(
-                    //           backgroundColor: const Color(0xFF8EC9FF),
-                    //           foregroundColor: Colors.black,
-                    //           padding: const EdgeInsets.symmetric(vertical: 2),
-                    //           shape: RoundedRectangleBorder(
-                    //             borderRadius: BorderRadius.circular(10),
-                    //           ),
-                    //         ),
-                    //         onPressed: (!provider.isUpdating &&
-                    //                 remainingCredits >= 0)
-                    //             ? () async {
-                    //                 try {
-                    //                   onConfirmStart(); // 🔥 START loader here
-                    //
-                    //                   await provider.unlockHazardHubData(
-                    //                     context,
-                    //                     locationIds: selectedLocationIds,
-                    //                   );
-                    //
-                    //                   Navigator.of(context).pop();
-                    //                   onFinish(); // 🔥 STOP loader
-                    //
-                    //                   ScaffoldMessenger.of(context)
-                    //                       .showSnackBar(
-                    //                     const SnackBar(
-                    //                       content: Text(
-                    //                           "HazardHub unlocked successfully"),
-                    //                     ),
-                    //                   );
-                    //                 } catch (e) {
-                    //                   onFinish(); // 🔥 STOP loader on failure
-                    //                   ScaffoldMessenger.of(context)
-                    //                       .showSnackBar(
-                    //                     const SnackBar(
-                    //                       content:
-                    //                           Text("Unlock failed. Try again"),
-                    //                     ),
-                    //                   );
-                    //                 }
-                    //               }
-                    //             : null,
-                    //
-                    //         /// 🔄 BUTTON CONTENT
-                    //         child: provider.isUpdating
-                    //             ? const SizedBox(
-                    //                 height: 22,
-                    //                 width: 22,
-                    //                 child: CircularProgressIndicator(
-                    //                   strokeWidth: 2.5,
-                    //                   valueColor: AlwaysStoppedAnimation<Color>(
-                    //                       Colors.black),
-                    //                 ),
-                    //               )
-                    //             :  Text(
-                    //           remainingCredits == 0 ? " Buy Credits" :
-                    //                 "Confirm Unlock",
-                    //                 style: TextStyle(
-                    //                   fontSize: 16,
-                    //                   fontWeight: FontWeight.w600,
-                    //                 ),
-                    //               ),
-                    //       );
-                    //     },
-                    //   ),
-                    // ),
-
-                    const SizedBox(height: 8),
-
-                    /// CANCEL
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.grey.shade600),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          "Cancel",
-                          style: TextStyle(fontSize: 16),
+                                  : null,
+                              child: provider.isUpdating
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2.5),
+                                    )
+                                  : const Text("Confirm Unlock"),
+                            );
+                          },
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -1426,3 +1502,329 @@ void showInsufficientCreditsBottomSheet(
     },
   );
 }
+
+// void showInsufficientCreditsBottomSheet(
+//   BuildContext context, {
+//   required String? hasHazardHubCount,
+//   required List<String> selectedLocationIds,
+//   required VoidCallback onConfirmStart,
+//   required VoidCallback onFinish,
+// }) {
+//   bool isChecked = true;
+//
+//   final int length = selectedLocationIds.length;
+//   final int availableCredits = int.tryParse(hasHazardHubCount ?? '0') ?? 0;
+//   // final int remainingCredits = availableCredits;
+//   // final int remainingAfterUnlock = remainingCredits - length;
+//
+//   final int remainingCredits = availableCredits;
+//   final int remainingAfterUnlock = remainingCredits - length;
+//
+//   /// 🔴 TRUE when credits are not enough
+//   final bool insufficientCredits = remainingAfterUnlock < 0;
+//   final bool noCredits = remainingCredits == 0;
+//   bool understandResetChecked = false;
+//
+//   showModalBottomSheet(
+//     context: context,
+//     isScrollControlled: true,
+//     backgroundColor: Colors.transparent,
+//     shape: const RoundedRectangleBorder(
+//       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+//     ),
+//     builder: (context) {
+//       return StatefulBuilder(
+//         builder: (context, setState) {
+//           return ClipRRect(
+//             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+//             child: Container(
+//               width: double.infinity,
+//               padding: const EdgeInsets.all(20),
+//               decoration: const BoxDecoration(
+//                 color: Color(0xFF0F0F0F),
+//                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+//               ),
+//               child: SafeArea(
+//                 top: false,
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       insufficientCredits
+//                           ? "Insufficient Credits"
+//                           : "Confirm Unlock HazardHub Data",
+//                       style: TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 20,
+//                         fontWeight: FontWeight.w700,
+//                       ),
+//                     ),
+//
+//                     const SizedBox(height: 12),
+//
+//                     Text(
+//                       insufficientCredits
+//                           ? "You've selected $length locations, but only $availableCredits credits are available."
+//                           : "You are about to unlock HazardHub data for these locations.",
+//                       style: const TextStyle(
+//                         color: Colors.white70,
+//                         fontSize: 14,
+//                       ),
+//                     ),
+//
+//                     const SizedBox(height: 16),
+//
+//                     Text(
+//                       insufficientCredits
+//                           ? "To continue, you can purchase more credits."
+//                           : "This action will consume $length credits from your available balance.",
+//                       style: const TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 14,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+//
+//                     const SizedBox(height: 10),
+//
+//                     Text(
+//                       insufficientCredits
+//                           ? "During payment, your current location selection will not be saved. After purchase, you'll need to reselect locations to unlock HazardHub data."
+//                           : "Credits remaining after unlock: $remainingAfterUnlock",
+//                       style: const TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 18,
+//                       ),
+//                     ),
+//
+//                     const SizedBox(height: 10),
+//
+//                     const Text(
+//                       "Please ensure you want to proceed with this action.",
+//                       style: TextStyle(
+//                         color: Colors.white60,
+//                         fontSize: 16,
+//                       ),
+//                     ),
+//
+//                     const SizedBox(height: 20),
+//                     const SizedBox(height: 10),
+//
+//                     if (insufficientCredits)
+//                       Container(
+//                         width: double.infinity,
+//                         padding: const EdgeInsets.symmetric(
+//                             horizontal: 12, vertical: 10),
+//                         decoration: BoxDecoration(
+//                           color: Colors.black.withOpacity(0.85),
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                         child: Row(
+//                           children: [
+//                             Checkbox(
+//                               value: understandResetChecked,
+//                               onChanged: (value) {
+//                                 setState(() {
+//                                   understandResetChecked = value ?? false;
+//                                 });
+//                               },
+//                               activeColor: const Color(0xFF8EC9FF),
+//                               checkColor: Colors.black,
+//                               side: const BorderSide(color: Colors.white70),
+//                             ),
+//                             const Expanded(
+//                               child: Text(
+//                                 "I understand my selection will reset after payment",
+//                                 style: TextStyle(
+//                                     color: Colors.white, fontSize: 14),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//
+//                     SizedBox(
+//                       width: double.infinity,
+//                       height: 48,
+//                       child: Consumer<AccountListProvider>(
+//                         builder: (context, provider, _) {
+//                           return ElevatedButton(
+//                             style: ElevatedButton.styleFrom(
+//                               backgroundColor: understandResetChecked
+//                                   ? Colors.grey
+//                                       .shade700 // 🔒 disabled look (like screenshot)
+//                                   : const Color(0xFF8EC9FF),
+//                               foregroundColor:
+//                                   noCredits ? Colors.white70 : Colors.black,
+//                               padding: const EdgeInsets.symmetric(vertical: 2),
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(10),
+//                               ),
+//                             ),
+//                             onPressed: (!provider.isUpdating && !noCredits ||
+//                                     understandResetChecked)
+//                                 ? () async {
+//                                     try {
+//                                       if (noCredits) {
+//                                         Navigator.push(
+//                                             context,
+//                                             MaterialPageRoute(
+//                                                 builder: (context) =>
+//                                                     const PurchaseLicensePage()));
+//                                       } else {
+//                                         onConfirmStart();
+//                                         await provider.unlockHazardHubData(
+//                                           context,
+//                                           locationIds: selectedLocationIds,
+//                                         );
+//                                         Navigator.of(context).pop();
+//                                         // _get
+//                                         onFinish();
+//                                         ScaffoldMessenger.of(context)
+//                                             .showSnackBar(
+//                                           const SnackBar(
+//                                             content: Text(
+//                                                 "HazardHub unlocked successfully"),
+//                                           ),
+//                                         );
+//                                       }
+//                                     } catch (e) {
+//                                       onFinish();
+//                                       ScaffoldMessenger.of(context)
+//                                           .showSnackBar(
+//                                         const SnackBar(
+//                                           content:
+//                                               Text("Unlock failed. Try again"),
+//                                         ),
+//                                       );
+//                                     }
+//                                   }
+//                                 : null,
+//                             child: provider.isUpdating
+//                                 ? const SizedBox(
+//                                     height: 22,
+//                                     width: 22,
+//                                     child: CircularProgressIndicator(
+//                                       strokeWidth: 2.5,
+//                                       valueColor: AlwaysStoppedAnimation<Color>(
+//                                           Colors.black),
+//                                     ),
+//                                   )
+//                                 : Text(
+//                                     insufficientCredits
+//                                         ? "Buy Credit"
+//                                         : "Confirm Unlock",
+//                                     style: const TextStyle(
+//                                       fontSize: 16,
+//                                       fontWeight: FontWeight.w600,
+//                                     ),
+//                                   ),
+//                           );
+//                         },
+//                       ),
+//                     ),
+//
+//                     // SizedBox(
+//                     //   width: double.infinity,
+//                     //   height: 48,
+//                     //   child: Consumer<AccountListProvider>(
+//                     //     builder: (context, provider, _) {
+//                     //       return ElevatedButton(
+//                     //         style: ElevatedButton.styleFrom(
+//                     //           backgroundColor: const Color(0xFF8EC9FF),
+//                     //           foregroundColor: Colors.black,
+//                     //           padding: const EdgeInsets.symmetric(vertical: 2),
+//                     //           shape: RoundedRectangleBorder(
+//                     //             borderRadius: BorderRadius.circular(10),
+//                     //           ),
+//                     //         ),
+//                     //         onPressed: (!provider.isUpdating &&
+//                     //                 remainingCredits >= 0)
+//                     //             ? () async {
+//                     //                 try {
+//                     //                   onConfirmStart(); // 🔥 START loader here
+//                     //
+//                     //                   await provider.unlockHazardHubData(
+//                     //                     context,
+//                     //                     locationIds: selectedLocationIds,
+//                     //                   );
+//                     //
+//                     //                   Navigator.of(context).pop();
+//                     //                   onFinish(); // 🔥 STOP loader
+//                     //
+//                     //                   ScaffoldMessenger.of(context)
+//                     //                       .showSnackBar(
+//                     //                     const SnackBar(
+//                     //                       content: Text(
+//                     //                           "HazardHub unlocked successfully"),
+//                     //                     ),
+//                     //                   );
+//                     //                 } catch (e) {
+//                     //                   onFinish(); // 🔥 STOP loader on failure
+//                     //                   ScaffoldMessenger.of(context)
+//                     //                       .showSnackBar(
+//                     //                     const SnackBar(
+//                     //                       content:
+//                     //                           Text("Unlock failed. Try again"),
+//                     //                     ),
+//                     //                   );
+//                     //                 }
+//                     //               }
+//                     //             : null,
+//                     //
+//                     //         /// 🔄 BUTTON CONTENT
+//                     //         child: provider.isUpdating
+//                     //             ? const SizedBox(
+//                     //                 height: 22,
+//                     //                 width: 22,
+//                     //                 child: CircularProgressIndicator(
+//                     //                   strokeWidth: 2.5,
+//                     //                   valueColor: AlwaysStoppedAnimation<Color>(
+//                     //                       Colors.black),
+//                     //                 ),
+//                     //               )
+//                     //             :  Text(
+//                     //           remainingCredits == 0 ? " Buy Credits" :
+//                     //                 "Confirm Unlock",
+//                     //                 style: TextStyle(
+//                     //                   fontSize: 16,
+//                     //                   fontWeight: FontWeight.w600,
+//                     //                 ),
+//                     //               ),
+//                     //       );
+//                     //     },
+//                     //   ),
+//                     // ),
+//
+//                     const SizedBox(height: 8),
+//
+//                     /// CANCEL
+//                     SizedBox(
+//                       width: double.infinity,
+//                       child: OutlinedButton(
+//                         style: OutlinedButton.styleFrom(
+//                           side: BorderSide(color: Colors.grey.shade600),
+//                           foregroundColor: Colors.white,
+//                           padding: const EdgeInsets.symmetric(vertical: 14),
+//                           shape: RoundedRectangleBorder(
+//                             borderRadius: BorderRadius.circular(10),
+//                           ),
+//                         ),
+//                         onPressed: () => Navigator.pop(context),
+//                         child: const Text(
+//                           "Cancel",
+//                           style: TextStyle(fontSize: 16),
+//                         ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           );
+//         },
+//       );
+//     },
+//   );
+// }

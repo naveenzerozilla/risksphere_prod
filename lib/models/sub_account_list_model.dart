@@ -38,6 +38,7 @@ class SubAccounts {
   String? path;
   String? name;
   int? sovCount;
+  bool? isDefault;
   Owner? owner;
   String? accountId;
   String? subAccountId;
@@ -51,6 +52,7 @@ class SubAccounts {
     this.path,
     this.name,
     this.sovCount,
+    this.isDefault,
     this.owner,
     this.accountId,
     this.subAccountId,
@@ -64,6 +66,7 @@ class SubAccounts {
     path = json['path'];
     name = json['name'];
     sovCount = json['sov_count'];
+    isDefault = json['is_default'] ?? false;
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
 
     accountId = json['account_id'];
@@ -99,7 +102,7 @@ class Owner {
   String? date;
   String? email;
   String? id;
-  String? name;
+  dynamic name;
 
   Owner({this.date, this.email, this.id, this.name});
 

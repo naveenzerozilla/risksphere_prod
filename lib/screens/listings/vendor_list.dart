@@ -51,7 +51,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   String isMaintenance = "";
   String selectedVendor = '';
   List<Results> _dedupedVendors = [];
-
+  String? trialMap;
   bool isFilterApplied = false; // 🔥 controls filter icon highlight
   List<Result> allVendorList = [];
   List<Result> filteredAutoCompleteList1 = [];
@@ -211,6 +211,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
     isSuperAdmin = adminValues[2] ?? false;
     isHasAnyPlan = adminValues[4] ?? false;
 
+    trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     if (mounted) setState(() {});
   }
 
@@ -745,7 +746,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                       messageTextSpans: [
                         TextSpan(
                           text:
-                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
+                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                           style: typography.Body1,
                         ),
                         // tappable

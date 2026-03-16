@@ -1,1 +1,0 @@
-/Users/naveen/Anshay-qa/build/app/intermediates/cxx/RelWithDebInfo/464v293d/obj/arm64-v8a

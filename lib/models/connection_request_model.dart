@@ -56,7 +56,7 @@ class RequestUser {
   String? displayImageUrl;
   String? message;
   bool? requestPending;
-  String? role;
+  dynamic role;
 
   RequestUser(
       {this.name,

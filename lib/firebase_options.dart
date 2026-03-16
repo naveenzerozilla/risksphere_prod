@@ -48,24 +48,46 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
-    appId: '1:857135835532:android:1ac1bb46dab75e11c84ea9',
+    appId: '1:857135835532:android:7dfee0b61d1da828c84ea9',
     messagingSenderId: '857135835532',
     projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    storageBucket: 'project-green-r5-1-qa.appspot.com', // ✅ FIXED
   );
-
-  /// Config for package: com.example.green
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-    appId: '1:857135835532:ios:dce11826e3313f03c84ea9',
+    appId: '1:857135835532:ios:1e1a91db9912a20fc84ea9',
     messagingSenderId: '857135835532',
     projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-    iosClientId: '857135835532-al09g5oa31ue7i0ikttr6r1m97t9tep0.apps.googleusercontent.com',
-    iosBundleId: 'com.sonofthunder.risksphere',
+    storageBucket: 'project-green-r5-1-qa.appspot.com',
+    // ✅ FIXED
+    androidClientId:
+        '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
+    iosClientId:
+        '857135835532-518sk0mc0br8kaqpifp2f1up65pp0o71.apps.googleusercontent.com',
+    iosBundleId: 'com.risksphere.green',
   );
+
+  // static const FirebaseOptions android = FirebaseOptions(
+  //   apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
+  //   appId: '1:857135835532:android:7dfee0b61d1da828c84ea9',
+  //   messagingSenderId: '857135835532',
+  //   projectId: 'project-green-r5-1-qa',
+  //   storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+  // );
+  //
+  // /// Config for package: com.example.green
+  //
+  // static const FirebaseOptions ios = FirebaseOptions(
+  //   apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
+  //   appId: '1:857135835532:ios:1e1a91db9912a20fc84ea9',
+  //   messagingSenderId: '857135835532',
+  //   projectId: 'project-green-r5-1-qa',
+  //   storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+  //   androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
+  //   iosClientId: '857135835532-518sk0mc0br8kaqpifp2f1up65pp0o71.apps.googleusercontent.com',
+  //   iosBundleId: 'com.risksphere.green',
+  // );
 
 // static const FirebaseOptions ios = FirebaseOptions(
 //   apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
@@ -115,5 +137,4 @@ class DefaultFirebaseOptions {
     authDomain: 'project-green-prod.firebaseapp.com',
     storageBucket: 'project-green-prod.firebasestorage.app',
   );
-
 }

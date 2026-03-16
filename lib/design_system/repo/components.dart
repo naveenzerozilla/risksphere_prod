@@ -37,9 +37,9 @@ class FirstComponentList extends StatelessWidget {
       Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
         return ElevatedButton(
           onPressed: () async {
-            final _googleSignIn = GoogleSignIn();
-            var isSignedIn = await _googleSignIn.isSignedIn();
-            if (isSignedIn) await _googleSignIn.disconnect();
+            // final _googleSignIn = GoogleSignIn();
+            // var isSignedIn = await _googleSignIn.isSignedIn();
+            // if (isSignedIn) await _googleSignIn.disconnect();
             await authNotifier.signOut();
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => LoginScreen()));

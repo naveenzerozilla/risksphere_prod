@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_linux
   flutter_screen_capture
   flutter_secure_storage_linux
+  gtk
   open_file_linux
   screen_retriever_linux
   syncfusion_pdfviewer_linux

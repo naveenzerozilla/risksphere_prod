@@ -187,14 +187,14 @@ class UserProfileProvider with ChangeNotifier {
       isLoading = false;
       return userDataLocal;
     } on BackendException catch (e) {
-      log('Error1: $e');
+      log('Error: $e');
       hasError = true; // ✅ mark error state
       isLoading = false;
       isDataFetched = false;
       await fetchTrialInfo();
       return null;
     } catch (e, stackTrace) {
-      log('Error2: $e\nStack Trace: $stackTrace');
+      log('Error: $e\nStack Trace: $stackTrace');
       hasError = true;
       isLoading = false;
       isDataFetched = false;
@@ -203,57 +203,6 @@ class UserProfileProvider with ChangeNotifier {
       return null;
     }
   }
-
-  // Future<UserData?> getAllUserData(
-  //     BuildContext context, String searchText, String filter) async {
-  //   try {
-  //     // Set loading state to true
-  //     isLoading = true;
-  //     // Use API Service to fetch companies
-  //     ApiService apiService = ApiService(AppConstant.GET_USER_DETAILS);
-  //     // Send a GET request to the API
-  //     Map<String, dynamic> response =
-  //         await apiService.get('?current_user=true');
-  //     // Parse the response into a list of employees
-  //     UserData? userDataLocal;
-  //     print("Contains Key user? ${response.containsKey('user')}");
-  //     if (response.containsKey('user')) {
-  //       userDataLocal = UserData.fromJson(response['user']);
-  //     }
-  //     print("user: $userDataLocal");
-  //     // Update the list of companies and notify listeners
-  //     if (userDataLocal != null) {
-  //       _userData = userDataLocal;
-  //       WidgetsBinding.instance.addPostFrameCallback((_) {
-  //         notifyListeners();
-  //       });
-  //     }
-  //     await fetchTrialInfo();
-  //     isLoading = false;
-  //     return userDataLocal;
-  //   } on BackendException catch (e) {
-  //     // Catch any errors that occur during the process
-  //     print('Error1: $e'); // Log the error
-  //     // Show a generic error message to the user
-  //     // if (context.mounted) CustomToast.error(context, e.message);
-  //     await fetchTrialInfo();
-  //     isLoading = false;
-  //     return null; // Return an empty list in case of error
-  //   } catch (e, stackTrace) {
-  //     // Catch any errors that occur during the process
-  //     print('Stack Trace: $stackTrace'); // Print the stack trace for debugging
-  //     log('Error2: $e'); // Log the error
-  //     // Show a generic error message to the user
-  //     // TODO: Display a generic error message to the user
-  //
-  //     await fetchTrialInfo();
-  //     isLoading = false;
-  //     if (!context.mounted) return null;
-  //     /* CustomToast.error(
-  //         context, 'Error fetching companies. Please try again later.');*/
-  //     return null; // Return an empty list in case of error
-  //   }
-  // }
 
   Future<void> fetchTrialInfo() async {
     bool isTrialApplicable =

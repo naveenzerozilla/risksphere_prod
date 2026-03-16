@@ -228,11 +228,9 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                           )
                         : const SizedBox.shrink(),
 
-
                     SizedBox(height: CustomSpacing.four),
                     Text(
-                      LanguageService.getTranslated(
-                          context, "select_services"),
+                      LanguageService.getTranslated(context, "select_services"),
                       style: typography.Body1.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
@@ -462,12 +460,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     String level,
   ) {
     final provider = Provider.of<ConfigurationProvider>(context, listen: false);
+    // ✅ Match API format (underscores)
     bool isGeocoding = title.toLowerCase() == 'geocoding';
-    bool additionParam = title.toLowerCase() == 'additional_parameters';
+    bool hazardScore = title.toLowerCase() == 'hazard_risk_score';
+    bool additionParam = title.toLowerCase() == 'additional parameters';
     bool isSelected = selectedServices.contains(title);
 
-    // Define if the checkbox should be enabled
-    bool canEdit = isPgAdmin || isAdmin || isSuperAdmin;
+    bool enableCheckbox =
+        hazardScore; // ← CHANGED: was "hazardScore || canEdit"
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -481,19 +481,17 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Text(isEnabled.toString()),
           Checkbox(
-            value: additionParam
-                ? false // Always false for additional_parameters
-                : isSelected,
-            onChanged: (isGeocoding || additionParam || !canEdit)
-                ? null // Disable checkbox if not an admin
-                : (bool? value) {
+            value: additionParam ? false : isEnabled,
+            onChanged: enableCheckbox
+                ? (bool? value) {
                     print('Toggling $title to $value');
+
                     var key = generateServiceKey(
                         title.toLowerCase().replaceAll(' ', '_'));
-                    // Show dialog to save changes
+
                     if (widget.updateallflag == "false") {
-                      print(widget.level.toString());
                       provider
                           .updateConfiguration(
                         context,
@@ -507,17 +505,147 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                         checklevel: widget.level,
                       )
                           .then((_) {
-                        loadConfiguration(); // Call only after update is successful
+                        loadConfiguration();
                       }).catchError((error) {
                         print("Failed to update configuration: $error");
                       });
                     } else {
-                      _showSaveDialog(title, description, typography, value!,
-                          mainId, level);
+                      _showSaveDialog(
+                        title,
+                        description,
+                        typography,
+                        value!,
+                        mainId,
+                        level,
+                      );
                     }
-                  },
-            activeColor: AppColors.primaryMain,
+                  }
+                : null,
+            fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+              if (states.contains(WidgetState.disabled)) {
+                // Disabled but checked (isEnabled = true) → blue grey
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.blueGrey; // ← disabled + checked
+                }
+                return Colors.grey.shade400; // ← disabled + unchecked
+              }
+              if (states.contains(WidgetState.selected)) {
+                return AppColors
+                    .primaryMain; // ← enabled + checked (hazard risk score)
+              }
+              return Colors.transparent; // ← unchecked
+            }),
           ),
+          // Checkbox(
+          //   value: additionParam ? false : isSelected,
+          //   onChanged:
+          //       enableCheckbox // ← simplified: only true for hazardScore (or admin)
+          //           ? (bool? value) {
+          //               print('Toggling $title to $value');
+          //
+          //               var key = generateServiceKey(
+          //                   title.toLowerCase().replaceAll(' ', '_'));
+          //
+          //               if (widget.updateallflag == "false") {
+          //                 provider
+          //                     .updateConfiguration(
+          //                   context,
+          //                   mainId,
+          //                   key,
+          //                   "sub_account",
+          //                   value!,
+          //                   false,
+          //                   accountId: widget.accountId,
+          //                   subAccountId: widget.subaccountId,
+          //                   checklevel: widget.level,
+          //                 )
+          //                     .then((_) {
+          //                   loadConfiguration();
+          //                 }).catchError((error) {
+          //                   print("Failed to update configuration: $error");
+          //                 });
+          //               } else {
+          //                 _showSaveDialog(
+          //                   title,
+          //                   description,
+          //                   typography,
+          //                   value!,
+          //                   mainId,
+          //                   level,
+          //                 );
+          //               }
+          //             }
+          //           : null,
+          //   // ← null = disabled for all others
+          //   activeColor: hazardScore ? AppColors.green50 : Colors.blue,
+          //   // ← red for hazard, blue for others
+          //   fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          //     // All disabled checkboxes → grey (Geocoding & Additional Parameters)
+          //     if (states.contains(WidgetState.disabled)) {
+          //       return Colors.grey.shade400;
+          //     }
+          //     // Hazard risk score → blue when checked
+          //     if (states.contains(WidgetState.selected)) {
+          //       return AppColors
+          //           .primaryMain; // ← checked color (blue for hazard, can be changed if needed)
+          //     }
+          //     // Hazard risk score unchecked
+          //     return Colors.transparent;
+          //   }),
+          //   // fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          //   //   if (states.contains(WidgetState.selected)) {
+          //   //     return hazardScore
+          //   //         ? AppColors.red50
+          //   //         : Colors.grey; // ← checked color
+          //   //   }
+          //   //   if (states.contains(WidgetState.disabled)) {
+          //   //     return Colors.grey; // ← disabled color
+          //   //   }
+          //   //   return Colors.red; // ← unchecked color
+          //   // }),
+          // ),
+          // Checkbox(
+          //   value: additionParam ? false : isSelected,
+          //   onChanged: (isGeocoding || !additionParam || enableCheckbox)
+          //       ? null
+          //       : (bool? value) {
+          //           print('Toggling $title to $value');
+          //
+          //           var key = generateServiceKey(
+          //               title.toLowerCase().replaceAll(' ', '_'));
+          //
+          //           if (widget.updateallflag == "false") {
+          //             provider
+          //                 .updateConfiguration(
+          //               context,
+          //               mainId,
+          //               key,
+          //               "sub_account",
+          //               value!,
+          //               false,
+          //               accountId: widget.accountId,
+          //               subAccountId: widget.subaccountId,
+          //               checklevel: widget.level,
+          //             )
+          //                 .then((_) {
+          //               loadConfiguration();
+          //             }).catchError((error) {
+          //               print("Failed to update configuration: $error");
+          //             });
+          //           } else {
+          //             _showSaveDialog(
+          //               title,
+          //               description,
+          //               typography,
+          //               value!,
+          //               mainId,
+          //               level,
+          //             );
+          //           }
+          //         },
+          //   activeColor: AppColors.red50,
+          // ),
+
           SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -2210,8 +2338,8 @@ Widget accountNameInput({
   required bool isLoading,
   required VoidCallback onSubmit,
 }) {
-  final TextEditingController _safeController =
-  TextEditingController(text: controller?.text =="null"?"":controller.text ?? '');
+  final TextEditingController _safeController = TextEditingController(
+      text: controller?.text == "null" ? "" : controller.text ?? '');
 
   return Container(
     padding: const EdgeInsets.all(5),
@@ -2223,7 +2351,7 @@ Widget accountNameInput({
       children: [
         Expanded(
           child: TextField(
-            controller:_safeController,
+            controller: _safeController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Please write the account name',

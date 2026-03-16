@@ -16,6 +16,7 @@ import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:RiskSphere/utils/common_headers.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../constants/enums.dart';
 import '../design_system/components/custom_button.dart';
 import '../design_system/components/custom_toast.dart';
@@ -60,9 +61,19 @@ class MyLocationListProvider with ChangeNotifier {
   int totalLocationCount = 0;
   double? dataCompletenessScore;
   bool isAddToSOVPreparing = false;
+  String? _chatSessionId;
+  bool isChatLoading = false;
+
+  String? get chatSessionId => _chatSessionId;
 
   // 🔹 Dialog submit button
   bool isAddToSOVSubmitting = false;
+
+  void startChatSession() {
+    const uuid = Uuid();
+    _chatSessionId = uuid.v4(); // Unique session id
+    print("New Chat Session ID: $_chatSessionId");
+  }
 
   void setPreparing(bool v) {
     isAddToSOVPreparing = v;
@@ -123,12 +134,62 @@ class MyLocationListProvider with ChangeNotifier {
   // }
   bool isDocumentsLoading = false;
   bool isDocumentsLoaded = false;
-  List<dynamic> documents = [];
+  List<Documents> documents = [];
 
   int documentsCount = 0;
   String? deletingDocumentId;
+  bool isUploadingDocument = false;
 
   bool isDeleting(String documentId) => deletingDocumentId == documentId;
+
+  // Add these state variables alongside your existing ones
+  // ✅ KEEP THESE:
+  List<Map<String, dynamic>> galleryMedia = [];
+  bool isGalleryLoading = false;
+  bool isGalleryLoaded = false;
+
+  Future<void> fetchGalleryMedia({
+    required BuildContext context,
+    required String locationId,
+    bool forceRefresh = false,
+  }) async {
+    if (isGalleryLoading) return;
+    if (isGalleryLoaded && !forceRefresh) return;
+
+    if (forceRefresh) {
+      isGalleryLoaded = false;
+    }
+
+    isGalleryLoading = true;
+    notifyListeners();
+
+    try {
+      final headers = await CommonHeaders.createHeaders();
+      final url = "${AppConstant.IMAGE_LIST}/$locationId";
+
+      // final url = "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/getmedia/$locationId";
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        galleryMedia = List<Map<String, dynamic>>.from(
+            jsonResponse['uploads'] ?? []); // ✅ CORRECT
+        isGalleryLoaded = true;
+      } else {
+        throw Exception("Failed to load gallery media");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Gallery API Error: $e");
+      debugPrint(stackTrace.toString());
+    } finally {
+      isGalleryLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> fetchDocuments({
     required BuildContext context,
@@ -161,7 +222,7 @@ class MyLocationListProvider with ChangeNotifier {
         documentsCount = jsonResponse['count'] ?? 0;
 
         documents = (jsonResponse['result'] as List)
-            .map((e) => LocationDocument.fromJson(e))
+            .map((doc) => Documents.fromJson(doc))
             .toList();
 
         isDocumentsLoaded = true;
@@ -177,6 +238,96 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
+  Future<void> uploadDocument({
+    required BuildContext context,
+    required String locationId,
+    required File file,
+    required String fileName,
+  }) async {
+    try {
+      isUploadingDocument = true;
+      notifyListeners();
+
+      final headers = await CommonHeaders.createHeaders();
+
+      final uri = Uri.parse("${AppConstant.UPLOAD_DOCUMENT_NEW}$locationId");
+
+      var request = http.MultipartRequest("POST", uri);
+
+      request.headers.addAll(headers);
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file', // 🔥 make sure backend expects this key
+          file.path,
+          filename: fileName,
+        ),
+      );
+
+      var response = await request.send();
+
+      if (response.statusCode != 200) {
+        throw Exception("Upload failed");
+      }
+    } catch (e) {
+      debugPrint("Upload error: $e");
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Upload failed: $e")),
+        );
+      }
+    } finally {
+      isUploadingDocument = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> uploadDocumentFromBytes({
+    required BuildContext context,
+    required String locationId,
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      isUploadingDocument = true;
+      notifyListeners();
+
+      final headers = await CommonHeaders.createHeaders();
+
+      final uri = Uri.parse("${AppConstant.UPLOAD_DOCUMENT_NEW}/$locationId");
+
+      var request = http.MultipartRequest("POST", uri);
+
+      request.headers.addAll(headers);
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: fileName,
+        ),
+      );
+
+      var response = await request.send();
+
+      if (response.statusCode != 200) {
+        throw Exception("Upload failed");
+      }
+    } catch (e) {
+      debugPrint("Upload error: $e");
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Upload failed: $e")),
+        );
+      }
+    } finally {
+      isUploadingDocument = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> deleteDocument({
     required BuildContext context,
     required String locationId,
@@ -184,13 +335,16 @@ class MyLocationListProvider with ChangeNotifier {
     required String imageUrl,
   }) async {
     try {
+      deletingDocumentId = documentId; // 🔥 start loader
+      notifyListeners();
+
       final headers = await CommonHeaders.createHeaders();
 
-      final url =
-          "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/location_media/$locationId/$documentId";
+      final url = Uri.parse(
+          "${AppConstant.DELETE_DOCUMENT_NEW}$locationId/$documentId");
 
       final response = await http.delete(
-        Uri.parse(url),
+        url,
         headers: {
           ...headers,
           "Content-Type": "application/json",
@@ -203,21 +357,117 @@ class MyLocationListProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
+        /// 🔥 remove exact document safely
         documents.removeWhere((doc) => doc.id == documentId);
-        notifyListeners();
       } else {
-        debugPrint("Delete failed: ${response.body}");
         throw Exception("Failed to delete document");
       }
-    } catch (e, stackTrace) {
-      debugPrint("Delete Document Error: $e");
-      debugPrint(stackTrace.toString());
+    } catch (e) {
+      debugPrint("Delete error: $e");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to delete document")),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to delete document")),
+        );
+      }
+    } finally {
+      deletingDocumentId = null; // 🔥 stop loader
+      notifyListeners();
     }
   }
+
+  Future<void> deleteGalleryImage({
+    required BuildContext context,
+    required String locationId,
+    required String imageId,
+    required String imageUrl, // <-- add this
+    required int index,
+  }) async {
+    try {
+      final headers = await CommonHeaders.createHeaders();
+      final uri =
+          Uri.parse("${AppConstant.UPLOAD_IMAGES_NEW}/$locationId/$imageId");
+
+      final response = await http.delete(
+        uri,
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "data": {
+            "image_url": imageUrl, // <-- exactly like deleteDocument
+          }
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        if (index >= 0 && index < galleryMedia.length) {
+          galleryMedia.removeAt(index);
+          notifyListeners();
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to delete image")),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Delete image error: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error deleting image")),
+        );
+      }
+    }
+  }
+
+  // Future<void> deleteGalleryImage({
+  //   required BuildContext context,
+  //   required String locationId,
+  //   required String imageUrl,
+  //   required int index,
+  // }) async {
+  //   try {
+  //     final headers = await CommonHeaders.createHeaders();
+  //
+  //     final url = Uri.parse("${AppConstant.UPLOAD_IMAGES_NEW}/$locationId");
+  //
+  //     final response = await http.delete(
+  //       url,
+  //       headers: {
+  //         ...headers,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: jsonEncode({
+  //         "data": {
+  //           "image_url": imageUrl,
+  //         }
+  //       }),
+  //     );
+  //
+  //     if (response.statusCode == 200 || response.statusCode == 204) {
+  //       if (index >= 0 && index < galleryMedia.length) {
+  //         galleryMedia.removeAt(index);
+  //         notifyListeners();
+  //       }
+  //     } else {
+  //       if (context.mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(content: Text("Failed to delete image")),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Delete image error: $e");
+  //     if (context.mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(content: Text("Error deleting image")),
+  //       );
+  //     }
+  //   }
+  // }
 
   bool _isLoading = false;
   int currentPage = 1;
@@ -293,6 +543,13 @@ class MyLocationListProvider with ChangeNotifier {
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+
+  void removeGalleryMedia(int index) {
+    if (index >= 0 && index < galleryMedia.length) {
+      galleryMedia.removeAt(index);
+      notifyListeners();
+    }
   }
 
   bool _isAllLocationLoading = false;
@@ -2138,6 +2395,47 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
+  Future<String?> sendChatMessage({
+    required BuildContext context,
+    required String message,
+    required String locationId,
+    required String sessionId,
+  }) async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
+
+      headers.addAll({
+        "Content-Type": "application/json",
+      });
+
+      var url = Uri.parse(
+          "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/handle_chatbot");
+
+      var body = jsonEncode({
+        "session_id": sessionId,
+        "text": message,
+        "language_code": "en",
+        "location_id": locationId,
+      });
+
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        return jsonResponse["reply_text"];
+      } else {
+        throw Exception("Failed to load chatbot response");
+      }
+    } catch (e) {
+      print("Chatbot Error: $e");
+      return null;
+    }
+  }
+
   UserManagementResponse? userManagement;
 
   Future<void> fetchUserManagement() async {
@@ -2773,6 +3071,8 @@ class MyLocationListProvider with ChangeNotifier {
                                             }
                                           };
 
+                                          print(body);
+                                          print("body12");
                                           // 🔹 Perform async operation
                                           await addLocationToSOV(context, body);
 
@@ -4667,7 +4967,6 @@ class MyLocationListProvider with ChangeNotifier {
       String url =
           "${AppConstant.GET_LOCATION_PROFILE}/$accountId/subaccount/$subAccountId/sov/$sovId/location";
       ApiService apiService = ApiService(url);
-      // Create data payload
       final data = {
         "data": {
           "location_name": locationProfile?.finalAddress?.locationName,
@@ -4686,7 +4985,6 @@ class MyLocationListProvider with ChangeNotifier {
       var body = data;
       var response = await apiService.patch(body);
       if (response.containsKey('result')) {
-        //result = LocationProfileModel.fromJson(response['result']);
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
@@ -4999,5 +5297,106 @@ class _TagChip extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class Documents {
+  bool? isLocationMedia;
+  String? id;
+  String? name;
+  String? email;
+  String? companyId;
+  String? userId;
+  String? date;
+  String? time;
+  String? imageUrl;
+  CreatedAt? createdAt;
+
+  // Null? dataCategoryId;
+  String? url;
+
+  // List<Null>? tags;
+  int? size;
+
+  Documents(
+      {this.isLocationMedia,
+      this.id,
+      this.name,
+      this.email,
+      this.companyId,
+      this.userId,
+      this.date,
+      this.time,
+      this.imageUrl,
+      this.createdAt,
+      // this.dataCategoryId,
+      this.url,
+      // this.tags,
+      this.size});
+
+  Documents.fromJson(Map<String, dynamic> json) {
+    isLocationMedia = json['is_location_media'];
+    id = json['id'];
+    name = json['name'];
+    email = json['email'];
+    companyId = json['company_id'];
+    userId = json['user_id'];
+    date = json['date'];
+    time = json['time'];
+    imageUrl = json['image_url'];
+    createdAt = json['created_at'] != null
+        ? new CreatedAt.fromJson(json['created_at'])
+        : null;
+    // dataCategoryId = json['data_category_id'];
+    url = json['url'];
+    // if (json['tags'] != null) {
+    //   tags = <Null>[];
+    //   json['tags'].forEach((v) {
+    //     tags!.add(new Null.fromJson(v));
+    //   });
+    // }
+    size = json['size'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['is_location_media'] = this.isLocationMedia;
+    data['id'] = this.id;
+    data['name'] = this.name;
+    data['email'] = this.email;
+    data['company_id'] = this.companyId;
+    data['user_id'] = this.userId;
+    data['date'] = this.date;
+    data['time'] = this.time;
+    data['image_url'] = this.imageUrl;
+    if (this.createdAt != null) {
+      data['created_at'] = this.createdAt!.toJson();
+    }
+    // data['data_category_id'] = this.dataCategoryId;
+    data['url'] = this.url;
+    // if (this.tags != null) {
+    //   data['tags'] = this.tags!.map((v) => v.toJson()).toList();
+    // }
+    data['size'] = this.size;
+    return data;
+  }
+}
+
+class CreatedAt {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  CreatedAt({this.iSeconds, this.iNanoseconds});
+
+  CreatedAt.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
+    return data;
   }
 }

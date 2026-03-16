@@ -3,13 +3,11 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/my_location_list_model.dart';
+import '../../utils/enum.dart';
 import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
-import 'package:http/http.dart' as http;
-
 import '../payments/purchase_license.dart';
-import 'export_dialogsov.dart';
 
 class MySovList extends StatefulWidget {
   final String? status;
@@ -47,8 +45,10 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   bool isSelectionMode = false;
   List<bool> selectedList = [];
   String isMaintenance = "";
-
+  Set<int> expandedIndexes = {};
   bool isHasAnyPlan = false;
+
+  String? trialMap;
   Screens _selectedScreen = Screens.locationList;
   TextEditingController _sovNameEditNameController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
@@ -132,7 +132,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
     _setClaims();
 
-    /// 🔥 CALL API AFTER FIRST FRAME
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SOVListProvider>();
 
@@ -170,45 +169,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       }
     });
   }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //
-  //   final provider = context.read<SOVListProvider>();
-  //
-  //   provider.page = 1;
-  //   provider.totalPages = 1;
-  //   _setClaims();
-  //   provider.fetchSovList(
-  //     context,
-  //     _sovQuery,
-  //     1,
-  //     5,
-  //     widget.status,
-  //   );
-  //
-  //   _scrollController1.addListener(() {
-  //     if (!_scrollController1.hasClients) return;
-  //
-  //     if (_scrollController1.position.pixels >=
-  //             _scrollController1.position.maxScrollExtent - 300 &&
-  //         !provider.isNextPageLoading &&
-  //         provider.page < provider.totalPages) {
-  //       provider.page++;
-  //
-  //       provider.fetchSovList(
-  //         context,
-  //         // widget.accountID ?? '',
-  //         // widget.subAccountID ?? '',
-  //         _sovQuery,
-  //         provider.page,
-  //         5,
-  //         widget.status,
-  //       );
-  //     }
-  //   });
-  // }
 
   MyLocationListProvider? _myLocationProvider;
 
@@ -255,6 +215,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     isSuperAdmin = adminValues[2] ?? false;
     isHasAnyPlan = adminValues[4] ?? false;
 
+    trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     if (mounted) setState(() {});
   }
 
@@ -301,6 +262,15 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // InkWell(
+                          //     onTap: () {
+                          //       Navigator.push(
+                          //         context,
+                          //         MaterialPageRoute(
+                          //             builder: (_) => ChatbotWebView()),
+                          //       );
+                          //     },
+                          //     child: Text("chatbot")),
                           Container(
                               padding: EdgeInsets.only(left: 20),
                               child: Text(
@@ -388,7 +358,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                       messageTextSpans: [
                         TextSpan(
                           text:
-                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before December 31, 2026. After this date, we will need to delete your data. Thank you for being with us!',
+                              'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                           style: typography.Body1,
                         ),
                         // tappable
@@ -410,272 +380,14 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                 ],
               ),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          : ListView(
+              controller: _scrollController1,
+              physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                if (selectedList.contains(true)) ...[
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-                    padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        // Set your border color here
-                        width: 1.0, // Set the width of the border
-                      ),
-                      //color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    ),
-                    child: Consumer<UserProfileProvider>(
-                        builder: (context, userProfileProvider, child) {
-                      final trialStatus =
-                          userProfileProvider.trialInfo['status'] ?? '';
-                      return Consumer<MyLocationListProvider>(
-                          builder: (context, locationListProvider, child) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (selectedList.contains(true)) ...[
-                              // Show selection count and select all button
-                              SizedBox(width: CustomSpacing.two),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "${selectedList.where((s) => s).length}",
-                                  style: typography.Body1.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 2),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    final bool selectAll =
-                                        selectedList.any((s) => s == false);
+                /// 🔹 Selection bar
+                if (selectedList.contains(true)) _buildSelectionBar(typography),
 
-                                    // Apply the same toggle logic as Checkbox
-                                    for (int i = 0;
-                                        i < selectedList.length;
-                                        i++) {
-                                      selectedList[i] = selectAll;
-                                    }
-                                    if (!selectAll) {
-                                      isSelectionMode = false;
-                                    }
-                                  });
-                                },
-                                child: Text(
-                                  // Dynamically show "Select All" or "Deselect All"
-                                  selectedList.any((s) => s == false)
-                                      ? 'Select All'
-                                      : 'Deselect All',
-                                  style: typography.Body1.copyWith(
-                                    color: AppColors.primaryMain,
-                                  ),
-                                ),
-                              ),
-
-                              Spacer(),
-
-                              IconButton(
-                                onPressed: () {
-                                  // Collect selected SOV IDs
-                                  List<String> selectedSovIds = [];
-                                  for (int i = 0;
-                                      i < selectedList.length;
-                                      i++) {
-                                    if (selectedList[i] &&
-                                        i < sovListProvider.sovList.length) {
-                                      final sov = sovListProvider.sovList[i];
-                                      if (sov.sovId != null) {
-                                        selectedSovIds.add(sov.sovId!);
-                                      }
-                                    }
-                                  }
-
-                                  if (selectedSovIds.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text("No items selected")),
-                                    );
-                                    return;
-                                  }
-
-                                  final firstSelectedIndex = selectedList
-                                      .indexWhere((element) => element == true);
-
-                                  final selectedSov = sovListProvider
-                                      .sovList[firstSelectedIndex];
-
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text('Export Selected Sov'),
-                                      content: Text(
-                                          'Are you sure you want to export ${selectedSovIds.length} Sov?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-
-                                            final payload = {
-                                              "fileType": "profile",
-                                              "format": "excel",
-                                              "includeImage": false,
-                                              "sov_ids": selectedSovIds,
-                                              // List<String>
-                                            };
-
-                                            Provider.of<SOVListProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .exportDataSov(
-                                              context,
-                                              selectedSov.accountId!,
-                                              selectedSov.subAccountId!,
-                                              payload,
-                                              // ✔ Only MAP, not LIST
-                                              selectedSov.sovId!,
-                                            );
-                                          },
-                                          child: Text('Export'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                                icon: Icon(Icons.download),
-                                tooltip: 'Export Selected',
-                              ),
-
-                              // IconButton(
-                              //   onPressed: () {
-                              //     // Collect selected SOV IDs
-                              //     List<String> selectedSovIds = [];
-                              //     for (int i = 0; i < selectedList.length; i++) {
-                              //       if (selectedList[i] && i < sovListProvider.sovList.length) {
-                              //         final sov = sovListProvider.sovList[i];
-                              //         if (sov.sovId != null) {
-                              //           selectedSovIds.add(sov.sovId!);
-                              //         }
-                              //       }
-                              //     }
-                              //
-                              //     if (selectedSovIds.isEmpty) {
-                              //       ScaffoldMessenger.of(context).showSnackBar(
-                              //         SnackBar(
-                              //           content: Text(
-                              //             LanguageService.getTranslated(context, "no_items_selected_error"),
-                              //             style: typography.Body1,
-                              //           ),
-                              //         ),
-                              //       );
-                              //       return;
-                              //     }
-                              //
-                              //     // Get the FIRST selected SOV
-                              //     final firstSelectedIndex =
-                              //     selectedList.indexWhere((element) => element == true);
-                              //
-                              //     final selectedSov = sovListProvider.sovList[firstSelectedIndex];
-                              //
-                              //     showDialog(
-                              //       context: context,
-                              //       builder: (context) => AlertDialog(
-                              //         title: Text('Export Selected Locations'),
-                              //         content: Text(
-                              //             'Are you sure you want to export ${selectedSovIds.length} locations?'),
-                              //         actions: [
-                              //           TextButton(
-                              //             onPressed: () => Navigator.pop(context),
-                              //             child: Text('Cancel'),
-                              //           ),
-                              //           TextButton(
-                              //             onPressed: () {
-                              //               Navigator.pop(context);
-                              //
-                              //               showDialog(
-                              //                 context: context,
-                              //                 builder: (BuildContext context) {
-                              //                   return ExportDialogSov(
-                              //                     accountId: selectedSov.accountId!,      // ✅ Correct ID
-                              //                     subAccountId: selectedSov.subAccountId!, // ✅ Correct ID
-                              //                     locationId: [selectedSovIds.first],      // send first selected
-                              //                   );
-                              //                 },
-                              //               );
-                              //             },
-                              //             child: Text('Export', style: typography.Body1),
-                              //           ),
-                              //         ],
-                              //       ),
-                              //     );
-                              //   },
-                              //   icon: Icon(Icons.download),
-                              //   tooltip: 'Export Selected',
-                              // ),
-                              widget.status.toString() == "received"
-                                  ? Container()
-                                  : IconButton(
-                                      onPressed: () {
-                                        if (selectedList.length !=
-                                            sovListProvider.sovList.length) {
-                                          selectedList = List.generate(
-                                            sovListProvider.sovList.length,
-                                            (_) => false,
-                                          );
-                                        }
-
-                                        final selectedSovs = sovListProvider
-                                            .sovList
-                                            .asMap()
-                                            .entries
-                                            .where((entry) =>
-                                                selectedList[entry.key])
-                                            .map((entry) => entry.value)
-                                            .toList();
-
-                                        if (selectedSovs.isEmpty) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    "Please select at least one SOV to share.")),
-                                          );
-                                          return;
-                                        }
-
-                                        _showTransferDialog(context, selectedSovs);
-                                      },
-                                      icon: const Icon(
-                                        Symbols.share,
-                                        color: Color(0xFF90CAF9),
-                                      ),
-                                      tooltip: 'Share Selected',
-                                    ),
-                            ]
-                          ],
-                        );
-                      });
-                    }),
-                  ),
-                ],
-                // Search
+                /// 🔹 Search bar
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   height: 50,
@@ -688,152 +400,874 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                       ),
                       hintText: LanguageService.getTranslated(
                           context, "search_by_sov_name"),
-                      hintStyle: typography.Body2,
                       prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _textEditingController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _textEditingController.clear();
-                                sovSearchClient('');
-                              },
-                            )
-                          : null,
                     ),
                   ),
                 ),
-                SizedBox(height: CustomSpacing.four),
+
+                SizedBox(height: CustomSpacing.three),
+
+                /// 🔹 Horizontal cards (ONLY horizontal scroll)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Consumer<SOVListProvider>(
-                      builder: (context, sovListProvider, _) {
-                    // if (sovListProvider.isLoading) {
-                    return Row(
-                      children: [
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "total_sovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.all.toString()),
-                          icon: Icons.file_copy_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_mysovs"),
-                          count:
-                              safeParseInt(sovListProvider.sovCounterList.my),
-                          icon: Icons.file_copy_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_sharedsovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.shared),
-                          icon: Icons.ios_share_outlined,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "drawer_menu_receivedsovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.received),
-                          icon: Icons.call_received,
-                        ),
-                        InfoCard(
-                          title: LanguageService.getTranslated(
-                              context, "completed_sovs"),
-                          count: safeParseInt(
-                              sovListProvider.sovCounterList.completed),
-                          icon: Icons.done_all,
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-
-                SizedBox(height: CustomSpacing.four),
-
-                // List of accounts
-                Expanded(
-                  child: Consumer<SOVListProvider>(
                     builder: (context, sovListProvider, _) {
-                      if (sovListProvider.isLoading) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 100),
-                            child: CircularProgressIndicator(),
+                      return Row(
+                        children: [
+                          // InkWell(
+                          //     onTap: () {
+                          //       Navigator.push(
+                          //         context,
+                          //         MaterialPageRoute(
+                          //             builder: (_) => ChatbotWebView()),
+                          //       );
+                          //     },
+                          //     child: Text("chatbot")),
+                          InfoCard(
+                            title: LanguageService.getTranslated(
+                                context, "total_sovs"),
+                            count: safeParseInt(
+                                sovListProvider.sovCounterList.all.toString()),
+                            icon: Icons.file_copy_outlined,
                           ),
-                        );
-                      }
-
-                      if (sovListProvider.sovList.isEmpty) {
-                        return RefreshIndicator(
-                          onRefresh: () async {
-                            sovListProvider.page = 1;
-                            await sovListProvider.fetchSovList(
-                              context,
-                              // widget.accountID!,
-                              // widget.subAccountID!,
-                              _sovQuery,
-                              1,
-                              7,
-                              "my",
-                            );
-                          },
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.5,
-                                child: Center(
-                                  child: Text(
-                                    "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
-                                    style: typography.Body1,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 12),
+                          InfoCard(
+                            title: LanguageService.getTranslated(
+                                context, "drawer_menu_mysovs"),
+                            count:
+                                safeParseInt(sovListProvider.sovCounterList.my),
+                            icon: Icons.file_copy_outlined,
                           ),
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          sovListProvider.page = 1;
-                          await sovListProvider.fetchSovList(
-                            context,
-                            // sovListProvider.sovList.first.accountId!,
-                            // sovListProvider.sovList.first.subAccountId!,
-                            _sovQuery,
-                            1,
-                            7,
-                            widget.status,
-                          );
-                        },
-                        child: ListView.builder(
-                          controller: _scrollController1,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: sovListProvider.isNextPageLoading
-                              ? sovListProvider.sovList.length + 1
-                              : sovListProvider.sovList.length,
-                          itemBuilder: (context, index) {
-                            if (index == sovListProvider.sovList.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            return _buildSovCard(index, sovListProvider);
-                          },
-                        ),
+                          const SizedBox(width: 12),
+                          InfoCard(
+                            title: LanguageService.getTranslated(
+                                context, "drawer_menu_sharedsovs"),
+                            count: safeParseInt(
+                                sovListProvider.sovCounterList.shared),
+                            icon: Icons.ios_share_outlined,
+                          ),
+                          const SizedBox(width: 12),
+                          InfoCard(
+                              title: LanguageService.getTranslated(
+                                  context, "drawer_menu_receivedsovs"),
+                              count: safeParseInt(
+                                  sovListProvider.sovCounterList.received),
+                              icon: Icons.call_received_outlined),
+                          const SizedBox(width: 12),
+                          InfoCard(
+                            title: LanguageService.getTranslated(
+                                context, "completed_sovs"),
+                            count: safeParseInt(
+                                sovListProvider.sovCounterList.completed),
+                            icon: Icons.ios_share_outlined,
+                          ),
+                        ],
                       );
                     },
                   ),
                 ),
+
+                SizedBox(height: CustomSpacing.four),
+
+                /// 🔹 SOV list (NON-scrollable, scroll handled by parent)
+                Consumer<SOVListProvider>(
+                  builder: (context, sovListProvider, _) {
+                    if (sovListProvider.isLoading) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 100),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    if (sovListProvider.sovList.isEmpty) {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        child: Center(
+                          child: Text(
+                            "Looks like you don’t have a sov yet.",
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      // ✅ IMPORTANT
+                      itemCount: sovListProvider.isNextPageLoading
+                          ? sovListProvider.sovList.length + 1
+                          : sovListProvider.sovList.length,
+                      itemBuilder: (context, index) {
+                        if (index == sovListProvider.sovList.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        return _buildSovCard(index, sovListProvider);
+                      },
+                    );
+                  },
+                ),
               ],
             );
+
+      // ListView(
+      //         // crossAxisAlignment: CrossAxisAlignment.start,
+      //         children: [
+      //           if (selectedList.contains(true)) ...[
+      //             Container(
+      //               margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      //               padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
+      //               decoration: BoxDecoration(
+      //                 borderRadius: BorderRadius.circular(16),
+      //                 border: Border.all(
+      //                   color: Theme.of(context)
+      //                       .colorScheme
+      //                       .surfaceContainerHighest,
+      //                   // Set your border color here
+      //                   width: 1.0, // Set the width of the border
+      //                 ),
+      //                 //color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      //               ),
+      //               child: Consumer<UserProfileProvider>(
+      //                   builder: (context, userProfileProvider, child) {
+      //                 final trialStatus =
+      //                     userProfileProvider.trialInfo['status'] ?? '';
+      //                 return Consumer<MyLocationListProvider>(
+      //                     builder: (context, locationListProvider, child) {
+      //                   return Row(
+      //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //                     children: [
+      //                       if (selectedList.contains(true)) ...[
+      //                         // Show selection count and select all button
+      //                         SizedBox(width: CustomSpacing.two),
+      //                         Container(
+      //                           padding: EdgeInsets.symmetric(
+      //                               horizontal: 8, vertical: 4),
+      //                           decoration: BoxDecoration(
+      //                             color: Theme.of(context)
+      //                                 .colorScheme
+      //                                 .surfaceContainerHigh,
+      //                             borderRadius: BorderRadius.circular(8),
+      //                           ),
+      //                           child: Text(
+      //                             "${selectedList.where((s) => s).length}",
+      //                             style: typography.Body1.copyWith(
+      //                               fontWeight: FontWeight.bold,
+      //                             ),
+      //                           ),
+      //                         ),
+      //                         SizedBox(width: 2),
+      //                         TextButton(
+      //                           onPressed: () {
+      //                             setState(() {
+      //                               final bool selectAll =
+      //                                   selectedList.any((s) => s == false);
+      //
+      //                               // Apply the same toggle logic as Checkbox
+      //                               for (int i = 0;
+      //                                   i < selectedList.length;
+      //                                   i++) {
+      //                                 selectedList[i] = selectAll;
+      //                               }
+      //                               if (!selectAll) {
+      //                                 isSelectionMode = false;
+      //                               }
+      //                             });
+      //                           },
+      //                           child: Text(
+      //                             // Dynamically show "Select All" or "Deselect All"
+      //                             selectedList.any((s) => s == false)
+      //                                 ? 'Select All'
+      //                                 : 'Deselect All',
+      //                             style: typography.Body1.copyWith(
+      //                               color: AppColors.primaryMain,
+      //                             ),
+      //                           ),
+      //                         ),
+      //
+      //                         Spacer(),
+      //
+      //                         IconButton(
+      //                           onPressed: () {
+      //                             // Collect selected SOV IDs
+      //                             List<String> selectedSovIds = [];
+      //                             for (int i = 0;
+      //                                 i < selectedList.length;
+      //                                 i++) {
+      //                               if (selectedList[i] &&
+      //                                   i < sovListProvider.sovList.length) {
+      //                                 final sov = sovListProvider.sovList[i];
+      //                                 if (sov.sovId != null) {
+      //                                   selectedSovIds.add(sov.sovId!);
+      //                                 }
+      //                               }
+      //                             }
+      //
+      //                             if (selectedSovIds.isEmpty) {
+      //                               ScaffoldMessenger.of(context).showSnackBar(
+      //                                 SnackBar(
+      //                                     content: Text("No items selected")),
+      //                               );
+      //                               return;
+      //                             }
+      //
+      //                             final firstSelectedIndex = selectedList
+      //                                 .indexWhere((element) => element == true);
+      //
+      //                             final selectedSov = sovListProvider
+      //                                 .sovList[firstSelectedIndex];
+      //
+      //                             showDialog(
+      //                               context: context,
+      //                               builder: (context) => AlertDialog(
+      //                                 title: Text('Export Selected Sov'),
+      //                                 content: Text(
+      //                                     'Are you sure you want to export ${selectedSovIds.length} Sov?'),
+      //                                 actions: [
+      //                                   TextButton(
+      //                                     onPressed: () =>
+      //                                         Navigator.pop(context),
+      //                                     child: Text('Cancel'),
+      //                                   ),
+      //                                   TextButton(
+      //                                     onPressed: () {
+      //                                       Navigator.pop(context);
+      //
+      //                                       final payload = {
+      //                                         "fileType": "profile",
+      //                                         "format": "excel",
+      //                                         "includeImage": false,
+      //                                         "sov_ids": selectedSovIds,
+      //                                         // List<String>
+      //                                       };
+      //
+      //                                       Provider.of<SOVListProvider>(
+      //                                               context,
+      //                                               listen: false)
+      //                                           .exportDataSov(
+      //                                         context,
+      //                                         selectedSov.accountId!,
+      //                                         selectedSov.subAccountId!,
+      //                                         payload,
+      //                                         // ✔ Only MAP, not LIST
+      //                                         selectedSov.sovId!,
+      //                                       );
+      //                                     },
+      //                                     child: Text('Export'),
+      //                                   ),
+      //                                 ],
+      //                               ),
+      //                             );
+      //                           },
+      //                           icon: Icon(Icons.download),
+      //                           tooltip: 'Export Selected',
+      //                         ),
+      //
+      //                         // IconButton(
+      //                         //   onPressed: () {
+      //                         //     // Collect selected SOV IDs
+      //                         //     List<String> selectedSovIds = [];
+      //                         //     for (int i = 0; i < selectedList.length; i++) {
+      //                         //       if (selectedList[i] && i < sovListProvider.sovList.length) {
+      //                         //         final sov = sovListProvider.sovList[i];
+      //                         //         if (sov.sovId != null) {
+      //                         //           selectedSovIds.add(sov.sovId!);
+      //                         //         }
+      //                         //       }
+      //                         //     }
+      //                         //
+      //                         //     if (selectedSovIds.isEmpty) {
+      //                         //       ScaffoldMessenger.of(context).showSnackBar(
+      //                         //         SnackBar(
+      //                         //           content: Text(
+      //                         //             LanguageService.getTranslated(context, "no_items_selected_error"),
+      //                         //             style: typography.Body1,
+      //                         //           ),
+      //                         //         ),
+      //                         //       );
+      //                         //       return;
+      //                         //     }
+      //                         //
+      //                         //     // Get the FIRST selected SOV
+      //                         //     final firstSelectedIndex =
+      //                         //     selectedList.indexWhere((element) => element == true);
+      //                         //
+      //                         //     final selectedSov = sovListProvider.sovList[firstSelectedIndex];
+      //                         //
+      //                         //     showDialog(
+      //                         //       context: context,
+      //                         //       builder: (context) => AlertDialog(
+      //                         //         title: Text('Export Selected Locations'),
+      //                         //         content: Text(
+      //                         //             'Are you sure you want to export ${selectedSovIds.length} locations?'),
+      //                         //         actions: [
+      //                         //           TextButton(
+      //                         //             onPressed: () => Navigator.pop(context),
+      //                         //             child: Text('Cancel'),
+      //                         //           ),
+      //                         //           TextButton(
+      //                         //             onPressed: () {
+      //                         //               Navigator.pop(context);
+      //                         //
+      //                         //               showDialog(
+      //                         //                 context: context,
+      //                         //                 builder: (BuildContext context) {
+      //                         //                   return ExportDialogSov(
+      //                         //                     accountId: selectedSov.accountId!,      // ✅ Correct ID
+      //                         //                     subAccountId: selectedSov.subAccountId!, // ✅ Correct ID
+      //                         //                     locationId: [selectedSovIds.first],      // send first selected
+      //                         //                   );
+      //                         //                 },
+      //                         //               );
+      //                         //             },
+      //                         //             child: Text('Export', style: typography.Body1),
+      //                         //           ),
+      //                         //         ],
+      //                         //       ),
+      //                         //     );
+      //                         //   },
+      //                         //   icon: Icon(Icons.download),
+      //                         //   tooltip: 'Export Selected',
+      //                         // ),
+      //                         widget.status.toString() == "received"
+      //                             ? Container()
+      //                             : IconButton(
+      //                                 onPressed: () {
+      //                                   if (selectedList.length !=
+      //                                       sovListProvider.sovList.length) {
+      //                                     selectedList = List.generate(
+      //                                       sovListProvider.sovList.length,
+      //                                       (_) => false,
+      //                                     );
+      //                                   }
+      //
+      //                                   final selectedSovs = sovListProvider
+      //                                       .sovList
+      //                                       .asMap()
+      //                                       .entries
+      //                                       .where((entry) =>
+      //                                           selectedList[entry.key])
+      //                                       .map((entry) => entry.value)
+      //                                       .toList();
+      //
+      //                                   if (selectedSovs.isEmpty) {
+      //                                     ScaffoldMessenger.of(context)
+      //                                         .showSnackBar(
+      //                                       const SnackBar(
+      //                                           content: Text(
+      //                                               "Please select at least one SOV to share.")),
+      //                                     );
+      //                                     return;
+      //                                   }
+      //
+      //                                   _showTransferDialog(
+      //                                       context, selectedSovs);
+      //                                 },
+      //                                 icon: const Icon(
+      //                                   Symbols.share,
+      //                                   color: Color(0xFF90CAF9),
+      //                                 ),
+      //                                 tooltip: 'Share Selected',
+      //                               ),
+      //                       ]
+      //                     ],
+      //                   );
+      //                 });
+      //               }),
+      //             ),
+      //           ],
+      //           // Search
+      //           Container(
+      //             padding: const EdgeInsets.symmetric(horizontal: 8),
+      //             height: 50,
+      //             child: TextField(
+      //               controller: _textEditingController,
+      //               onChanged: (query) => sovSearchClient(query),
+      //               decoration: InputDecoration(
+      //                 border: OutlineInputBorder(
+      //                   borderRadius: BorderRadius.circular(8),
+      //                 ),
+      //                 hintText: LanguageService.getTranslated(
+      //                     context, "search_by_sov_name"),
+      //                 hintStyle: typography.Body2,
+      //                 prefixIcon: const Icon(Icons.search),
+      //                 suffixIcon: _textEditingController.text.isNotEmpty
+      //                     ? IconButton(
+      //                         icon: const Icon(Icons.clear),
+      //                         onPressed: () {
+      //                           _textEditingController.clear();
+      //                           sovSearchClient('');
+      //                         },
+      //                       )
+      //                     : null,
+      //               ),
+      //             ),
+      //           ),
+      //           SizedBox(height: CustomSpacing.three),
+      //           SingleChildScrollView(
+      //             controller: _scrollController1,
+      //             physics: const AlwaysScrollableScrollPhysics(),
+      //             child: Column(
+      //               crossAxisAlignment: CrossAxisAlignment.start,
+      //               children: [
+      //                 /// 🔹 Horizontal cards (scrolls horizontally only)
+      //                 SingleChildScrollView(
+      //                   scrollDirection: Axis.horizontal,
+      //                   child: Consumer<SOVListProvider>(
+      //                     builder: (context, sovListProvider, _) {
+      //                       return Row(
+      //                         children: [
+      //                           InfoCard(
+      //                             title: LanguageService.getTranslated(
+      //                                 context, "total_sovs"),
+      //                             count: safeParseInt(sovListProvider
+      //                                 .sovCounterList.all
+      //                                 .toString()),
+      //                             icon: Icons.file_copy_outlined,
+      //                           ),
+      //                           const SizedBox(width: 10),
+      //                           InfoCard(
+      //                             title: LanguageService.getTranslated(
+      //                                 context, "drawer_menu_mysovs"),
+      //                             count: safeParseInt(
+      //                                 sovListProvider.sovCounterList.my),
+      //                             icon: Icons.file_copy_outlined,
+      //                           ),
+      //                           const SizedBox(width: 12),
+      //                           InfoCard(
+      //                             title: LanguageService.getTranslated(
+      //                                 context, "drawer_menu_sharedsovs"),
+      //                             count: safeParseInt(
+      //                                 sovListProvider.sovCounterList.shared),
+      //                             icon: Icons.ios_share_outlined,
+      //                           ),
+      //                           const SizedBox(width: 12),
+      //                           InfoCard(
+      //                             title: LanguageService.getTranslated(
+      //                                 context, "drawer_menu_receivedsovs"),
+      //                             count: safeParseInt(
+      //                                 sovListProvider.sovCounterList.received),
+      //                             icon: Icons.call_received,
+      //                           ),
+      //                           const SizedBox(width: 12),
+      //                           InfoCard(
+      //                             title: LanguageService.getTranslated(
+      //                                 context, "completed_sovs"),
+      //                             count: safeParseInt(
+      //                                 sovListProvider.sovCounterList.completed),
+      //                             icon: Icons.done_all,
+      //                           ),
+      //                         ],
+      //                       );
+      //                     },
+      //                   ),
+      //                 ),
+      //
+      //                 SizedBox(height: CustomSpacing.four),
+      //
+      //                 /// 🔹 List section (scrolls with parent)
+      //                 Consumer<SOVListProvider>(
+      //                   builder: (context, sovListProvider, _) {
+      //                     if (sovListProvider.isLoading) {
+      //                       return const Padding(
+      //                         padding: EdgeInsets.only(top: 100),
+      //                         child: Center(child: CircularProgressIndicator()),
+      //                       );
+      //                     }
+      //
+      //                     if (sovListProvider.sovList.isEmpty) {
+      //                       return SizedBox(
+      //                         height: MediaQuery.of(context).size.height * 0.5,
+      //                         child: Center(
+      //                           child: Text(
+      //                             "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
+      //                             style: typography.Body1,
+      //                             textAlign: TextAlign.center,
+      //                           ),
+      //                         ),
+      //                       );
+      //                     }
+      //
+      //                     return ListView.builder(
+      //                       shrinkWrap: true,
+      //                       physics: const NeverScrollableScrollPhysics(),
+      //                       itemCount: sovListProvider.isNextPageLoading
+      //                           ? sovListProvider.sovList.length + 1
+      //                           : sovListProvider.sovList.length,
+      //                       itemBuilder: (context, index) {
+      //                         if (index == sovListProvider.sovList.length) {
+      //                           return const Padding(
+      //                             padding: EdgeInsets.all(16),
+      //                             child: Center(
+      //                                 child: CircularProgressIndicator()),
+      //                           );
+      //                         }
+      //                         return _buildSovCard(index, sovListProvider);
+      //                       },
+      //                     );
+      //                   },
+      //                 ),
+      //               ],
+      //             ),
+      //           ),
+      //
+      //           // SingleChildScrollView(
+      //           //   scrollDirection: Axis.horizontal,
+      //           //   child: Consumer<SOVListProvider>(
+      //           //       builder: (context, sovListProvider, _) {
+      //           //         // if (sovListProvider.isLoading) {
+      //           //         return Row(
+      //           //           children: [
+      //           //             InfoCard(
+      //           //               title: LanguageService.getTranslated(
+      //           //                   context, "total_sovs"),
+      //           //               count: safeParseInt(
+      //           //                   sovListProvider.sovCounterList.all.toString()),
+      //           //               icon: Icons.file_copy_outlined,
+      //           //             ),
+      //           //             SizedBox(width: 10),
+      //           //             InfoCard(
+      //           //               title: LanguageService.getTranslated(
+      //           //                   context, "drawer_menu_mysovs"),
+      //           //               count:
+      //           //               safeParseInt(sovListProvider.sovCounterList.my),
+      //           //               icon: Icons.file_copy_outlined,
+      //           //             ),
+      //           //             SizedBox(width: 12),
+      //           //             InfoCard(
+      //           //               title: LanguageService.getTranslated(
+      //           //                   context, "drawer_menu_sharedsovs"),
+      //           //               count: safeParseInt(
+      //           //                   sovListProvider.sovCounterList.shared),
+      //           //               icon: Icons.ios_share_outlined,
+      //           //             ),
+      //           //             SizedBox(width: 12),
+      //           //             InfoCard(
+      //           //               title: LanguageService.getTranslated(
+      //           //                   context, "drawer_menu_receivedsovs"),
+      //           //               count: safeParseInt(
+      //           //                   sovListProvider.sovCounterList.received),
+      //           //               icon: Icons.call_received,
+      //           //             ),
+      //           //             SizedBox(width: 12),
+      //           //             InfoCard(
+      //           //               title: LanguageService.getTranslated(
+      //           //                   context, "completed_sovs"),
+      //           //               count: safeParseInt(
+      //           //                   sovListProvider.sovCounterList.completed),
+      //           //               icon: Icons.done_all,
+      //           //             ),
+      //           //           ],
+      //           //         );
+      //           //       }),
+      //           // ),
+      //           //
+      //           // SizedBox(height: CustomSpacing.four),
+      //           //
+      //           // Expanded(
+      //           //   child: Consumer<SOVListProvider>(
+      //           //     builder: (context, sovListProvider, _) {
+      //           //       if (sovListProvider.isLoading) {
+      //           //         return const Center(
+      //           //           child: Padding(
+      //           //             padding: EdgeInsets.only(top: 100),
+      //           //             child: CircularProgressIndicator(),
+      //           //           ),
+      //           //         );
+      //           //       }
+      //           //
+      //           //       if (sovListProvider.sovList.isEmpty) {
+      //           //         return RefreshIndicator(
+      //           //           onRefresh: () async {
+      //           //             sovListProvider.page = 1;
+      //           //             await sovListProvider.fetchSovList(
+      //           //               context,
+      //           //               // widget.accountID!,
+      //           //               // widget.subAccountID!,
+      //           //               _sovQuery,
+      //           //               1,
+      //           //               7,
+      //           //               "my",
+      //           //             );
+      //           //           },
+      //           //           child: ListView(
+      //           //             physics: const AlwaysScrollableScrollPhysics(),
+      //           //             children: [
+      //           //               SizedBox(
+      //           //                 height:
+      //           //                 MediaQuery.of(context).size.height * 0.5,
+      //           //                 child: Center(
+      //           //                   child: Text(
+      //           //                     "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
+      //           //                     style: typography.Body1,
+      //           //                     textAlign: TextAlign.center,
+      //           //                   ),
+      //           //                 ),
+      //           //               ),
+      //           //             ],
+      //           //           ),
+      //           //         );
+      //           //       }
+      //           //       return RefreshIndicator(
+      //           //         onRefresh: () async {
+      //           //           sovListProvider.page = 1;
+      //           //           await sovListProvider.fetchSovList(
+      //           //             context,
+      //           //             // sovListProvider.sovList.first.accountId!,
+      //           //             // sovListProvider.sovList.first.subAccountId!,
+      //           //             _sovQuery,
+      //           //             1,
+      //           //             7,
+      //           //             widget.status,
+      //           //           );
+      //           //         },
+      //           //         child: ListView.builder(
+      //           //           controller: _scrollController1,
+      //           //           physics: const AlwaysScrollableScrollPhysics(),
+      //           //           itemCount: sovListProvider.isNextPageLoading
+      //           //               ? sovListProvider.sovList.length + 1
+      //           //               : sovListProvider.sovList.length,
+      //           //           itemBuilder: (context, index) {
+      //           //             if (index == sovListProvider.sovList.length) {
+      //           //               return const Padding(
+      //           //                 padding: EdgeInsets.all(16),
+      //           //                 child:
+      //           //                 Center(child: CircularProgressIndicator()),
+      //           //               );
+      //           //             }
+      //           //             return _buildSovCard(index, sovListProvider);
+      //           //           },
+      //           //         ),
+      //           //       );
+      //           //     },
+      //           //   ),
+      //           // ),
+      //         ],
+      //       );
     });
+  }
+
+  Widget _buildSelectionBar(CustomTypography typography) {
+    return Consumer2<SOVListProvider, MyLocationListProvider>(
+      builder: (context, sovListProvider, locationListProvider, _) {
+        if (!selectedList.contains(true)) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              width: 1,
+            ),
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          child: Row(
+            children: [
+              /// 🔹 Selected count
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  "${selectedList.where((e) => e).length}",
+                  style: typography.Body1.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              /// 🔹 Select / Deselect All
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    final bool selectAll = selectedList.any((e) => e == false);
+
+                    for (int i = 0; i < selectedList.length; i++) {
+                      selectedList[i] = selectAll;
+                    }
+
+                    if (!selectAll) {
+                      isSelectionMode = false;
+                    }
+                  });
+                },
+                child: Text(
+                  selectedList.any((e) => e == false)
+                      ? 'Select All'
+                      : 'Deselect All',
+                  style: typography.Body1.copyWith(
+                    color: AppColors.primaryMain,
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              /// 🔹 Export
+              IconButton(
+                tooltip: 'Export Selected',
+                icon: const Icon(Icons.download),
+                onPressed: () {
+                  final selectedSovIds = <String>[];
+
+                  for (int i = 0;
+                      i < selectedList.length &&
+                          i < sovListProvider.sovList.length;
+                      i++) {
+                    if (selectedList[i]) {
+                      final sov = sovListProvider.sovList[i];
+                      if (sov.sovId != null) {
+                        selectedSovIds.add(sov.sovId!);
+                      }
+                    }
+                  }
+
+                  if (selectedSovIds.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("No items selected")),
+                    );
+                    return;
+                  }
+
+                  final firstIndex = selectedList.indexWhere((e) => e);
+
+                  final selectedSov = sovListProvider.sovList[firstIndex];
+
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Export Selected Sov'),
+                      content: Text('Export ${selectedSovIds.length} Sov(s)?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+
+                            Provider.of<SOVListProvider>(context, listen: false)
+                                .exportDataSov(
+                              context,
+                              selectedSov.accountId!,
+                              selectedSov.subAccountId!,
+                              {
+                                "fileType": "profile",
+                                "format": "excel",
+                                "includeImage": false,
+                                "sov_ids": selectedSovIds,
+                              },
+                              selectedSov.sovId!,
+                            );
+                          },
+                          child: const Text('Export'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              /// 🔹 Share (hide for received)
+              if (widget.status != "received")
+                IconButton(
+                  tooltip: 'Share Selected',
+                  icon: const Icon(
+                    Symbols.share,
+                    color: Color(0xFF90CAF9),
+                  ),
+                  onPressed: () {
+                    final selectedSovs = sovListProvider.sovList
+                        .asMap()
+                        .entries
+                        .where((e) =>
+                            e.key < selectedList.length && selectedList[e.key])
+                        .map((e) => e.value)
+                        .toList();
+
+                    if (selectedSovs.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text("Please select at least one SOV to share."),
+                        ),
+                      );
+                      return;
+                    }
+
+                    List<Map<String, dynamic>> selectedSovData = selectedSovs
+                        .where((s) => s.sovId != null)
+                        .map((s) => {
+                              "sov_id": s.sovId,
+                              "sov_name": s.name,
+                            })
+                        .toList();
+
+                    _showTransferDialog(context, selectedSovData);
+                  },
+                ),
+              // IconButton(
+              //   tooltip: 'Share Selected',
+              //   icon: const Icon(
+              //     Symbols.share,
+              //     color: Color(0xFF90CAF9),
+              //   ),
+              //   onPressed: () {
+              //     final selectedSovs = sovListProvider.sovList
+              //         .asMap()
+              //         .entries
+              //         .where((e) =>
+              //             e.key < selectedList.length && selectedList[e.key])
+              //         .map((e) => e.value)
+              //         .toList();
+              //
+              //     if (selectedSovs.isEmpty) {
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         const SnackBar(
+              //           content:
+              //               Text("Please select at least one SOV to share."),
+              //         ),
+              //       );
+              //       return;
+              //     }
+              //
+              //     // ✅ Sync selectedSovIds with all currently selected sovs
+              //     selectedSovIds = selectedSovs
+              //         .where((s) => s.sovId != null)
+              //         .map((s) => s.sovId!)
+              //         .toSet();
+              //     List<Map<String, dynamic>> selectedSovData = selectedSovs
+              //         .where((s) => s.sovId != null)
+              //         .map((s) => {
+              //       "sov_id": s.sovId,
+              //       "sov_name": s.name,
+              //     })
+              //         .toList();
+              //
+              //     // _showTransferDialog(context, selectedSovs);
+              //     _showTransferDialog(context, selectedSovs);
+              //
+              //   },
+              //
+              // ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
@@ -848,6 +1282,8 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     //         .where((u) => u.email != null && u.email!.trim().isNotEmpty)
     //         .toList() ??
     //     [];
+    final bool isExpanded = expandedIndexes.contains(index);
+
     return Opacity(
       opacity: isRefreshPending ? 0.5 : 1.0, // Fade UI
       child: IgnorePointer(
@@ -934,7 +1370,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            height: 230,
+                            height: isExpanded ? 220 : 132,
                             width: MediaQuery.of(context).size.width,
                             child: Card(
                               color: Colors.white12,
@@ -1000,6 +1436,44 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                             });
                                                           },
                                                         ),
+                                                      Expanded(
+                                                        child: Row(
+                                                          children: [
+                                                            Flexible(
+                                                              child: Text(
+                                                                sov.name ?? "",
+                                                                style: typography
+                                                                        .Body2
+                                                                    .copyWith(
+                                                                  fontSize: 20,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  color: const Color(
+                                                                      0xFF90CAF9),
+                                                                ),
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                                width: 6),
+                                                            // InkWell(
+                                                            //   onTap: () =>
+                                                            //       _showRenameDialog(
+                                                            //           index,
+                                                            //           sov),
+                                                            //   child: const Icon(
+                                                            //     Icons.edit,
+                                                            //     size: 16,
+                                                            //     color: Colors
+                                                            //         .white70,
+                                                            //   ),
+                                                            // ),
+                                                          ],
+                                                        ),
+                                                      ),
                                                       Chip(
                                                         label: Text(
                                                           sov.status ??
@@ -1023,325 +1497,297 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                                 .withOpacity(
                                                                     0.2),
                                                       ),
-                                                      IconButton(
-                                                        icon: const Icon(Icons
-                                                            .file_copy_rounded),
-                                                        color: AppColors
-                                                            .primaryMain,
-                                                        onPressed: () {
-                                                          // Show duplicate dialog
-                                                          showDialog(
-                                                            context: context,
-                                                            barrierDismissible:
-                                                                false,
-                                                            builder: (context) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                  LanguageService
-                                                                      .getTranslated(
-                                                                          context,
-                                                                          "duplicate_sov_account"),
-                                                                  style: typography
-                                                                      .H5_Regular,
-                                                                ),
-                                                                content: Column(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    Text(
-                                                                      LanguageService.getTranslated(
-                                                                          context,
-                                                                          "sov_list_app_duplicate_text"),
-                                                                      style: typography
-                                                                          .Body1,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      height:
-                                                                          CustomSpacing
-                                                                              .two,
-                                                                    ),
-                                                                    Row(
-                                                                      children: [
-                                                                        Expanded(
-                                                                          child:
-                                                                              CustomButton(
-                                                                            onPressed:
-                                                                                () {
-                                                                              // Cancel
-                                                                              Navigator.pop(context);
-                                                                            },
-                                                                            child:
-                                                                                Text(
-                                                                              LanguageService.getTranslated(context, "cancel"),
-                                                                              style: typography.ButtonLarge,
-                                                                            ),
-                                                                            type:
-                                                                                ButtonType.text,
-                                                                          ),
-                                                                        ),
-                                                                        Expanded(
-                                                                          child:
-                                                                              Consumer<SOVListProvider>(
-                                                                            builder: (context,
-                                                                                provider,
-                                                                                child) {
-                                                                              if (provider.isDuplicateLoading) {
-                                                                                return Center(
-                                                                                  child: SizedBox(
-                                                                                    height: 28,
-                                                                                    width: 28,
-                                                                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                                                                  ),
-                                                                                );
-                                                                              }
-
-                                                                              return CustomButton(
-                                                                                onPressed: () async {
-                                                                                  provider.isDuplicateLoading = true;
-                                                                                  provider.notifyListeners();
-
-                                                                                  try {
-                                                                                    // 1️⃣ Duplicate Sub Account
-                                                                                    await provider.duplicateSov(
-                                                                                      context,
-                                                                                      sov.sovId!,
-                                                                                    );
-
-                                                                                    final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
-                                                                                    Navigator.pop(context);
-                                                                                    await sovProvider.fetchSovList(
-                                                                                      context,
-                                                                                      "",
-                                                                                      1,
-                                                                                      5,
-                                                                                      widget.status,
-                                                                                    );
-                                                                                    sOVListProvider.notifyListeners();
-
-                                                                                    /// STOP LOADER
-                                                                                    // accountListProvider.isRenameLoading = false;
-                                                                                    // accountListProvider.notifyListeners();
-                                                                                  } finally {
-                                                                                    provider.isDuplicateLoading = false;
-                                                                                    provider.notifyListeners();
-                                                                                  }
-                                                                                },
-                                                                                child: Text(
-                                                                                  LanguageService.getTranslated(
-                                                                                    context,
-                                                                                    "duplicate",
-                                                                                  ),
-                                                                                ),
-                                                                                type: ButtonType.elevated,
-                                                                              );
-                                                                            },
-                                                                          ),
-                                                                        )
-                                                                      ],
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              );
-                                                            },
-                                                          );
-                                                        },
-                                                        tooltip: LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "sub_account_list_app_duplicate_tooltip_text"),
-                                                      ),
                                                     ],
                                                   ),
                                                 ),
-                                                _buildMoreMenu(index),
+                                                IconButton(
+                                                  icon: AnimatedRotation(
+                                                    turns: isExpanded
+                                                        ? 0.5
+                                                        : 0.0, // 180°
+                                                    duration: const Duration(
+                                                        milliseconds: 200),
+                                                    child: Icon(
+                                                      Icons.expand_circle_down,
+                                                      color:
+                                                          AppColors.primaryMain,
+                                                    ),
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      if (isExpanded) {
+                                                        expandedIndexes
+                                                            .remove(index);
+                                                      } else {
+                                                        expandedIndexes
+                                                            .add(index);
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                                _buildMoreMenu(index, sov),
                                               ],
                                             ),
-                                            SizedBox(height: 4),
                                             Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.center,
                                               children: [
-                                                /// LEFT
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      Flexible(
-                                                        child: Text(
-                                                          sov.name ?? "",
+                                                // Expanded(
+                                                //     child: Row(
+                                                //   children: [
+                                                //     Expanded(
+                                                //       child: Row(
+                                                //         children: [
+                                                //           Flexible(
+                                                //             child: Text(
+                                                //               sov.name ?? "",
+                                                //               style: typography
+                                                //                       .Body2
+                                                //                   .copyWith(
+                                                //                 fontSize: 20,
+                                                //                 fontWeight:
+                                                //                     FontWeight
+                                                //                         .w400,
+                                                //                 color: const Color(
+                                                //                     0xFF90CAF9),
+                                                //               ),
+                                                //               overflow:
+                                                //                   TextOverflow
+                                                //                       .ellipsis,
+                                                //             ),
+                                                //           ),
+                                                //           const SizedBox(
+                                                //               width: 6),
+                                                //           InkWell(
+                                                //             onTap: () =>
+                                                //                 _showRenameDialog(
+                                                //                     index, sov),
+                                                //             child: const Icon(
+                                                //               Icons.edit,
+                                                //               size: 16,
+                                                //               color: Colors
+                                                //                   .white70,
+                                                //             ),
+                                                //           ),
+                                                //         ],
+                                                //       ),
+                                                //     ),
+                                                //     _buildMoreMenu(index),
+                                                //   ],
+                                                // )),
+                                                // widget.status
+                                                //             .toString()
+                                                //             .toLowerCase() ==
+                                                //         "shared"
+                                                //     ? InkWell(
+                                                //         // onTap: () =>
+                                                //         // _showSharedWithDialog(
+                                                //         //     context,
+                                                //         //     sov.sharingStatus),
+                                                //         child: Container(
+                                                //           padding:
+                                                //               const EdgeInsets
+                                                //                   .symmetric(
+                                                //                   horizontal: 5,
+                                                //                   vertical: 6),
+                                                //           decoration:
+                                                //               BoxDecoration(
+                                                //             color: const Color(
+                                                //                 0xFF2A2A2A),
+                                                //             borderRadius:
+                                                //                 BorderRadius
+                                                //                     .circular(
+                                                //                         8),
+                                                //             border: Border.all(
+                                                //                 color: const Color(
+                                                //                     0xFF3A3A3A)),
+                                                //           ),
+                                                //           child: Row(
+                                                //             mainAxisSize:
+                                                //                 MainAxisSize
+                                                //                     .min,
+                                                //             children: [
+                                                //               const Icon(
+                                                //                 Icons.mail,
+                                                //                 size: 16,
+                                                //                 color: Colors
+                                                //                     .white,
+                                                //               ),
+                                                //               const SizedBox(
+                                                //                   width: 4),
+                                                //               Text(
+                                                //                 "",
+                                                //                 // "${sov.sharingStatus!.users.values.toList().length ?? 0}",
+                                                //                 style: typography
+                                                //                         .Body2
+                                                //                     .copyWith(
+                                                //                   color: Colors
+                                                //                       .white,
+                                                //                   fontWeight:
+                                                //                       FontWeight
+                                                //                           .w500,
+                                                //                 ),
+                                                //               ),
+                                                //             ],
+                                                //           ),
+                                                //         ),
+                                                //       )
+                                                //     : Container(),
+                                                SizedBox(width: 4),
+                                              ],
+                                            ),
+                                            if (isExpanded) ...[
+                                              Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 16,
+                                                    backgroundColor:
+                                                        Colors.grey[800],
+                                                    child: Text(
+                                                      sov.owner?.name
+                                                              ?.substring(0, 2)
+                                                              .toUpperCase() ??
+                                                          "?",
+                                                      style: TextStyle(
+                                                          color: Colors.white),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      sov.owner?.name ??
+                                                          "Unknown",
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 16,
+                                                        color: Colors.white,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 5,
+                                                        vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                          0xFF2A2A2A),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      border: Border.all(
+                                                          color: const Color(
+                                                              0xFF3A3A3A)),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(
+                                                            Icons.location_on,
+                                                            size: 18,
+                                                            color:
+                                                                Colors.white),
+                                                        const SizedBox(
+                                                            width: 2),
+                                                        Text(
+                                                          "${sov.locationCount ?? 0}",
                                                           style: typography
                                                               .Body2.copyWith(
-                                                            fontSize: 20,
+                                                            color: Colors.white,
                                                             fontWeight:
-                                                                FontWeight.w400,
-                                                            color: const Color(
-                                                                0xFF90CAF9),
+                                                                FontWeight.w500,
                                                           ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
                                                         ),
-                                                      ),
-                                                      const SizedBox(width: 6),
-                                                      InkWell(
-                                                        onTap: () =>
-                                                            _showRenameDialog(
-                                                                index, sov),
-                                                        child: const Icon(
-                                                          Icons.edit,
-                                                          size: 16,
-                                                          color: Colors.white70,
-                                                        ),
-                                                      ),
-                                                    ],
+                                                      ],
+                                                    ),
                                                   ),
-                                                ),
-
-                                                /// RIGHT
-                                                widget.status
-                                                            .toString()
-                                                            .toLowerCase() ==
-                                                        "shared"
-                                                    ? InkWell(
-                                                        // onTap: () =>
-                                                        // _showSharedWithDialog(
-                                                        //     context,
-                                                        //     sov.sharingStatus),
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal: 5,
-                                                                  vertical: 6),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: const Color(
-                                                                0xFF2A2A2A),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        8),
-                                                            border: Border.all(
-                                                                color: const Color(
-                                                                    0xFF3A3A3A)),
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              const Icon(
-                                                                Icons.mail,
-                                                                size: 16,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                              const SizedBox(
-                                                                  width: 4),
-                                                              Text(
-                                                                "",
-                                                                // "${sov.sharingStatus!.users.values.toList().length ?? 0}",
-                                                                style: typography
-                                                                        .Body2
-                                                                    .copyWith(
+                                                  SizedBox(width: 6),
+                                                  widget.status
+                                                              .toString()
+                                                              .toLowerCase() ==
+                                                          "shared"
+                                                      ? InkWell(
+                                                          // onTap: () =>
+                                                          // _showSharedWithDialog(
+                                                          //     context,
+                                                          //     sov.sharingStatus),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        5,
+                                                                    vertical:
+                                                                        6),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: const Color(
+                                                                  0xFF2A2A2A),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border: Border.all(
+                                                                  color: const Color(
+                                                                      0xFF3A3A3A)),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                const Icon(
+                                                                  Icons.mail,
+                                                                  size: 16,
                                                                   color: Colors
                                                                       .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
                                                                 ),
-                                                              ),
-                                                            ],
+                                                                const SizedBox(
+                                                                    width: 4),
+                                                                Text(
+                                                                  "${sov.sharingStatus!.email?.length ?? ""}",
+                                                                  style: typography
+                                                                          .Body2
+                                                                      .copyWith(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
                                                           ),
-                                                        ),
-                                                      )
-                                                    : Container(),
-                                                SizedBox(width: 4),
-                                              ],
-                                            ),
-                                            SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 16,
-                                                  backgroundColor:
-                                                      Colors.grey[800],
-                                                  child: Text(
-                                                    sov.owner?.name
-                                                            ?.substring(0, 2)
-                                                            .toUpperCase() ??
-                                                        "?",
-                                                    style: TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    sov.owner?.name ??
-                                                        "Unknown",
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        const Color(0xFF2A2A2A),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    border: Border.all(
-                                                        color: const Color(
-                                                            0xFF3A3A3A)),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(
-                                                          Icons.location_on,
-                                                          size: 18,
-                                                          color: Colors.white),
-                                                      const SizedBox(width: 2),
-                                                      Text(
-                                                        "${sov.locationCount ?? 0}",
-                                                        style: typography.Body2
-                                                            .copyWith(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                SizedBox(width: 4),
-                                              ],
-                                            ),
-                                            SizedBox(height: 8),
-                                            if ((sov.companyName ?? "")
-                                                .isNotEmpty)
-                                              Text(
-                                                "Company: ${sov.companyName}",
-                                                style:
-                                                    typography.Body2.copyWith(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
+                                                        )
+                                                      : Container(),
+                                                  SizedBox(width: 4),
+                                                ],
                                               ),
-                                            SizedBox(height: 8),
+                                              SizedBox(height: 8),
+                                              if ((sov.companyName ?? "")
+                                                  .isNotEmpty)
+                                                Text(
+                                                  "Company: ${sov.companyName}",
+                                                  style:
+                                                      typography.Body2.copyWith(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              SizedBox(height: 8),
+                                              Container(
+                                                  padding: EdgeInsets.only(
+                                                      right: 5, left: 5),
+                                                  child: Divider()),
+                                              SizedBox(height: 8),
+                                            ],
                                             _buildScrollableScores(
                                               context,
                                               sov.geocodeAvg.toString(),
@@ -1383,140 +1829,495 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildMoreMenu(int index) {
+  Widget _buildMoreMenu(int index, Result sov) {
     return Consumer2<SubAccountListProvider, SOVListProvider>(
       builder: (context, subAccountListProvider, sovProvider, child) {
-        return PopupMenuButton<String>(
+        return PopupMenuButton<MoreMenuAction>(
           color: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           icon: const Icon(Icons.more_vert, color: Colors.white),
           onSelected: (value) async {
-            if (value == 'delete') {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  bool loading = false;
-
-                  return StatefulBuilder(
-                    builder: (context, setState) {
-                      return AlertDialog(
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        title: Text(
-                          LanguageService.getTranslated(
-                              context, "confirm_deletion"),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: Text(
-                          LanguageService.getTranslated(
-                              context, "confirm_delete_sov_message"),
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              LanguageService.getTranslated(context, "cancel"),
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              setState(() => loading = true);
-
-                              bool isSuccess = false;
-
-                              try {
-                                isSuccess = await subAccountListProvider
-                                    .deleteSOVAccount(
-                                  context,
-                                  sovProvider.sovList[index].accountId!,
-                                  sovProvider.sovList[index].subAccountId!,
-                                  sovProvider.sovList[index].sovId!,
-                                );
-                              } catch (e) {
-                                debugPrint("Error deleting SOV: $e");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "Failed to delete SOV. Please try again."),
-                                  ),
-                                );
-                              }
-
-                              if (isSuccess) {
-                                Navigator.pop(context);
-
-                                await sovProvider.fetchSovList(
-                                  context,
-                                  "",
-                                  1,
-                                  5,
-                                  widget.status,
-                                );
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("SOV deleted successfully."),
-                                  ),
-                                );
-                              }
-
-                              setState(() => loading = false);
-                            },
-                            child: loading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.red,
-                                    ),
-                                  )
-                                : Text(
-                                    LanguageService.getTranslated(
-                                        context, "delete"),
-                                    style: TextStyle(
-                                      color: Colors.redAccent,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
+            switch (value) {
+              case MoreMenuAction.rename:
+                _showRenameDialog(index, sov);
+                break;
+              case MoreMenuAction.duplicate:
+                _showDuplicateDialog(
+                  context,
+                  sovProvider,
+                  index,
+                );
+                break;
+              case MoreMenuAction.delete:
+                _showDeleteDialog(
+                  context,
+                  subAccountListProvider,
+                  sovProvider,
+                  index,
+                );
+                break;
             }
           },
           itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'delete',
+            PopupMenuItem<MoreMenuAction>(
+              value: MoreMenuAction.rename,
               child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.redAccent),
+                children: const [
+                  Icon(Icons.edit, color: Colors.white70),
                   SizedBox(width: 8),
                   Text(
-                    LanguageService.getTranslated(context, "delete"),
+                    "Rename",
                     style: TextStyle(color: Colors.white),
                   ),
                 ],
               ),
             ),
+            PopupMenuItem<MoreMenuAction>(
+              value: MoreMenuAction.duplicate,
+              child: Row(
+                children: const [
+                  Icon(Icons.file_copy_rounded, color: Colors.white70),
+                  SizedBox(width: 8),
+                  Text(
+                    "Duplicate",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            if (widget.status.toString() != "received")
+              PopupMenuItem<MoreMenuAction>(
+                value: MoreMenuAction.delete,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.redAccent),
+                    SizedBox(width: 8),
+                    Text(
+                      "Delete",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
           ],
         );
       },
     );
   }
+
+  void _showDeleteDialog(
+    BuildContext context,
+    SubAccountListProvider subAccountListProvider,
+    SOVListProvider sovProvider,
+    int index,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        bool loading = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              title: const Text(
+                "Confirm Deletion",
+                style: TextStyle(color: Colors.white),
+              ),
+              content: const Text(
+                "Are you sure you want to delete this SOV?",
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel",
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    setState(() => loading = true);
+
+                    final success =
+                        await subAccountListProvider.deleteSOVAccount(
+                      context,
+                      sovProvider.sovList[index].accountId!,
+                      sovProvider.sovList[index].subAccountId!,
+                      sovProvider.sovList[index].sovId!,
+                    );
+
+                    if (success) {
+                      Navigator.pop(context);
+                      await sovProvider.fetchSovList(
+                          context, "", 1, 5, widget.status);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("SOV deleted successfully"),
+                        ),
+                      );
+                    }
+
+                    setState(() => loading = false);
+                  },
+                  child: loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          "Delete",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDuplicateDialog(
+    BuildContext context,
+    SOVListProvider sovProvider,
+    int index,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        bool loading = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              title: const Text(
+                "Duplicate SOV",
+                style: TextStyle(color: Colors.white),
+              ),
+              content: const Text(
+                "Are you sure you want to duplicate this SOV?",
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: loading ? null : () => Navigator.pop(context),
+                  child: const Text("Cancel",
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    setState(() => loading = true);
+
+                    final success = await sovProvider.duplicateSov(
+                      context,
+                      sovProvider.sovList[index].sovId!,
+                    );
+
+                    if (success) {
+                      Navigator.pop(context);
+                      await sovProvider.fetchSovList(
+                          context, "", 1, 5, widget.status);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("SOV duplicated successfully"),
+                        ),
+                      );
+                    }
+
+                    setState(() => loading = false);
+                  },
+                  child: loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          "Duplicate",
+                          style: TextStyle(color: Colors.lightBlueAccent),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Widget _buildMoreMenu(int index) {
+  //   return Consumer2<SubAccountListProvider, SOVListProvider>(
+  //     builder: (context, subAccountListProvider, sovProvider, child) {
+  //       return PopupMenuButton<String>(
+  //         color: const Color(0xFF1E1E1E),
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(10),
+  //         ),
+  //         icon: const Icon(Icons.more_vert, color: Colors.white),
+  //         onSelected: (value) async {
+  //           if (value == 'delete') {
+  //             showDialog(
+  //               context: context,
+  //               barrierDismissible: false,
+  //               builder: (context) {
+  //                 bool loading = false;
+  //
+  //                 return StatefulBuilder(
+  //                   builder: (context, setState) {
+  //                     return AlertDialog(
+  //                       backgroundColor: const Color(0xFF1E1E1E),
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                       ),
+  //                       title: Text(
+  //                         LanguageService.getTranslated(
+  //                             context, "confirm_deletion"),
+  //                         style: TextStyle(
+  //                           color: Colors.white,
+  //                           fontWeight: FontWeight.bold,
+  //                         ),
+  //                       ),
+  //                       content: Text(
+  //                         LanguageService.getTranslated(
+  //                             context, "confirm_delete_sov_message"),
+  //                         style: TextStyle(color: Colors.white70),
+  //                       ),
+  //                       actions: [
+  //                         TextButton(
+  //                           onPressed: () => Navigator.pop(context),
+  //                           child: Text(
+  //                             LanguageService.getTranslated(context, "cancel"),
+  //                             style: TextStyle(color: Colors.grey),
+  //                           ),
+  //                         ),
+  //                         TextButton(
+  //                           onPressed: () async {
+  //                             setState(() => loading = true);
+  //
+  //                             bool isSuccess = false;
+  //
+  //                             try {
+  //                               isSuccess = await subAccountListProvider
+  //                                   .deleteSOVAccount(
+  //                                 context,
+  //                                 sovProvider.sovList[index].accountId!,
+  //                                 sovProvider.sovList[index].subAccountId!,
+  //                                 sovProvider.sovList[index].sovId!,
+  //                               );
+  //                             } catch (e) {
+  //                               debugPrint("Error deleting SOV: $e");
+  //                               ScaffoldMessenger.of(context).showSnackBar(
+  //                                 const SnackBar(
+  //                                   content: Text(
+  //                                       "Failed to delete SOV. Please try again."),
+  //                                 ),
+  //                               );
+  //                             }
+  //
+  //                             if (isSuccess) {
+  //                               Navigator.pop(context);
+  //
+  //                               await sovProvider.fetchSovList(
+  //                                 context,
+  //                                 "",
+  //                                 1,
+  //                                 5,
+  //                                 widget.status,
+  //                               );
+  //
+  //                               ScaffoldMessenger.of(context).showSnackBar(
+  //                                 const SnackBar(
+  //                                   content: Text("SOV deleted successfully."),
+  //                                 ),
+  //                               );
+  //                             }
+  //
+  //                             setState(() => loading = false);
+  //                           },
+  //                           child: loading
+  //                               ? const SizedBox(
+  //                                   width: 24,
+  //                                   height: 24,
+  //                                   child: CircularProgressIndicator(
+  //                                     strokeWidth: 2,
+  //                                     color: Colors.red,
+  //                                   ),
+  //                                 )
+  //                               : Text(
+  //                                   LanguageService.getTranslated(
+  //                                       context, "delete"),
+  //                                   style: TextStyle(
+  //                                     color: Colors.redAccent,
+  //                                     fontSize: 16,
+  //                                   ),
+  //                                 ),
+  //                         ),
+  //                       ],
+  //                     );
+  //                   },
+  //                 );
+  //               },
+  //             );
+  //           }
+  //         },
+  //         itemBuilder: (context) => [
+  //           PopupMenuItem<String>(
+  //             value: 'delete',
+  //             child: Row(
+  //               children: [
+  //                 Icon(Icons.delete, color: Colors.redAccent),
+  //                 SizedBox(width: 8),
+  //                 Text(
+  //                   LanguageService.getTranslated(context, "delete"),
+  //                   style: TextStyle(color: Colors.white),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //
+  //
+  //           IconButton(
+  //             icon: const Icon(Icons
+  //                 .file_copy_rounded),
+  //             color: AppColors
+  //                 .primaryMain,
+  //             onPressed: () {
+  //               // Show duplicate dialog
+  //               showDialog(
+  //                 context: context,
+  //                 barrierDismissible:
+  //                 false,
+  //                 builder: (context) {
+  //                   return AlertDialog(
+  //                     title: Text(
+  //                       LanguageService
+  //                           .getTranslated(
+  //                           context,
+  //                           "duplicate_sov_account"),
+  //                       style: typography
+  //                           .H5_Regular,
+  //                     ),
+  //                     content: Column(
+  //                       mainAxisSize:
+  //                       MainAxisSize
+  //                           .min,
+  //                       children: [
+  //                         Text(
+  //                           LanguageService.getTranslated(
+  //                               context,
+  //                               "sov_list_app_duplicate_text"),
+  //                           style: typography
+  //                               .Body1,
+  //                         ),
+  //                         SizedBox(
+  //                           height:
+  //                           CustomSpacing
+  //                               .two,
+  //                         ),
+  //                         Row(
+  //                           children: [
+  //                             Expanded(
+  //                               child:
+  //                               CustomButton(
+  //                                 onPressed:
+  //                                     () {
+  //                                   // Cancel
+  //                                   Navigator.pop(context);
+  //                                 },
+  //                                 child:
+  //                                 Text(
+  //                                   LanguageService.getTranslated(context, "cancel"),
+  //                                   style: typography.ButtonLarge,
+  //                                 ),
+  //                                 type:
+  //                                 ButtonType.text,
+  //                               ),
+  //                             ),
+  //                             Expanded(
+  //                               child:
+  //                               Consumer<SOVListProvider>(
+  //                                 builder: (context,
+  //                                     provider,
+  //                                     child) {
+  //                                   if (provider.isDuplicateLoading) {
+  //                                     return Center(
+  //                                       child: SizedBox(
+  //                                         height: 28,
+  //                                         width: 28,
+  //                                         child: CircularProgressIndicator(strokeWidth: 2),
+  //                                       ),
+  //                                     );
+  //                                   }
+  //
+  //                                   return CustomButton(
+  //                                     onPressed: () async {
+  //                                       provider.isDuplicateLoading = true;
+  //                                       provider.notifyListeners();
+  //
+  //                                       try {
+  //                                         // 1️⃣ Duplicate Sub Account
+  //                                         await provider.duplicateSov(
+  //                                           context,
+  //                                           sov.sovId!,
+  //                                         );
+  //
+  //                                         final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
+  //                                         Navigator.pop(context);
+  //                                         await sovProvider.fetchSovList(
+  //                                           context,
+  //                                           "",
+  //                                           1,
+  //                                           5,
+  //                                           widget.status,
+  //                                         );
+  //                                         sOVListProvider.notifyListeners();
+  //
+  //                                         /// STOP LOADER
+  //                                         // accountListProvider.isRenameLoading = false;
+  //                                         // accountListProvider.notifyListeners();
+  //                                       } finally {
+  //                                         provider.isDuplicateLoading = false;
+  //                                         provider.notifyListeners();
+  //                                       }
+  //                                     },
+  //                                     child: Text(
+  //                                       LanguageService.getTranslated(
+  //                                         context,
+  //                                         "duplicate",
+  //                                       ),
+  //                                     ),
+  //                                     type: ButtonType.elevated,
+  //                                   );
+  //                                 },
+  //                               ),
+  //                             )
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   );
+  //                 },
+  //               );
+  //             },
+  //             tooltip: LanguageService
+  //                 .getTranslated(
+  //                 context,
+  //                 "sub_account_list_app_duplicate_tooltip_text"),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   void _showRenameDialog(int index, Result sov) {
     final typography = CustomTypography(context);
@@ -1696,10 +2497,10 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
     var typography = CustomTypography(context);
     return Container(
-      margin: EdgeInsets.fromLTRB(0, 3, 1, 2),
-      padding: EdgeInsets.all(8),
+      // margin: EdgeInsets.fromLTRB(0, 2, 1, 1),
+      padding: EdgeInsets.fromLTRB(1, 4, 1, 1),
       width: MediaQuery.of(context).size.width < 400 ? 150 : 150,
-      height: MediaQuery.of(context).size.height < 400 ? 80 : 75,
+      height: MediaQuery.of(context).size.height < 400 ? 80 : 70,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
@@ -1736,7 +2537,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         : TextAlign.left,
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 4),
                 // if (title == 'Risk Score' || title == 'Geocoding') ...[
                 //   InkWell(
                 //     onTap: () {
@@ -1753,7 +2554,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
               ],
             ),
           ),
-          SizedBox(height: 8),
+          // SizedBox(height: 2),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -1797,7 +2598,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   }
 
   Future<void> _showTransferDialog(
-      BuildContext context, List<Result> sovs) async {
+      BuildContext context, List<Map<String, dynamic>> sovs) async {
     final _userSearchController = TextEditingController();
     List<TransferAutocompleteModel> _autocompleteUsersList = [];
     SignUpOptions _selectedOption = SignUpOptions.corporate;
@@ -1850,566 +2651,758 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       });
     }
 
+    String buildSovTitle(List<Map<String, dynamic>> sovs) {
+      if (sovs.isEmpty) return "Share SOV";
+
+      String firstName = (sovs.first["sov_name"] ?? "").toString();
+
+      if (sovs.length == 1) {
+        return 'Share "$firstName" SOV';
+      }
+
+      return 'Share "$firstName" +${sovs.length - 1} SOV';
+    }
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF121212),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
+      // IMPORTANT
+      elevation: 0,
+      // handled by Material
       builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text("Share SOV",
-                        style: TextStyle(
+        return Material(
+            color: const Color(0xFF121212),
+            elevation: 12,
+            // 👈 THIS IS YOUR SHADOW
+            shadowColor: Colors.black.withOpacity(0.6),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20), // 👈 LEFT CORNER
+              topRight: Radius.circular(20), // 👈 RIGHT CORNER
+            ),
+            child: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade600,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        Text(
+                          buildSovTitle(sovs),
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white)),
-                    const SizedBox(height: 16),
-
-                    // --- User Type Dropdown ---
-                    DropdownButtonFormField2<SignUpOptions>(
-                      value: _selectedOption,
-                      isExpanded: true,
-                      // avoids overflow
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 5,
+                        SizedBox(height: 4),
+
+                        // const Text(
+                        //   "Share SOV",
+                        //   style: TextStyle(
+                        //     fontSize: 20,
+                        //     fontWeight: FontWeight.bold,
+                        //     color: Colors.white,
+                        //   ),
+                        // ),
+
+                        TextField(
+                          controller: _userSearchController,
+                          onChanged: (value) => _onSearchChanged(
+                              value, setState, _selectedOption.name),
+                          decoration: InputDecoration(
+                            labelText: "Search user",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
                         ),
-                      ),
-                      hint: const Text("Select Account Type"),
-                      items: const [
-                        DropdownMenuItem(
-                          value: SignUpOptions.corporate,
-                          child: Text("Corporate"),
-                        ),
-                        DropdownMenuItem(
-                          value: SignUpOptions.individual,
-                          child: Text("Individual"),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedOption = value!);
-                      },
+                        const SizedBox(height: 16),
 
-                      // Dropdown styling
-                      dropdownStyleData: DropdownStyleData(
-                        maxHeight: 121,
-                        decoration: BoxDecoration(
-                          color: Color(0xFF1E1E1E), // your dropdownColor
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                        if (_isSearching)
+                          const Center(child: CircularProgressIndicator())
+                        else if (_autocompleteUsersList.isNotEmpty)
+                          SizedBox(
+                            height: 300,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: List.generate(
+                                    _autocompleteUsersList.length, (index) {
+                                  final user = _autocompleteUsersList[index];
+                                  final isSelected =
+                                      _selectedIndexes.contains(index);
+                                  final selectedRole = _selectedRoles[index];
+                                  final deadline = _selectedDeadlines[index];
 
-                      // Menu item padding
-                      menuItemStyleData: const MenuItemStyleData(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                      ),
+                                  String? roleError;
+                                  String? deadlineError;
 
-                      // Button style (main field)
-                      buttonStyleData: const ButtonStyleData(
-                        height: 40,
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // --- Search Box ---
-                    TextField(
-                      controller: _userSearchController,
-                      onChanged: (value) => _onSearchChanged(
-                          value, setState, _selectedOption.name),
-                      decoration: InputDecoration(
-                        labelText: "Search user",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (_isSearching)
-                      const Center(child: CircularProgressIndicator())
-                    else if (_autocompleteUsersList.isNotEmpty)
-                      SizedBox(
-                        height: 300,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: List.generate(
-                                _autocompleteUsersList.length, (index) {
-                              final user = _autocompleteUsersList[index];
-                              final isSelected =
-                                  _selectedIndexes.contains(index);
-                              final selectedRole = _selectedRoles[index];
-                              final deadline = _selectedDeadlines[index];
-
-                              String? roleError;
-                              String? deadlineError;
-
-                              bool canShareAll() {
-                                for (int i in _selectedIndexes) {
-                                  if (_selectedRoles[i] == null ||
-                                      _selectedDeadlines[i] == null) {
-                                    return false;
+                                  bool canShareAll() {
+                                    for (int i in _selectedIndexes) {
+                                      if (_selectedRoles[i] == null ||
+                                          _selectedDeadlines[i] == null) {
+                                        return false;
+                                      }
+                                    }
+                                    return _selectedIndexes.isNotEmpty;
                                   }
-                                }
-                                return _selectedIndexes.isNotEmpty;
-                              }
 
-                              void updateSelectedUsersJson() {
-                                selectedUsersJson.clear();
-                                for (var i in _selectedIndexes) {
-                                  final selectedUser =
-                                      _autocompleteUsersList[i];
-                                  final selectedRole = _selectedRoles[i];
-                                  final selectedDeadline =
-                                      _selectedDeadlines[i];
+                                  void updateSelectedUsersJson() {
+                                    selectedUsersJson.clear();
+                                    for (var i in _selectedIndexes) {
+                                      final selectedUser =
+                                          _autocompleteUsersList[i];
+                                      final selectedRole = _selectedRoles[i];
+                                      final selectedDeadline =
+                                          _selectedDeadlines[i];
 
-                                  if (selectedRole != null &&
-                                      selectedDeadline != null) {
-                                    final roleObj =
-                                        selectedUser.roles!.firstWhere(
-                                      (r) => r.name == selectedRole,
-                                    );
+                                      if (selectedRole != null &&
+                                          selectedDeadline != null) {
+                                        final roleObj =
+                                            selectedUser.roles!.firstWhere(
+                                          (r) => r.name == selectedRole,
+                                        );
 
-                                    selectedUsersJson.add({
-                                      "user_id": selectedUser.userid ?? '',
-                                      "role": {
-                                        "role_id": roleObj.role ?? '',
-                                        "role_name": roleObj.name ?? '',
-                                      },
-                                      "share_expiry": selectedDeadline
-                                          .toUtc()
-                                          .toIso8601String(),
+                                        selectedUsersJson.add({
+                                          "user_id": selectedUser.userid ?? '',
+                                          "role": {
+                                            // "role_id": roleObj.role ?? '',
+                                            "role_id": user
+                                                .lastSelectedRole!.role
+                                                .toString(),
+                                            "role_name": roleObj.name ?? '',
+                                          },
+                                          "share_expiry": selectedDeadline
+                                              .toUtc()
+                                              .toIso8601String(),
+                                        });
+                                      }
+                                    }
+
+                                    // Enable/disable Share button
+                                    setState(() {
+                                      _isShareEnabled = canShareAll();
+                                    });
+
+                                    debugPrint(
+                                        "✅ Selected Users JSON: $selectedUsersJson");
+                                  }
+
+                                  void toggleSelection(bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _selectedIndexes.add(index);
+                                      } else {
+                                        _selectedIndexes.remove(index);
+                                        _selectedRoles[index] = null;
+                                        _selectedDeadlines[index] = null;
+                                      }
+                                      updateSelectedUsersJson();
                                     });
                                   }
-                                }
 
-                                // Enable/disable Share button
-                                setState(() {
-                                  _isShareEnabled = canShareAll();
-                                });
-
-                                debugPrint(
-                                    "✅ Selected Users JSON: $selectedUsersJson");
-                              }
-
-                              void toggleSelection(bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedIndexes.add(index);
-                                  } else {
-                                    _selectedIndexes.remove(index);
-                                    _selectedRoles[index] = null;
-                                    _selectedDeadlines[index] = null;
-                                  }
-                                  updateSelectedUsersJson();
-                                });
-                              }
-
-                              return StatefulBuilder(
-                                builder: (context, setInnerState) {
-                                  return Container(
-                                    margin:
-                                        const EdgeInsets.symmetric(vertical: 8),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1E1E),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.blue
-                                            : Colors.grey.shade700,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
+                                  return StatefulBuilder(
+                                    builder: (context, setInnerState) {
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1E1E1E),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? Colors.blue
+                                                : Colors.grey.shade700,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.center,
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            CircleAvatar(
-                                              backgroundColor: Colors.grey[800],
-                                              child: Text(
-                                                (user.name != null &&
-                                                        user.name!.isNotEmpty)
-                                                    ? user.name!
-                                                        .substring(0, 2)
-                                                        .toUpperCase()
-                                                    : "?",
-                                                style: const TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                user.name ?? "Unknown",
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  color: Colors.white,
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                CircleAvatar(
+                                                  backgroundColor:
+                                                      Colors.grey[800],
+                                                  child: Text(
+                                                    (user.name != null &&
+                                                            user.name!
+                                                                .isNotEmpty)
+                                                        ? user.name!
+                                                            .substring(0, 2)
+                                                            .toUpperCase()
+                                                        : "?",
+                                                    style: const TextStyle(
+                                                        color: Colors.white),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                            Checkbox(
-                                              value: isSelected,
-                                              activeColor:
-                                                  const Color(0xFF90CAF9),
-                                              onChanged: (value) =>
-                                                  toggleSelection(value),
-                                            ),
-                                          ],
-                                        ),
-
-                                        // Role dropdown (enabled only if checkbox selected)
-                                        // Role dropdown (enabled only if checkbox selected)
-                                        const SizedBox(height: 12),
-
-                                        IgnorePointer(
-                                          ignoring: !isSelected,
-                                          child: Opacity(
-                                            opacity: isSelected ? 1 : 0.4,
-                                            child: Builder(
-                                              builder: (context) {
-                                                final roles = user.roles ?? [];
-
-                                                // 🔥 Reset when unchecked
-                                                if (!isSelected) {
-                                                  _selectedRoles[index] = null;
-                                                }
-
-                                                // 🔥 CASE 1: Only ONE role → show STATIC field but full width
-                                                if (isSelected &&
-                                                    roles.length == 1) {
-                                                  final roleName =
-                                                      roles.first.name ?? "";
-
-                                                  // Auto assign when checkbox selected
-                                                  _selectedRoles[index] =
-                                                      roleName;
-
-                                                  return Container(
-                                                    width: double.infinity,
-                                                    // ⬅ FULL WIDTH
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 14),
-                                                    decoration: BoxDecoration(
-                                                      border: Border.all(
-                                                          color: Colors
-                                                              .grey.shade700),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                    child: Text(
-                                                      roleName,
-                                                      style: const TextStyle(
-                                                          color: Colors.white),
-                                                    ),
-                                                  );
-                                                }
-
-                                                // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
-                                                return Container(
-                                                  width: double.infinity,
-                                                  // ⬅ FULL WIDTH
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 12),
-                                                  decoration: BoxDecoration(
-                                                    border: Border.all(
-                                                        color: Colors
-                                                            .grey.shade700),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                  child:
-                                                      DropdownButtonHideUnderline(
-                                                    child:
-                                                        DropdownButton<String>(
-                                                      value: isSelected
-                                                          ? _selectedRoles[
-                                                              index]
-                                                          : null,
-                                                      hint: const Text(
-                                                        'Select Role',
-                                                        style: TextStyle(
-                                                            color:
-                                                                Colors.white70),
-                                                      ),
-                                                      dropdownColor:
-                                                          const Color(
-                                                              0xFF2C2C2C),
-                                                      icon: const Icon(
-                                                          Icons.arrow_drop_down,
-                                                          color:
-                                                              Colors.white70),
-                                                      isExpanded: true,
-                                                      items: roles
-                                                          .map(
-                                                            (role) =>
-                                                                DropdownMenuItem<
-                                                                    String>(
-                                                              value: role.name,
-                                                              child: Text(
-                                                                role.name ?? '',
-                                                                style: const TextStyle(
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                            ),
-                                                          )
-                                                          .toList(),
-                                                      onChanged: (value) {
-                                                        if (!isSelected) return;
-
-                                                        setInnerState(() {
-                                                          _selectedRoles[
-                                                              index] = value;
-                                                          roleError = null;
-                                                        });
-
-                                                        updateSelectedUsersJson();
-                                                      },
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    user.name ?? "Unknown",
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                      color: Colors.white,
                                                     ),
                                                   ),
-                                                );
-                                              },
+                                                ),
+                                                user.isConnected == false &&
+                                                        user.belongsToCompany ==
+                                                            false &&
+                                                        user.isIndividual ==
+                                                            false
+                                                    ? Container()
+                                                    : Checkbox(
+                                                        value: isSelected,
+                                                        activeColor:
+                                                            const Color(
+                                                                0xFF90CAF9),
+                                                        onChanged: (value) =>
+                                                            toggleSelection(
+                                                                value),
+                                                      )
+                                              ],
                                             ),
-                                          ),
-                                        ),
-
-                                        if (roleError != null)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 4, left: 12),
-                                            child: Text(
-                                              roleError!,
-                                              style: const TextStyle(
-                                                  color: Colors.redAccent,
-                                                  fontSize: 12),
-                                            ),
-                                          ),
-
-                                        const SizedBox(height: 12),
-                                        const Text("Set Deadline",
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey)),
-                                        const SizedBox(height: 6),
-
-                                        // Deadline picker (enabled only if checkbox selected)
-                                        IgnorePointer(
-                                          ignoring: !isSelected,
-                                          child: Opacity(
-                                            opacity: isSelected ? 1 : 0.4,
-                                            child: InkWell(
-                                              onTap: () async {
-                                                if (!isSelected) return;
-                                                final now = DateTime.now();
-                                                final pickedDate =
-                                                    await showDatePicker(
-                                                  context: context,
-                                                  initialDate: now,
-                                                  firstDate: DateTime(now.year,
-                                                      now.month, now.day),
-                                                  lastDate: DateTime(2100),
-                                                );
-                                                if (pickedDate != null) {
-                                                  setInnerState(() {
-                                                    _selectedDeadlines[index] =
-                                                        pickedDate;
-                                                    deadlineError = null;
-                                                  });
-                                                  updateSelectedUsersJson();
-                                                }
-                                              },
+                                            const SizedBox(height: 8),
+                                            Align(
+                                              alignment: Alignment.centerLeft,
                                               child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 12,
-                                                        vertical: 12),
+                                                        vertical: 6),
                                                 decoration: BoxDecoration(
                                                   border: Border.all(
-                                                      color:
-                                                          Colors.grey.shade700),
+                                                      color: const Color(
+                                                          0xFF4FC3F7)),
                                                   borderRadius:
-                                                      BorderRadius.circular(8),
+                                                      BorderRadius.circular(20),
                                                 ),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        deadline != null
-                                                            ? DateFormat(
-                                                                    'MM/dd/yyyy')
-                                                                .format(
-                                                                    deadline)
-                                                            : "Select Date",
-                                                        style: const TextStyle(
-                                                            color:
-                                                                Colors.white70),
-                                                      ),
-                                                    ),
-                                                    const Icon(
-                                                        Icons
-                                                            .calendar_today_outlined,
-                                                        color: Colors.white70,
-                                                        size: 20),
-                                                  ],
+                                                child: Text(
+                                                  user.isIndividual == false
+                                                      ? "Other Company"
+                                                      : "Individual",
+                                                  style: TextStyle(
+                                                    color: Color(0xFF4FC3F7),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                            const SizedBox(height: 8),
+                                            if (user.isConnected == false &&
+                                                user.belongsToCompany ==
+                                                    false &&
+                                                user.isIndividual == false) ...[
+                                              const SizedBox(height: 12),
+
+// --- Connect Button ---
+                                              Consumer<SOVListProvider>(
+                                                builder:
+                                                    (context, provider, _) {
+                                                  final isRequested = provider
+                                                      .requestedUserIds
+                                                      .contains(user.userid);
+
+                                                  return SizedBox(
+                                                    width: double.infinity,
+                                                    height: 44,
+                                                    child: OutlinedButton.icon(
+                                                      onPressed: isRequested
+                                                          ? null
+                                                          : () {
+                                                              _showRequestConnectionDialog(
+                                                                context,
+                                                                userId:
+                                                                    user.userid ??
+                                                                        "",
+                                                                userName: user
+                                                                        .name ??
+                                                                    "Naveen",
+                                                                userRole: user
+                                                                        .role ??
+                                                                    "Insurance Broker",
+                                                                sovName:
+                                                                    "SOV Name",
+                                                              );
+                                                            },
+                                                      icon: Icon(
+                                                        isRequested
+                                                            ? Icons
+                                                                .check_circle_outline
+                                                            : Icons
+                                                                .person_add_alt_1,
+                                                        color: isRequested
+                                                            ? Colors.grey
+                                                            : const Color(
+                                                                0xFF4FC3F7),
+                                                      ),
+                                                      label: Text(
+                                                        isRequested
+                                                            ? "Request Sent"
+                                                            : "Connect",
+                                                        style: TextStyle(
+                                                          color: isRequested
+                                                              ? Colors.grey
+                                                              : const Color(
+                                                                  0xFF4FC3F7),
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      style: OutlinedButton
+                                                          .styleFrom(
+                                                        side: BorderSide(
+                                                          color: isRequested
+                                                              ? Colors.grey
+                                                              : const Color(
+                                                                  0xFF4FC3F7),
+                                                        ),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ] else ...[
+                                              // Role dropdown (enabled only if checkbox selected)
+                                              const SizedBox(height: 12),
+
+                                              IgnorePointer(
+                                                ignoring: !isSelected,
+                                                child: Opacity(
+                                                  opacity: isSelected ? 1 : 0.4,
+                                                  child: Builder(
+                                                    builder: (context) {
+                                                      final roles =
+                                                          user.roles ?? [];
+
+                                                      // 🔥 Reset when unchecked
+                                                      if (!isSelected) {
+                                                        _selectedRoles[index] =
+                                                            null;
+                                                      }
+
+                                                      // 🔥 CASE 1: Only ONE role → show STATIC field but full width
+                                                      if (isSelected &&
+                                                          roles.length == 1) {
+                                                        final roleName =
+                                                            roles.first.name ??
+                                                                "";
+
+                                                        // Auto assign when checkbox selected
+                                                        _selectedRoles[index] =
+                                                            roleName;
+
+                                                        return Container(
+                                                          width:
+                                                              double.infinity,
+                                                          // ⬅ FULL WIDTH
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      12,
+                                                                  vertical: 14),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade700),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                          child: Text(
+                                                            roleName,
+                                                            style:
+                                                                const TextStyle(
+                                                                    color: Colors
+                                                                        .white),
+                                                          ),
+                                                        );
+                                                      }
+
+                                                      // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
+                                                      return Container(
+                                                        width: double.infinity,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: Colors.grey
+                                                                  .shade700),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child:
+                                                            DropdownButtonHideUnderline(
+                                                          child: DropdownButton<
+                                                              String>(
+                                                            value:
+                                                                _selectedRoles[
+                                                                    index],
+                                                            hint: const Text(
+                                                              'Select Role',
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .white70),
+                                                            ),
+                                                            dropdownColor:
+                                                                const Color(
+                                                                    0xFF2C2C2C),
+                                                            icon: const Icon(
+                                                              Icons
+                                                                  .arrow_drop_down,
+                                                              color: Colors
+                                                                  .white70,
+                                                            ),
+                                                            isExpanded: true,
+                                                            items: roles
+                                                                .map(
+                                                                  (role) =>
+                                                                      DropdownMenuItem<
+                                                                          String>(
+                                                                    value: role
+                                                                        .name,
+                                                                    child: Text(
+                                                                      role.name ??
+                                                                          '',
+                                                                      style: const TextStyle(
+                                                                          color:
+                                                                              Colors.white),
+                                                                    ),
+                                                                  ),
+                                                                )
+                                                                .toList(),
+                                                            onChanged:
+                                                                isSelected
+                                                                    ? (value) {
+                                                                        setInnerState(
+                                                                            () {
+                                                                          _selectedRoles[index] =
+                                                                              value;
+                                                                          roleError =
+                                                                              null;
+                                                                        });
+
+                                                                        updateSelectedUsersJson();
+                                                                      }
+                                                                    : null,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+
+                                              if (roleError != null)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 4, left: 12),
+                                                  child: Text(
+                                                    roleError!,
+                                                    style: const TextStyle(
+                                                        color: Colors.redAccent,
+                                                        fontSize: 12),
+                                                  ),
+                                                ),
+
+                                              const SizedBox(height: 12),
+                                              const Text("Set Deadline",
+                                                  style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.grey)),
+                                              const SizedBox(height: 6),
+
+                                              // Deadline picker (enabled only if checkbox selected)
+                                              IgnorePointer(
+                                                ignoring: !isSelected,
+                                                child: Opacity(
+                                                  opacity: isSelected ? 1 : 0.4,
+                                                  child: InkWell(
+                                                    onTap: () async {
+                                                      if (!isSelected) return;
+
+                                                      final now =
+                                                          DateTime.now();
+
+                                                      final pickedDate =
+                                                          await showDatePicker(
+                                                        context: context,
+                                                        initialDate:
+                                                            _selectedDeadlines[
+                                                                    index] ??
+                                                                now,
+                                                        firstDate: DateTime(
+                                                            now.year,
+                                                            now.month,
+                                                            now.day),
+                                                        lastDate:
+                                                            DateTime(2100),
+                                                      );
+
+                                                      if (pickedDate != null) {
+                                                        // 🔥 IMPORTANT: Remove time part completely
+                                                        final cleanDate =
+                                                            DateTime(
+                                                          pickedDate.year,
+                                                          pickedDate.month,
+                                                          pickedDate.day,
+                                                        );
+
+                                                        setState(() {
+                                                          _selectedDeadlines[
+                                                                  index] =
+                                                              cleanDate;
+                                                          deadlineError = null;
+                                                        });
+
+                                                        updateSelectedUsersJson();
+                                                      }
+                                                    },
+                                                    child: Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 12),
+                                                      decoration: BoxDecoration(
+                                                        border: Border.all(
+                                                            color: Colors
+                                                                .grey.shade700),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: Text(
+                                                              _selectedDeadlines[
+                                                                          index] !=
+                                                                      null
+                                                                  ? DateFormat(
+                                                                          'MM/dd/yyyy')
+                                                                      .format(_selectedDeadlines[
+                                                                          index]!)
+                                                                  : "Select Date",
+                                                              style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white70),
+                                                            ),
+                                                          ),
+                                                          const Icon(
+                                                            Icons
+                                                                .calendar_today_outlined,
+                                                            color:
+                                                                Colors.white70,
+                                                            size: 20,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                              if (deadlineError != null)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 4, left: 12),
+                                                  child: Text(
+                                                    deadlineError!,
+                                                    style: const TextStyle(
+                                                        color: Colors.redAccent,
+                                                        fontSize: 12),
+                                                  ),
+                                                ),
+                                            ],
+                                          ],
                                         ),
-                                        if (deadlineError != null)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 4, left: 12),
-                                            child: Text(
-                                              deadlineError!,
-                                              style: const TextStyle(
-                                                  color: Colors.redAccent,
-                                                  fontSize: 12),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
+                                      );
+                                    },
+                                  );
+                                }),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+
+                        const Text(
+                          "Note: Users with multiple roles must be assigned one role per SOV.",
+                          style:
+                              TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // --- Share Button ---
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Consumer<SOVListProvider>(
+                                builder: (context, sovListProvider, _) {
+                                  return CustomButton(
+                                    type: ButtonType.elevated,
+                                    onPressed: (!_isShareEnabled ||
+                                            sovListProvider.isLoading)
+                                        ? null
+                                        : () async {
+                                            List<Map<String, dynamic>>
+                                                shareWithList = [];
+
+                                            for (int index
+                                                in _selectedIndexes) {
+                                              final user =
+                                                  _autocompleteUsersList[index];
+                                              final roleName =
+                                                  _selectedRoles[index];
+                                              final deadline =
+                                                  _selectedDeadlines[index];
+
+                                              final selectedRole = user.roles
+                                                  ?.firstWhere((r) =>
+                                                      r.name == roleName);
+
+                                              shareWithList.add({
+                                                "user_id": user.userid ?? '',
+                                                // "role_id":
+                                                "email": user.email ?? '',
+                                                "role": {
+                                                  "role_id": user
+                                                      .lastSelectedRole!.role
+                                                      .toString(),
+                                                  "role_name":
+                                                      selectedRole?.name ?? '',
+                                                },
+                                                "share_expiry":
+                                                    DateFormat('yyyy-MM-dd')
+                                                        .format(deadline!),
+
+                                                // "share_expiry":
+                                                //     deadline!.toIso8601String(),
+                                              });
+                                            }
+                                            final Set<String> sovIdsToShare =
+                                                sovs
+                                                    .where((s) =>
+                                                        s["sov_id"] != null)
+                                                    .map((s) =>
+                                                        s["sov_id"].toString())
+                                                    .toSet();
+                                            // final Set<String> sovIdsToShare =
+                                            //     sovs
+                                            //         .where(
+                                            //             (s) => s.sovId != null)
+                                            //         .map((s) => s.sovId!)
+                                            //         .toSet();
+
+                                            bool success =
+                                                await sovListProvider.shareSov(
+                                              sovId: sovIdsToShare,
+                                              shareWithList: shareWithList,
+                                            );
+                                            // bool success =
+                                            //     await sovListProvider.shareSov(
+                                            //   sovId: selectedSovIds,
+                                            //   shareWithList: shareWithList,
+                                            // );
+
+                                            if (!mounted) return;
+
+                                            if (success) {
+                                              Navigator.pop(dialogContext);
+
+                                              setState(() {
+                                                selectedList = List.filled(
+                                                    selectedList.length, false);
+                                                isSelectionMode = false;
+                                              });
+
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      "SOV shared successfully"),
+                                                ),
+                                              );
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      "Failed to share SOV."),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                    child: sovListProvider.isLoading
+                                        ? const CircularProgressIndicator(
+                                            color: Colors.white, strokeWidth: 2)
+                                        : const Text("Share SOV",
+                                            style:
+                                                TextStyle(color: Colors.black)),
                                   );
                                 },
-                              );
-                            }),
-                          ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                    const Text(
-                      "Note: Users with multiple roles must be assigned one role per SOV.",
-                      style: TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // --- Share Button ---
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Consumer<SOVListProvider>(
-                            builder: (context, sovListProvider, _) {
-                              return CustomButton(
-                                type: ButtonType.elevated,
-                                onPressed: (!_isShareEnabled ||
-                                        sovListProvider.isLoading)
-                                    ? null
-                                    : () async {
-                                        List<Map<String, dynamic>>
-                                            shareWithList = [];
-
-                                        for (int index in _selectedIndexes) {
-                                          final user =
-                                              _autocompleteUsersList[index];
-                                          final roleName =
-                                              _selectedRoles[index];
-                                          final deadline =
-                                              _selectedDeadlines[index];
-
-                                          final selectedRole = user.roles
-                                              ?.firstWhere(
-                                                  (r) => r.name == roleName);
-
-                                          shareWithList.add({
-                                            "user_id": user.userid ?? '',
-                                            "role": {
-                                              "role_id":
-                                                  selectedRole?.role ?? '',
-                                              "role_name":
-                                                  selectedRole?.name ?? '',
-                                            },
-                                            "share_expiry":
-                                                deadline!.toIso8601String(),
-                                          });
-                                        }
-
-                                        bool success =
-                                            await sovListProvider.shareSov(
-                                          sovId: selectedSovIds,
-                                          shareWithList: shareWithList,
-                                        );
-
-                                        if (success) {
-                                          Navigator.pop(context);
-                                          setState(() {
-                                            selectedList = List.filled(
-                                                selectedList.length, false);
-                                            isSelectionMode = false;
-                                          });
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                                  content: Text(
-                                                      "SOV shared successfully")));
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    "Failed to share SOV.")),
-                                          );
-                                        }
-                                      },
-                                child: sovListProvider.isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2)
-                                    : const Text("Share",
-                                        style: TextStyle(color: Colors.black)),
-                              );
-                            },
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomButton(
+                                type: ButtonType.outlined,
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Cancel"),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomButton(
-                            type: ButtonType.outlined,
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
+                  ),
+                );
+              },
+            ));
       },
     ).whenComplete(() {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
@@ -2421,9 +3414,8 @@ Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
     String query, String type) async {
   try {
     ApiService apiService = ApiService(AppConstant.GET_SEARCH_LIST_BY_SOV);
-    String url = type != "individual"
-        ? '/user_search?search=$query'
-        : '/individual_user_search?search=$query';
+    // String url = "/v2/search_users?search=$query";
+    String url = "/v2/search_users?search=${Uri.encodeComponent(query)}";
     var response = await apiService.get(url);
 
     // Parse the response to extract user data
@@ -2488,51 +3480,56 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 160,
-      width: 170,
+      height: 100,
+      width: 130,
       child: Card(
         color: Colors.white12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           side: const BorderSide(color: Colors.white38, width: 1),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(8, 1, 8, 2),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius:
-                      BorderRadius.circular(15), // adjust radius as needed
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white60,
-                  size: 20,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.white38,
+                      borderRadius:
+                          BorderRadius.circular(15), // adjust radius as needed
+                    ),
+                    child: Icon(
+                      icon,
+                      color: Colors.white60,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: CustomSpacing.three),
+                  Text(
+                    count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: CustomSpacing.two),
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: Colors.white60,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.17),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                count.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
             ],
           ),
@@ -2542,97 +3539,210 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-// void _showSharedWithDialog(
-//   BuildContext context,
-//   SharingStatus? sharingStatus,
-// ) {
-//   final users = sharingStatus?.users.values.toList() ?? [];
-//a
-//   showDialog(
-//     context: context,
-//     barrierDismissible: true,
-//     builder: (_) {
-//       return Dialog(
-//         backgroundColor: const Color(0xFF1E1E1E),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         child: SizedBox(
-//           width: 420,
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               /// 🔹 Header
-//               Padding(
-//                 padding: const EdgeInsets.all(16),
-//                 child: Text(
-//                   "Shared With",
-//                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-//                         color: Colors.white,
-//                         fontWeight: FontWeight.w600,
-//                       ),
-//                 ),
-//               ),
-//
-//               const Divider(color: Color(0xFF2C2C2C), height: 1),
-//
-//               /// 🔹 Email List
-//               Flexible(
-//                 child: ListView.separated(
-//                   shrinkWrap: true,
-//                   itemCount: users.length,
-//                   separatorBuilder: (_, __) => const Divider(
-//                     color: Color(0xFF2C2C2C),
-//                     height: 1,
-//                   ),
-//                   itemBuilder: (_, index) {
-//                     final user = users[index];
-//                     return Padding(
-//                       padding: const EdgeInsets.symmetric(
-//                           horizontal: 16, vertical: 14),
-//                       child: Text(
-//                         user.email ?? "-",
-//                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-//                               color: Colors.white,
-//                             ),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//               ),
-//
-//               const Divider(color: Color(0xFF2C2C2C), height: 1),
-//
-//               /// 🔹 Footer
-//               Align(
-//                 alignment: Alignment.centerRight,
-//                 child: Padding(
-//                   padding: const EdgeInsets.all(12),
-//                   child: TextButton(
-//                     onPressed: () => Navigator.pop(context),
-//                     style: TextButton.styleFrom(
-//                       backgroundColor: const Color(0xFF90CAF9),
-//                       padding: const EdgeInsets.symmetric(
-//                           horizontal: 20, vertical: 10),
-//                       shape: RoundedRectangleBorder(
-//                         borderRadius: BorderRadius.circular(6),
-//                       ),
-//                     ),
-//                     child: const Text(
-//                       "Close",
-//                       style: TextStyle(
-//                         color: Colors.black,
-//                         fontWeight: FontWeight.w500,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       );
-//     },
-//   );
-// }
+String? messageError;
+
+void _showRequestConnectionDialog(
+  BuildContext context, {
+  required String userId,
+  required String userName,
+  required String userRole,
+  required String sovName,
+}) {
+  final TextEditingController messageController = TextEditingController();
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ---- Title ----
+                  const Text(
+                    "Request Connection",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    "You need to be connected with this user to share SOV data.",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ---- User Card ----
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey.shade700,
+                          child: Text(
+                            userName.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userName,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              userRole,
+                              style: const TextStyle(
+                                  color: Colors.white60, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ---- Message Box ----
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade700),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: TextField(
+                      controller: messageController,
+                      maxLength: 500,
+                      maxLines: 4,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        counterText: "",
+                        border: InputBorder.none,
+                        hintText:
+                            'Add a note to your connection request (optional)',
+                        hintStyle: const TextStyle(color: Colors.white54),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      "${messageController.text.length}/500",
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ---- Buttons ----
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF4FC3F7)),
+                            foregroundColor: const Color(0xFF4FC3F7),
+                          ),
+                          child: const Text("Cancel"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Consumer<SOVListProvider>(
+                          builder: (dialogContext, provider, _) {
+                            return ElevatedButton(
+                              onPressed: provider.isConnectRequestLoading
+                                  ? null
+                                  : () async {
+                                      final text =
+                                          messageController.text.trim();
+
+                                      if (text.isEmpty) {
+                                        setState(() {
+                                          messageError = "Message is required";
+                                        });
+                                        return;
+                                      }
+
+                                      setState(() {
+                                        messageError = null;
+                                      });
+
+                                      print("🔥 BUTTON CLICKED"); // DEBUG
+
+                                      final success =
+                                          await provider.sendConnectionRequest(
+                                        dialogContext,
+                                        userId: userId,
+                                        message: text,
+                                      );
+
+                                      if (success) {
+                                        Navigator.pop(dialogContext);
+
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content:
+                                                Text("Connection request sent"),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF90CAF9),
+                                foregroundColor: Colors.black,
+                              ),
+                              child: provider.isConnectRequestLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.black,
+                                      ),
+                                    )
+                                  : const Text("Connect"),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}

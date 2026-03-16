@@ -1450,7 +1450,14 @@ class FinalAddress {
     autoCertified = json['auto_certified'];
     city = json['city'];
     ownerId = json['owner_id'];
-    latitude = json['latitude']?.toDouble();
+    latitude = json['latitude'] == null
+        ? null
+        : double.tryParse(json['latitude'].toString());
+
+    longitude = json['longitude'] == null
+        ? null
+        : double.tryParse(json['longitude'].toString());
+
     description = json['description'];
     percent = json['percent'];
     subAccountId = json['sub_account_id'];
@@ -1479,7 +1486,6 @@ class FinalAddress {
     locationName = json['location_name'];
     accountId = json['account_id'];
     countryIsoCode = json['country_iso_code'];
-    longitude = json['longitude']?.toDouble();
     state = json['state'];
 
     rented = json['rented'];

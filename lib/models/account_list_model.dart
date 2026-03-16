@@ -132,6 +132,7 @@ class Accounts {
   Owner? owner;
   String? companyId;
   String? accountId;
+  bool? isDefault;
   int? overallScore;
   int? sovCount;
   int? subAccountCount;
@@ -189,6 +190,7 @@ class Accounts {
       this.owner,
       this.companyId,
       this.accountId,
+        this.isDefault,
       this.overallScore,
       this.sovCount,
       this.subAccountCount,
@@ -241,7 +243,9 @@ class Accounts {
     accountName = json['account_name'] ?? "";
     owner = json['owner'] != null ? Owner.fromJson(json['owner']) : null;
     companyId = json['company_id'] ?? "";
+    isDefault = json['is_default'] ?? false;
     accountId = json['account_id'];
+    isDefault = json['is_default'] ?? false;
     overallScore = json['overall_score'];
     sovCount = json['sov_count'];
     subAccountCount = json['sub_account_count'];
@@ -320,6 +324,7 @@ class Accounts {
     }
     data['company_id'] = companyId;
     data['account_id'] = accountId;
+    data['is_default'] = isDefault;
     data['overall_score'] = overallScore;
     data['sov_count'] = sovCount;
     data['sub_account_count'] = subAccountCount;
@@ -399,7 +404,7 @@ class Accounts {
 class Owner {
   String? date;
   String? id;
-  String? name;
+  dynamic name;
 
   Owner({this.date, this.id, this.name});
 

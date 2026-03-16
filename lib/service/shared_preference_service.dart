@@ -1,5 +1,8 @@
 import 'package:RiskSphere/providers/auth_provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/global_imports.dart';
 
 class SharedPreferenceService {
   static Future<void> setBool(String key, bool value) async {
@@ -389,7 +392,47 @@ class SharedPreferenceService {
     print('Upcoming schedule end time: $value');
     return value == '' ? null : value;
   }
+  static Future<void> setTrialPeriodStartDate(
+      Timestamp? trialStartTimestamp) async {
 
+    if (trialStartTimestamp == null) return;
+
+    final DateTime date = trialStartTimestamp.toDate();
+
+    final String formattedDate =
+    DateFormat('yyyy-MM-dd').format(date);
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('trial_period_start_date', formattedDate);
+
+    print('Trial period start date set to $formattedDate');
+  }
+  static Future<String?> getTrialPeriodStartDate() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('trial_period_start_date');
+
+    print('Trial period start date: $value');
+
+    return value == '' ? null : value;
+  }
+  static Future<String?> getTrialPeriodStartRaw() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Try raw JSON first
+    final jsonString = prefs.getString('trial_period_start_date_raw');
+    if (jsonString != null) {
+      final map = jsonDecode(jsonString) as Map<String, dynamic>;
+      final seconds = map['_seconds'] as int?;
+      if (seconds != null) {
+        final dateTime = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
+        return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+      }
+    }
+
+    // ✅ Fallback to already-formatted string
+    final formatted = prefs.getString('trial_period_start_date');
+    return formatted == '' ? null : formatted;
+  }
   // static Future<void> setUpcomingScheduleStartTime(String? value) async {
   //   SharedPreferences prefs = await SharedPreferences.getInstance();
   //   await prefs.setString('upcoming_schedule_starttime', value ?? '');
@@ -617,13 +660,13 @@ class SharedPreferenceService {
   static Future<void> setSovUploadState(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_STATE, value);
-    // //print('Set SOV upload state to $value');
+    print('Set SOV upload state to $value');
   }
 
   static Future<String?> getSovUploadState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_UPLOAD_STATE);
-    //print('Retrieved SOV upload state with value $value');
+    print('Retrieved SOV upload state with value $value');
     return value;
   }
 
@@ -759,6 +802,20 @@ class SharedPreferenceService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getInt(TRIAL_LOCATIONS);
   }
+  static Future<void> setHasImpromentLicenseCount(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('improvement_license', value);
+    print('Set hazard license to $value');
+  }
+
+  static Future<String?> getHasImpromentLicenseCount() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('improvement_license');
+    //print('Retrieved hazard license with value $value');
+    return value;
+  }
+
+
 
   static Future<int?> getTotalTrialUsers() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

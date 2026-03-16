@@ -1,14 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:http/http.dart' as http;
-
-import '../providers/auth_provider.dart';
-import '../utils/common_headers.dart';
 import '../utils/global_imports.dart';
 
 class ApiService {
@@ -18,14 +10,8 @@ class ApiService {
 
   String get url => '$endpoint';
 
-  /// Sends a GET request to the specified [url] with optional [additionalParams].
-  /// Returns a Future containing the decoded JSON response.
-  /// Sends a GET request to the specified [url] with optional [additionalParams].
-  /// Returns a Future containing the decoded JSON response.
-  ///
   Future<Map<String, dynamic>> get(
-      [String? additionalParams, bool? isList]
-      ) async {
+      [String? additionalParams, bool? isList]) async {
     var headers = await CommonHeaders.createHeaders();
     final fullUrl = '$url${additionalParams ?? ''}';
 
@@ -36,7 +22,8 @@ class ApiService {
     await trace.start();
 
     // Start HTTP metric
-    final metric = FirebasePerformance.instance.newHttpMetric(fullUrl, HttpMethod.Get);
+    final metric =
+        FirebasePerformance.instance.newHttpMetric(fullUrl, HttpMethod.Get);
     await metric.start();
 
     try {
@@ -64,40 +51,7 @@ class ApiService {
       await trace.stop(); // Stop trace after HTTP metric
     }
   }
-  // Future<Map<String, dynamic>> get(
-  //     [String? additionalParams, bool? isList]) async {
-  //   var headers = await CommonHeaders.createHeaders();
-  //   final fullUrl = '$url${additionalParams ?? ''}';
-  //
-  //   log("URL: $fullUrl");
-  //
-  //   // Start Firebase Performance metric
-  //   final metric = FirebasePerformance.instance.newHttpMetric(
-  //     fullUrl,
-  //     HttpMethod.Get,
-  //   );
-  //   await metric.start();
-  //
-  //   try {
-  //     final response = await http.get(Uri.parse(fullUrl), headers: headers);
-  //
-  //     metric.httpResponseCode = response.statusCode;
-  //     metric.responsePayloadSize = response.bodyBytes.length;
-  //
-  //     if (isList != null && isList) {
-  //       return _handleResponse(response, isList);
-  //     }
-  //     return _handleResponse(response);
-  //   } catch (e) {
-  //     metric.putAttribute("error", e.toString());
-  //     rethrow;
-  //   } finally {
-  //     await metric.stop();
-  //   }
-  // }
 
-  /// Sends a POST request to the specified [url] with the provided [body].
-  /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> post(Map<String, dynamic> body,
       [String? additionalParams]) async {
     var headers = await CommonHeaders.createHeaders();
@@ -132,40 +86,6 @@ class ApiService {
     }
   }
 
-  // Future<Map<String, dynamic>> get(
-  //     [String? additionalParams, bool? isList]) async {
-  //   var headers = await CommonHeaders.createHeaders();
-  //   // log("Headers: $headers");
-  //   log("URL: $url${additionalParams ?? ''}");
-  //   final response = await http.get(Uri.parse('$url${additionalParams ?? ''}'),
-  //       headers: headers);
-  //   if (isList != null && isList) {
-  //     return _handleResponse(response, isList);
-  //   }
-  //   return _handleResponse(response);
-  // }
-  //
-  // /// Sends a POST request to the specified [url] with the provided [body].
-  // /// Returns a Future containing the decoded JSON response.
-  // Future<Map<String, dynamic>> post(Map<String, dynamic> body,
-  //     [String? additionalParams]) async {
-  //   var headers = await CommonHeaders.createHeaders();
-  //   // log("Headers: $headers");
-  //   log("URL: $url");
-  //   log("Body: ${json.encode(body)}");
-  //   final response = await http.post(
-  //     Uri.parse('$url${additionalParams ?? ""}'),
-  //     body: json.encode(body),
-  //     headers: headers,
-  //   );
-  //   print("Response: ${response.body}");
-  //   print("Response Code: ${response.statusCode}");
-  //   log("Response: ${response.body}");
-  //   return _handleResponse(response);
-  // }
-
-  /// Sends a PUT request to the specified [url] with the provided [body].
-  /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> put(Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createHeaders();
     final response = await http.put(
@@ -176,8 +96,54 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  /// Sends a DELETE request to the specified [url] with the provided [body].
-  /// Returns a Future containing the decoded JSON response.
+  Future<Map<String, dynamic>> delete1(Map<String, dynamic> body) async {
+    final uri = Uri.parse(url);
+
+    final headers = await CommonHeaders.createHeaders1();
+
+    final encodedBody = jsonEncode(body);
+
+    log("🗑️ DELETE URL: $url");
+    log("🗑️ DELETE Headers: $headers");
+    log("🗑️ DELETE Body Sending: $encodedBody");
+
+    final request = http.Request("DELETE", uri);
+
+    // ✅ Ensure JSON headers are not overridden
+    request.headers.clear();
+    request.headers.addAll({
+      ...headers,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    });
+
+    // ✅ Explicitly assign encoded body
+    request.body = encodedBody;
+
+    // 🔥 IMPORTANT: Set content length manually (some servers require this)
+    request.headers["Content-Length"] =
+        utf8.encode(encodedBody).length.toString();
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    log("🗑️ DELETE Status: ${response.statusCode}");
+    log("🗑️ DELETE Response: ${response.body}");
+
+    return _handleResponse(response);
+  }
+
+  // Future<Map<String, dynamic>> delete1(Map<String, dynamic> body) async {
+  //   var headers = await CommonHeaders.createHeaders1();
+  //   // log("Headers: $headers");
+  //   log("URL: $url");
+  //   log("Body: $body");
+  //   final response = await http.delete(Uri.parse(url),
+  //       body: json.encode(body), headers: headers);
+  //   log("Response: ${response.body}");
+  //   return _handleResponse(response);
+  // }
+
   Future<Map<String, dynamic>> delete(Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createHeaders();
     // log("Headers: $headers");
@@ -202,8 +168,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  /// Sends a PATCH request to the specified [url] with the provided [body].
-  /// Returns a Future containing the decoded JSON response.
   Future<Map<String, dynamic>> patch(Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createHeaders();
     log("Headers: $headers");
@@ -218,9 +182,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  /// Sends a MultiPart POST request to the specified [url] with the provided [body].
-  /// Returns a Future containing the decoded JSON response.
-  /// The [body] should contain the file in the 'file' key and other form data in the 'data' key.
   Future<Map<String, dynamic>> postMultiPart(String filePath) async {
     var headers = await CommonHeaders.createMultiPartHeaders();
     print("Headers: $headers");
@@ -245,9 +206,6 @@ class ApiService {
     return _handleResponse(http.Response(responseData, response.statusCode));
   }
 
-  /// Sends a MultiPart POST request to the specified [url] with the provided SOV.
-  /// Returns a Future containing the decoded JSON response.
-  /// The [body] should contain the file in the 'file' key and other form data in the 'data' key.
   Future<Map<String, dynamic>> postMultiPartSOVAccounts(
       File filePath, String accountId, String name) async {
     await FirebaseAuth.instance.currentUser?.reload();
@@ -303,17 +261,13 @@ class ApiService {
       //   }
     };
     request.fields.addAll(body);
-    print("Request Fields: ${request.fields}");
-    print("Request Files path: ${filePath.path}");
+
     request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
-    print("Request Files: ${request.files}");
+
     request.headers.addAll(headers);
-    log("Request headers: ${request.headers}");
 
     http.StreamedResponse streamedResponse = await request.send();
 
-    print("Response Code: ${streamedResponse.statusCode}");
-    print("Response Reason: ${streamedResponse.reasonPhrase}");
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
       print(responseData);
@@ -328,14 +282,14 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> postMultiPartSOVPartial(
-      File filePath,
-      String accountId,
-      String subAccountId,
-      String sovId,
-      String tags,
-      String sovName,
-      BuildContext context,
-      ) async {
+    File filePath,
+    String accountId,
+    String subAccountId,
+    String sovId,
+    String tags,
+    String sovName,
+    BuildContext context,
+  ) async {
     var typography = CustomTypography(context);
     await FirebaseAuth.instance.currentUser?.reload();
     IdTokenResult? token =
@@ -361,24 +315,19 @@ class ApiService {
       };
     } else {
       body = {
-        //  'data': {
         'account_id': accountId,
         'sub_account_id': subAccountId,
         "name": sovName,
         "new": 'false',
         "add_to_sov": 'false',
         'sov_id': sovId,
-        //   }
       };
     }
     request.fields.addAll(body);
-    print("Request Fields: ${request.fields}");
-    print("Request Files path: ${filePath.path}");
+
     request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
-    print("Request Files: ${request.files}");
+
     request.headers.addAll(headers);
-    log("Request headers: ${request.headers}");
-    print('url: ${request.url}');
 
     http.StreamedResponse streamedResponse = await request.send();
 
@@ -392,19 +341,14 @@ class ApiService {
           http.Response(responseData, streamedResponse.statusCode));
     } else {
       String responseData = await streamedResponse.stream.bytesToString();
-      print("responseData");
-      print(responseData);
-      print("responseData");
+
       final decoded = jsonDecode(responseData);
       final errorMessage = decoded['error'] ?? 'Something went wrong';
       print(errorMessage);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            errorMessage,
-            style: TextStyle(color: Colors.black)
-          ),
+          content: Text(errorMessage, style: TextStyle(color: Colors.black)),
         ),
       );
       throw BackendException(
@@ -464,9 +408,6 @@ class ApiService {
     return await request.send();
   }
 
-  /// Handles the HTTP response by checking the status code.
-  /// If the status code is in the success range (200-299), decodes and returns the response body.
-  /// Otherwise, throws a BackendException with the error message.
   Future<Map<String, dynamic>> _handleResponse(http.Response response,
       [bool? isList]) async {
     final statusCode = response.statusCode;
@@ -498,8 +439,6 @@ class ApiService {
     }
   }
 
-  /// Extracts the error message from the response body.
-  /// Returns the error message if available, otherwise returns a default error message.
   String _extractErrorMessage(String body) {
     try {
       final Map<String, dynamic> jsonResponse = json.decode(body);
@@ -515,7 +454,6 @@ class ApiService {
   }
 }
 
-/// Exception thrown when an error occurs during backend communication.
 class BackendException implements Exception {
   final String message;
   final int statusCode;

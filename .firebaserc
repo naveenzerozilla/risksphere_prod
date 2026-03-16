@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "y": "project-green-r5-1-qa",
+    "qa": "project-green-r5-1-qa",
+    "default": "project-green-r5-1-qa"
+  },
+  "targets": {},
+  "etags": {}
+}

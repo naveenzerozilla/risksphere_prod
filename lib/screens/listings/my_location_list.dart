@@ -1,3 +1,4 @@
+
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -915,8 +916,11 @@ class _MyLocationListState extends State<MyLocationList>
                                     labelStyle: typography.Body1,
                                     onTap: () async {
                                       tagController.text = "";
+                                      print(fabState.toString());
+                                      print("fabState".toString());
 
-                                      if (fabState == "processing") {
+                                      if (fabState.toString().toLowerCase() ==
+                                          "processing") {
                                         // CONTINUE FLOW
                                         String tempProcessId =
                                             await SharedPreferenceService
@@ -926,6 +930,8 @@ class _MyLocationListState extends State<MyLocationList>
                                             await SharedPreferenceService
                                                     .getSovUploadState() ??
                                                 "";
+                                        print(state);
+                                        print("state1");
 
                                         await Provider.of<UploadSovProvider>(
                                                 context,
@@ -1049,7 +1055,9 @@ class _MyLocationListState extends State<MyLocationList>
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: CustomSpacing.one),
+                              // Text(widget.accountID.toString()),
+                              // Text(widget.subAccountID.toString()),
+                              // SizedBox(height: CustomSpacing.one),
                               Row(
                                 children: [
                                   // 70% Width Side - Breadcrumbs (with scroll if overflow)
@@ -1315,11 +1323,11 @@ class _MyLocationListState extends State<MyLocationList>
                                                                 "configuration"),
                                                       ),
 
-                                                    Tab(
-                                                      text: LanguageService
-                                                          .getTranslated(
-                                                              context, "data"),
-                                                    ),
+                                                    // Tab(
+                                                    //   text: LanguageService
+                                                    //       .getTranslated(
+                                                    //           context, "data"),
+                                                    // ),
                                                   ],
                                                 ),
                                               ),
@@ -1398,37 +1406,37 @@ class _MyLocationListState extends State<MyLocationList>
                                         updateallflag: "false",
                                         level: "local",
                                       ),
-                                    Consumer2<AccountListProvider,
-                                        SubAccountListProvider>(
-                                      builder: (context, accountListProvider,
-                                          subAccountListProvider, _) {
-                                        final accountList =
-                                            accountListProvider.accountList;
-                                        final subAccountList =
-                                            subAccountListProvider
-                                                .subAccountList;
-                                        final accountId = accountList.isNotEmpty
-                                            ? accountList[0].accountId ?? ""
-                                            : "";
-                                        final accountName = accountList
-                                                .isNotEmpty
-                                            ? accountList[0].accountName ?? ""
-                                            : "";
-                                        final subaccountId = subAccountList
-                                                .isNotEmpty
-                                            ? subAccountList[0].subAccountId ??
-                                                ""
-                                            : "";
-                                        return DataTab(
-                                          accountId: accountId,
-                                          accountName: accountName,
-                                          subaccountId: subaccountId,
-                                          sovId: "",
-                                          campusStatus: false,
-                                          status: "subaccount",
-                                        );
-                                      },
-                                    ),
+                                    // Consumer2<AccountListProvider,
+                                    //     SubAccountListProvider>(
+                                    //   builder: (context, accountListProvider,
+                                    //       subAccountListProvider, _) {
+                                    //     final accountList =
+                                    //         accountListProvider.accountList;
+                                    //     final subAccountList =
+                                    //         subAccountListProvider
+                                    //             .subAccountList;
+                                    //     final accountId = accountList.isNotEmpty
+                                    //         ? accountList[0].accountId ?? ""
+                                    //         : "";
+                                    //     final accountName = accountList
+                                    //             .isNotEmpty
+                                    //         ? accountList[0].accountName ?? ""
+                                    //         : "";
+                                    //     final subaccountId = subAccountList
+                                    //             .isNotEmpty
+                                    //         ? subAccountList[0].subAccountId ??
+                                    //             ""
+                                    //         : "";
+                                    //     return DataTab(
+                                    //       accountId: accountId,
+                                    //       accountName: accountName,
+                                    //       subaccountId: subaccountId,
+                                    //       sovId: "",
+                                    //       campusStatus: false,
+                                    //       status: "subaccount",
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 ),
                               ),
@@ -1438,6 +1446,45 @@ class _MyLocationListState extends State<MyLocationList>
                       ],
                     ),
                     if (_showOverlay_mylocation) _buildOverlay(),
+                    // Positioned(
+                    //   bottom: 110, // adjust above SpeedDial
+                    //   right: 16,
+                    //   child: GestureDetector(
+                    //     onTap: () {
+                    //       _openAiChat();
+                    //     },
+                    //     child: Container(
+                    //       padding: EdgeInsets.symmetric(
+                    //           horizontal: 14, vertical: 10),
+                    //       decoration: BoxDecoration(
+                    //         color: Colors.black87,
+                    //         borderRadius: BorderRadius.circular(25),
+                    //         boxShadow: [
+                    //           BoxShadow(
+                    //             color: Colors.black26,
+                    //             blurRadius: 6,
+                    //           ),
+                    //         ],
+                    //       ),
+                    //       child: Row(
+                    //         mainAxisSize: MainAxisSize.min,
+                    //         children: [
+                    //           Text(
+                    //             "Need Help?",
+                    //             style: TextStyle(color: Colors.white),
+                    //           ),
+                    //           SizedBox(width: 8),
+                    //           CircleAvatar(
+                    //             radius: 16,
+                    //             backgroundColor: AppColors.primaryMain,
+                    //             child: Icon(Icons.smart_toy,
+                    //                 color: Colors.white, size: 18),
+                    //           )
+                    //         ],
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
                 endDrawer: Drawer(
@@ -1460,6 +1507,7 @@ class _MyLocationListState extends State<MyLocationList>
       ),
     );
   }
+
 
   Widget _buildOverlay() {
     return Container(
@@ -1782,6 +1830,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                     );
                                                     return;
                                                   }
+                                                  print(locationIds);
+                                                  print("locationIdslocationIds");
 
                                                   await p.addSelectedToSOV1(
                                                     context,
@@ -1878,54 +1928,58 @@ class _MyLocationListState extends State<MyLocationList>
                             Consumer<MyLocationListProvider>(
                               builder: (context, provider, _) {
                                 final bool isBusy =
-                                    provider.isAddTagFetchingIds || provider.isAddTagsLoading;
+                                    provider.isAddTagFetchingIds ||
+                                        provider.isAddTagsLoading;
 
                                 return IconButton(
                                   tooltip: 'Add Tag',
                                   icon: isBusy
                                       ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
                                       : const Icon(Symbols.note_stack_add),
                                   onPressed: isBusy
                                       ? null
                                       : () async {
-                                    /// 🔥 CASE 1: SELECT ALL LOCATIONS
-                                    if (provider.isGlobalSelectAll) {
-                                      await provider.showAddTagDialog(
-                                        context,
-                                        widget.accountID!,
-                                        widget.subAccountID!,
-                                        const [], // ✅ empty list
-                                        isGlobal: true, // ✅ IMPORTANT
-                                      );
-                                      return;
-                                    }
+                                          /// 🔥 CASE 1: SELECT ALL LOCATIONS
+                                          if (provider.isGlobalSelectAll) {
+                                            await provider.showAddTagDialog(
+                                              context,
+                                              widget.accountID!,
+                                              widget.subAccountID!,
+                                              const [], // ✅ empty list
+                                              isGlobal: true, // ✅ IMPORTANT
+                                            );
+                                            return;
+                                          }
 
-                                    /// 🔥 CASE 2: MANUAL SELECTION
-                                    final selectedIds =
-                                    provider.selectedLocationIds.toList();
+                                          /// 🔥 CASE 2: MANUAL SELECTION
+                                          final selectedIds = provider
+                                              .selectedLocationIds
+                                              .toList();
 
-                                    if (selectedIds.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                          Text("Please select at least one location"),
-                                        ),
-                                      );
-                                      return;
-                                    }
+                                          if (selectedIds.isEmpty) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    "Please select at least one location"),
+                                              ),
+                                            );
+                                            return;
+                                          }
 
-                                    await provider.showAddTagDialog(
-                                      context,
-                                      widget.accountID!,
-                                      widget.subAccountID!,
-                                      selectedIds,
-                                      isGlobal: false,
-                                    );
-                                  },
+                                          await provider.showAddTagDialog(
+                                            context,
+                                            widget.accountID!,
+                                            widget.subAccountID!,
+                                            selectedIds,
+                                            isGlobal: false,
+                                          );
+                                        },
                                 );
                               },
                             ),
@@ -5297,7 +5351,6 @@ class _MyLocationListState extends State<MyLocationList>
                           },
                         ),
 
-
                         const SizedBox(height: 12),
 
                         /// 🧩 TAG CHIPS
@@ -5351,7 +5404,7 @@ class _MyLocationListState extends State<MyLocationList>
                               ),
                               if (trialStatus.isNotEmpty && !hasAnyPlan)
                                 Padding(
-                                  padding: const EdgeInsets.only(left: 16.0),
+                                  padding: const EdgeInsets.only(left: 5.0),
                                   child: InkWell(
                                     onTap: () {
                                       if (Platform.isIOS) {
@@ -5371,7 +5424,10 @@ class _MyLocationListState extends State<MyLocationList>
                                     },
                                     child: Text(
                                       "Upgrade Now to create SOV!",
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: typography.Body1.copyWith(
+                                        fontSize: 16,
                                         color: AppColors.primaryMain,
                                       ),
                                     ),
@@ -5464,6 +5520,156 @@ class _MyLocationListState extends State<MyLocationList>
                                           child: CircularProgressIndicator())
                                       : Row(
                                           children: [
+                                            // Expanded(
+                                            //   child:
+                                            //       Consumer<UserProfileProvider>(
+                                            //     builder: (context,
+                                            //         userProfileProvider,
+                                            //         child) {
+                                            //       final trialStatus =
+                                            //           userProfileProvider
+                                            //                       .trialInfo[
+                                            //                   'status'] ??
+                                            //               '';
+                                            //       final bool isTrialExpired =
+                                            //           trialStatus.contains(
+                                            //                   'Expired') &&
+                                            //               hasAnyPlan == false;
+                                            //
+                                            //       return CustomButton(
+                                            //         type: ButtonType.elevated,
+                                            //
+                                            //         // 🚫 Disable when expired
+                                            //         onPressed:  () async {
+                                            //           print("Upload");
+                                            //                 if (_formKey
+                                            //                     .currentState!
+                                            //                     .validate()) {
+                                            //                   if (files ==
+                                            //                           null ||
+                                            //                       files!.path
+                                            //                           .isEmpty) {
+                                            //                     ScaffoldMessenger.of(
+                                            //                             context)
+                                            //                         .showSnackBar(
+                                            //                       SnackBar(
+                                            //                         content: Text(
+                                            //                             "Please select a file to upload"),
+                                            //                       ),
+                                            //                     );
+                                            //                     return;
+                                            //                   }
+                                            //
+                                            //                   if (!files!.path
+                                            //                       .endsWith(
+                                            //                           '.xlsx')) {
+                                            //                     ScaffoldMessenger.of(
+                                            //                             context)
+                                            //                         .showSnackBar(
+                                            //                       SnackBar(
+                                            //                         content: Text(
+                                            //                             "Please select a valid file to upload"),
+                                            //                       ),
+                                            //                     );
+                                            //                     return;
+                                            //                   }
+                                            //
+                                            //                   String success =
+                                            //                       await locationListProvider
+                                            //                           .uploadSov(
+                                            //                     context,
+                                            //                     files!,
+                                            //                     accountId,
+                                            //                     subAccountId,
+                                            //                     sovId,
+                                            //                     tagController
+                                            //                         .text,
+                                            //                     _sovNameController
+                                            //                         .text,
+                                            //                   );
+                                            //
+                                            //                   _sovNameController
+                                            //                       .clear();
+                                            //                   print(success.toString());
+                                            //                   print("success".toString());
+                                            //
+                                            //                   if (success
+                                            //                           .isNotEmpty &&
+                                            //                       success
+                                            //                           .contains(
+                                            //                               '+')) {
+                                            //                     showDialog(
+                                            //                       context:
+                                            //                           context,
+                                            //                       builder:
+                                            //                           (BuildContext
+                                            //                               context) {
+                                            //                         return AlertDialog(
+                                            //                           title:
+                                            //                               Text(
+                                            //                             'Empty SOV',
+                                            //                             style: typography
+                                            //                                 .H5_Regular,
+                                            //                           ),
+                                            //                           content:
+                                            //                               Text(
+                                            //                             'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                            //                             style: typography
+                                            //                                 .Body1,
+                                            //                           ),
+                                            //                         );
+                                            //                       },
+                                            //                     );
+                                            //                   } else if (success
+                                            //                       .isNotEmpty) {
+                                            //                     Navigator.push(
+                                            //                       context,
+                                            //                       MaterialPageRoute(
+                                            //                         builder: (_) =>
+                                            //                             MappingScreen(
+                                            //                           tempId:
+                                            //                               success,
+                                            //                           accountId:
+                                            //                               widget
+                                            //                                   .accountID!,
+                                            //                           accountName:
+                                            //                               widget.accountName ??
+                                            //                                   "",
+                                            //                           subAccountName:
+                                            //                               widget.subAccountName ??
+                                            //                                   "",
+                                            //                           subAccountId:
+                                            //                               widget
+                                            //                                   .subAccountID!,
+                                            //                         ),
+                                            //                       ),
+                                            //                     );
+                                            //                   }
+                                            //                 }
+                                            //               },
+                                            //
+                                            //         // 🔴 Change Text if Expired
+                                            //         child: Text(
+                                            //           isTrialExpired
+                                            //               ? "Expired"
+                                            //               : LanguageService
+                                            //                   .getTranslated(
+                                            //                   context,
+                                            //                   "upload2",
+                                            //                 ),
+                                            //           style: typography
+                                            //               .ButtonLarge.copyWith(
+                                            //             color: isTrialExpired
+                                            //                 ? Colors.red
+                                            //                 : Colors.black,
+                                            //           ),
+                                            //         ),
+                                            //       );
+                                            //     },
+                                            //   ),
+                                            // ),
+
+                                            //working piece
                                             Expanded(
                                                 child: CustomButton(
                                                     type: ButtonType.elevated,

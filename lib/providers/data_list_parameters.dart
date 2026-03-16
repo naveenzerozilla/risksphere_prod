@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
@@ -132,14 +133,11 @@ class SubaccountParameterProvider with ChangeNotifier {
     required String campusId,
     required String subaccountId,
     required String parameterId,
-    required Map<String, dynamic> imageObject,
+    required Map<String, dynamic> imageObject, // ✅ single image object
   }) async {
     try {
-      // isLoading = true;
       notifyListeners();
-      print("object");
-      print(parameterId);
-      // -------- BUILD URL --------
+
       String url = selectedParameterList.toLowerCase() == 'location'
           ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
           : selectedParameterList.toLowerCase() == 'sov'
@@ -148,32 +146,132 @@ class SubaccountParameterProvider with ChangeNotifier {
                   ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
                   : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
 
+      log("🗑️ DELETE URL: $url");
+      log("🗑️ DELETE imageObject: ${jsonEncode(imageObject)}");
+
       ApiService apiService = ApiService(url);
 
-      // -------- EXECUTE DELETE WITH BODY --------
-      final response = await apiService.delete(imageObject);
+      // ✅ Send ONLY the single image object — NOT the full reference list
+      final response = await apiService.delete1(imageObject);
 
-      log("DELETE RESPONSE: $response");
+      log("✅ DELETE RESPONSE: $response");
 
       CustomToast.success(
           context, response['message'] ?? "Image deleted successfully");
-
       return true;
     } on BackendException catch (e, stack) {
-      log("Backend error: ${e.message}");
-      log(stack.toString());
+      log("❌ Backend error: ${e.message}");
       CustomToast.error(context, e.message);
       return false;
     } catch (e, stack) {
-      log("Unexpected error: $e");
-      log(stack.toString());
+      log("❌ Unexpected error: $e");
       CustomToast.error(context, "Something went wrong");
       return false;
     } finally {
-      // isDeleteLocationLoading = false;
       notifyListeners();
     }
   }
+
+  // Future<bool> deleteParameterImage({
+  //   required BuildContext context,
+  //   required String selectedParameterList,
+  //   required String locationId,
+  //   required String sovId,
+  //   required String campusId,
+  //   required String subaccountId,
+  //   required String parameterId,
+  //   required Map<String, dynamic> imageObject,
+  // }) async {
+  //   try {
+  //     notifyListeners();
+  //
+  //     // -------- BUILD URL --------
+  //     String url = selectedParameterList.toLowerCase() == 'location'
+  //         ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
+  //         : selectedParameterList.toLowerCase() == 'sov'
+  //         ? "${AppConstant.DELETE_SOV_IMAGE}$sovId/$parameterId"
+  //         : selectedParameterList.toLowerCase() == 'campus'
+  //         ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
+  //         : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
+  //
+  //     log("🗑️ DELETE URL: $url");
+  //     log("🗑️ DELETE imageObject: $imageObject"); // ✅ verify payload here
+  //
+  //     ApiService apiService = ApiService(url);
+  //
+  //     // -------- EXECUTE DELETE WITH BODY --------
+  //     final response = await apiService.delete1(imageObject);
+  //
+  //     log("✅ DELETE RESPONSE: $response");
+  //
+  //     CustomToast.success(
+  //         context, response['message'] ?? "Image deleted successfully");
+  //
+  //     return true;
+  //   } on BackendException catch (e, stack) {
+  //     log("❌ Backend error: ${e.message}");
+  //     log(stack.toString());
+  //     CustomToast.error(context, e.message);
+  //     return false;
+  //   } catch (e, stack) {
+  //     log("❌ Unexpected error: $e");
+  //     log(stack.toString());
+  //     CustomToast.error(context, "Something went wrong");
+  //     return false;
+  //   } finally {
+  //     notifyListeners();
+  //   }
+  // }
+  // Future<bool> deleteParameterImage({
+  //   required BuildContext context,
+  //   required String selectedParameterList,
+  //   required String locationId,
+  //   required String sovId,
+  //   required String campusId,
+  //   required String subaccountId,
+  //   required String parameterId,
+  //   required Map<String, dynamic> imageObject,
+  // }) async {
+  //   try {
+  //     // isLoading = true;
+  //     notifyListeners();
+  //     print(parameterId);
+  //     // -------- BUILD URL --------
+  //     String url = selectedParameterList.toLowerCase() == 'location'
+  //         ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
+  //         : selectedParameterList.toLowerCase() == 'sov'
+  //             ? "${AppConstant.DELETE_SOV_IMAGE}$sovId/$parameterId"
+  //             : selectedParameterList.toLowerCase() == 'campus'
+  //                 ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
+  //                 : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
+  //
+  //     ApiService apiService = ApiService(url);
+  //
+  //     // -------- EXECUTE DELETE WITH BODY --------
+  //     final response = await apiService.delete1(imageObject);
+  //
+  //     log("DELETE RESPONSE: $response");
+  //
+  //     CustomToast.success(
+  //         context, response['message'] ?? "Image deleted successfully");
+  //
+  //     return true;
+  //   } on BackendException catch (e, stack) {
+  //     log("Backend error: ${e.message}");
+  //     log(stack.toString());
+  //     CustomToast.error(context, e.message);
+  //     return false;
+  //   } catch (e, stack) {
+  //     log("Unexpected error: $e");
+  //     log(stack.toString());
+  //     CustomToast.error(context, "Something went wrong");
+  //     return false;
+  //   } finally {
+  //     // isDeleteLocationLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
   Future<void> submitParameterUpdate({
     required BuildContext context,
     required String subaccountId,
@@ -190,28 +288,27 @@ class SubaccountParameterProvider with ChangeNotifier {
       ApiService apiService = ApiService(
         selectedParameterList.toLowerCase() == 'location'
             ? AppConstant.GET_LOCATION_PARAMETERS +
-            locationId +
-            '/' +
-            parameterId
+                locationId +
+                '/' +
+                parameterId
             : selectedParameterList.toLowerCase() == 'sov'
-            ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
-            : selectedParameterList.toLowerCase() == 'campus'
-            ? AppConstant.GET_CAMPUS_PARAMETERS +
-            campusId +
-            '/' +
-            parameterId
-            : AppConstant.GET_DATA_PARAMETERS +
-            subaccountId +
-            '/' +
-            parameterId,
+                ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
+                : selectedParameterList.toLowerCase() == 'campus'
+                    ? AppConstant.GET_CAMPUS_PARAMETERS +
+                        campusId +
+                        '/' +
+                        parameterId
+                    : AppConstant.GET_DATA_PARAMETERS +
+                        subaccountId +
+                        '/' +
+                        parameterId,
       );
 
       final response = await apiService.patch(updatedFields);
 
       // ✅ SAFE SCORE EXTRACTION
       if (response != null && response['score'] != null) {
-        final double score =
-        (response['score'] as num).toDouble();
+        final double score = (response['score'] as num).toDouble();
 
         /// 1️⃣ Store for local usage (badge, temporary override)
         setUpdatedScore(score.round());
@@ -243,68 +340,67 @@ class SubaccountParameterProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> submitParameterUpdate({
-  //   required BuildContext context,
-  //   required String subaccountId,
-  //   required String locationId,
-  //   required String sovId,
-  //   required String campusId,
-  //   required String parameterId,
-  //   required Map<String, dynamic> updatedFields,
-  //   required String selectedParameterList,
-  // }) async {
-  //   var typography = CustomTypography(context);
-  //
-  //   try {
-  //     ApiService apiService = ApiService(
-  //       selectedParameterList.toLowerCase() == 'location'
-  //           ? AppConstant.GET_LOCATION_PARAMETERS +
-  //               locationId +
-  //               '/' +
-  //               parameterId
-  //           : selectedParameterList.toLowerCase() == 'sov'
-  //               ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
-  //               : selectedParameterList.toLowerCase() == 'campus'
-  //                   ? AppConstant.GET_CAMPUS_PARAMETERS +
-  //                       campusId +
-  //                       '/' +
-  //                       parameterId
-  //                   : AppConstant.GET_DATA_PARAMETERS +
-  //                       subaccountId +
-  //                       '/' +
-  //                       parameterId,
-  //     );
-  //
-  //     final response = await apiService.patch(updatedFields);
-  //
-  //     // ⭐ Extract and store score
-  //     // if (response != null && response['score'] != null) {
-  //       final score = response['score'];
-  //
-  //       // ⭐ Correct way inside provider
-  //       setUpdatedScore(score);
-  //
-  //       print("Stored score globally: $score");
-  //     // }
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(
-  //           "Parameter updated successfully",
-  //           style: typography.ButtonLargeBlack,
-  //         ),
-  //       ),
-  //     );
-  //   } on BackendException catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(e.message, style: typography.Body1)),
-  //     );
-  //   } catch (e, stackTrace) {
-  //     debugPrint("Error: $e");
-  //     debugPrint(stackTrace.toString());
-  //   }
-  // }
-
+// Future<void> submitParameterUpdate({
+//   required BuildContext context,
+//   required String subaccountId,
+//   required String locationId,
+//   required String sovId,
+//   required String campusId,
+//   required String parameterId,
+//   required Map<String, dynamic> updatedFields,
+//   required String selectedParameterList,
+// }) async {
+//   var typography = CustomTypography(context);
+//
+//   try {
+//     ApiService apiService = ApiService(
+//       selectedParameterList.toLowerCase() == 'location'
+//           ? AppConstant.GET_LOCATION_PARAMETERS +
+//               locationId +
+//               '/' +
+//               parameterId
+//           : selectedParameterList.toLowerCase() == 'sov'
+//               ? AppConstant.GET_SOV_PARAMETERS + sovId + '/' + parameterId
+//               : selectedParameterList.toLowerCase() == 'campus'
+//                   ? AppConstant.GET_CAMPUS_PARAMETERS +
+//                       campusId +
+//                       '/' +
+//                       parameterId
+//                   : AppConstant.GET_DATA_PARAMETERS +
+//                       subaccountId +
+//                       '/' +
+//                       parameterId,
+//     );
+//
+//     final response = await apiService.patch(updatedFields);
+//
+//     // ⭐ Extract and store score
+//     // if (response != null && response['score'] != null) {
+//       final score = response['score'];
+//
+//       // ⭐ Correct way inside provider
+//       setUpdatedScore(score);
+//
+//       print("Stored score globally: $score");
+//     // }
+//
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(
+//           "Parameter updated successfully",
+//           style: typography.ButtonLargeBlack,
+//         ),
+//       ),
+//     );
+//   } on BackendException catch (e) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(e.message, style: typography.Body1)),
+//     );
+//   } catch (e, stackTrace) {
+//     debugPrint("Error: $e");
+//     debugPrint(stackTrace.toString());
+//   }
+// }
 }
 
 class Hazard {

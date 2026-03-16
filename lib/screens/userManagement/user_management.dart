@@ -553,40 +553,34 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     _configureMainTabController();
     _configureSubTabControllers();
 
-    if (widget.initialIndex != null) {
-      _tabController?.animateTo(widget.initialIndex);
-    }
-    if (widget.initialIndex == 0 &&
-        widget.initialScreen == Screens.verificationList) {
-      print('Initial Screen: ${widget.initialScreen}');
+    // Handle initial screen based on widget parameters
+    if (widget.initialScreen != null) {
+      print('Initial Screen provided: ${widget.initialScreen}');
+
       setState(() {
-        _selectedScreen = Screens.verificationList;
+        _selectedScreen = widget.initialScreen!;
         clearFilters();
-        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
       });
-    } else if (widget.initialIndex == 0 &&
-        widget.initialScreen == Screens.corporateAdd) {
-      print('Initial Screen: ${widget.initialScreen}');
-      setState(() {
-        _selectedScreen = Screens.corporateAdd;
-        clearFilters();
+
+      // Only handle tab controller animation for verification list
+      if (widget.initialScreen == Screens.verificationList) {
         _tabVerificationController?.animateTo(widget.subIndex ?? 0);
-      });
-    } else if (widget.initialIndex == 0 &&
-        widget.initialScreen == Screens.corporateEmployeeAdd) {
-      print('Initial Screen123: ${widget.initialScreen}');
-      setState(() {
-        _selectedScreen = Screens.corporateEmployeeAdd;
-        clearFilters();
-        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
-      });
+      }
+
+      // If initial screen is corporateEmployeeAdd, ensure we're on the right main tab
+      if (widget.initialScreen == Screens.corporateEmployeeAdd &&
+          _tabController != null) {
+        // Find the tab index for corporate management
+        int corporateTabIndex = 0; // Assuming corporate management is first
+        if (_tabController!.index != corporateTabIndex) {
+          _tabController!.animateTo(corporateTabIndex);
+        }
+      }
     } else {
-      print('Initial Screen: ${widget.initialScreen}');
-      setState(() {
-        _selectedScreen = Screens.verificationList;
-        clearFilters();
-        _tabVerificationController?.animateTo(widget.subIndex ?? 0);
-      });
+      // Default behavior
+      if (widget.initialIndex != null && _tabController != null) {
+        _tabController!.animateTo(widget.initialIndex);
+      }
     }
 
     setState(() {
@@ -594,6 +588,59 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showMainLoading = false;
     });
   }
+
+  // Future<void> _initializeTabs() async {
+  //   setState(() {
+  //     showMainLoading = true;
+  //   });
+  //
+  //   await _setTabs();
+  //   print('Tabs count: $visibleTabCount');
+  //
+  //   _configureMainTabController();
+  //   _configureSubTabControllers();
+  //
+  //   if (widget.initialIndex != null) {
+  //     _tabController?.animateTo(widget.initialIndex);
+  //   }
+  //   if (widget.initialIndex == 0 &&
+  //       widget.initialScreen == Screens.verificationList) {
+  //     print('Initial Screen: ${widget.initialScreen}');
+  //     setState(() {
+  //       _selectedScreen = Screens.verificationList;
+  //       clearFilters();
+  //       _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+  //     });
+  //   } else if (widget.initialIndex == 0 &&
+  //       widget.initialScreen == Screens.corporateAdd) {
+  //     print('Initial Screen: ${widget.initialScreen}');
+  //     setState(() {
+  //       _selectedScreen = Screens.corporateAdd;
+  //       clearFilters();
+  //       _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+  //     });
+  //   } else if (widget.initialIndex == 0 &&
+  //       widget.initialScreen == Screens.corporateEmployeeAdd) {
+  //     print('Initial Screen123: ${widget.initialScreen}');
+  //     setState(() {
+  //       _selectedScreen = Screens.corporateEmployeeAdd;
+  //       clearFilters();
+  //       _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+  //     });
+  //   } else {
+  //     print('Initial Screen: ${widget.initialScreen}');
+  //     setState(() {
+  //       _selectedScreen = Screens.verificationList;
+  //       clearFilters();
+  //       _tabVerificationController?.animateTo(widget.subIndex ?? 0);
+  //     });
+  //   }
+  //
+  //   setState(() {
+  //     print('Selected Screen load end: $_selectedScreen');
+  //     showMainLoading = false;
+  //   });
+  // }
 
   Future<void> _setTabs() async {
     final results = await Future.wait([
@@ -963,11 +1010,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   Future<void> _getData() async {
     List<Future> apiCalls = [];
 
-    if (showCorporateUserListDropdown) {
-      print("API call for corporate user list");
-      apiCalls.add(Provider.of<CorporateProvider>(context, listen: false)
-          .getCorporateUserList(context));
-    }
+    // if (showCorporateUserListDropdown) {
+    print("API call for corporate user list");
+    apiCalls.add(Provider.of<CorporateProvider>(context, listen: false)
+        .getCorporateUserList(context));
+    // }
     if (showNonCorporateList) {
       print("API call for non corporate user list");
       apiCalls.add(Provider.of<NonCorporateProvider>(context, listen: false)
@@ -3180,10 +3227,27 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         ),
                       )
                     : (corporateProvider.employeeList ?? []).isEmpty
-                        ? Center(
-                            child:
-                                Text('No employees', style: typography.Body1),
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.5,
+                                child: Center(
+                                  child: Text(
+                                    'No employees',
+                                    style: typography.Body1,
+                                  ),
+                                ),
+                              ),
+                            ],
                           )
+
+                        // : (corporateProvider.employeeList ?? []).isEmpty
+                        //     ? Center(
+                        //         child:
+                        //             Text('No employees', style: typography.Body1),
+                        //       )
                         : ListView.builder(
                             itemCount:
                                 corporateProvider.employeeList?.length ?? 0,
@@ -4201,9 +4265,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               ),
                                               Text(
                                                 LanguageService.getTranslated(
-                                                    context,
-                                                    "upload_image"),
-
+                                                    context, "upload_image"),
                                                 style:
                                                     typography.Body1.copyWith(
                                                         color: Colors.black),
@@ -4266,9 +4328,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           });
                                                         },
                                                         child: Text(
-                                                          LanguageService.getTranslated(
-                                                              context,
-                                                              "upload_image"),
+                                                          LanguageService
+                                                              .getTranslated(
+                                                                  context,
+                                                                  "upload_image"),
                                                           style: typography
                                                               .ButtonLargeBlack,
                                                           textAlign:
@@ -9574,7 +9637,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             height: CustomSpacing.five,
           ),
           Text(
-
               LanguageService.getTranslated(
                   context, "usermanagement_dash_verification_req"),
               style: typography.H7),
@@ -9582,10 +9644,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             height: CustomSpacing.three,
           ),
           Text(
-
               LanguageService.getTranslated(
-              context, "usermanagement_verification_req_description"),
-
+                  context, "usermanagement_verification_req_description"),
               style: typography.Body2),
           SizedBox(
             height: CustomSpacing.two,
@@ -9759,11 +9819,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           ),
                         ),
                         TextSpan(
-                          text:
-
-                            LanguageService.getTranslated(
-                            context,
-                            "requested_new_corporate_account"),
+                          text: LanguageService.getTranslated(
+                              context, "requested_new_corporate_account"),
                           style: typography.Body1_5,
                         ),
                         TextSpan(
@@ -9867,10 +9924,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             }
                           },
                           child: Text(
-                            LanguageService.getTranslated(
-                                context,
+                            LanguageService.getTranslated(context,
                                 "connections_user_connection_accept_btn"),
-
                             style:
                                 typography.BottomNavigationActiveLabel.copyWith(
                                     color: AppColors.primaryMain),
@@ -9932,10 +9987,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           //   }
                           // },
                           child: Text(
-                            LanguageService.getTranslated(
-                                context,
-                                "reject"),
-
+                            LanguageService.getTranslated(context, "reject"),
                             style:
                                 typography.BottomNavigationActiveLabel.copyWith(
                                     color: AppColors.primaryMain),
@@ -10238,8 +10290,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             ),
                           ),
                           TextSpan(
-                            text: LanguageService.getTranslated(context,
-                                'user_verification'),
+                            text: LanguageService.getTranslated(
+                                context, 'user_verification'),
                             style: typography.Body1_5,
                           ),
                         ],
@@ -10420,8 +10472,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               }
                             },
                             child: Text(
-                              LanguageService.getTranslated(
-                                  context, 'connections_user_connection_accept_btn'),
+                              LanguageService.getTranslated(context,
+                                  'connections_user_connection_accept_btn'),
                               style: typography.BottomNavigationActiveLabel
                                   .copyWith(color: Colors.black),
                             ),
@@ -10470,8 +10522,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               }
                             },
                             child: Text(
-                              LanguageService.getTranslated(
-                                  context, 'reject'),
+                              LanguageService.getTranslated(context, 'reject'),
                               style: typography.BottomNavigationActiveLabel
                                   .copyWith(
                                       color: Colors.white,
@@ -10542,9 +10593,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             const Icon(Icons.apartment),
             SizedBox(width: CustomSpacing.two),
             Text(
-              LanguageService.getTranslated(
-                  context, "corporate_management"),
-
+              LanguageService.getTranslated(context, "corporate_management"),
               style: typography.BottomNavigationActiveLabel,
             ),
           ],
@@ -10572,8 +10621,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showCorporateUserListDropdown
           ? DropdownMenuItem(
               child: Text(
-                LanguageService.getTranslated(
-                    context, "users"),
+                LanguageService.getTranslated(context, "users"),
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Users',
@@ -10582,9 +10630,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showViewCorporate
           ? DropdownMenuItem(
               child: Text(
-                LanguageService.getTranslated(
-                    context, "company_profile"),
-
+                LanguageService.getTranslated(context, "company_profile"),
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Company Profiles',
@@ -10593,9 +10639,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       showCorporateVerificationTab || showUserVerificationTab
           ? DropdownMenuItem(
               child: Text(
-                LanguageService.getTranslated(
-                    context, "verification_requests"),
-
+                LanguageService.getTranslated(context, "verification_requests"),
                 style: typography.BottomNavigationActiveLabel,
               ),
               value: 'Verification Requests',

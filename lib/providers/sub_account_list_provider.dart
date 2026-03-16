@@ -16,6 +16,7 @@ import '../utils/toast.dart';
 
 class SubAccountListProvider extends ChangeNotifier {
   bool _isLoading = false;
+  String? loadingSubAccountId;
 
   bool get isLoading => _isLoading;
 
@@ -25,6 +26,7 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   bool isDeleting = false;
 
   void setDeleting(bool value) {
@@ -32,8 +34,7 @@ class SubAccountListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
-  String?  _subaccountName="Sub Account Name";
+  String? _subaccountName = "Sub Account Name";
 
   String get showAccountName => _subaccountName!;
 
@@ -43,15 +44,13 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners();
     });
   }
-  bool isDuplicating = false;
 
+  bool isDuplicating = false;
 
   void setDuplicating(bool value) {
     isDuplicating = value;
     notifyListeners();
   }
-
-
 
   bool _isNextPageLoading = false;
 
@@ -279,20 +278,6 @@ class SubAccountListProvider extends ChangeNotifier {
     autoCompleteSubAccountList = [];
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /// Fetch sub accounts list with pagination and search query
   Future<void> fetchSubAccountList(
       BuildContext context,
@@ -320,13 +305,15 @@ class SubAccountListProvider extends ChangeNotifier {
 
       // SubAccountListModel subAccountListModel =
       //     SubAccountListModel.fromJson(response);
-      final subAccountListModel = await compute(SubAccountListModel.fromJson, response);
+      final subAccountListModel =
+          await compute(SubAccountListModel.fromJson, response);
       showOwner = subAccountListModel.settings?.owner ?? true;
       showSovCount = subAccountListModel.settings?.sovCount ?? true;
       totalRecords = subAccountListModel.totalHits ?? 0;
       totalPages = totalRecords ~/ pageSize;
-      _subaccountName =subAccountListModel.settings?.companyGlobalConfiguration!.accountName.toString();
-
+      _subaccountName = subAccountListModel
+          .settings?.companyGlobalConfiguration!.accountName
+          .toString();
 
       //totalPages = subAccountListModel.totalPages??1;
       if (page == 1) {
@@ -391,7 +378,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     } catch (e) {
@@ -399,13 +386,105 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     }
   }
-  Future<bool> deleteSOVAccount(
-      BuildContext context, String accountId, String subaccountId,var sovID) async {
+
+  Future<bool> updateDefaultSubAccount(
+    BuildContext context,
+    String accountId,
+    String subAccountId,
+    bool currentStatus,
+  ) async {
+    try {
+      loadingSubAccountId = subAccountId;
+      notifyListeners();
+
+      bool newStatus = !currentStatus;
+
+      ApiService apiService =
+          ApiService("${AppConstant.RENAME_SUB_ACCOUNT}/$accountId/subaccount");
+
+      await apiService.patch({
+        'data': {
+          "sub_account_id": subAccountId,
+          "update_default_sub_account": true,
+          "default_status": newStatus
+        }
+      });
+
+      /// Only update status (NO position change)
+      for (var element in subAccountList) {
+        element.isDefault = false;
+      }
+
+      int selectedIndex =
+          subAccountList.indexWhere((e) => e.subAccountId == subAccountId);
+
+      if (selectedIndex != -1) {
+        subAccountList[selectedIndex].isDefault = newStatus;
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("updateDefaultSubAccount Error: $e");
+      return false;
+    } finally {
+      loadingSubAccountId = null;
+      notifyListeners();
+    }
+  }
+
+  // Future<void> updateDefaultSubAccount(
+  //   BuildContext context,
+  //   String accountId,
+  //   String subAccountId,
+  //   bool currentStatus,
+  // ) async {
+  //   var typography = CustomTypography(context);
+  //
+  //   try {
+  //     loadingSubAccountId = subAccountId;
+  //     notifyListeners();
+  //
+  //     bool newStatus = !currentStatus;
+  //
+  //     ApiService apiService =
+  //         ApiService(AppConstant.RENAME_SUB_ACCOUNT + "/$accountId/subaccount");
+  //
+  //     await apiService.patch({
+  //       'data': {
+  //         "sub_account_id": subAccountId,
+  //         "update_default_sub_account": currentStatus,
+  //         "default_status": newStatus
+  //       }
+  //     });
+  //
+  //     /// ✅ Only update status (NO position change)
+  //     for (var element in subAccountList) {
+  //       element.isDefault = false;
+  //     }
+  //
+  //     var selectedIndex =
+  //         subAccountList.indexWhere((e) => e.subAccountId == subAccountId);
+  //
+  //     if (selectedIndex != -1) {
+  //       subAccountList[selectedIndex].isDefault = newStatus;
+  //     }
+  //
+  //     loadingSubAccountId = null;
+  //     notifyListeners();
+  //   } catch (e) {
+  //     loadingSubAccountId = null;
+  //     notifyListeners();
+  //   }
+  // }
+
+  Future<bool> deleteSOVAccount(BuildContext context, String accountId,
+      String subaccountId, var sovID) async {
     try {
       isDeleteLocationLoading = true;
       notifyListeners(); // Notify UI to update the button state
@@ -433,6 +512,7 @@ class SubAccountListProvider extends ChangeNotifier {
       notifyListeners(); // Notify UI to remove the loader
     }
   }
+
   Future<bool> deleteAccount(
       BuildContext context, String accountId, String subaccountId) async {
     try {
@@ -491,12 +571,12 @@ class SubAccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style:  typography.ButtonLargeBlack),
+        content: Text(e.message, style: typography.ButtonLargeBlack),
       ));
     } catch (e) {
       isDuplicateLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style:  typography.ButtonLargeBlack),
+        content: Text(e.toString(), style: typography.ButtonLargeBlack),
       ));
     }
   }
@@ -546,7 +626,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
       return false;
@@ -558,7 +638,7 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
       return false;
@@ -579,7 +659,8 @@ class SubAccountListProvider extends ChangeNotifier {
           '/sub_accounts?account_id=$accountId&search=$searchQuery'; // Updated field
       var response = await apiService.get(url);
 
-      final accountListModel = await compute(SubAccountListModel.fromJson, response);
+      final accountListModel =
+          await compute(SubAccountListModel.fromJson, response);
       autoCompleteSubAccountList = accountListModel.results ?? [];
       // log(autoCompleteSubAccountList.toString());
       // print("Updated autoCompleteSubAccountList: $autoCompleteSubAccountList");
@@ -658,21 +739,21 @@ class SubAccountListProvider extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           'Request sent successfully!',
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     } on BackendException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.message,
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           e.toString(),
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
     }
@@ -698,7 +779,7 @@ class SubAccountListProvider extends ChangeNotifier {
           response['message'] ??
               LanguageService.getTranslated(
                   context, "sub_account_list_app_sov_upload_success"),
-          style:  typography.ButtonLargeBlack,
+          style: typography.ButtonLargeBlack,
         ),
       ));
       print("total records: " + response['total_records'].toString());
@@ -745,7 +826,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             message,
-            style:  typography.ButtonLargeBlack,
+            style: typography.ButtonLargeBlack,
           ),
         ),
       );
@@ -758,7 +839,7 @@ class SubAccountListProvider extends ChangeNotifier {
         SnackBar(
           content: Text(
             '${e.toString()}',
-            style:  typography.ButtonLargeBlack,
+            style: typography.ButtonLargeBlack,
           ),
         ),
       );

@@ -1,54 +1,28 @@
 name: RiskSphere
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
-version: 5.6.1+11
-
+publish_to: 'none'
+version: 6.0.0+116
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
-
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   provider: ^6.1.2
   flutter_svg: ^2.0.10+1
   firebase_core: ^3.4.0
+  firebase_storage: ^12.4.10
   firebase_auth: ^5.2.0
   google_sign_in: ^6.2.1
   flutter_autocomplete_label: ^1.0.0
-  #  country_list_picker: any
   cloud_functions: ^5.1.0
   country_pickers: ^3.0.1
-  phone_input: ^1.0.0
+  phone_input:
   flutter_recaptcha_v2_compat: ^1.0.2+2
   flutter_gcaptcha_v3: ^2.0.4
   webview_flutter: ^4.5.0
-  shared_preferences: ^2.2.3
+  shared_preferences: ^2.5.0
   fluttertoast: ^8.2.5
   image_picker: ^1.0.8
   mat_month_picker_dialog: ^1.1.1
@@ -71,7 +45,7 @@ dependencies:
   permission_handler: ^11.3.1
   material_symbols_icons: ^4.2801.1
   flutter_speed_dial: ^7.0.0
-  firebase_messaging: ^15.1.0
+  firebase_messaging: ^15.2.0  # Added version
   flutter_local_notifications: ^18.0.1
   markers_cluster_google_maps_flutter: ^0.1.0+2
   lottie: ^3.1.2
@@ -88,10 +62,9 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   get: ^4.7.2
   dotted_border:
-  firebase_storage:
   timeline_tile: ^2.0.0
   flutter_screen_capture: ^1.0.1
-  connectivity_plus:
+  connectivity_plus: ^5.0.2  # Added version
   flutter_keyboard_visibility: ^6.0.0
   flutter_stripe: ^10.1.1
   tutorial_coach_mark: ^1.3.0
@@ -103,15 +76,17 @@ dependencies:
   syncfusion_flutter_charts: ^30.2.6+1
   marquee: ^2.3.0
   flutter_appauth: ^6.0.4
-  syncfusion_flutter_pdfviewer: ^31.1.20
+  syncfusion_flutter_pdfviewer: ^31.2.18
   fl_chart: ^1.1.1
   syncfusion_flutter_datagrid: ^31.2.2
   geocoding: ^4.0.0
   flutter_google_maps_webservices:
   geolocator: ^14.0.2
   tuple: ^2.0.2
-
-
+  package_info_plus: ^9.0.0
+  firebase_app_check:
+  app_links:
+  flutter_sharing_intent: ^2.0.4
 
 
 
@@ -120,10 +95,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutterfire_cli: ^1.1.0
+  # Remove flutter_lints: ^2.0.0 (deprecated)
 
 dependency_overrides:
-  intl: ^0.17.0
+  intl: ^0.20.2  # Add this to match flutter_localizations
   win32: ^5.5.4
+
 
 flutter_launcher_icons:
   android: true
