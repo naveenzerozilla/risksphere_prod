@@ -1432,10 +1432,7 @@ class SOVListProvider extends ChangeNotifier {
               MapEntry(key, value is Set ? value.toList() : value));
         }).toList(),
       };
-      // var payload = {
-      //   "sov_id": sovId,
-      //   "share_with": shareWithList,
-      // };
+
 
       var response = await apiService.post(payload);
       log("Share SOV Response: $response");

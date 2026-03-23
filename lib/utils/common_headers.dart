@@ -58,39 +58,6 @@ class CommonHeaders {
     return headers;
   }
 
-  // static Future<Map<String, String>> createHeaders() async {
-  //   Map<String, String> headers = {};
-  //
-  //   try {
-  //     await FirebaseAuth.instance.currentUser?.reload();
-  //     IdTokenResult? token =
-  //         await FirebaseAuth.instance.currentUser?.getIdTokenResult();
-  //
-  //     headers['Authorization'] = 'Bearer ${token?.token ?? ""}';
-  //     headers['Content-Type'] = 'application/json';
-  //
-  //     // 👇 USE AppCheckService instead of direct getToken()
-  //     try {
-  //       final appCheckToken = await AppCheckService.getToken();
-  //       if (appCheckToken != null) {
-  //         headers['X-Firebase-AppCheck'] = appCheckToken;
-  //         debugPrint('✅ AppCheck token added to headers');
-  //       }
-  //     } catch (e) {
-  //       debugPrint('⚠️ AppCheck skipped: $e');
-  //     }
-  //   } catch (e) {
-  //     final errorString = e.toString();
-  //     if (errorString.contains('network-request-failed')) {
-  //       errorToast(pleaseCheckYourInternetConnectivityAndTryAgain);
-  //     }
-  //     debugPrint('❌ createHeaders error: $e');
-  //   }
-  //
-  //   return headers;
-  // }
-
-  // Do same for all other methods...
   static Future<Map<String, String>> createHeaders1() async {
     Map<String, String> headers = {};
     try {

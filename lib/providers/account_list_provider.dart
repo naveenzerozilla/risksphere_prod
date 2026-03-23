@@ -609,6 +609,52 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> shareLocation(
+    BuildContext context, {
+    required String recipientEmails,
+    required int credits,
+    required int expireDays,
+    String message = "",
+  }) async {
+    var typography = CustomTypography(context);
+    try {
+      isDuplicateLoading = true;
+      notifyListeners();
+
+      ApiService apiService = ApiService(AppConstant.GIFT_CREDITS);
+      var response = await apiService.post({
+        'recipient_email': recipientEmails,
+        'credits': credits,
+        'expire_days': expireDays,
+        'message': message,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          'Location shared successfully!',
+          style: typography.ButtonLarge,
+        ),
+        backgroundColor: Colors.green,
+      ));
+
+      isDuplicateLoading = false;
+      notifyListeners();
+    } on BackendException catch (e) {
+      isDuplicateLoading = false;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.ButtonLarge),
+        backgroundColor: Colors.red,
+      ));
+    } catch (e) {
+      isDuplicateLoading = false;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.ButtonLarge),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
   Future<void> fetchAccountList(
       BuildContext context, String searchQuery, int page, int pageSize) async {
     lastSearchQuery = searchQuery;
@@ -667,9 +713,7 @@ class AccountListProvider extends ChangeNotifier {
       isUpdating = true;
       notifyListeners();
 
-      final apiService = ApiService(AppConstant.HANDLE_VENDOR_DATA
-          // 'https://us-central1-project-green-prod.cloudfunctions.net/recommendation_engine/handle_vendor_data',
-          );
+      final apiService = ApiService(AppConstant.HANDLE_VENDOR_DATA);
 
       final payload = {
         "location_ids": locationIds,
@@ -691,7 +735,6 @@ class AccountListProvider extends ChangeNotifier {
     try {
       if (isLoading) return;
 
-      /// 🔄 FULL RESET ON REFRESH
       if (isRefresh) {
         _blockedLocationIds.clear();
         _previousBlockedLocationIds.clear();
@@ -708,14 +751,12 @@ class AccountListProvider extends ChangeNotifier {
       final model = await compute(AccountListModel.fromJson, response);
       accountListModel = model;
 
-      /// 🔥 CURRENT BLOCKED LOCATIONS FROM FIRESTORE
       final Set<String> currentBlocked =
           (locRecMetaData?['blocked_locations'] as List?)
                   ?.map((e) => e.toString())
                   .toSet() ??
               {};
 
-      /// ✅ FILTER ONLY – NO SIDE EFFECTS
       missingParameterList = (model.data ?? []).where((item) {
         final locationId = item.locationId ?? '';
         final missing = item.totalUnfilledParameters ?? 0;
@@ -725,7 +766,6 @@ class AccountListProvider extends ChangeNotifier {
           return true;
         }
 
-        // keep if still missing parameters
         return missing > 0;
       }).toList();
 
@@ -739,195 +779,6 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  // Future<void> fetchMissingParameterList(
-  //   BuildContext context,
-  //   String sovId, {
-  //   bool isRefresh = false,
-  // }) async {
-  //   try {
-  //     if (isLoading) return;
-  //
-  //     /// 🔄 FULL RESET ON REFRESH
-  //     if (isRefresh) {
-  //       blockedLocationIds.clear();
-  //       _previousBlockedLocationIds.clear();
-  //       _isLocationUpdating.clear();
-  //       updatingItemId = null;
-  //     }
-  //
-  //     isLoading = true;
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
-  //     final response = await apiService.get('?sov_id=$sovId');
-  //
-  //     final model = await compute(AccountListModel.fromJson, response);
-  //
-  //     accountListModel = model;
-  //
-  //     final Set<String> currentBlocked =
-  //         (locRecMetaData?['blocked_locations'] as List?)
-  //                 ?.map((e) => e.toString())
-  //                 .toSet() ??
-  //             {};
-  //
-  //     missingParameterList = (model.data ?? []).where((item) {
-  //       final locationId = item.locationId ?? '';
-  //       final missing = item.totalUnfilledParameters ?? 0;
-  //
-  //       // keep items still processing
-  //       if (currentBlocked.contains(locationId)) {
-  //         return true;
-  //       }
-  //       // Keeping listeners
-  //       for (var item in sovList) {
-  //         if (item.sovId != null) {
-  //           listenToSovMeta(item.sovId!);
-  //         }
-  //       }
-  //       // keep items with missing parameters
-  //       return missing > 0;
-  //     }).toList();
-  //   } catch (e, stack) {
-  //     debugPrint('fetchMissingParameterList error: $e');
-  //     debugPrint(stack.toString());
-  //   } finally {
-  //     isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> fetchMissingParameterList(
-  //   BuildContext context,
-  //   String sovId, {
-  //   bool isRefresh = false,
-  // }) async {
-  //   try {
-  //     if (isLoading) return;
-  //
-  //     /// 🔥 FULL RESET ON REFRESH
-  //     if (isRefresh) {
-  //       blockedLocationIds.clear();
-  //       _previousBlockedLocationIds.clear();
-  //       _isLocationUpdating.clear();
-  //       updatingItemId = null;
-  //     }
-  //
-  //     isLoading = true;
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
-  //     final response = await apiService.get('?sov_id=$sovId');
-  //     final model = await compute(AccountListModel.fromJson, response);
-  //
-  //     /// 🔥 ONLY CURRENT PROCESSING MATTERS
-  //     final Set<String> currentBlocked =
-  //         (locRecMetaData?['blocked_locations'] as List?)
-  //                 ?.map((e) => e.toString())
-  //                 .toSet() ??
-  //             {};
-  //
-  //     /// ✅ FULL REFRESH LOGIC
-  //     missingParameterList = (model.data ?? []).where((item) {
-  //       final locationId = item.locationId ?? '';
-  //       final missing = item.totalUnfilledParameters ?? 0;
-  //
-  //       // Keep if still processing
-  //       if (currentBlocked.contains(locationId)) {
-  //         return true;
-  //       }
-  //
-  //       // Keep only if still missing
-  //       return missing > 0;
-  //     }).toList();
-  //   } catch (e, stack) {
-  //     debugPrint('fetchMissingParameterList error: $e');
-  //     debugPrint(stack.toString());
-  //   } finally {
-  //     isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> fetchMissingParameterList(
-  //   BuildContext context,
-  //   String sovId, {
-  //   bool isRefresh = false,
-  // }) async {
-  //   try {
-  //     /// ⛔ Prevent duplicate calls
-  //     if (isLoading) return;
-  //
-  //     isLoading = true;
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
-  //
-  //     /// ✅ NO PAGE PARAM
-  //     final url = '?sov_id=$sovId';
-  //
-  //     final response = await apiService.get(url);
-  //
-  //     final model = await compute(AccountListModel.fromJson, response);
-  //
-  //     /// ✅ Replace entire list (no append)
-  //     missingParameterList = model.data ?? [];
-  //   } catch (e, stack) {
-  //     debugPrint('fetchMissingParameterList error: $e');
-  //     debugPrint(stack.toString());
-  //   } finally {
-  //     isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> fetchMissingParameterList(
-  //   BuildContext context,
-  //   String sovId, {
-  //   bool isRefresh = false,
-  // }) async {
-  //   try {
-  //     if (isLoading || isNextPageLoading) return;
-  //
-  //     if (isRefresh) {
-  //       page = 1;
-  //       missingParameterList.clear();
-  //     }
-  //
-  //     if (page == 1) {
-  //       isLoading = true;
-  //     } else {
-  //       isNextPageLoading = true;
-  //     }
-  //
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(AppConstant.GET_RECOMMENDATION_LIST);
-  //     final url = '?sov_id=$sovId&page=$page';
-  //
-  //     final response = await apiService.get(url);
-  //
-  //     final model = await compute(AccountListModel.fromJson, response);
-  //     final newList = model.data ?? [];
-  //
-  //     if (page == 1) {
-  //       missingParameterList = newList;
-  //     } else {
-  //       missingParameterList.addAll(newList);
-  //     }
-  //
-  //     if (newList.isNotEmpty) {
-  //       page++;
-  //     }
-  //   } catch (e, stack) {
-  //     debugPrint('fetchMissingParameterList error: $e');
-  //     debugPrint(stack.toString());
-  //   } finally {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
 
   List<Accounts> parameterList = [];
 
@@ -936,7 +787,6 @@ class AccountListProvider extends ChangeNotifier {
     String locationId,
   ) async {
     try {
-      /// 🔵 Screen-level loading
       isLoading = true;
       notifyListeners();
 
@@ -958,7 +808,6 @@ class AccountListProvider extends ChangeNotifier {
       debugPrint(stack.toString());
       rethrow;
     } finally {
-      /// ✅ Mark first load completed
       isLoading = false;
       hasLoadedOnce = true;
       notifyListeners();
@@ -976,10 +825,9 @@ class AccountListProvider extends ChangeNotifier {
 
       final apiService = ApiService(AppConstant.SOV_PARAMETER_UPDATE);
 
-      /// ✅ Final payload (already built in UI)
       final finalPayload = {
         "location_id": locationId,
-        ...payload, // contains to_update_data_params
+        ...payload,
       };
 
       debugPrint("Submitting payload: $finalPayload");
@@ -994,90 +842,6 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // Future<void> updateRecommendationApi(
-  //   BuildContext context,
-  //   String locationId,
-  //   Map<String, TextEditingController> controllers,
-  // ) async {
-  //   try {
-  //     isDuplicateLoading = true;
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(AppConstant.SOV_PARAMETER_UPDATE);
-  //
-  //     final List<Map<String, dynamic>> toUpdateDataParams = [];
-  //
-  //     for (final param in parameterList) {
-  //       final controller = controllers[param.dataCategoryId];
-  //       final value = controller?.text.trim();
-  //
-  //       if (value == null || value.isEmpty) continue;
-  //
-  //       toUpdateDataParams.add({
-  //         "value": jsonEncode({
-  //           "value": value,
-  //           "unit": "",
-  //           "value_a": "",
-  //           "value_b": "",
-  //           "currency": "",
-  //           "valuation_date": "",
-  //         }),
-  //         "param_type": param.parameterType, // e.g. "Number"
-  //         "reference": {
-  //           "url": [],
-  //           "tags": [],
-  //         },
-  //         "data_category_id": param.dataCategoryId,
-  //         "name": param.parameterNameA,
-  //       });
-  //     }
-  //
-  //     final payload = {
-  //       "location_id": locationId,
-  //       "to_update_data_params": toUpdateDataParams,
-  //     };
-  //
-  //     debugPrint("Submitting payload: $payload");
-  //
-  //     await apiService.post(payload);
-  //   } catch (e) {
-  //     rethrow;
-  //   } finally {
-  //     isDuplicateLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<List<Accounts>> updateRecommendation(
-  //   BuildContext context,
-  //   String locationId,
-  // ) async {
-  //   try {
-  //     isDuplicateLoading = true;
-  //     notifyListeners();
-  //
-  //     ApiService apiService = ApiService(AppConstant.SOV_PARAMETER_UPDATE);
-  //
-  //     final response = await apiService.post({
-  //       "location_id": locationId,
-  //       "param_type": true,
-  //       "data_parameters": [],
-  //     });
-  //
-  //     final AccountListModel model = AccountListModel.fromJson(response);
-  //
-  //     accountList = model.results!;
-  //     print(accountList.length.toString());
-  //
-  //     return accountList;
-  //   } catch (e) {
-  //     rethrow;
-  //   } finally {
-  //     isDuplicateLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
 
   /// Rename account
   Future<void> renameAccount(
@@ -1094,9 +858,6 @@ class AccountListProvider extends ChangeNotifier {
           'account_name': newName,
         }
       });
-      log(response.toString());
-
-      // Update account name in the list
       int index =
           accountList.indexWhere((element) => element.accountId == accountId);
       if (index != -1) {
@@ -1131,7 +892,6 @@ class AccountListProvider extends ChangeNotifier {
     try {
       final bool newStatus = !currentStatus;
 
-      /// ✅ Show loader ONLY when UNFAVOURITING
       if (currentStatus) {
         loadingAccountId = accountId;
         notifyListeners();
@@ -1147,15 +907,10 @@ class AccountListProvider extends ChangeNotifier {
         }
       });
 
-      /// You can optionally check response status here
-      /// if (response.statusCode != 200) return false;
-
-      /// ✅ Reset all accounts
       for (var element in accountList) {
         element.isDefault = false;
       }
 
-      /// ✅ If making favourite
       if (newStatus) {
         int selectedIndex =
             accountList.indexWhere((e) => e.accountId == accountId);
@@ -1163,72 +918,21 @@ class AccountListProvider extends ChangeNotifier {
         if (selectedIndex != -1) {
           accountList[selectedIndex].isDefault = true;
 
-          /// Move to top only when favourite
           var selectedItem = accountList.removeAt(selectedIndex);
           accountList.insert(0, selectedItem);
         }
       }
 
       notifyListeners();
-      return true; // ✅ SUCCESS
+      return true;
     } catch (e) {
       debugPrint("updateDefaultAccount Error: $e");
-      return false; // ❌ FAILURE
+      return false;
     } finally {
       loadingAccountId = null;
       notifyListeners();
     }
   }
-
-  // Future<void> updateDefaultAccount(
-  //     BuildContext context,
-  //     String accountId,
-  //     bool currentStatus,
-  //     ) async {
-  //   try {
-  //     bool newStatus = !currentStatus;
-  //
-  //     /// ✅ Show loader ONLY when UNFAVOURITING
-  //     if (currentStatus) {
-  //       loadingAccountId = accountId;
-  //       notifyListeners();
-  //     }
-  //
-  //     ApiService apiService = ApiService(AppConstant.RENAME_ACCOUNT);
-  //
-  //     await apiService.patch({
-  //       'data': {
-  //         "account_id": accountId,
-  //         "update_default_account": true,
-  //         "default_status": newStatus
-  //       }
-  //     });
-  //
-  //     /// Reset all
-  //     for (var element in accountList) {
-  //       element.isDefault = false;
-  //     }
-  //
-  //     if (newStatus) {
-  //       int selectedIndex =
-  //       accountList.indexWhere((e) => e.accountId == accountId);
-  //
-  //       if (selectedIndex != -1) {
-  //         accountList[selectedIndex].isDefault = true;
-  //
-  //         /// Move to top only when favourite
-  //         var selectedItem = accountList.removeAt(selectedIndex);
-  //         accountList.insert(0, selectedItem);
-  //       }
-  //     }
-  //
-  //     loadingAccountId = null;
-  //     notifyListeners();
-  //   } catch (e) {
-  //     loadingAccountId = null;
-  //     notifyListeners();
-  //   }
-  // }
 
   Future<void> renameSov(
       BuildContext context, String sovId, String newName) async {
@@ -1246,7 +950,6 @@ class AccountListProvider extends ChangeNotifier {
       });
       log(response.toString());
 
-      // Update account name in the list
       int index =
           accountList.indexWhere((element) => element.accountId == sovId);
       if (index != -1) {
@@ -1387,10 +1090,6 @@ class AccountListProvider extends ChangeNotifier {
       ApiService apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
       String url = '?account_name=$searchQuery';
       var response = await apiService.get(url);
-      log(response.toString());
-
-      // AccountListModel accountListModel = AccountListModel.fromJson(response);
-
       final accountListModel =
           await compute(AccountListModel.fromJson, response);
       autoCompleteAccountList = accountListModel.results ?? [];
@@ -1406,16 +1105,12 @@ class AccountListProvider extends ChangeNotifier {
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
-      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      //   content: Text(e.toString(), style: typography.ButtonLargeBlack,),
-      //
-      // ));
+
     } finally {
       isAutoCompleteLoading = false;
     }
   }
 
-  /// Add account
   Future<void> addAccount(BuildContext context, String accountName) async {
     var typography = CustomTypography(context);
     try {
@@ -1429,13 +1124,10 @@ class AccountListProvider extends ChangeNotifier {
       });
       log(response.toString());
 
-      // Parse the response to get the newly added account
       Accounts newAccount = Accounts.fromJson(response['updated_record']);
       newAccount.sovCount = 0;
       newAccount.subAccountCount = 0;
       accountHits++;
-
-      // Prepend the new account to the beginning of the list
       accountList = [newAccount, ...accountList];
 
       isAddAccountLoading = false;
@@ -1458,12 +1150,10 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  // Delete Tags from location
-
   Future<bool> deleteAccount(BuildContext context, String accountId) async {
     try {
       isDeleteLocationLoading = true;
-      notifyListeners(); // Notify UI to update the button state
+      notifyListeners();
 
       ApiService apiService =
           ApiService("${AppConstant.DELETE_ACCOUNT}account_id=$accountId");
@@ -1489,31 +1179,6 @@ class AccountListProvider extends ChangeNotifier {
     }
   }
 
-  // Future<bool> deleteAccount(BuildContext context, String accountId,
-  //    ) async {
-  //   try {
-  //     isAddAccountLoading = true;
-  //     ApiService apiService =
-  //     ApiService("${AppConstant.DELETE_ACCOUNT}account_id=$accountId");
-  //     var response = await apiService.delete({});
-  //     log(response.toString());
-  //     CustomToast.success(context, response['message']);
-  //   } on BackendException catch (e, stackTrace) {
-  //     log("Error deleting tag from location: ${e.message}");
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, e.message);
-  //   } catch (e, stackTrace) {
-  //     log("Error deleting tag from location: $e");
-  //     log(e.toString());
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, e.toString());
-  //   } finally {
-  //     isAddAccountLoading = false;
-  //     return true;
-  //   }
-  // }
-
-  // Request access with message
   Future<void> requestAccess(
       BuildContext context, String accountId, String message) async {
     var typography = CustomTypography(context);
@@ -1558,10 +1223,9 @@ class AccountListProvider extends ChangeNotifier {
           ApiService(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
       print(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload');
       print(apiService);
-      // Send a POST request to the API to upload the image
       Map<String, dynamic> response =
           await apiService.postMultiPartSOVAccounts(sovFile, accountId, name);
-      // print(response!.message.toString());
+
       isImageUploadLoading = false;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1583,35 +1247,22 @@ class AccountListProvider extends ChangeNotifier {
     } on BackendException catch (e) {
       isImageUploadLoading = false;
       Navigator.pop(context);
-
-      print("Raw Backend Exception Message: ${e.message}");
-
-      // Initialize a variable to store the error message
       String message = '';
 
       try {
-        // Check if the message is a JSON string
         if (e.message.trim().startsWith('{') &&
             e.message.trim().endsWith('}')) {
-          // Attempt to parse the message as JSON
           final Map<String, dynamic> errorJson = jsonDecode(e.message.trim());
-
-          // Extract the error message
           message = errorJson['error'] ?? 'An unexpected error occurred';
         } else {
-          // If it's not JSON, use the message as-is
           message = e.message;
         }
       } catch (decodeError) {
-        // Handle any JSON parsing errors
         print('JSON Decode Error: $decodeError');
-
-        // Fallback to the raw message or a generic error message
         message = e.message ??
             'An unexpected error occurred. Please try again later.';
       }
 
-      // Display the error message in a SnackBar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1621,9 +1272,8 @@ class AccountListProvider extends ChangeNotifier {
         ),
       );
 
-      return ''; // Return an empty string or handle the error as needed
+      return '';
     } catch (e) {
-      // Handle other unexpected exceptions
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1634,7 +1284,7 @@ class AccountListProvider extends ChangeNotifier {
         ),
       );
       isImageUploadLoading = false;
-      return ''; // Return empty string or handle the error as needed
+      return '';
     }
   }
 

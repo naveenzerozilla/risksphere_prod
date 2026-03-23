@@ -936,8 +936,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
               (userProfileProvider.userData.role != null &&
                       userProfileProvider.userData.role!.isNotEmpty &&
-                      userProfileProvider.userData.role![0].name.toString() ==
-                          "Admin" &&
+                      userProfileProvider.userData.role![0].name
+                              .toString()
+                              .toLowerCase() ==
+                          "admin" &&
                       (isSuperAdmin || isPgAdmin || isAdmin))
                   ? _overviewCardHorizontal(
                       title: LanguageService.getTranslated(
@@ -1175,43 +1177,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(
                 height: CustomSpacing.one,
               ),
-              // (userProfileProvider.userData.role != null &&
-              //         userProfileProvider.userData.role!.isNotEmpty &&
-              //         userProfileProvider.userData.role![0].name
-              //                 .toString() ==
-              //             "Admin" &&
-              //         (isSuperAdmin || isPgAdmin || isAdmin))
-              // InkWell(
-              //   onTap: () async {
-              //     final status = await Permission.camera.request();
-              //     if (status.isGranted) {
-              //       final pickedFile = await ImagePicker()
-              //           .pickImage(source: ImageSource.camera);
-              //       if (pickedFile != null) {
-              //         // Use pickedFile.path
-              //         print('Image path: ${pickedFile.path}');
-              //       }
-              //     } else {
-              //       ScaffoldMessenger.of(context).showSnackBar(
-              //         SnackBar(content: Text('Camera permission denied')),
-              //       );
-              //     }
-              //   },
-              //   child: Text("Camera", style: typography.H5_Regular),
-              // ),
               showAllUsers
                   ? SizedBox()
                   : Consumer2<UserProfileProvider, ConfigurationProvider>(
                       builder: (context, userProfileProvider, provider, child) {
-                        // if (provider.isLoading) {
-                        //   return Container(
-                        //     padding: const EdgeInsets.symmetric(horizontal: 50),
-                        //     alignment: Alignment.center,
-                        //     width: MediaQuery.of(context).size.width,
-                        //     height: MediaQuery.of(context).size.height / 2,
-                        //     child: const CircularProgressIndicator(),
-                        //   );
-                        // }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

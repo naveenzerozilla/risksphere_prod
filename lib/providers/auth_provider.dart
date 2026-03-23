@@ -1096,20 +1096,30 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
+
       bool isUserRegistered = await userExists(email.trim());
 
       if (isUserRegistered) {
+        // ✅ Step 1 — Call backend API first
+        final response = await http.post(
+          Uri.parse(
+              "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/auth_handler/user-check"),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"email": email.trim()}),
+        );
+
+        debugPrint(
+            "Forgot password API: ${response.statusCode} ${response.body}");
+
+        // ✅ Step 2 — Then send Firebase reset email
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
-// and another things...
-        //await _auth.sendPasswordResetEmail(email: email);
-        // Reset password email sent successfully
+
         _isResettingPassword = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
         return true;
       } else {
-// show error message etc.
         _isResettingPassword = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
@@ -1121,17 +1131,68 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-
-      // Handle error
-      print("Error sending password reset email: $e");
-      ScaffoldMessenger.of(context!).showSnackBar(
-        SnackBar(
-          content: Text(e.message!),
+      debugPrint("Error sending password reset email: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Something went wrong")),
+      );
+      return false;
+    } catch (e) {
+      _isResettingPassword = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+      debugPrint("Reset password error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Failed to send password reset email"),
         ),
       );
       return false;
     }
   }
+
+//   Future<bool> resetPassword(String email, BuildContext context) async {
+//     try {
+//       _isResettingPassword = true;
+//       WidgetsBinding.instance.addPostFrameCallback((_) {
+//         notifyListeners();
+//       });
+//       bool isUserRegistered = await userExists(email.trim());
+//
+//       if (isUserRegistered) {
+//         await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
+// // and another things...
+//         //await _auth.sendPasswordResetEmail(email: email);
+//         // Reset password email sent successfully
+//         _isResettingPassword = false;
+//         WidgetsBinding.instance.addPostFrameCallback((_) {
+//           notifyListeners();
+//         });
+//         return true;
+//       } else {
+// // show error message etc.
+//         _isResettingPassword = false;
+//         WidgetsBinding.instance.addPostFrameCallback((_) {
+//           notifyListeners();
+//         });
+//         return false;
+//       }
+//     } on FirebaseAuthException catch (e) {
+//       _isResettingPassword = false;
+//       WidgetsBinding.instance.addPostFrameCallback((_) {
+//         notifyListeners();
+//       });
+//
+//       // Handle error
+//       print("Error sending password reset email: $e");
+//       ScaffoldMessenger.of(context!).showSnackBar(
+//         SnackBar(
+//           content: Text(e.message!),
+//         ),
+//       );
+//       return false;
+//     }
+//   }
 
   Future<bool> userExists(String email) async {
     final FirebaseAuth _auth = FirebaseAuth.instance;

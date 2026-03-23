@@ -86,7 +86,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
       if (mounted) setState(() {});
     });
-
   }
 
   Future<void> _setClaims() async {
@@ -218,8 +217,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
             (userProfileProvider.userData.role == null ||
                     userProfileProvider.userData.role!.isEmpty)
                 ? const SizedBox.shrink() // or Container()
-                : (userProfileProvider.userData.role![0].name.toString() ==
-                            "Admin" &&
+                : (userProfileProvider.userData.role![0].name
+                                .toString()
+                                .toLowerCase() ==
+                            "admin" &&
                         (isSuperAdmin || isPgAdmin || isAdmin))
                     ? const SizedBox.shrink()
                     : Center(

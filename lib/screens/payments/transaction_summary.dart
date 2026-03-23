@@ -16,7 +16,9 @@ import '../../providers/payment_provider.dart';
 import 'invoice_webview.dart';
 
 class PaymentTransactionsPage extends StatefulWidget {
-  const PaymentTransactionsPage({super.key});
+  final int? initialTabIndex;
+
+  PaymentTransactionsPage({super.key, this.initialTabIndex});
 
   @override
   State<PaymentTransactionsPage> createState() =>
@@ -39,7 +41,11 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex ?? 0,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getData();
       _setClaims();
@@ -47,26 +53,47 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        // Only run when tab has changed
         _tabIndex = _tabController.index;
-
-        print("Current Tab Index: $_tabIndex");
-
         if (_tabIndex == 0) {
-          paymentProvider.fetchTransactionList(
-            context,
-            filterItem ?? '',
-            '',
-          );
+          paymentProvider.fetchTransactionList(context, filterItem ?? '', '');
         } else if (_tabIndex == 1) {
-          invoiceProvider.fetchInvoiceList(
-            context,
-            filterItem ?? '',
-          );
+          invoiceProvider.fetchInvoiceList(context, filterItem ?? '');
         }
       }
     });
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _tabController = TabController(length: 2, vsync: this);
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _getData();
+  //     _setClaims();
+  //   });
+  //
+  //   _tabController.addListener(() {
+  //     if (!_tabController.indexIsChanging) {
+  //       // Only run when tab has changed
+  //       _tabIndex = _tabController.index;
+  //
+  //       print("Current Tab Index: $_tabIndex");
+  //
+  //       if (_tabIndex == 0) {
+  //         paymentProvider.fetchTransactionList(
+  //           context,
+  //           filterItem ?? '',
+  //           '',
+  //         );
+  //       } else if (_tabIndex == 1) {
+  //         invoiceProvider.fetchInvoiceList(
+  //           context,
+  //           filterItem ?? '',
+  //         );
+  //       }
+  //     }
+  //   });
+  // }
 
   Future<void> _setClaims() async {
     isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
@@ -92,7 +119,6 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     _tabController.dispose();
   }
@@ -156,19 +182,12 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                     indicatorColor: Colors.lightBlueAccent,
                     indicatorWeight: 1,
                     tabs: [
-                      Tab(text:
-                      LanguageService.getTranslated(
-                          context,
-                          "payment_transactions")),
-
-
-                      Tab(text:
-
-
-                LanguageService.getTranslated(
-                context,
-                "invoice_history")),
-
+                      Tab(
+                          text: LanguageService.getTranslated(
+                              context, "payment_transactions")),
+                      Tab(
+                          text: LanguageService.getTranslated(
+                              context, "invoice_history")),
                     ],
                   ),
                 ),
@@ -179,150 +198,77 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                       padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        // 👈 makes it scrollable horizontally
                         child: Row(
                           children: [
-                        Container(
-                        padding: const EdgeInsets.only(right: 3, left: 10),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue, width: 1.0),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButton2<String>(
-                          value: _selectedValue,
+                            Container(
+                              padding:
+                                  const EdgeInsets.only(right: 3, left: 10),
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.blue, width: 1.0),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: DropdownButton2<String>(
+                                value: _selectedValue,
+                                buttonStyleData: ButtonStyleData(
+                                  // width: 200, // 👈 WIDTH OF THE BUTTON (adjust as needed)
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10),
+                                ),
+                                dropdownStyleData: DropdownStyleData(
+                                  width: 300,
+                                  // 👈 WIDTH OF DROPDOWN MENU (set your custom width)
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF1E1E1E),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                style: const TextStyle(color: Colors.white),
+                                items: [
+                                  'All License',
+                                  'Location Count(Geocoding & Hazard)',
+                                  'Location Improvement Cost',
+                                  'User License'
+                                ].map<DropdownMenuItem<String>>((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  if (newValue != null) {
+                                    setState(() {
+                                      _selectedValue = newValue;
+                                    });
 
-                          buttonStyleData: ButtonStyleData(
-                            // width: 200, // 👈 WIDTH OF THE BUTTON (adjust as needed)
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                          ),
+                                    final valueMap = {
+                                      'All License': '',
+                                      'Location Count(Geocoding & Hazard)':
+                                          'location_hazard',
+                                      'Location Improvement Cost':
+                                          'location_improvement_cost',
+                                      'User License': 'user_cost',
+                                    };
 
-                          dropdownStyleData: DropdownStyleData(
-                            width: 300, // 👈 WIDTH OF DROPDOWN MENU (set your custom width)
-                            decoration: BoxDecoration(
-                              color: Color(0xFF1E1E1E),
-                              borderRadius: BorderRadius.circular(8),
+                                    filterItem = valueMap[newValue] ?? '';
+
+                                    if (_tabController.index == 0) {
+                                      paymentProvider.fetchTransactionList(
+                                        context,
+                                        filterItem,
+                                        '',
+                                      );
+                                    } else {
+                                      invoiceProvider.fetchInvoiceList(
+                                        context,
+                                        filterItem,
+                                      );
+                                    }
+                                  }
+                                },
+                                underline: const SizedBox(),
+                              ),
                             ),
-                          ),
-
-                          style: const TextStyle(color: Colors.white),
-
-                          items: [
-                            'All License',
-                            'Location Count(Geocoding & Hazard)',
-                            'Location Improvement Cost',
-                            'User License'
-                          ].map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                _selectedValue = newValue;
-                              });
-
-                              final valueMap = {
-                                'All License': '',
-                                'Location Count(Geocoding & Hazard)': 'location_hazard',
-                                'Location Improvement Cost': 'location_improvement_cost',
-                                'User License': 'user_cost',
-                              };
-
-                              filterItem = valueMap[newValue] ?? '';
-
-                              if (_tabController.index == 0) {
-                                paymentProvider.fetchTransactionList(
-                                  context,
-                                  filterItem,
-                                  '',
-                                );
-                              } else {
-                                invoiceProvider.fetchInvoiceList(
-                                  context,
-                                  filterItem,
-                                );
-                              }
-                            }
-                          },
-
-                          underline: const SizedBox(),
-                        ),
-                      ),
-
-                        // Container(
-                            //   padding:
-                            //       const EdgeInsets.only(right: 3, left: 10),
-                            //   decoration: BoxDecoration(
-                            //     border:
-                            //         Border.all(color: Colors.blue, width: 1.0),
-                            //     borderRadius: BorderRadius.circular(8),
-                            //   ),
-                            //   child: DropdownButton2<String>(
-                            //     value: _selectedValue,
-                            //
-                            //     dropdownStyleData: DropdownStyleData(
-                            //       decoration: BoxDecoration(
-                            //         color: const Color(0xFF1E1E1E),
-                            //         borderRadius: BorderRadius.circular(8),
-                            //       ),
-                            //     ),
-                            //     style: const TextStyle(color: Colors.white),
-                            //     items: [
-                            //       'All License',
-                            //       // 'Event Count Cost',
-                            //       // 'Location Count(Geocoding)',
-                            //       'Location Count(Geocoding & Hazard)',
-                            //       'Location Improvement Cost',
-                            //       'User License'
-                            //     ].map<DropdownMenuItem<String>>((String value) {
-                            //       return DropdownMenuItem<String>(
-                            //         value: value,
-                            //         child: Text(value),
-                            //       );
-                            //     }).toList(),
-                            //     onChanged: (String? newValue) {
-                            //       if (newValue != null) {
-                            //         setState(() {
-                            //           _selectedValue = newValue;
-                            //         });
-                            //
-                            //         final valueMap = {
-                            //           'All License': '',
-                            //           // 'Event Count Cost': 'event_cost',
-                            //           // 'Location Count(Geocoding)':
-                            //           //     'location_geocoding',
-                            //           'Location Count(Geocoding & Hazard)':
-                            //               'location_hazard',
-                            //           'Location Improvement Cost':
-                            //               'location_improvement_cost',
-                            //           'User License': 'user_cost',
-                            //         };
-                            //         setState(() {
-                            //           filterItem = valueMap[newValue] ?? '';
-                            //         });
-                            //
-                            //         if (_tabController.index == 0) {
-                            //           paymentProvider.fetchTransactionList(
-                            //             context,
-                            //             valueMap[newValue] ?? '',
-                            //             '',
-                            //           );
-                            //         } else {
-                            //           invoiceProvider.fetchInvoiceList(
-                            //             context,
-                            //             valueMap[newValue] ?? '',
-                            //           );
-                            //         }
-                            //       }
-                            //     },
-                            //     underline:
-                            //         const SizedBox(), // 👈 hides the underline
-                            //     // dropdownColor: const Color(0xFF1E1E1E),
-                            //   ),
-                            // ),
                             const SizedBox(width: 10),
                             Container(
                               width: 130,
@@ -924,7 +870,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      invoiceData.planName ?? '',
+                                      invoiceData.planName ?? 'Gifted Plan',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(

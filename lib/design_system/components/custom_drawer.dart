@@ -224,7 +224,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   messageTextSpans: [
                                     TextSpan(
                                       text:
-                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
+                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                                       style: typography.Body1,
                                     ),
                                     // tappable
@@ -361,8 +361,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             MaterialPageRoute(
                                 builder: (_) => DashboardScreen(
                                       newUser: "true",
-                                     defaultTab: "dashboard",
-
+                                      defaultTab: "dashboard",
                                     )),
                           );
                         },
@@ -540,23 +539,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               "false")
                         ...[]
                       else ...[
-                        if (Platform.isAndroid)
-                          _buildDrawerItem(
-                            context,
-                            provider,
-                            title: "Purchase License",
-                            icon: Icons.description,
-                            onTap: () {
-                              provider.setSelectedItem("purchase_license");
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => PurchaseLicensePage()),
-                              );
-                            },
-                            isSelected:
-                                provider.selectedItem == "purchase_license",
-                          ),
+                        // if (Platform.isAndroid)
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Purchase License",
+                          icon: Icons.description,
+                          onTap: () {
+                            provider.setSelectedItem("purchase_license");
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => PurchaseLicensePage()),
+                            );
+                          },
+                          isSelected:
+                              provider.selectedItem == "purchase_license",
+                        ),
                         _buildDrawerItem(
                           context,
                           provider,
@@ -960,123 +959,208 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         icon: Icon(Icons.logout_rounded,
                             color: Colors.red.withOpacity(0.8)),
                         onPressed: () {
-                          showDialog(
+                          showModalBottomSheet(
                             context: context,
+                            backgroundColor: Colors.transparent,
                             builder: (context) {
-                              return AlertDialog(
-                                title: Text(
-                                  LanguageService.getTranslated(
-                                      context, "logout"),
-                                  style: typography.Body1.copyWith(
-                                      color: iconColor),
-                                ),
-                                content: Text(
-                                  LanguageService.getTranslated(
-                                      context, "confirm_logout"),
-                                  style: typography.Body1.copyWith(
-                                      color: iconColor),
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text(
-                                      LanguageService.getTranslated(
-                                          context, "cancel"),
-                                      style: typography.Body1.copyWith(
-                                          color: iconColor),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: Colors.red,
-
-                                      foregroundColor: Colors.white,
-                                      // ⚪ White text (also sets overlay ripple)
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
+                              return StatefulBuilder(
+                                builder: (context, setSheetState) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Theme.of(context).colorScheme.surface,
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(20),
+                                        topRight: Radius.circular(20),
                                       ),
                                     ),
-                                    onPressed: () async {
-                                      try {
-                                        setState(() => isLoggingOut = true);
-
-                                        /// 1️⃣ Google SignOut (ONLY if signed in)
-                                        // final GoogleSignIn googleSignIn =
-                                        //     GoogleSignIn();
-                                        //
-                                        // if (await googleSignIn.isSignedIn()) {
-                                        //   await googleSignIn.signOut();
-                                        //
-                                        //   // ⚠️ Do NOT call disconnect() on Android unless required
-                                        //   // await googleSignIn.disconnect(); ❌ REMOVE
-                                        // }
-
-                                        /// 2️⃣ Firebase sign out (AFTER Google)
-                                        await FirebaseAuth.instance.signOut();
-
-                                        /// 3️⃣ Clear local state
-                                        final prefs = await SharedPreferences
-                                            .getInstance();
-                                        await prefs.setBool(
-                                            'isFirstTime', false);
-
-                                        await authNotifier.signOut();
-
-                                        Provider.of<DrawerSelectionProvider>(
-                                          context,
-                                          listen: false,
-                                        ).setSelectedItem("dashboard");
-
-                                        /// 4️⃣ Navigate cleanly
-                                        if (!context.mounted) return;
-
-                                        Navigator.pushAndRemoveUntil(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) => SplashScreen()),
-                                          (_) => false,
-                                        );
-                                      } catch (e, stack) {
-                                        debugPrint("Logout error: $e");
-                                        debugPrintStack(stackTrace: stack);
-
-                                        if (!context.mounted) return;
-
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                "Logout failed. Please try again."),
+                                    padding: const EdgeInsets.fromLTRB(
+                                        24, 16, 24, 32),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // ─── Drag Handle ───
+                                        Container(
+                                          width: 40,
+                                          height: 4,
+                                          margin:
+                                              const EdgeInsets.only(bottom: 20),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade600,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
-                                        );
-                                      } finally {
-                                        if (mounted)
-                                          setState(() => isLoggingOut = false);
-                                      }
-                                    },
-                                    child: isLoggingOut
-                                        ? SizedBox(
-                                            height: 18,
-                                            width: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.0,
-                                              color: iconColor,
+                                        ),
+
+                                        // ─── Icon ───
+                                        Container(
+                                          width: 56,
+                                          height: 56,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.logout_rounded,
+                                            color: Colors.red,
+                                            size: 28,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+
+                                        // ─── Title ───
+                                        Text(
+                                          LanguageService.getTranslated(
+                                              context, "logout"),
+                                          style: typography.Body1.copyWith(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+
+                                        // ─── Message ───
+                                        Text(
+                                          LanguageService.getTranslated(
+                                              context, "confirm_logout"),
+                                          textAlign: TextAlign.center,
+                                          style: typography.Body1.copyWith(
+                                            color: Colors.white54,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 28),
+
+                                        // ─── Logout Button ───
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 50,
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
                                             ),
-                                          )
-                                        : Text(
-                                            LanguageService.getTranslated(
-                                                context, "logout"),
-                                            style: typography.Body1.copyWith(
-                                                color: iconColor,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold),
+                                            onPressed: isLoggingOut
+                                                ? null
+                                                : () async {
+                                                    try {
+                                                      setSheetState(() =>
+                                                          isLoggingOut = true);
+
+                                                      await FirebaseAuth
+                                                          .instance
+                                                          .signOut();
+
+                                                      final prefs =
+                                                          await SharedPreferences
+                                                              .getInstance();
+                                                      await prefs.setBool(
+                                                          'isFirstTime', false);
+
+                                                      await authNotifier
+                                                          .signOut();
+
+                                                      Provider.of<
+                                                          DrawerSelectionProvider>(
+                                                        context,
+                                                        listen: false,
+                                                      ).setSelectedItem(
+                                                          "dashboard");
+
+                                                      if (!context.mounted)
+                                                        return;
+
+                                                      Navigator
+                                                          .pushAndRemoveUntil(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                SplashScreen()),
+                                                        (_) => false,
+                                                      );
+                                                    } catch (e, stack) {
+                                                      debugPrint(
+                                                          "Logout error: $e");
+                                                      debugPrintStack(
+                                                          stackTrace: stack);
+
+                                                      if (!context.mounted)
+                                                        return;
+
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                              "Logout failed. Please try again."),
+                                                        ),
+                                                      );
+                                                    } finally {
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            isLoggingOut =
+                                                                false);
+                                                      }
+                                                    }
+                                                  },
+                                            child: isLoggingOut
+                                                ? const SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    LanguageService
+                                                        .getTranslated(
+                                                            context, "logout"),
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
                                           ),
-                                  ),
-                                ],
+                                        ),
+                                        const SizedBox(height: 12),
+
+                                        // ─── Cancel Button ───
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 50,
+                                          child: OutlinedButton(
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(
+                                                  color: Colors.white24),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: Text(
+                                              LanguageService.getTranslated(
+                                                  context, "cancel"),
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               );
                             },
                           );
@@ -1084,6 +1168,136 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
+                  // Consumer<AuthNotifier>(
+                  //   builder: (context, authNotifier, child) {
+                  //     return IconButton(
+                  //       icon: Icon(Icons.logout_rounded,
+                  //           color: Colors.red.withOpacity(0.8)),
+                  //       onPressed: () {
+                  //         showDialog(
+                  //           context: context,
+                  //           builder: (context) {
+                  //             return AlertDialog(
+                  //               title: Text(
+                  //                 LanguageService.getTranslated(
+                  //                     context, "logout"),
+                  //                 style: typography.Body1.copyWith(
+                  //                     color: iconColor),
+                  //               ),
+                  //               content: Text(
+                  //                 LanguageService.getTranslated(
+                  //                     context, "confirm_logout"),
+                  //                 style: typography.Body1.copyWith(
+                  //                     color: iconColor),
+                  //               ),
+                  //               actions: <Widget>[
+                  //                 TextButton(
+                  //                   onPressed: () {
+                  //                     Navigator.pop(context);
+                  //                   },
+                  //                   child: Text(
+                  //                     LanguageService.getTranslated(
+                  //                         context, "cancel"),
+                  //                     style: typography.Body1.copyWith(
+                  //                         color: iconColor),
+                  //                   ),
+                  //                 ),
+                  //                 TextButton(
+                  //                   style: TextButton.styleFrom(
+                  //                     backgroundColor: Colors.red,
+                  //
+                  //                     foregroundColor: Colors.white,
+                  //                     // ⚪ White text (also sets overlay ripple)
+                  //                     padding: const EdgeInsets.symmetric(
+                  //                         horizontal: 20, vertical: 12),
+                  //                     shape: RoundedRectangleBorder(
+                  //                       borderRadius: BorderRadius.circular(6),
+                  //                     ),
+                  //                   ),
+                  //                   onPressed: () async {
+                  //                     try {
+                  //                       setState(() => isLoggingOut = true);
+                  //
+                  //                       /// 1️⃣ Google SignOut (ONLY if signed in)
+                  //                       // final GoogleSignIn googleSignIn =
+                  //                       //     GoogleSignIn();
+                  //                       //
+                  //                       // if (await googleSignIn.isSignedIn()) {
+                  //                       //   await googleSignIn.signOut();
+                  //                       //
+                  //                       //   // ⚠️ Do NOT call disconnect() on Android unless required
+                  //                       //   // await googleSignIn.disconnect(); ❌ REMOVE
+                  //                       // }
+                  //
+                  //                       /// 2️⃣ Firebase sign out (AFTER Google)
+                  //                       await FirebaseAuth.instance.signOut();
+                  //
+                  //                       /// 3️⃣ Clear local state
+                  //                       final prefs = await SharedPreferences
+                  //                           .getInstance();
+                  //                       await prefs.setBool(
+                  //                           'isFirstTime', false);
+                  //
+                  //                       await authNotifier.signOut();
+                  //
+                  //                       Provider.of<DrawerSelectionProvider>(
+                  //                         context,
+                  //                         listen: false,
+                  //                       ).setSelectedItem("dashboard");
+                  //
+                  //                       /// 4️⃣ Navigate cleanly
+                  //                       if (!context.mounted) return;
+                  //
+                  //                       Navigator.pushAndRemoveUntil(
+                  //                         context,
+                  //                         MaterialPageRoute(
+                  //                             builder: (_) => SplashScreen()),
+                  //                         (_) => false,
+                  //                       );
+                  //                     } catch (e, stack) {
+                  //                       debugPrint("Logout error: $e");
+                  //                       debugPrintStack(stackTrace: stack);
+                  //
+                  //                       if (!context.mounted) return;
+                  //
+                  //                       ScaffoldMessenger.of(context)
+                  //                           .showSnackBar(
+                  //                         const SnackBar(
+                  //                           content: Text(
+                  //                               "Logout failed. Please try again."),
+                  //                         ),
+                  //                       );
+                  //                     } finally {
+                  //                       if (mounted)
+                  //                         setState(() => isLoggingOut = false);
+                  //                     }
+                  //                   },
+                  //                   child: isLoggingOut
+                  //                       ? SizedBox(
+                  //                           height: 18,
+                  //                           width: 18,
+                  //                           child: CircularProgressIndicator(
+                  //                             strokeWidth: 2.0,
+                  //                             color: iconColor,
+                  //                           ),
+                  //                         )
+                  //                       : Text(
+                  //                           LanguageService.getTranslated(
+                  //                               context, "logout"),
+                  //                           style: typography.Body1.copyWith(
+                  //                               color: iconColor,
+                  //                               fontSize: 16,
+                  //                               fontWeight: FontWeight.bold),
+                  //                         ),
+                  //                 ),
+                  //               ],
+                  //             );
+                  //           },
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
 
                   if (showCorporateManagementTab ||
                       showNonCorporateManagementTab ||

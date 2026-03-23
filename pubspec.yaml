@@ -1,7 +1,7 @@
 name: RiskSphere
 description: "A new Flutter project."
 publish_to: 'none'
-version: 6.0.0+116
+version: 6.3.0+116
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
@@ -45,7 +45,7 @@ dependencies:
   permission_handler: ^11.3.1
   material_symbols_icons: ^4.2801.1
   flutter_speed_dial: ^7.0.0
-  firebase_messaging: ^15.2.0  # Added version
+  firebase_messaging: ^15.2.0
   flutter_local_notifications: ^18.0.1
   markers_cluster_google_maps_flutter: ^0.1.0+2
   lottie: ^3.1.2
@@ -64,7 +64,7 @@ dependencies:
   dotted_border:
   timeline_tile: ^2.0.0
   flutter_screen_capture: ^1.0.1
-  connectivity_plus: ^5.0.2  # Added version
+  connectivity_plus: ^5.0.2
   flutter_keyboard_visibility: ^6.0.0
   flutter_stripe: ^10.1.1
   tutorial_coach_mark: ^1.3.0
@@ -87,18 +87,16 @@ dependencies:
   firebase_app_check:
   app_links:
   flutter_sharing_intent: ^2.0.4
-
-
+  firebase_crashlytics:
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutterfire_cli: ^1.1.0
-  # Remove flutter_lints: ^2.0.0 (deprecated)
 
 dependency_overrides:
-  intl: ^0.20.2  # Add this to match flutter_localizations
+  intl: ^0.20.2
   win32: ^5.5.4
 
 
@@ -108,62 +106,19 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   image_path: "assets/images/app_icon.png"
   adaptive_icon_foreground: "assets/images/app_icon.png"
-  min_sdk_android: 21 # android min sdk min:16, default 21
-  adaptive_icon_background: "#000000" # adaptive icon background color
-
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
+  min_sdk_android: 21
+  adaptive_icon_background: "#000000"
   flutter_lints: ^2.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
     - assets/fonts/
     - assets/translations/
     - assets/proto/
     - assets/lottie/
-  #   - images/a_dot_ham.jpeg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
 
 
   fonts:

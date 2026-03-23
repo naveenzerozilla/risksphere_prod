@@ -8,6 +8,7 @@ import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../payments/purchase_license.dart';
+import 'package:http/http.dart' as http;
 
 class MySovList extends StatefulWidget {
   final String? status;
@@ -36,6 +37,7 @@ class MySovList extends StatefulWidget {
 class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   Timer? _refreshTimer;
   static bool _hasActiveTimer = false;
+  bool _isSharingSov = false;
   bool _isExpanded = false;
   bool sovDeleteStatus = false;
   bool _showNotificationDot = true;
@@ -47,7 +49,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   String isMaintenance = "";
   Set<int> expandedIndexes = {};
   bool isHasAnyPlan = false;
-
+  DateTime? _selectedDeadline;
   String? trialMap;
   Screens _selectedScreen = Screens.locationList;
   TextEditingController _sovNameEditNameController = TextEditingController();
@@ -56,6 +58,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   int? touchedIndex; // For showing overlay info
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _showOverlay_mylocation = false;
+  bool _isSendingInvite1 = false;
   int requestActionIndex = 0;
   bool _isLoading = false;
   List<roleModel.Roles> filterRoleList = [];
@@ -2672,394 +2675,338 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       // handled by Material
       builder: (BuildContext dialogContext) {
         return Material(
-            color: const Color(0xFF121212),
-            elevation: 12,
-            // 👈 THIS IS YOUR SHADOW
-            shadowColor: Colors.black.withOpacity(0.6),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20), // 👈 LEFT CORNER
-              topRight: Radius.circular(20), // 👈 RIGHT CORNER
-            ),
-            child: StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 16,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade600,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+          color: const Color(0xFF121212),
+          elevation: 12,
+          shadowColor: Colors.black.withOpacity(0.6),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20), // 👈 LEFT CORNER
+            topRight: Radius.circular(20), // 👈 RIGHT CORNER
+          ),
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade600,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        Text(
-                          buildSovTitle(sovs),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      ),
+                      Text(
+                        buildSovTitle(sovs),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        SizedBox(height: 4),
+                      ),
+                      const SizedBox(height: 10),
 
-                        // const Text(
-                        //   "Share SOV",
-                        //   style: TextStyle(
-                        //     fontSize: 20,
-                        //     fontWeight: FontWeight.bold,
-                        //     color: Colors.white,
-                        //   ),
-                        // ),
-
-                        TextField(
-                          controller: _userSearchController,
-                          onChanged: (value) => _onSearchChanged(
-                              value, setState, _selectedOption.name),
-                          decoration: InputDecoration(
-                            labelText: "Search user",
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
+                      TextField(
+                        controller: _userSearchController,
+                        onChanged: (value) => _onSearchChanged(
+                            value, setState, _selectedOption.name),
+                        decoration: InputDecoration(
+                          labelText: "Search user",
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
                         ),
-                        const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 16),
 
-                        if (_isSearching)
-                          const Center(child: CircularProgressIndicator())
-                        else if (_autocompleteUsersList.isNotEmpty)
-                          SizedBox(
-                            height: 300,
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: List.generate(
-                                    _autocompleteUsersList.length, (index) {
-                                  final user = _autocompleteUsersList[index];
-                                  final isSelected =
-                                      _selectedIndexes.contains(index);
-                                  final selectedRole = _selectedRoles[index];
-                                  final deadline = _selectedDeadlines[index];
+                      if (_isSearching)
+                        const Center(child: CircularProgressIndicator())
+                      else if (_autocompleteUsersList.isNotEmpty)
+                        SizedBox(
+                          height: 300,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: List.generate(
+                                  _autocompleteUsersList.length, (index) {
+                                final user = _autocompleteUsersList[index];
+                                final isSelected =
+                                    _selectedIndexes.contains(index);
+                                final selectedRole = _selectedRoles[index];
+                                final deadline = _selectedDeadlines[index];
 
-                                  String? roleError;
-                                  String? deadlineError;
+                                String? roleError;
+                                String? deadlineError;
 
-                                  bool canShareAll() {
-                                    for (int i in _selectedIndexes) {
-                                      if (_selectedRoles[i] == null ||
-                                          _selectedDeadlines[i] == null) {
-                                        return false;
-                                      }
+                                bool canShareAll() {
+                                  for (int i in _selectedIndexes) {
+                                    if (_selectedRoles[i] == null ||
+                                        _selectedDeadlines[i] == null) {
+                                      return false;
                                     }
-                                    return _selectedIndexes.isNotEmpty;
                                   }
+                                  return _selectedIndexes.isNotEmpty;
+                                }
 
-                                  void updateSelectedUsersJson() {
-                                    selectedUsersJson.clear();
-                                    for (var i in _selectedIndexes) {
-                                      final selectedUser =
-                                          _autocompleteUsersList[i];
-                                      final selectedRole = _selectedRoles[i];
-                                      final selectedDeadline =
-                                          _selectedDeadlines[i];
+                                void updateSelectedUsersJson() {
+                                  selectedUsersJson.clear();
+                                  for (var i in _selectedIndexes) {
+                                    final selectedUser =
+                                        _autocompleteUsersList[i];
+                                    final selectedRole = _selectedRoles[i];
+                                    final selectedDeadline =
+                                        _selectedDeadlines[i];
 
-                                      if (selectedRole != null &&
-                                          selectedDeadline != null) {
-                                        final roleObj =
-                                            selectedUser.roles!.firstWhere(
-                                          (r) => r.name == selectedRole,
-                                        );
+                                    if (selectedRole != null &&
+                                        selectedDeadline != null) {
+                                      final roleObj =
+                                          selectedUser.roles!.firstWhere(
+                                        (r) => r.name == selectedRole,
+                                      );
 
-                                        selectedUsersJson.add({
-                                          "user_id": selectedUser.userid ?? '',
-                                          "role": {
-                                            // "role_id": roleObj.role ?? '',
-                                            "role_id": user
-                                                .lastSelectedRole!.role
-                                                .toString(),
-                                            "role_name": roleObj.name ?? '',
-                                          },
-                                          "share_expiry": selectedDeadline
-                                              .toUtc()
-                                              .toIso8601String(),
-                                        });
-                                      }
+                                      selectedUsersJson.add({
+                                        "user_id": selectedUser.userid ?? '',
+                                        "role": {
+                                          "role_id": user.lastSelectedRole!.role
+                                              .toString(),
+                                          "role_name": roleObj.name ?? '',
+                                        },
+                                        "share_expiry": selectedDeadline
+                                            .toUtc()
+                                            .toIso8601String(),
+                                      });
                                     }
-
-                                    // Enable/disable Share button
-                                    setState(() {
-                                      _isShareEnabled = canShareAll();
-                                    });
-
-                                    debugPrint(
-                                        "✅ Selected Users JSON: $selectedUsersJson");
                                   }
+                                  setState(() {
+                                    _isShareEnabled = canShareAll();
+                                  });
+                                  debugPrint(
+                                      "✅ Selected Users JSON: $selectedUsersJson");
+                                }
 
-                                  void toggleSelection(bool? value) {
-                                    setState(() {
-                                      if (value == true) {
-                                        _selectedIndexes.add(index);
-                                      } else {
-                                        _selectedIndexes.remove(index);
-                                        _selectedRoles[index] = null;
-                                        _selectedDeadlines[index] = null;
-                                      }
-                                      updateSelectedUsersJson();
-                                    });
-                                  }
+                                void toggleSelection(bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      _selectedIndexes.add(index);
+                                    } else {
+                                      _selectedIndexes.remove(index);
+                                      _selectedRoles[index] = null;
+                                      _selectedDeadlines[index] = null;
+                                    }
+                                    updateSelectedUsersJson();
+                                  });
+                                }
 
-                                  return StatefulBuilder(
-                                    builder: (context, setInnerState) {
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 8),
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1E1E1E),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? Colors.blue
-                                                : Colors.grey.shade700,
-                                            width: 1.5,
-                                          ),
+                                return StatefulBuilder(
+                                  builder: (context, setInnerState) {
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1E1E1E),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.blue
+                                              : Colors.grey.shade700,
+                                          width: 1.5,
                                         ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                CircleAvatar(
-                                                  backgroundColor:
-                                                      Colors.grey[800],
-                                                  child: Text(
-                                                    (user.name != null &&
-                                                            user.name!
-                                                                .isNotEmpty)
-                                                        ? user.name!
-                                                            .substring(0, 2)
-                                                            .toUpperCase()
-                                                        : "?",
-                                                    style: const TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    user.name ?? "Unknown",
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                                user.isConnected == false &&
-                                                        user.belongsToCompany ==
-                                                            false &&
-                                                        user.isIndividual ==
-                                                            false
-                                                    ? Container()
-                                                    : Checkbox(
-                                                        value: isSelected,
-                                                        activeColor:
-                                                            const Color(
-                                                                0xFF90CAF9),
-                                                        onChanged: (value) =>
-                                                            toggleSelection(
-                                                                value),
-                                                      )
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: const Color(
-                                                          0xFF4FC3F7)),
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              CircleAvatar(
+                                                backgroundColor:
+                                                    Colors.grey[800],
                                                 child: Text(
-                                                  user.isIndividual == false
-                                                      ? "Other Company"
-                                                      : "Individual",
-                                                  style: TextStyle(
-                                                    color: Color(0xFF4FC3F7),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
+                                                  (user.name != null &&
+                                                          user.name!.isNotEmpty)
+                                                      ? user.name!
+                                                          .substring(0, 2)
+                                                          .toUpperCase()
+                                                      : "?",
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  user.name ?? "Unknown",
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                    color: Colors.white,
                                                   ),
                                                 ),
                                               ),
+                                              user.isConnected == false &&
+                                                      user.belongsToCompany ==
+                                                          false &&
+                                                      user.isIndividual == false
+                                                  ? Container()
+                                                  : Checkbox(
+                                                      value: isSelected,
+                                                      activeColor: const Color(
+                                                          0xFF90CAF9),
+                                                      onChanged: (value) =>
+                                                          toggleSelection(
+                                                              value),
+                                                    )
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: const Color(
+                                                        0xFF4FC3F7)),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                user.isIndividual == false
+                                                    ? "Other Company"
+                                                    : "Individual",
+                                                style: const TextStyle(
+                                                  color: Color(0xFF4FC3F7),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
                                             ),
-                                            const SizedBox(height: 8),
-                                            if (user.isConnected == false &&
-                                                user.belongsToCompany ==
-                                                    false &&
-                                                user.isIndividual == false) ...[
-                                              const SizedBox(height: 12),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          if (user.isConnected == false &&
+                                              user.belongsToCompany == false &&
+                                              user.isIndividual == false) ...[
+                                            const SizedBox(height: 12),
+                                            Consumer<SOVListProvider>(
+                                              builder: (context, provider, _) {
+                                                final isRequested = provider
+                                                    .requestedUserIds
+                                                    .contains(user.userid);
 
-// --- Connect Button ---
-                                              Consumer<SOVListProvider>(
-                                                builder:
-                                                    (context, provider, _) {
-                                                  final isRequested = provider
-                                                      .requestedUserIds
-                                                      .contains(user.userid);
-
-                                                  return SizedBox(
-                                                    width: double.infinity,
-                                                    height: 44,
-                                                    child: OutlinedButton.icon(
-                                                      onPressed: isRequested
-                                                          ? null
-                                                          : () {
-                                                              _showRequestConnectionDialog(
-                                                                context,
-                                                                userId:
-                                                                    user.userid ??
-                                                                        "",
-                                                                userName: user
-                                                                        .name ??
-                                                                    "Naveen",
-                                                                userRole: user
-                                                                        .role ??
-                                                                    "Insurance Broker",
-                                                                sovName:
-                                                                    "SOV Name",
-                                                              );
-                                                            },
-                                                      icon: Icon(
-                                                        isRequested
-                                                            ? Icons
-                                                                .check_circle_outline
-                                                            : Icons
-                                                                .person_add_alt_1,
+                                                return SizedBox(
+                                                  width: double.infinity,
+                                                  height: 44,
+                                                  child: OutlinedButton.icon(
+                                                    onPressed: isRequested
+                                                        ? null
+                                                        : () {
+                                                            _showRequestConnectionDialog(
+                                                              context,
+                                                              userId:
+                                                                  user.userid ??
+                                                                      "",
+                                                              userName:
+                                                                  user.name ??
+                                                                      "Naveen",
+                                                              userRole: user
+                                                                      .role ??
+                                                                  "Insurance Broker",
+                                                              sovName:
+                                                                  "SOV Name",
+                                                            );
+                                                          },
+                                                    icon: Icon(
+                                                      isRequested
+                                                          ? Icons
+                                                              .check_circle_outline
+                                                          : Icons
+                                                              .person_add_alt_1,
+                                                      color: isRequested
+                                                          ? Colors.grey
+                                                          : const Color(
+                                                              0xFF4FC3F7),
+                                                    ),
+                                                    label: Text(
+                                                      isRequested
+                                                          ? "Request Sent"
+                                                          : "Connect",
+                                                      style: TextStyle(
+                                                        color: isRequested
+                                                            ? Colors.grey
+                                                            : const Color(
+                                                                0xFF4FC3F7),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    style: OutlinedButton
+                                                        .styleFrom(
+                                                      side: BorderSide(
                                                         color: isRequested
                                                             ? Colors.grey
                                                             : const Color(
                                                                 0xFF4FC3F7),
                                                       ),
-                                                      label: Text(
-                                                        isRequested
-                                                            ? "Request Sent"
-                                                            : "Connect",
-                                                        style: TextStyle(
-                                                          color: isRequested
-                                                              ? Colors.grey
-                                                              : const Color(
-                                                                  0xFF4FC3F7),
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      style: OutlinedButton
-                                                          .styleFrom(
-                                                        side: BorderSide(
-                                                          color: isRequested
-                                                              ? Colors.grey
-                                                              : const Color(
-                                                                  0xFF4FC3F7),
-                                                        ),
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
                                                       ),
                                                     ),
-                                                  );
-                                                },
-                                              ),
-                                            ] else ...[
-                                              // Role dropdown (enabled only if checkbox selected)
-                                              const SizedBox(height: 12),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ] else ...[
+                                            const SizedBox(height: 12),
+                                            IgnorePointer(
+                                              ignoring: !isSelected,
+                                              child: Opacity(
+                                                opacity: isSelected ? 1 : 0.4,
+                                                child: Builder(
+                                                  builder: (context) {
+                                                    final roles =
+                                                        user.roles ?? [];
 
-                                              IgnorePointer(
-                                                ignoring: !isSelected,
-                                                child: Opacity(
-                                                  opacity: isSelected ? 1 : 0.4,
-                                                  child: Builder(
-                                                    builder: (context) {
-                                                      final roles =
-                                                          user.roles ?? [];
+                                                    // 🔥 Reset when unchecked
+                                                    if (!isSelected) {
+                                                      _selectedRoles[index] =
+                                                          null;
+                                                    }
 
-                                                      // 🔥 Reset when unchecked
-                                                      if (!isSelected) {
-                                                        _selectedRoles[index] =
-                                                            null;
-                                                      }
+                                                    // 🔥 CASE 1: Only ONE role → show STATIC field but full width
+                                                    if (isSelected &&
+                                                        roles.length == 1) {
+                                                      final roleName =
+                                                          roles.first.name ??
+                                                              "";
 
-                                                      // 🔥 CASE 1: Only ONE role → show STATIC field but full width
-                                                      if (isSelected &&
-                                                          roles.length == 1) {
-                                                        final roleName =
-                                                            roles.first.name ??
-                                                                "";
+                                                      // Auto assign when checkbox selected
+                                                      _selectedRoles[index] =
+                                                          roleName;
 
-                                                        // Auto assign when checkbox selected
-                                                        _selectedRoles[index] =
-                                                            roleName;
-
-                                                        return Container(
-                                                          width:
-                                                              double.infinity,
-                                                          // ⬅ FULL WIDTH
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      12,
-                                                                  vertical: 14),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            border: Border.all(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade700),
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        8),
-                                                          ),
-                                                          child: Text(
-                                                            roleName,
-                                                            style:
-                                                                const TextStyle(
-                                                                    color: Colors
-                                                                        .white),
-                                                          ),
-                                                        );
-                                                      }
-
-                                                      // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
                                                       return Container(
                                                         width: double.infinity,
+                                                        // ⬅ FULL WIDTH
                                                         padding:
                                                             const EdgeInsets
                                                                 .symmetric(
-                                                                horizontal: 12),
+                                                                horizontal: 12,
+                                                                vertical: 14),
                                                         decoration:
                                                             BoxDecoration(
                                                           border: Border.all(
@@ -3069,139 +3016,22 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                               BorderRadius
                                                                   .circular(8),
                                                         ),
-                                                        child:
-                                                            DropdownButtonHideUnderline(
-                                                          child: DropdownButton<
-                                                              String>(
-                                                            value:
-                                                                _selectedRoles[
-                                                                    index],
-                                                            hint: const Text(
-                                                              'Select Role',
-                                                              style: TextStyle(
+                                                        child: Text(
+                                                          roleName,
+                                                          style:
+                                                              const TextStyle(
                                                                   color: Colors
-                                                                      .white70),
-                                                            ),
-                                                            dropdownColor:
-                                                                const Color(
-                                                                    0xFF2C2C2C),
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .arrow_drop_down,
-                                                              color: Colors
-                                                                  .white70,
-                                                            ),
-                                                            isExpanded: true,
-                                                            items: roles
-                                                                .map(
-                                                                  (role) =>
-                                                                      DropdownMenuItem<
-                                                                          String>(
-                                                                    value: role
-                                                                        .name,
-                                                                    child: Text(
-                                                                      role.name ??
-                                                                          '',
-                                                                      style: const TextStyle(
-                                                                          color:
-                                                                              Colors.white),
-                                                                    ),
-                                                                  ),
-                                                                )
-                                                                .toList(),
-                                                            onChanged:
-                                                                isSelected
-                                                                    ? (value) {
-                                                                        setInnerState(
-                                                                            () {
-                                                                          _selectedRoles[index] =
-                                                                              value;
-                                                                          roleError =
-                                                                              null;
-                                                                        });
-
-                                                                        updateSelectedUsersJson();
-                                                                      }
-                                                                    : null,
-                                                          ),
+                                                                      .white),
                                                         ),
                                                       );
-                                                    },
-                                                  ),
-                                                ),
-                                              ),
+                                                    }
 
-                                              if (roleError != null)
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 4, left: 12),
-                                                  child: Text(
-                                                    roleError!,
-                                                    style: const TextStyle(
-                                                        color: Colors.redAccent,
-                                                        fontSize: 12),
-                                                  ),
-                                                ),
-
-                                              const SizedBox(height: 12),
-                                              const Text("Set Deadline",
-                                                  style: TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.grey)),
-                                              const SizedBox(height: 6),
-
-                                              // Deadline picker (enabled only if checkbox selected)
-                                              IgnorePointer(
-                                                ignoring: !isSelected,
-                                                child: Opacity(
-                                                  opacity: isSelected ? 1 : 0.4,
-                                                  child: InkWell(
-                                                    onTap: () async {
-                                                      if (!isSelected) return;
-
-                                                      final now =
-                                                          DateTime.now();
-
-                                                      final pickedDate =
-                                                          await showDatePicker(
-                                                        context: context,
-                                                        initialDate:
-                                                            _selectedDeadlines[
-                                                                    index] ??
-                                                                now,
-                                                        firstDate: DateTime(
-                                                            now.year,
-                                                            now.month,
-                                                            now.day),
-                                                        lastDate:
-                                                            DateTime(2100),
-                                                      );
-
-                                                      if (pickedDate != null) {
-                                                        // 🔥 IMPORTANT: Remove time part completely
-                                                        final cleanDate =
-                                                            DateTime(
-                                                          pickedDate.year,
-                                                          pickedDate.month,
-                                                          pickedDate.day,
-                                                        );
-
-                                                        setState(() {
-                                                          _selectedDeadlines[
-                                                                  index] =
-                                                              cleanDate;
-                                                          deadlineError = null;
-                                                        });
-
-                                                        updateSelectedUsersJson();
-                                                      }
-                                                    },
-                                                    child: Container(
+                                                    // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
+                                                    return Container(
+                                                      width: double.infinity,
                                                       padding: const EdgeInsets
                                                           .symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 12),
+                                                          horizontal: 12),
                                                       decoration: BoxDecoration(
                                                         border: Border.all(
                                                             color: Colors
@@ -3210,199 +3040,1374 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                             BorderRadius
                                                                 .circular(8),
                                                       ),
-                                                      child: Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              _selectedDeadlines[
-                                                                          index] !=
-                                                                      null
-                                                                  ? DateFormat(
-                                                                          'MM/dd/yyyy')
-                                                                      .format(_selectedDeadlines[
-                                                                          index]!)
-                                                                  : "Select Date",
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white70),
-                                                            ),
+                                                      child:
+                                                          DropdownButtonHideUnderline(
+                                                        child: DropdownButton<
+                                                            String>(
+                                                          value: _selectedRoles[
+                                                              index],
+                                                          hint: const Text(
+                                                            'Select Role',
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .white70),
                                                           ),
-                                                          const Icon(
+                                                          dropdownColor:
+                                                              const Color(
+                                                                  0xFF2C2C2C),
+                                                          icon: const Icon(
                                                             Icons
-                                                                .calendar_today_outlined,
+                                                                .arrow_drop_down,
                                                             color:
                                                                 Colors.white70,
-                                                            size: 20,
                                                           ),
-                                                        ],
+                                                          isExpanded: true,
+                                                          items: roles
+                                                              .map(
+                                                                (role) =>
+                                                                    DropdownMenuItem<
+                                                                        String>(
+                                                                  value:
+                                                                      role.name,
+                                                                  child: Text(
+                                                                    role.name ??
+                                                                        '',
+                                                                    style: const TextStyle(
+                                                                        color: Colors
+                                                                            .white),
+                                                                  ),
+                                                                ),
+                                                              )
+                                                              .toList(),
+                                                          onChanged: isSelected
+                                                              ? (value) {
+                                                                  setInnerState(
+                                                                      () {
+                                                                    _selectedRoles[
+                                                                            index] =
+                                                                        value;
+                                                                    roleError =
+                                                                        null;
+                                                                  });
+
+                                                                  updateSelectedUsersJson();
+                                                                }
+                                                              : null,
+                                                        ),
                                                       ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                            if (roleError != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 4, left: 12),
+                                                child: Text(
+                                                  roleError!,
+                                                  style: const TextStyle(
+                                                      color: Colors.redAccent,
+                                                      fontSize: 12),
+                                                ),
+                                              ),
+                                            const SizedBox(height: 12),
+                                            const Text("Set Deadline",
+                                                style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey)),
+                                            const SizedBox(height: 6),
+                                            IgnorePointer(
+                                              ignoring: !isSelected,
+                                              child: Opacity(
+                                                opacity: isSelected ? 1 : 0.4,
+                                                child: InkWell(
+                                                  onTap: () async {
+                                                    if (!isSelected) return;
+                                                    final now = DateTime.now();
+                                                    final pickedDate =
+                                                        await showDatePicker(
+                                                      context: context,
+                                                      initialDate:
+                                                          _selectedDeadlines[
+                                                                  index] ??
+                                                              now,
+                                                      firstDate: DateTime(
+                                                          now.year,
+                                                          now.month,
+                                                          now.day),
+                                                      lastDate: DateTime(2100),
+                                                    );
+                                                    if (pickedDate != null) {
+                                                      final cleanDate =
+                                                          DateTime(
+                                                        pickedDate.year,
+                                                        pickedDate.month,
+                                                        pickedDate.day,
+                                                      );
+                                                      setState(() {
+                                                        _selectedDeadlines[
+                                                            index] = cleanDate;
+                                                        deadlineError = null;
+                                                      });
+                                                      updateSelectedUsersJson();
+                                                    }
+                                                  },
+                                                  child: Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 12),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(
+                                                          color: Colors
+                                                              .grey.shade700),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                            _selectedDeadlines[
+                                                                        index] !=
+                                                                    null
+                                                                ? DateFormat(
+                                                                        'MM/dd/yyyy')
+                                                                    .format(_selectedDeadlines[
+                                                                        index]!)
+                                                                : "Select Date",
+                                                            style: const TextStyle(
+                                                                color: Colors
+                                                                    .white70),
+                                                          ),
+                                                        ),
+                                                        const Icon(
+                                                          Icons
+                                                              .calendar_today_outlined,
+                                                          color: Colors.white70,
+                                                          size: 20,
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                 ),
                                               ),
-
-                                              if (deadlineError != null)
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 4, left: 12),
-                                                  child: Text(
-                                                    deadlineError!,
-                                                    style: const TextStyle(
-                                                        color: Colors.redAccent,
-                                                        fontSize: 12),
-                                                  ),
+                                            ),
+                                            if (deadlineError != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 4, left: 12),
+                                                child: Text(
+                                                  deadlineError!,
+                                                  style: const TextStyle(
+                                                      color: Colors.redAccent,
+                                                      fontSize: 12),
                                                 ),
-                                            ],
+                                              ),
                                           ],
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }),
-                              ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              }),
                             ),
                           ),
-                        const SizedBox(height: 24),
+                        )
+                      else if (_userSearchController.text.trim().isNotEmpty &&
+                          !_isSearching &&
+                          RegExp(r'^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$')
+                              .hasMatch(_userSearchController.text.trim())) ...[
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E1E),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade700),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.grey[800],
+                                    child: Text(
+                                      _userSearchController.text
+                                          .trim()[0]
+                                          .toUpperCase(),
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _userSearchController.text.trim(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text("Set Deadline",
+                                  style: TextStyle(
+                                      fontSize: 13, color: Colors.grey)),
+                              const SizedBox(height: 6),
+                              InkWell(
+                                onTap: () async {
+                                  final now = DateTime.now();
 
-                        const Text(
-                          "Note: Users with multiple roles must be assigned one role per SOV.",
-                          style:
-                              TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
-                        ),
-                        const SizedBox(height: 24),
+                                  final pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: _selectedDeadline ?? now,
+                                    firstDate:
+                                        DateTime(now.year, now.month, now.day),
+                                    lastDate: DateTime(2100),
+                                  );
 
-                        // --- Share Button ---
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Consumer<SOVListProvider>(
+                                  if (pickedDate != null) {
+                                    setState(() {
+                                      _selectedDeadline = DateTime(
+                                        pickedDate.year,
+                                        pickedDate.month,
+                                        pickedDate.day,
+                                      );
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade700),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _selectedDeadline != null
+                                              ? DateFormat('MM/dd/yyyy')
+                                                  .format(_selectedDeadline!)
+                                              : "Select Date",
+                                          style: const TextStyle(
+                                              color: Colors.white70),
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.calendar_today_outlined,
+                                        color: Colors.white70,
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Consumer<SOVListProvider>(
                                 builder: (context, sovListProvider, _) {
-                                  return CustomButton(
-                                    type: ButtonType.elevated,
-                                    onPressed: (!_isShareEnabled ||
-                                            sovListProvider.isLoading)
-                                        ? null
-                                        : () async {
-                                            List<Map<String, dynamic>>
-                                                shareWithList = [];
+                                  final bool isDisabled =
+                                      _selectedDeadline == null ||
+                                          _isSendingInvite1;
 
-                                            for (int index
-                                                in _selectedIndexes) {
-                                              final user =
-                                                  _autocompleteUsersList[index];
-                                              final roleName =
-                                                  _selectedRoles[index];
-                                              final deadline =
-                                                  _selectedDeadlines[index];
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    height: 48,
+                                    child: OutlinedButton(
+                                      onPressed: isDisabled
+                                          ? null
+                                          : () async {
+                                              final email =
+                                                  _userSearchController.text
+                                                      .trim();
 
-                                              final selectedRole = user.roles
-                                                  ?.firstWhere((r) =>
-                                                      r.name == roleName);
+                                              if (email.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content:
+                                                          Text("Enter email")),
+                                                );
+                                                return;
+                                              }
 
-                                              shareWithList.add({
-                                                "user_id": user.userid ?? '',
-                                                // "role_id":
-                                                "email": user.email ?? '',
-                                                "role": {
-                                                  "role_id": user
-                                                      .lastSelectedRole!.role
-                                                      .toString(),
-                                                  "role_name":
-                                                      selectedRole?.name ?? '',
-                                                },
-                                                "share_expiry":
-                                                    DateFormat('yyyy-MM-dd')
-                                                        .format(deadline!),
+                                              /// ✅ SHOW LOADER
+                                              setState(() =>
+                                                  _isSendingInvite1 = true);
 
-                                                // "share_expiry":
-                                                //     deadline!.toIso8601String(),
-                                              });
-                                            }
-                                            final Set<String> sovIdsToShare =
-                                                sovs
-                                                    .where((s) =>
-                                                        s["sov_id"] != null)
-                                                    .map((s) =>
-                                                        s["sov_id"].toString())
-                                                    .toSet();
-                                            // final Set<String> sovIdsToShare =
-                                            //     sovs
-                                            //         .where(
-                                            //             (s) => s.sovId != null)
-                                            //         .map((s) => s.sovId!)
-                                            //         .toSet();
+                                              try {
+                                                final deadline =
+                                                    _selectedDeadline!;
 
-                                            bool success =
-                                                await sovListProvider.shareSov(
-                                              sovId: sovIdsToShare,
-                                              shareWithList: shareWithList,
-                                            );
-                                            // bool success =
-                                            //     await sovListProvider.shareSov(
-                                            //   sovId: selectedSovIds,
-                                            //   shareWithList: shareWithList,
-                                            // );
+                                                List<Map<String, dynamic>>
+                                                    shareWithList = [
+                                                  {
+                                                    "user_id": "",
+                                                    "email": email,
+                                                    "role": {
+                                                      "role_id": "invite",
+                                                      "role_name": "invite"
+                                                    },
+                                                    "share_expiry":
+                                                        DateFormat('yyyy-MM-dd')
+                                                            .format(deadline),
+                                                  }
+                                                ];
 
-                                            if (!mounted) return;
+                                                final Set<String>
+                                                    sovIdsToShare = sovs
+                                                        .where((s) =>
+                                                            s["sov_id"] != null)
+                                                        .map((s) => s["sov_id"]
+                                                            .toString())
+                                                        .toSet();
 
-                                            if (success) {
-                                              Navigator.pop(dialogContext);
+                                                bool success =
+                                                    await sovListProvider
+                                                        .shareSov(
+                                                  sovId: sovIdsToShare,
+                                                  shareWithList: shareWithList,
+                                                );
 
-                                              setState(() {
-                                                selectedList = List.filled(
-                                                    selectedList.length, false);
-                                                isSelectionMode = false;
-                                              });
+                                                if (!mounted) return;
 
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      "SOV shared successfully"),
+                                                setState(() =>
+                                                    _isSendingInvite1 = false);
+
+                                                if (success) {
+                                                  setState(() {
+                                                    _selectedDeadline = null;
+                                                    _userSearchController
+                                                        .clear(); // optional
+                                                  });
+                                                  Navigator.pop(dialogContext);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text(
+                                                            "Invite sent successfully")),
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text(
+                                                            "Failed to send invite")),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                setState(() =>
+                                                    _isSendingInvite1 = false);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          "Something went wrong")),
+                                                );
+                                              }
+                                            },
+                                      style: OutlinedButton.styleFrom(
+                                        backgroundColor: _isSendingInvite1
+                                            ? Colors.transparent
+                                            : Colors.transparent,
+                                        side: BorderSide(
+                                          color: isDisabled
+                                              ? Colors.grey
+                                              : const Color(0xFF4FC3F7),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      child: _isSendingInvite1
+                                          ? Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: const [
+                                                SizedBox(
+                                                  width: 18,
+                                                  height: 18,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Color(0xFF4FC3F7),
+                                                  ),
                                                 ),
-                                              );
-                                            } else {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      "Failed to share SOV."),
+                                                SizedBox(width: 10),
+                                                Text(
+                                                  "Sending...",
+                                                  style: TextStyle(
+                                                    color: Color(0xFF4FC3F7),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                                 ),
-                                              );
-                                            }
-                                          },
-                                    child: sovListProvider.isLoading
-                                        ? const CircularProgressIndicator(
-                                            color: Colors.white, strokeWidth: 2)
-                                        : const Text("Share SOV",
-                                            style:
-                                                TextStyle(color: Colors.black)),
+                                              ],
+                                            )
+                                          : Text(
+                                              "Send Invite",
+                                              style: TextStyle(
+                                                color: isDisabled
+                                                    ? Colors.grey
+                                                    : const Color(0xFF4FC3F7),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                    ),
                                   );
                                 },
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomButton(
-                                type: ButtonType.outlined,
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("Cancel"),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 24),
+
+                      const Text(
+                        "Note: Users with multiple roles must be assigned one role per SOV.",
+                        style:
+                            TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // --- Share Button ---
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Consumer<SOVListProvider>(
+                              builder: (context, sovListProvider, _) {
+                                return CustomButton(
+                                  type: ButtonType.elevated,
+                                  onPressed: (!_isShareEnabled || _isSharingSov)
+                                      ? null
+                                      : () async {
+                                          setState(() => _isSharingSov =
+                                              true); // ✅ local loader
+
+                                          List<Map<String, dynamic>>
+                                              shareWithList = [];
+
+                                          for (int index in _selectedIndexes) {
+                                            final user =
+                                                _autocompleteUsersList[index];
+                                            final roleName =
+                                                _selectedRoles[index];
+                                            final deadline =
+                                                _selectedDeadlines[index];
+
+                                            final selectedRole = user.roles
+                                                ?.firstWhere(
+                                                    (r) => r.name == roleName);
+
+                                            shareWithList.add({
+                                              "user_id": user.userid ?? '',
+                                              "email": user.email ?? '',
+                                              "role": {
+                                                "role_id": user
+                                                    .lastSelectedRole!.role
+                                                    .toString(),
+                                                "role_name":
+                                                    selectedRole?.name ?? '',
+                                              },
+                                              "share_expiry":
+                                                  DateFormat('yyyy-MM-dd')
+                                                      .format(deadline!),
+                                            });
+                                          }
+
+                                          final Set<String> sovIdsToShare = sovs
+                                              .where((s) => s["sov_id"] != null)
+                                              .map(
+                                                  (s) => s["sov_id"].toString())
+                                              .toSet();
+
+                                          bool success =
+                                              await sovListProvider.shareSov(
+                                            sovId: sovIdsToShare,
+                                            shareWithList: shareWithList,
+                                          );
+
+                                          if (!mounted) return;
+
+                                          setState(() => _isSharingSov =
+                                              false); // ✅ stop loader
+
+                                          if (success) {
+                                            Navigator.pop(dialogContext);
+
+                                            setState(() {
+                                              selectedList = List.filled(
+                                                  selectedList.length, false);
+                                              isSelectionMode = false;
+                                            });
+
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    "SOV shared successfully"),
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    "Failed to share SOV."),
+                                              ),
+                                            );
+                                          }
+                                        },
+
+                                  /// ✅ FIXED LOADER
+                                  child: _isSharingSov
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        )
+                                      : const Text("Share SOV",
+                                          style:
+                                              TextStyle(color: Colors.black)),
+                                );
+                              },
+                            ),
+                          ),
+                          // Expanded(
+                          //   child: Consumer<SOVListProvider>(
+                          //     builder: (context, sovListProvider, _) {
+                          //       return CustomButton(
+                          //         type: ButtonType.elevated,
+                          //         onPressed: (!_isShareEnabled ||
+                          //                 sovListProvider.isLoading)
+                          //             ? null
+                          //             : () async {
+                          //                 List<Map<String, dynamic>>
+                          //                     shareWithList = [];
+                          //
+                          //                 for (int index in _selectedIndexes) {
+                          //                   final user =
+                          //                       _autocompleteUsersList[index];
+                          //                   final roleName =
+                          //                       _selectedRoles[index];
+                          //                   final deadline =
+                          //                       _selectedDeadlines[index];
+                          //
+                          //                   final selectedRole = user.roles
+                          //                       ?.firstWhere(
+                          //                           (r) => r.name == roleName);
+                          //
+                          //                   shareWithList.add({
+                          //                     "user_id": user.userid ?? '',
+                          //                     "email": user.email ?? '',
+                          //                     "role": {
+                          //                       "role_id": user
+                          //                           .lastSelectedRole!.role
+                          //                           .toString(),
+                          //                       "role_name":
+                          //                           selectedRole?.name ?? '',
+                          //                     },
+                          //                     "share_expiry":
+                          //                         DateFormat('yyyy-MM-dd')
+                          //                             .format(deadline!),
+                          //                   });
+                          //                 }
+                          //
+                          //                 final Set<String> sovIdsToShare = sovs
+                          //                     .where((s) => s["sov_id"] != null)
+                          //                     .map(
+                          //                         (s) => s["sov_id"].toString())
+                          //                     .toSet();
+                          //
+                          //                 bool success =
+                          //                     await sovListProvider.shareSov(
+                          //                   sovId: sovIdsToShare,
+                          //                   shareWithList: shareWithList,
+                          //                 );
+                          //
+                          //                 if (!mounted) return;
+                          //
+                          //                 if (success) {
+                          //                   Navigator.pop(dialogContext);
+                          //                   setState(() {
+                          //                     selectedList = List.filled(
+                          //                         selectedList.length, false);
+                          //                     isSelectionMode = false;
+                          //                   });
+                          //                   ScaffoldMessenger.of(context)
+                          //                       .showSnackBar(
+                          //                     const SnackBar(
+                          //                       content: Text(
+                          //                           "SOV shared successfully"),
+                          //                     ),
+                          //                   );
+                          //                 } else {
+                          //                   ScaffoldMessenger.of(context)
+                          //                       .showSnackBar(
+                          //                     const SnackBar(
+                          //                       content: Text(
+                          //                           "Failed to share SOV."),
+                          //                     ),
+                          //                   );
+                          //                 }
+                          //               },
+                          //         child: sovListProvider.isLoading
+                          //             ? const CircularProgressIndicator(
+                          //                 color: Colors.white, strokeWidth: 2)
+                          //             : const Text("Share SOV",
+                          //                 style:
+                          //                     TextStyle(color: Colors.black)),
+                          //       );
+                          //     },
+                          //   ),
+                          // ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomButton(
+                              type: ButtonType.outlined,
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
-            ));
+                ),
+              );
+            },
+          ),
+//             StatefulBuilder(
+//               builder: (BuildContext context, StateSetter setState) {
+//                 return Padding(
+//                   padding: EdgeInsets.only(
+//                     left: 16,
+//                     right: 16,
+//                     top: 16,
+//                     bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+//                   ),
+//                   child: SingleChildScrollView(
+//                     child: Column(
+//                       mainAxisSize: MainAxisSize.min,
+//                       children: [
+//                         Container(
+//                           width: 40,
+//                           height: 4,
+//                           margin: const EdgeInsets.only(bottom: 12),
+//                           decoration: BoxDecoration(
+//                             color: Colors.grey.shade600,
+//                             borderRadius: BorderRadius.circular(4),
+//                           ),
+//                         ),
+//                         Text(
+//                           buildSovTitle(sovs),
+//                           style: const TextStyle(
+//                             fontSize: 20,
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.white,
+//                           ),
+//                         ),
+//                         SizedBox(height: 4),
+//
+//                         TextField(
+//                           controller: _userSearchController,
+//                           onChanged: (value) => _onSearchChanged(
+//                               value, setState, _selectedOption.name),
+//                           decoration: InputDecoration(
+//                             labelText: "Search user",
+//                             prefixIcon: const Icon(Icons.search),
+//                             border: OutlineInputBorder(
+//                                 borderRadius: BorderRadius.circular(8)),
+//                           ),
+//                         ),
+//                         const SizedBox(height: 16),
+//
+//                         if (_isSearching)
+//                           const Center(child: CircularProgressIndicator())
+//                         else if (_autocompleteUsersList.isNotEmpty)
+//                           SizedBox(
+//                             height: 300,
+//                             child: SingleChildScrollView(
+//                               child: Column(
+//                                 children: List.generate(
+//                                     _autocompleteUsersList.length, (index) {
+//                                   final user = _autocompleteUsersList[index];
+//                                   final isSelected =
+//                                       _selectedIndexes.contains(index);
+//                                   final selectedRole = _selectedRoles[index];
+//                                   final deadline = _selectedDeadlines[index];
+//
+//                                   String? roleError;
+//                                   String? deadlineError;
+//
+//                                   bool canShareAll() {
+//                                     for (int i in _selectedIndexes) {
+//                                       if (_selectedRoles[i] == null ||
+//                                           _selectedDeadlines[i] == null) {
+//                                         return false;
+//                                       }
+//                                     }
+//                                     return _selectedIndexes.isNotEmpty;
+//                                   }
+//
+//                                   void updateSelectedUsersJson() {
+//                                     selectedUsersJson.clear();
+//                                     for (var i in _selectedIndexes) {
+//                                       final selectedUser =
+//                                           _autocompleteUsersList[i];
+//                                       final selectedRole = _selectedRoles[i];
+//                                       final selectedDeadline =
+//                                           _selectedDeadlines[i];
+//
+//                                       if (selectedRole != null &&
+//                                           selectedDeadline != null) {
+//                                         final roleObj =
+//                                             selectedUser.roles!.firstWhere(
+//                                           (r) => r.name == selectedRole,
+//                                         );
+//
+//                                         selectedUsersJson.add({
+//                                           "user_id": selectedUser.userid ?? '',
+//                                           "role": {
+//                                             // "role_id": roleObj.role ?? '',
+//                                             "role_id": user
+//                                                 .lastSelectedRole!.role
+//                                                 .toString(),
+//                                             "role_name": roleObj.name ?? '',
+//                                           },
+//                                           "share_expiry": selectedDeadline
+//                                               .toUtc()
+//                                               .toIso8601String(),
+//                                         });
+//                                       }
+//                                     }
+//
+//                                     // Enable/disable Share button
+//                                     setState(() {
+//                                       _isShareEnabled = canShareAll();
+//                                     });
+//
+//                                     debugPrint(
+//                                         "✅ Selected Users JSON: $selectedUsersJson");
+//                                   }
+//
+//                                   void toggleSelection(bool? value) {
+//                                     setState(() {
+//                                       if (value == true) {
+//                                         _selectedIndexes.add(index);
+//                                       } else {
+//                                         _selectedIndexes.remove(index);
+//                                         _selectedRoles[index] = null;
+//                                         _selectedDeadlines[index] = null;
+//                                       }
+//                                       updateSelectedUsersJson();
+//                                     });
+//                                   }
+//
+//                                   return StatefulBuilder(
+//                                     builder: (context, setInnerState) {
+//                                       return Container(
+//                                         margin: const EdgeInsets.symmetric(
+//                                             vertical: 8),
+//                                         padding: const EdgeInsets.all(12),
+//                                         decoration: BoxDecoration(
+//                                           color: const Color(0xFF1E1E1E),
+//                                           borderRadius:
+//                                               BorderRadius.circular(12),
+//                                           border: Border.all(
+//                                             color: isSelected
+//                                                 ? Colors.blue
+//                                                 : Colors.grey.shade700,
+//                                             width: 1.5,
+//                                           ),
+//                                         ),
+//                                         child: Column(
+//                                           crossAxisAlignment:
+//                                               CrossAxisAlignment.start,
+//                                           children: [
+//                                             Row(
+//                                               crossAxisAlignment:
+//                                                   CrossAxisAlignment.center,
+//                                               children: [
+//                                                 CircleAvatar(
+//                                                   backgroundColor:
+//                                                       Colors.grey[800],
+//                                                   child: Text(
+//                                                     (user.name != null &&
+//                                                             user.name!
+//                                                                 .isNotEmpty)
+//                                                         ? user.name!
+//                                                             .substring(0, 2)
+//                                                             .toUpperCase()
+//                                                         : "?",
+//                                                     style: const TextStyle(
+//                                                         color: Colors.white),
+//                                                   ),
+//                                                 ),
+//                                                 const SizedBox(width: 10),
+//                                                 Expanded(
+//                                                   child: Text(
+//                                                     user.name ?? "Unknown",
+//                                                     style: const TextStyle(
+//                                                       fontWeight:
+//                                                           FontWeight.bold,
+//                                                       fontSize: 16,
+//                                                       color: Colors.white,
+//                                                     ),
+//                                                   ),
+//                                                 ),
+//                                                 user.isConnected == false &&
+//                                                         user.belongsToCompany ==
+//                                                             false &&
+//                                                         user.isIndividual ==
+//                                                             false
+//                                                     ? Container()
+//                                                     : Checkbox(
+//                                                         value: isSelected,
+//                                                         activeColor:
+//                                                             const Color(
+//                                                                 0xFF90CAF9),
+//                                                         onChanged: (value) =>
+//                                                             toggleSelection(
+//                                                                 value),
+//                                                       )
+//                                               ],
+//                                             ),
+//                                             const SizedBox(height: 8),
+//                                             Align(
+//                                               alignment: Alignment.centerLeft,
+//                                               child: Container(
+//                                                 padding:
+//                                                     const EdgeInsets.symmetric(
+//                                                         horizontal: 12,
+//                                                         vertical: 6),
+//                                                 decoration: BoxDecoration(
+//                                                   border: Border.all(
+//                                                       color: const Color(
+//                                                           0xFF4FC3F7)),
+//                                                   borderRadius:
+//                                                       BorderRadius.circular(20),
+//                                                 ),
+//                                                 child: Text(
+//                                                   user.isIndividual == false
+//                                                       ? "Other Company"
+//                                                       : "Individual",
+//                                                   style: TextStyle(
+//                                                     color: Color(0xFF4FC3F7),
+//                                                     fontSize: 12,
+//                                                     fontWeight: FontWeight.w500,
+//                                                   ),
+//                                                 ),
+//                                               ),
+//                                             ),
+//                                             const SizedBox(height: 8),
+//                                             if (user.isConnected == false &&
+//                                                 user.belongsToCompany ==
+//                                                     false &&
+//                                                 user.isIndividual == false) ...[
+//                                               const SizedBox(height: 12),
+//
+// // --- Connect Button ---
+//                                               Consumer<SOVListProvider>(
+//                                                 builder:
+//                                                     (context, provider, _) {
+//                                                   final isRequested = provider
+//                                                       .requestedUserIds
+//                                                       .contains(user.userid);
+//
+//                                                   return SizedBox(
+//                                                     width: double.infinity,
+//                                                     height: 44,
+//                                                     child: OutlinedButton.icon(
+//                                                       onPressed: isRequested
+//                                                           ? null
+//                                                           : () {
+//                                                               _showRequestConnectionDialog(
+//                                                                 context,
+//                                                                 userId:
+//                                                                     user.userid ??
+//                                                                         "",
+//                                                                 userName: user
+//                                                                         .name ??
+//                                                                     "Naveen",
+//                                                                 userRole: user
+//                                                                         .role ??
+//                                                                     "Insurance Broker",
+//                                                                 sovName:
+//                                                                     "SOV Name",
+//                                                               );
+//                                                             },
+//                                                       icon: Icon(
+//                                                         isRequested
+//                                                             ? Icons
+//                                                                 .check_circle_outline
+//                                                             : Icons
+//                                                                 .person_add_alt_1,
+//                                                         color: isRequested
+//                                                             ? Colors.grey
+//                                                             : const Color(
+//                                                                 0xFF4FC3F7),
+//                                                       ),
+//                                                       label: Text(
+//                                                         isRequested
+//                                                             ? "Request Sent"
+//                                                             : "Connect",
+//                                                         style: TextStyle(
+//                                                           color: isRequested
+//                                                               ? Colors.grey
+//                                                               : const Color(
+//                                                                   0xFF4FC3F7),
+//                                                           fontWeight:
+//                                                               FontWeight.w600,
+//                                                         ),
+//                                                       ),
+//                                                       style: OutlinedButton
+//                                                           .styleFrom(
+//                                                         side: BorderSide(
+//                                                           color: isRequested
+//                                                               ? Colors.grey
+//                                                               : const Color(
+//                                                                   0xFF4FC3F7),
+//                                                         ),
+//                                                         shape:
+//                                                             RoundedRectangleBorder(
+//                                                           borderRadius:
+//                                                               BorderRadius
+//                                                                   .circular(10),
+//                                                         ),
+//                                                       ),
+//                                                     ),
+//                                                   );
+//                                                 },
+//                                               ),
+//                                             ] else ...[
+//                                               // Role dropdown (enabled only if checkbox selected)
+//                                               const SizedBox(height: 12),
+//
+//                                               IgnorePointer(
+//                                                 ignoring: !isSelected,
+//                                                 child: Opacity(
+//                                                   opacity: isSelected ? 1 : 0.4,
+//                                                   child: Builder(
+//                                                     builder: (context) {
+//                                                       final roles =
+//                                                           user.roles ?? [];
+//
+//                                                       // 🔥 Reset when unchecked
+//                                                       if (!isSelected) {
+//                                                         _selectedRoles[index] =
+//                                                             null;
+//                                                       }
+//
+//                                                       // 🔥 CASE 1: Only ONE role → show STATIC field but full width
+//                                                       if (isSelected &&
+//                                                           roles.length == 1) {
+//                                                         final roleName =
+//                                                             roles.first.name ??
+//                                                                 "";
+//
+//                                                         // Auto assign when checkbox selected
+//                                                         _selectedRoles[index] =
+//                                                             roleName;
+//
+//                                                         return Container(
+//                                                           width:
+//                                                               double.infinity,
+//                                                           // ⬅ FULL WIDTH
+//                                                           padding:
+//                                                               const EdgeInsets
+//                                                                   .symmetric(
+//                                                                   horizontal:
+//                                                                       12,
+//                                                                   vertical: 14),
+//                                                           decoration:
+//                                                               BoxDecoration(
+//                                                             border: Border.all(
+//                                                                 color: Colors
+//                                                                     .grey
+//                                                                     .shade700),
+//                                                             borderRadius:
+//                                                                 BorderRadius
+//                                                                     .circular(
+//                                                                         8),
+//                                                           ),
+//                                                           child: Text(
+//                                                             roleName,
+//                                                             style:
+//                                                                 const TextStyle(
+//                                                                     color: Colors
+//                                                                         .white),
+//                                                           ),
+//                                                         );
+//                                                       }
+//
+//                                                       // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
+//                                                       return Container(
+//                                                         width: double.infinity,
+//                                                         padding:
+//                                                             const EdgeInsets
+//                                                                 .symmetric(
+//                                                                 horizontal: 12),
+//                                                         decoration:
+//                                                             BoxDecoration(
+//                                                           border: Border.all(
+//                                                               color: Colors.grey
+//                                                                   .shade700),
+//                                                           borderRadius:
+//                                                               BorderRadius
+//                                                                   .circular(8),
+//                                                         ),
+//                                                         child:
+//                                                             DropdownButtonHideUnderline(
+//                                                           child: DropdownButton<
+//                                                               String>(
+//                                                             value:
+//                                                                 _selectedRoles[
+//                                                                     index],
+//                                                             hint: const Text(
+//                                                               'Select Role',
+//                                                               style: TextStyle(
+//                                                                   color: Colors
+//                                                                       .white70),
+//                                                             ),
+//                                                             dropdownColor:
+//                                                                 const Color(
+//                                                                     0xFF2C2C2C),
+//                                                             icon: const Icon(
+//                                                               Icons
+//                                                                   .arrow_drop_down,
+//                                                               color: Colors
+//                                                                   .white70,
+//                                                             ),
+//                                                             isExpanded: true,
+//                                                             items: roles
+//                                                                 .map(
+//                                                                   (role) =>
+//                                                                       DropdownMenuItem<
+//                                                                           String>(
+//                                                                     value: role
+//                                                                         .name,
+//                                                                     child: Text(
+//                                                                       role.name ??
+//                                                                           '',
+//                                                                       style: const TextStyle(
+//                                                                           color:
+//                                                                               Colors.white),
+//                                                                     ),
+//                                                                   ),
+//                                                                 )
+//                                                                 .toList(),
+//                                                             onChanged:
+//                                                                 isSelected
+//                                                                     ? (value) {
+//                                                                         setInnerState(
+//                                                                             () {
+//                                                                           _selectedRoles[index] =
+//                                                                               value;
+//                                                                           roleError =
+//                                                                               null;
+//                                                                         });
+//
+//                                                                         updateSelectedUsersJson();
+//                                                                       }
+//                                                                     : null,
+//                                                           ),
+//                                                         ),
+//                                                       );
+//                                                     },
+//                                                   ),
+//                                                 ),
+//                                               ),
+//
+//                                               if (roleError != null)
+//                                                 Padding(
+//                                                   padding:
+//                                                       const EdgeInsets.only(
+//                                                           top: 4, left: 12),
+//                                                   child: Text(
+//                                                     roleError!,
+//                                                     style: const TextStyle(
+//                                                         color: Colors.redAccent,
+//                                                         fontSize: 12),
+//                                                   ),
+//                                                 ),
+//
+//                                               const SizedBox(height: 12),
+//                                               const Text("Set Deadline",
+//                                                   style: TextStyle(
+//                                                       fontSize: 13,
+//                                                       color: Colors.grey)),
+//                                               const SizedBox(height: 6),
+//
+//                                               // Deadline picker (enabled only if checkbox selected)
+//                                               IgnorePointer(
+//                                                 ignoring: !isSelected,
+//                                                 child: Opacity(
+//                                                   opacity: isSelected ? 1 : 0.4,
+//                                                   child: InkWell(
+//                                                     onTap: () async {
+//                                                       if (!isSelected) return;
+//
+//                                                       final now =
+//                                                           DateTime.now();
+//
+//                                                       final pickedDate =
+//                                                           await showDatePicker(
+//                                                         context: context,
+//                                                         initialDate:
+//                                                             _selectedDeadlines[
+//                                                                     index] ??
+//                                                                 now,
+//                                                         firstDate: DateTime(
+//                                                             now.year,
+//                                                             now.month,
+//                                                             now.day),
+//                                                         lastDate:
+//                                                             DateTime(2100),
+//                                                       );
+//
+//                                                       if (pickedDate != null) {
+//                                                         // 🔥 IMPORTANT: Remove time part completely
+//                                                         final cleanDate =
+//                                                             DateTime(
+//                                                           pickedDate.year,
+//                                                           pickedDate.month,
+//                                                           pickedDate.day,
+//                                                         );
+//
+//                                                         setState(() {
+//                                                           _selectedDeadlines[
+//                                                                   index] =
+//                                                               cleanDate;
+//                                                           deadlineError = null;
+//                                                         });
+//
+//                                                         updateSelectedUsersJson();
+//                                                       }
+//                                                     },
+//                                                     child: Container(
+//                                                       padding: const EdgeInsets
+//                                                           .symmetric(
+//                                                           horizontal: 12,
+//                                                           vertical: 12),
+//                                                       decoration: BoxDecoration(
+//                                                         border: Border.all(
+//                                                             color: Colors
+//                                                                 .grey.shade700),
+//                                                         borderRadius:
+//                                                             BorderRadius
+//                                                                 .circular(8),
+//                                                       ),
+//                                                       child: Row(
+//                                                         children: [
+//                                                           Expanded(
+//                                                             child: Text(
+//                                                               _selectedDeadlines[
+//                                                                           index] !=
+//                                                                       null
+//                                                                   ? DateFormat(
+//                                                                           'MM/dd/yyyy')
+//                                                                       .format(_selectedDeadlines[
+//                                                                           index]!)
+//                                                                   : "Select Date",
+//                                                               style: const TextStyle(
+//                                                                   color: Colors
+//                                                                       .white70),
+//                                                             ),
+//                                                           ),
+//                                                           const Icon(
+//                                                             Icons
+//                                                                 .calendar_today_outlined,
+//                                                             color:
+//                                                                 Colors.white70,
+//                                                             size: 20,
+//                                                           ),
+//                                                         ],
+//                                                       ),
+//                                                     ),
+//                                                   ),
+//                                                 ),
+//                                               ),
+//
+//                                               if (deadlineError != null)
+//                                                 Padding(
+//                                                   padding:
+//                                                       const EdgeInsets.only(
+//                                                           top: 4, left: 12),
+//                                                   child: Text(
+//                                                     deadlineError!,
+//                                                     style: const TextStyle(
+//                                                         color: Colors.redAccent,
+//                                                         fontSize: 12),
+//                                                   ),
+//                                                 ),
+//                                             ],
+//                                           ],
+//                                         ),
+//                                       );
+//                                     },
+//                                   );
+//                                 }),
+//                               ),
+//                             ),
+//                           ),
+//                         const SizedBox(height: 24),
+//
+//                         const Text(
+//                           "Note: Users with multiple roles must be assigned one role per SOV.",
+//                           style:
+//                               TextStyle(fontSize: 14, color: Color(0xFF9FA6AD)),
+//                         ),
+//                         const SizedBox(height: 24),
+//
+//                         // --- Share Button ---
+//                         Row(
+//                           children: [
+//                             Expanded(
+//                               child: Consumer<SOVListProvider>(
+//                                 builder: (context, sovListProvider, _) {
+//                                   return CustomButton(
+//                                     type: ButtonType.elevated,
+//                                     onPressed: (!_isShareEnabled ||
+//                                             sovListProvider.isLoading)
+//                                         ? null
+//                                         : () async {
+//                                             List<Map<String, dynamic>>
+//                                                 shareWithList = [];
+//
+//                                             for (int index
+//                                                 in _selectedIndexes) {
+//                                               final user =
+//                                                   _autocompleteUsersList[index];
+//                                               final roleName =
+//                                                   _selectedRoles[index];
+//                                               final deadline =
+//                                                   _selectedDeadlines[index];
+//
+//                                               final selectedRole = user.roles
+//                                                   ?.firstWhere((r) =>
+//                                                       r.name == roleName);
+//
+//                                               shareWithList.add({
+//                                                 "user_id": user.userid ?? '',
+//                                                 // "role_id":
+//                                                 "email": user.email ?? '',
+//                                                 "role": {
+//                                                   "role_id": user
+//                                                       .lastSelectedRole!.role
+//                                                       .toString(),
+//                                                   "role_name":
+//                                                       selectedRole?.name ?? '',
+//                                                 },
+//                                                 "share_expiry":
+//                                                     DateFormat('yyyy-MM-dd')
+//                                                         .format(deadline!),
+//
+//                                                 // "share_expiry":
+//                                                 //     deadline!.toIso8601String(),
+//                                               });
+//                                             }
+//                                             final Set<String> sovIdsToShare =
+//                                                 sovs
+//                                                     .where((s) =>
+//                                                         s["sov_id"] != null)
+//                                                     .map((s) =>
+//                                                         s["sov_id"].toString())
+//                                                     .toSet();
+//                                             // final Set<String> sovIdsToShare =
+//                                             //     sovs
+//                                             //         .where(
+//                                             //             (s) => s.sovId != null)
+//                                             //         .map((s) => s.sovId!)
+//                                             //         .toSet();
+//
+//                                             bool success =
+//                                                 await sovListProvider.shareSov(
+//                                               sovId: sovIdsToShare,
+//                                               shareWithList: shareWithList,
+//                                             );
+//                                             // bool success =
+//                                             //     await sovListProvider.shareSov(
+//                                             //   sovId: selectedSovIds,
+//                                             //   shareWithList: shareWithList,
+//                                             // );
+//
+//                                             if (!mounted) return;
+//
+//                                             if (success) {
+//                                               Navigator.pop(dialogContext);
+//
+//                                               setState(() {
+//                                                 selectedList = List.filled(
+//                                                     selectedList.length, false);
+//                                                 isSelectionMode = false;
+//                                               });
+//
+//                                               ScaffoldMessenger.of(context)
+//                                                   .showSnackBar(
+//                                                 const SnackBar(
+//                                                   content: Text(
+//                                                       "SOV shared successfully"),
+//                                                 ),
+//                                               );
+//                                             } else {
+//                                               ScaffoldMessenger.of(context)
+//                                                   .showSnackBar(
+//                                                 const SnackBar(
+//                                                   content: Text(
+//                                                       "Failed to share SOV."),
+//                                                 ),
+//                                               );
+//                                             }
+//                                           },
+//                                     child: sovListProvider.isLoading
+//                                         ? const CircularProgressIndicator(
+//                                             color: Colors.white, strokeWidth: 2)
+//                                         : const Text("Share SOV",
+//                                             style:
+//                                                 TextStyle(color: Colors.black)),
+//                                   );
+//                                 },
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                         const SizedBox(height: 16),
+//
+//                         Row(
+//                           children: [
+//                             Expanded(
+//                               child: CustomButton(
+//                                 type: ButtonType.outlined,
+//                                 onPressed: () => Navigator.pop(context),
+//                                 child: const Text("Cancel"),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 );
+//               },
+//             )
+        );
       },
     ).whenComplete(() {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
