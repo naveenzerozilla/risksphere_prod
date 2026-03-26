@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../models/gift_models.dart';
 import '../../utils/global_imports.dart';
 
@@ -11,20 +12,27 @@ class LocationManagementScreen extends StatefulWidget {
 
 class _LocationManagementScreenState extends State<LocationManagementScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   bool _isExpanded = false;
   bool _showNotificationDot = true;
+
   bool _isLoading = false;
   bool _isNextPageLoading = false;
   String? _revokingGiftId;
+
   List<GiftResult> _giftList = [];
   List<GiftResult> _filteredList = [];
   int _currentPage = 1;
   int _totalRecords = 0;
   final int _pageSize = 20;
+  DateTime? _lastFetchTime; // ✅ cache timestamp
+
   bool get _hasMore => _giftList.length < _totalRecords;
+
   String _selectedStatus = 'All Status';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _debounce; // ✅ debounce timer
 
   final List<String> _statusOptions = [
     'All Status',
@@ -37,13 +45,14 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchGifts());
-    _searchController.addListener(_applyFilters);
+    _fetchGifts(); // ✅ direct call — no addPostFrameCallback delay
+    _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -58,24 +67,42 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
     }
   }
 
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      _applyFilters,
+    );
+  }
+
   Future<void> _fetchGifts({bool loadMore = false}) async {
     if (loadMore && _isNextPageLoading) return;
     if (!loadMore && _isLoading) return;
 
-    if (loadMore) {
-      setState(() => _isNextPageLoading = true);
-    } else {
-      setState(() {
+    if (!loadMore &&
+        _lastFetchTime != null &&
+        DateTime.now().difference(_lastFetchTime!).inSeconds < 30 &&
+        _giftList.isNotEmpty) {
+      return;
+    }
+
+    setState(() {
+      if (loadMore) {
+        _isNextPageLoading = true;
+      } else {
         _isLoading = true;
         _currentPage = 1;
-      });
-    }
+      }
+    });
 
     try {
       final int page = loadMore ? _currentPage + 1 : 1;
+      final int size = loadMore ? _pageSize : 10;
 
-      ApiService apiService = ApiService(AppConstant.SENT_GIFTS);
-      final response = await apiService.get('?page=$page&pageSize=$_pageSize');
+      final ApiService apiService = ApiService(AppConstant.SENT_GIFTS);
+      final response = await apiService.get('?page=$page&pageSize=$size');
+
+      if (!mounted) return;
 
       final GiftModel model = GiftModel.fromJson(
         Map<String, dynamic>.from(response),
@@ -89,179 +116,175 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
           _giftList.addAll(model.results);
         } else {
           _giftList = model.results;
+          _lastFetchTime = DateTime.now();
         }
 
+        _isLoading = false;
+        _isNextPageLoading = false;
         _applyFilters();
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _isNextPageLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   void _applyFilters() {
+    if (!mounted) return;
     final query = _searchController.text.trim().toLowerCase();
     setState(() {
       _filteredList = _giftList.where((item) {
         final matchesStatus = _selectedStatus == 'All Status' ||
             item.status.toLowerCase() == _selectedStatus.toLowerCase();
-
         final matchesSearch = query.isEmpty ||
             item.recipientUserName.toLowerCase().contains(query) ||
             item.recipientEmail.toLowerCase().contains(query) ||
             item.senderUserName.toLowerCase().contains(query);
-
         return matchesStatus && matchesSearch;
       }).toList();
     });
   }
 
   Future<void> _revertGift(String giftId) async {
+    setState(() => _revokingGiftId = giftId);
+
     try {
-      setState(() => _revokingGiftId = giftId);
+      final ApiService apiService = ApiService(AppConstant.REVOKE_GIFTS);
+      await apiService.post({'gift_id': giftId});
 
-      ApiService apiService = ApiService(AppConstant.SENT_GIFTS);
-      await apiService.post({
-        'gift_id': giftId,
-      });
+      if (!mounted) return;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Revoked successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _fetchGifts();
-      }
+      setState(() => _revokingGiftId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Revoked successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _lastFetchTime = null;
+      _fetchGifts();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to revoke: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _revokingGiftId = null);  }
+      if (!mounted) return;
+      setState(() => _revokingGiftId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to revoke: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showRevokeConfirmation(String giftId) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade600,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade600,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.undo_rounded,
-                  color: Colors.red,
-                  size: 28,
-                ),
+              child:
+                  const Icon(Icons.undo_rounded, color: Colors.red, size: 28),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Revoke Gift',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Revoke Gift',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Are you sure you want to revoke this gift? This action cannot be undone.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 14),
-              ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Are you sure you want to revoke this gift? This action cannot be undone.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onPressed: () {
-                    Navigator.pop(context); // close sheet
-                    _revertGift(giftId); // then revoke
-                  },
-                  child: const Text(
-                    'Revoke',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _revertGift(giftId);
+                },
+                child: const Text(
+                  'Revoke',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
@@ -282,15 +305,55 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  String _capitalize(String s) =>
+      s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1).toLowerCase();
+
+  Widget _buildSkeletonCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _shimmer(width: 180, height: 13),
+          const SizedBox(height: 8),
+          _shimmer(width: 220, height: 13),
+          const SizedBox(height: 8),
+          _shimmer(width: 120, height: 13),
+          const SizedBox(height: 8),
+          _shimmer(width: 100, height: 13),
+          const SizedBox(height: 14),
+          _shimmer(width: double.infinity, height: 44),
+        ],
+      ),
+    );
+  }
+
+  Widget _shimmer({required double width, required double height}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(6),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    var typography = CustomTypography(context);
+    final typography = CustomTypography(context);
+
     return SafeArea(
       child: Consumer<ThemeProvider>(
         builder: (buildContext, themeProvider, child) {
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            backgroundColor: themeProvider.getTheme.colorScheme.surface,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
               showNotificationDot: _showNotificationDot,
@@ -303,10 +366,38 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 5, 16, 4),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Text(
+                              'Purchase License',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const Text(
+                            'Manage Share Locations',
+                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: CustomSpacing.two),
                       Text(
                         'Shared Location Management',
                         style: typography.Body1.copyWith(
@@ -315,7 +406,7 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: CustomSpacing.two),
                       Text(
                         'Manage shared locations, track usage, and reclaim unused allocations.',
                         style: typography.Caption.copyWith(
@@ -330,8 +421,10 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                         decoration: InputDecoration(
                           hintText: 'Search by name or email',
                           hintStyle: const TextStyle(color: Colors.white38),
-                          prefixIcon:
-                              const Icon(Icons.search, color: Colors.white38),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.white38,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFF1E1E1E),
                           enabledBorder: OutlineInputBorder(
@@ -344,7 +437,9 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                                 BorderSide(color: AppColors.primaryMain),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -361,7 +456,9 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E1E1E),
                               borderRadius: BorderRadius.circular(8),
@@ -371,23 +468,22 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                               child: DropdownButton<String>(
                                 value: _selectedStatus,
                                 dropdownColor: const Color(0xFF1E1E1E),
-                                icon: const Icon(Icons.arrow_drop_down,
-                                    color: Colors.white54),
+                                icon: const Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white54,
+                                ),
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 13),
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
                                 items: _statusOptions.map((status) {
                                   return DropdownMenuItem(
                                     value: status,
-                                    child: Text(
-                                      status.isEmpty
-                                          ? ''
-                                          : status[0].toUpperCase() +
-                                              status.substring(1).toLowerCase(),
-                                    ),
+                                    child: Text(_capitalize(status)),
                                   );
                                 }).toList(),
                                 onChanged: (value) {
-                                  setState(() => _selectedStatus = value!);
+                                  _selectedStatus = value!;
                                   _applyFilters();
                                 },
                               ),
@@ -401,21 +497,34 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? ListView.builder(
+                          itemCount: 5,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          itemBuilder: (_, __) => _buildSkeletonCard(),
+                        )
                       : _filteredList.isEmpty
                           ? Center(
                               child: Text(
                                 'No records found',
                                 style: typography.Body1.copyWith(
-                                    color: Colors.white54),
+                                  color: Colors.white54,
+                                ),
                               ),
                             )
                           : RefreshIndicator(
-                              onRefresh: () => _fetchGifts(),
+                              onRefresh: () async {
+                                _lastFetchTime = null;
+                                await _fetchGifts();
+                              },
                               child: ListView.builder(
                                 controller: _scrollController,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 4),
+                                  horizontal: 16,
+                                  vertical: 4,
+                                ),
                                 itemCount: _filteredList.length +
                                     (_isNextPageLoading ? 1 : 0),
                                 itemBuilder: (context, index) {
@@ -423,11 +532,14 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                                     return const Padding(
                                       padding: EdgeInsets.all(16),
                                       child: Center(
-                                          child: CircularProgressIndicator()),
+                                        child: CircularProgressIndicator(),
+                                      ),
                                     );
                                   }
                                   return _buildGiftCard(
-                                      _filteredList[index], typography);
+                                    _filteredList[index],
+                                    typography,
+                                  );
                                 },
                               ),
                             ),
@@ -495,8 +607,10 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: _getStatusColor(item.status).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(15),
@@ -506,10 +620,7 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
                   ),
                 ),
                 child: Text(
-                  item.status.isEmpty
-                      ? ''
-                      : item.status[0].toUpperCase() +
-                          item.status.substring(1).toLowerCase(),
+                  _capitalize(item.status),
                   style: TextStyle(
                     color: _getStatusColor(item.status),
                     fontSize: 12,
@@ -572,7 +683,9 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
           TextSpan(
             text: '$label : ',
             style: typography.Caption.copyWith(
-                color: Colors.white70, fontSize: 13),
+              color: Colors.white70,
+              fontSize: 13,
+            ),
           ),
           TextSpan(
             text: value,
@@ -587,4 +700,3 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
     );
   }
 }
-

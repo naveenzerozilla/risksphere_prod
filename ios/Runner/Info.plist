@@ -33,12 +33,12 @@
     </array>
     <key>CFBundleName</key>
     <string>RiskSphere</string>
-    <key>CFBundlePackageType</key>6.
+    <key>CFBundlePackageType</key>
     <string>APPL</string>
 
     <!-- Version info -->
     <key>CFBundleShortVersionString</key>
-    <string>6.3.0</string>
+    <string>7.1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleSignature</key>

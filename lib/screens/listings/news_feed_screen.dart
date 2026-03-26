@@ -442,6 +442,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
     final body = notification['body'] ?? '';
     final activityType = item['type'];
     final readStatus = item['is_read'];
+    final isRevoked = item['is_revoked'];
     final feedId = item['id'];
     dynamic updatedAt = item['updated_at'];
     int timestamp;
@@ -471,7 +472,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
 
         return InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: isLoading
+          onTap: (isLoading || isRevoked == true)
               ? null
               : () async {
                   if (feedId == null) return;
@@ -559,7 +560,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
             clipBehavior: Clip.none,
             children: [
               Opacity(
-                opacity: isLoading ? 0.9 : 1,
+                opacity: (isLoading || isRevoked == true) ? 0.5 : 1,
                 child: Container(
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -592,17 +593,25 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                             shape: BoxShape.circle,
                           ),
                           child: Center(
-                            child: SvgPicture.asset(
-                              activityType == "hazard"
-                                  ? 'assets/images/hazard_icon.svg'
-                                  : 'assets/images/geocode.svg',
-                              width: 20,
-                              height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white70,
-                                BlendMode.srcIn,
-                              ),
-                            ),
+                            child: activityType.toString().toLowerCase() ==
+                                    "location_gift"
+                                ? Icon(
+                                    Icons.notifications_none_outlined,
+                                    color: isRevoked == true
+                                        ? Colors.grey
+                                        : Colors.white70,
+                                  )
+                                : SvgPicture.asset(
+                                    activityType == "hazard"
+                                        ? 'assets/images/hazard_icon.svg'
+                                        : 'assets/images/geocode.svg',
+                                    width: 20,
+                                    height: 20,
+                                    colorFilter: const ColorFilter.mode(
+                                      Colors.white70,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(width: 12),

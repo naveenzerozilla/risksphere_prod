@@ -397,7 +397,9 @@ class AppConstant {
 
   static String get ACCEPT_CREDITS => '$baseURL/locations/accept_credits';
 
-  static String get SENT_GIFTS => '$baseURL/locations/revoke_gift';
+  static String get SENT_GIFTS => '$baseURL/locations/sent_gifts';
+
+  static String get REVOKE_GIFTS => '$baseURL/locations/revoke_gift';
 
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
       '$baseURL/user_management_new/companies_list';

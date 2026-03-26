@@ -44,7 +44,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
     _tabController = TabController(
       length: 2,
       vsync: this,
-      initialIndex: widget.initialTabIndex ?? 0,
+      initialIndex: widget.initialTabIndex ?? 0, // ✅ add ?? 0
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getData();

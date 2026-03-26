@@ -1,4 +1,5 @@
 import 'package:tuple/tuple.dart';
+import '../../utils/app_update.dart';
 import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
@@ -82,58 +83,142 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    _initialize();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasNavigated) {
-        _hasNavigated = true;
+    _scrollController = ScrollController(); // ✅ ADD THIS LINE
 
-        _handleFirstTimeNavigation();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final updateStatus = await UpdateService.checkForUpdate();
+      debugPrint("Has update: ${updateStatus.hasUpdate}");
 
-        // ✅ HANDLE SHARED LOCATION
-        if (widget.openAddLocation &&
-            widget.latitude != null &&
-            widget.longitude != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AddLocationScreen(
-                accountId: accountId,
-                subAccountId: subAccountId,
-                sovId: "",
-                accountName: accountName,
-                subAccountName: subAccountName,
-                sovName: "sovName",
-                locationId: "",
+      if (updateStatus.hasUpdate && mounted) {
+        await UpdateService.showUpdateDialog(context, updateStatus);
+      }
 
-                // nullable-safe
-                locationName:
-                    "locationProfile.finalAddress?.locationName ?? " "",
+      _handleFirstTimeNavigation();
 
-                locationIdForRef: "",
-
-                searchQuery: "",
-                page: "1",
-
-                totalPages: "1",
-              ),
+      if (widget.openAddLocation &&
+          widget.latitude != null &&
+          widget.longitude != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AddLocationScreen(
+              accountId: accountId,
+              subAccountId: subAccountId,
+              sovId: "",
+              accountName: accountName,
+              subAccountName: subAccountName,
+              sovName: "sovName",
+              locationId: "",
+              locationName: "",
+              locationIdForRef: "",
+              searchQuery: "",
+              page: "1",
+              totalPages: "1",
             ),
-          );
-        }
+          ),
+        );
       }
     });
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (!_hasNavigated) {
-    //     _hasNavigated = true;
-    //     _handleFirstTimeNavigation();
-    //   }
-    // });
+
+    // ✅ Initialize data (was missing from initState)
+    _initialize();
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _initialize();
+  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
+  //     await _checkForUpdates();
+  //
+  //     if (!_hasNavigated) {
+  //       _hasNavigated = true;
+  //
+  //       _handleFirstTimeNavigation();
+  //
+  //       if (widget.openAddLocation &&
+  //           widget.latitude != null &&
+  //           widget.longitude != null) {
+  //         Navigator.of(context).push(
+  //           MaterialPageRoute(
+  //             builder: (_) =>
+  //                 AddLocationScreen(
+  //                   accountId: accountId,
+  //                   subAccountId: subAccountId,
+  //                   sovId: "",
+  //                   accountName: accountName,
+  //                   subAccountName: subAccountName,
+  //                   sovName: "sovName",
+  //                   locationId: "",
+  //                   locationName: "",
+  //                   locationIdForRef: "",
+  //                   searchQuery: "",
+  //                   page: "1",
+  //                   totalPages: "1",
+  //                 ),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   });
+  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
+  //   //   if (!_hasNavigated) {
+  //   //     _hasNavigated = true;
+  //   //
+  //   //     _handleFirstTimeNavigation();
+  //   //     if (widget.openAddLocation &&
+  //   //         widget.latitude != null &&
+  //   //         widget.longitude != null) {
+  //   //       Navigator.of(context).push(
+  //   //         MaterialPageRoute(
+  //   //           builder: (_) => AddLocationScreen(
+  //   //             accountId: accountId,
+  //   //             subAccountId: subAccountId,
+  //   //             sovId: "",
+  //   //             accountName: accountName,
+  //   //             subAccountName: subAccountName,
+  //   //             sovName: "sovName",
+  //   //             locationId: "",
+  //   //
+  //   //             // nullable-safe
+  //   //             locationName:
+  //   //                 "locationProfile.finalAddress?.locationName ?? " "",
+  //   //
+  //   //             locationIdForRef: "",
+  //   //
+  //   //             searchQuery: "",
+  //   //             page: "1",
+  //   //
+  //   //             totalPages: "1",
+  //   //           ),
+  //   //         ),
+  //   //       );
+  //   //     }
+  //   //   }
+  //   // });
+  //
+  // }
+
+  Future<void> _checkForUpdates() async {
+    final updateStatus = await UpdateService.checkForUpdate();
+    print("Current version check triggered");
+    print("Has update: ${updateStatus.hasUpdate}");
+    print("Latest version: ${updateStatus.latestVersion}");
+    if (updateStatus.hasUpdate && mounted) {
+      await UpdateService.showUpdateDialog(context, updateStatus);
+
+      // optional for tracking
+      await SharedPreferenceService.setBool("pending_soft_update", false);
+      await SharedPreferenceService.setString(
+          "pending_update_version", updateStatus.latestVersion ?? "");
+    }
   }
 
   Future<void> _initialize() async {
-    await _loadAsyncData();
+    _scrollController = ScrollController(); // safety
     await _setClaims();
     await _checkFirstTimeLoader();
+    await _loadAsyncData();
   }
-
   Future<void> _handleFirstTimeNavigation() async {
     if (!mounted) return;
     if (widget.defaultTab == "dashboard") {

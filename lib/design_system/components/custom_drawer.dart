@@ -543,7 +543,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         _buildDrawerItem(
                           context,
                           provider,
-                          title: "Purchase License",
+                          title: Platform.isIOS
+                              ? 'License & Sharing'
+                              : 'Purchase License',
+                          // "Purchase License",
                           icon: Icons.description,
                           onTap: () {
                             provider.setSelectedItem("purchase_license");

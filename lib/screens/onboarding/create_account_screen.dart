@@ -166,21 +166,44 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     _selectedOption = SignUpOptions.individual;
 
-    emailController.text = widget.email ?? "";
-
-    // Call APIs as soon as possible with a single Provider instance
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-
-      // Run both API calls in parallel to reduce total time
-      Future.wait([
-        authNotifier.fetchIndividualRoles(),
-        authNotifier.fetchCompanies(""),
-      ]);
+      if (widget.email != null && widget.email!.isNotEmpty) {
+        emailController.text = widget.email!;
+        setState(() {}); // ensure UI refresh
+      }
     });
+
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+
+    Future.wait([
+      authNotifier.fetchIndividualRoles(),
+      authNotifier.fetchCompanies(""),
+    ]);
 
     _updateHintText();
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //
+  //   _selectedOption = SignUpOptions.individual;
+  //
+  //   emailController.text = widget.email ?? "";
+  //
+  //   // Call APIs as soon as possible with a single Provider instance
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+  //
+  //     // Run both API calls in parallel to reduce total time
+  //     Future.wait([
+  //       authNotifier.fetchIndividualRoles(),
+  //       authNotifier.fetchCompanies(""),
+  //     ]);
+  //   });
+  //
+  //   _updateHintText();
+  // }
 
   // @override
   // void initState() {
@@ -886,6 +909,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           _selectedOption = value;
                           _clearIndividualForm();
                           _resetRoles();
+                          emailController.text = widget.email ?? '';
                         });
                       },
                     ),
@@ -927,6 +951,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 _selectedOption = value;
                                 _clearCorporateForm();
                                 _resetRoles();
+                                adminEmailController.text = widget.email ?? '';
                               });
                             },
                           ),
@@ -950,7 +975,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void _clearIndividualForm() {
     nameController.clear();
     displayNameController.clear();
-    emailController.clear();
+    // emailController.clear();
     mobileController =
         PhoneController(PhoneNumber(nsn: '', isoCode: IsoCode.US));
     passwordController.clear();
@@ -964,7 +989,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     companyTypeController.clear();
     companyDisplayNameController.clear();
     adminNameController.clear();
-    adminEmailController.clear();
+    // adminEmailController.clear();
     adminMobileController.clear();
     adminPasswordController.clear();
     adminConfirmPasswordController.clear();
@@ -1311,10 +1336,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               if (value == null || value.isEmpty || regextest(value) == false) {
                 return 'Enter a valid email address';
               }
-              // You can add more specific email validation here if needed
               return null;
             },
             controller: emailController,
+            readOnly: widget.email != null && widget.email!.isNotEmpty,
           ),
         ],
         SizedBox(height: CustomSpacing.four),
@@ -3480,6 +3505,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
           controller: adminEmailController,
+          readOnly: widget.email != null && widget.email!.isNotEmpty,
         ),
 
         SizedBox(height: CustomSpacing.four),
