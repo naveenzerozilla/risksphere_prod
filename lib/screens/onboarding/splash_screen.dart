@@ -13,8 +13,6 @@ import '../../main.dart';
 import '../../models/pending_location.dart';
 import '../../utils/app_update.dart';
 import '../listings/add_location_screen.dart';
-import 'create_account_screen.dart';
-import 'forgotpassword.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -147,6 +145,7 @@ class _SplashScreenState extends State<SplashScreen>
   Future<Widget> _determineInitialScreen() async {
     final auth = FirebaseAuth.instance;
 
+    /// 1️⃣ First-run logic (ONLY ONCE)
     final bool? firstRun = await SharedPreferenceService.getBool("first_run");
     if (firstRun != false) {
       await SharedPreferenceService.setBool("first_run", false);
@@ -154,6 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
       return const LoginScreen();
     }
 
+    /// 2️⃣ Wait until Firebase finishes restoring auth state
     User? user;
     try {
       user = await auth
@@ -165,44 +165,10 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     if (user == null) {
-      // ✅ Check deep link for logged out user
-      if (PendingDeepLink.pendingUri != null) {
-        final uri = PendingDeepLink.pendingUri!;
-        PendingDeepLink.pendingUri = null;
-
-        if (uri.pathSegments.contains('register')) {
-          final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final context = navigatorKey.currentContext;
-            if (context == null) return;
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CreateAccountScreen(email: email),
-              ),
-              (route) => false,
-            );
-          });
-          return const LoginScreen();
-        }
-
-        if (uri.pathSegments.contains('reset-password') ||
-            uri.pathSegments.contains('auth-action')) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final context = navigatorKey.currentContext;
-            if (context == null) return;
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => Forgotpassword()),
-              (route) => false,
-            );
-          });
-          return const LoginScreen();
-        }
-      }
       return const LoginScreen();
     }
 
+    /// 3️⃣ Session exists → restore claims + profile
     try {
       final tokenResult = await user.getIdTokenResult(true);
       final claims = tokenResult.claims ?? {};
@@ -241,127 +207,12 @@ class _SplashScreenState extends State<SplashScreen>
         );
       }
 
-      // ✅ Check deep link for logged in user
-      if (PendingDeepLink.pendingUri != null) {
-        final uri = PendingDeepLink.pendingUri!;
-        PendingDeepLink.pendingUri = null;
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final context = navigatorKey.currentContext;
-          if (context == null) return;
-
-          if (uri.pathSegments.contains('register')) {
-            final email =
-                Uri.decodeComponent(uri.queryParameters['email'] ?? '');
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CreateAccountScreen(email: email),
-              ),
-              (route) => false,
-            );
-            return;
-          }
-
-          if (uri.pathSegments.contains('login')) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
-            return;
-          }
-
-          if (uri.pathSegments.contains('reset-password') ||
-              uri.pathSegments.contains('auth-action')) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => Forgotpassword()),
-              (route) => false,
-            );
-            return;
-          }
-        });
-      }
-
       return DashboardScreen();
     } catch (e) {
       debugPrint('Session restore error: $e');
       return const LoginScreen();
     }
   }
-
-  // Future<Widget> _determineInitialScreen() async {
-  //   final auth = FirebaseAuth.instance;
-  //
-  //   /// 1️⃣ First-run logic (ONLY ONCE)
-  //   final bool? firstRun = await SharedPreferenceService.getBool("first_run");
-  //   if (firstRun != false) {
-  //     await SharedPreferenceService.setBool("first_run", false);
-  //     await auth.signOut();
-  //     return const LoginScreen();
-  //   }
-  //
-  //   /// 2️⃣ Wait until Firebase finishes restoring auth state
-  //   User? user;
-  //   try {
-  //     user = await auth
-  //         .authStateChanges()
-  //         .timeout(const Duration(seconds: 5))
-  //         .first;
-  //   } catch (_) {
-  //     user = null;
-  //   }
-  //
-  //   if (user == null) {
-  //     return const LoginScreen();
-  //   }
-  //
-  //   /// 3️⃣ Session exists → restore claims + profile
-  //   try {
-  //     final tokenResult = await user.getIdTokenResult(true);
-  //     final claims = tokenResult.claims ?? {};
-  //     await SharedPreferenceService.setClaims(claims);
-  //
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (!mounted) return;
-  //       context.read<UserProfileProvider>().getAllUserData(context, '', '');
-  //     });
-  //
-  //     await Future.delayed(const Duration(milliseconds: 2000));
-  //
-  //     debugPrint(
-  //         'wasLaunchedViaShare: ${PendingSharedLocation.wasLaunchedViaShare}');
-  //     debugPrint('sharedText: ${PendingSharedLocation.sharedText}');
-  //
-  //     if (PendingSharedLocation.wasLaunchedViaShare) {
-  //       final text = PendingSharedLocation.sharedText ?? '';
-  //       PendingSharedLocation.sharedText = null;
-  //       PendingSharedLocation.wasLaunchedViaShare = false;
-  //
-  //       debugPrint('🔥 Navigating with text: $text');
-  //
-  //       WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //         await _resolveAndNavigate(text);
-  //       });
-  //
-  //       return DashboardScreen();
-  //     }
-  //
-  //     if (PendingLocation.hasLocation) {
-  //       return DashboardScreen(
-  //         openAddLocation: true,
-  //         latitude: PendingLocation.latitude,
-  //         longitude: PendingLocation.longitude,
-  //       );
-  //     }
-  //
-  //     return DashboardScreen();
-  //   } catch (e) {
-  //     debugPrint('Session restore error: $e');
-  //     return const LoginScreen();
-  //   }
-  // }
 
   Future<void> _resolveAndNavigate(String sharedText) async {
     double? lat;

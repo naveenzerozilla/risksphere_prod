@@ -228,27 +228,48 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
   void _handleDeepLink() async {
     _appLinks = AppLinks();
 
-    final uri = await _appLinks.getInitialLink();
-    if (uri != null &&
-        (uri.host == 'qa.risksphere.ai' ||
-            uri.host == 'qa.auth.risksphere.ai')) {
-      PendingDeepLink.pendingUri = uri;
+    Uri? initialUri;
+
+    try {
+      initialUri = await _appLinks.getInitialLink();
+    } catch (e) {
+      initialUri = null;
+    }
+
+    if (initialUri != null && _isValidDeepLink(initialUri)) {
+      _routeFromDeepLink(initialUri);
     }
 
     _appLinks.uriLinkStream.listen((uri) {
-      if ((uri.host == 'qa.risksphere.ai' ||
-          uri.host == 'qa.auth.risksphere.ai')) {
+      if (_isHandlingDeepLink) return;
+
+      if (_isValidDeepLink(uri)) {
         _routeFromDeepLink(uri);
       }
     });
+  }
+
+
+
+  bool _isValidDeepLink(Uri uri) {
+    // Check both HTTP and custom schemes
+    return uri.scheme == 'risksphere' ||
+        uri.host == 'qa.risksphere.ai' ||
+        uri.host == 'qa.auth.risksphere.ai';
   }
 
   void _routeFromDeepLink(Uri uri) async {
     if (_isHandlingDeepLink) return;
     _isHandlingDeepLink = true;
 
+    // Add delay for iOS to ensure navigation is ready
+    if (Platform.isIOS) {
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    // Wait for context to be available (increased retries for iOS)
     int retries = 0;
-    while (navigatorKey.currentContext == null && retries < 10) {
+    while (navigatorKey.currentContext == null && retries < 20) {
       await Future.delayed(const Duration(milliseconds: 100));
       retries++;
     }
@@ -261,62 +282,235 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 
     final user = FirebaseAuth.instance.currentUser;
 
-    if (uri.pathSegments.contains('register')) {
-      final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CreateAccountScreen(email: email),
-        ),
-        (route) => false,
-      );
-      _isHandlingDeepLink = false;
-      return;
-    }
-
-    if (uri.pathSegments.contains('login')) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-      _isHandlingDeepLink = false;
-      return;
-    }
-
-    if (uri.pathSegments.contains('reset-password') ||
-        uri.pathSegments.contains('auth-action')) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => Forgotpassword()),
-        (route) => false,
-      );
-      _isHandlingDeepLink = false;
-      return;
-    }
-
-    if (user != null) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AddLocationScreen(
-            accountId: '',
-            subAccountId: '',
-            sovId: '',
-          ),
-        ),
-        (route) => false,
-      );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-
-    _isHandlingDeepLink = false;
+    // Use WidgetsBinding to ensure navigation happens after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        if (uri.pathSegments.contains('register')) {
+          final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CreateAccountScreen(email: email),
+            ),
+            (route) => false,
+          );
+        } else {
+          if (uri.pathSegments.contains('login')) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+          } else if (uri.pathSegments.contains('reset-password') ||
+              uri.pathSegments.contains('auth-action')) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => Forgotpassword()),
+              (route) => false,
+            );
+          } else {
+            if (user != null) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddLocationScreen(
+                    accountId: '',
+                    subAccountId: '',
+                    sovId: '',
+                  ),
+                ),
+                (route) => false,
+              );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            }
+          }
+        }
+      } finally {
+        _isHandlingDeepLink = false;
+      }
+    });
   }
+
+// work both
+  // void _handleDeepLink() async {
+  //   _appLinks = AppLinks();
+  //
+  //   final uri = await _appLinks.getInitialLink();
+  //   if (uri != null &&
+  //       (uri.host == 'qa.risksphere.ai' ||
+  //           uri.host == 'qa.auth.risksphere.ai')) {
+  //     PendingDeepLink1.pendingUri = uri;
+  //   }
+  //
+  //   _appLinks.uriLinkStream.listen((uri) {
+  //     if ((uri.host == 'qa.risksphere.ai' ||
+  //         uri.host == 'qa.auth.risksphere.ai')) {
+  //       _routeFromDeepLink(uri);
+  //     }
+  //   });
+  // }
+  //
+  // void _routeFromDeepLink(Uri uri) async {
+  //   if (_isHandlingDeepLink) return;
+  //   _isHandlingDeepLink = true;
+  //
+  //   int retries = 0;
+  //   while (navigatorKey.currentContext == null && retries < 10) {
+  //     await Future.delayed(const Duration(milliseconds: 100));
+  //     retries++;
+  //   }
+  //
+  //   final context = navigatorKey.currentContext;
+  //   if (context == null) {
+  //     _isHandlingDeepLink = false;
+  //     return;
+  //   }
+  //
+  //   final user = FirebaseAuth.instance.currentUser;
+  //
+  //   if (uri.pathSegments.contains('register')) {
+  //     final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (_) => CreateAccountScreen(email: email),
+  //       ),
+  //       (route) => false,
+  //     );
+  //     _isHandlingDeepLink = false;
+  //     return;
+  //   }
+  //
+  //   if (uri.pathSegments.contains('login')) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
+  //       (route) => false,
+  //     );
+  //     _isHandlingDeepLink = false;
+  //     return;
+  //   }
+  //
+  //   if (uri.pathSegments.contains('reset-password') ||
+  //       uri.pathSegments.contains('auth-action')) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => Forgotpassword()),
+  //       (route) => false,
+  //     );
+  //     _isHandlingDeepLink = false;
+  //     return;
+  //   }
+  //
+  //   if (user != null) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (_) => AddLocationScreen(
+  //           accountId: '',
+  //           subAccountId: '',
+  //           sovId: '',
+  //         ),
+  //       ),
+  //       (route) => false,
+  //     );
+  //   } else {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
+  //       (route) => false,
+  //     );
+  //   }
+  //
+  //   _isHandlingDeepLink = false;
+  // }
+
+  // void _handleDeepLink() async {
+  //   _appLinks = AppLinks();
+  //
+  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
+  //     final uri = await _appLinks.getInitialLink();
+  //     if (uri != null &&
+  //         (uri.host == 'qa.risksphere.ai' ||
+  //             uri.host == 'qa.auth.risksphere.ai')) {
+  //       _routeFromDeepLink(uri);
+  //     }
+  //   });
+  //
+  //   _appLinks.uriLinkStream.listen((uri) {
+  //     if ((uri.host == 'qa.risksphere.ai' ||
+  //         uri.host == 'qa.auth.risksphere.ai')) {
+  //       _routeFromDeepLink(uri);
+  //     }
+  //   });
+  // }
+  //
+  // void _routeFromDeepLink(Uri uri) async {
+  //   if (_isHandlingDeepLink) return;
+  //
+  //   final context = navigatorKey.currentContext;
+  //   if (context == null) return;
+  //
+  //   _isHandlingDeepLink = true;
+  //
+  //   final user = FirebaseAuth.instance.currentUser;
+  //
+  //   if (uri.pathSegments.contains('register')) {
+  //     final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
+  //
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (_) => CreateAccountScreen(email: email),
+  //       ),
+  //       (route) => false,
+  //     );
+  //     return;
+  //   }
+  //   if (uri.pathSegments.contains('login')) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
+  //       (route) => false,
+  //     );
+  //     return;
+  //   }
+  //
+  //   if (uri.pathSegments.contains('reset-password') ||
+  //       uri.pathSegments.contains('auth-action')) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => Forgotpassword()),
+  //       (route) => false,
+  //     );
+  //     return;
+  //   }
+  //
+  //   if (user != null) {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (_) => AddLocationScreen(
+  //           accountId: '',
+  //           subAccountId: '',
+  //           sovId: '',
+  //         ),
+  //       ),
+  //       (route) => false,
+  //     );
+  //   } else {
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
+  //       (route) => false,
+  //     );
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -573,6 +767,10 @@ class CustomToast {
   }
 }
 
+class PendingDeepLink {
+  static bool isDeepLinkPending = false;
+}
+
 class PendingSharedLocation {
   static String? sharedText;
   static bool wasLaunchedViaShare = false;
@@ -580,7 +778,7 @@ class PendingSharedLocation {
   static bool get hasSharedText => sharedText != null && sharedText!.isNotEmpty;
 }
 
-class PendingDeepLink {
+class PendingDeepLink1 {
   static bool isDeepLinkPending = false;
   static Uri? pendingUri;
 }

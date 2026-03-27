@@ -491,8 +491,8 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                 ),
                                                               ),
                                                               // Tab(text: 'Shared'),
-                                                              if (isSuperAdmin ||
-                                                                  isPgAdmin)
+                                                              // if (isSuperAdmin ||
+                                                              //     isPgAdmin)
                                                                 Tab(
                                                                   text: LanguageService
                                                                       .getTranslated(
@@ -530,7 +530,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                               controller: _tabController,
                                               children: [
                                                 _getAccountUI(),
-                                                if (isSuperAdmin || isPgAdmin)
+                                                // if (isSuperAdmin || isPgAdmin)
                                                   ConfigurationTab(
                                                     accountName:
                                                         accountListProvider

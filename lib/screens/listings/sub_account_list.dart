@@ -467,8 +467,8 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                       ),
                                                     ),
                                                     // const Tab(text: 'Shared'),
-                                                    if (isSuperAdmin ||
-                                                        isPgAdmin)
+                                                    // if (isSuperAdmin ||
+                                                    //     isPgAdmin)
                                                       Tab(
                                                         text: LanguageService
                                                             .getTranslated(
@@ -501,7 +501,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                         controller: _tabController,
                                         children: [
                                           _getSubAccountUI(),
-                                          if (isSuperAdmin || isPgAdmin)
+                                          // if (isSuperAdmin || isPgAdmin)
                                             ConfigurationTab(
                                               subAccountName:
                                                   subaccountlistprovider

@@ -539,26 +539,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               "false")
                         ...[]
                       else ...[
-                        // if (Platform.isAndroid)
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: Platform.isIOS
-                              ? 'License & Sharing'
-                              : 'Purchase License',
-                          // "Purchase License",
-                          icon: Icons.description,
-                          onTap: () {
-                            provider.setSelectedItem("purchase_license");
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => PurchaseLicensePage()),
-                            );
-                          },
-                          isSelected:
-                              provider.selectedItem == "purchase_license",
-                        ),
+                        if (Platform.isAndroid) ...[
+                          _buildDrawerItem(
+                            context,
+                            provider,
+                            title: Platform.isIOS
+                                ? 'License & Sharing'
+                                : 'Purchase License',
+                            // "Purchase License",
+                            icon: Icons.description,
+                            onTap: () {
+                              provider.setSelectedItem("purchase_license");
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => PurchaseLicensePage()),
+                              );
+                            },
+                            isSelected:
+                                provider.selectedItem == "purchase_license",
+                          ),
+                        ],
                         _buildDrawerItem(
                           context,
                           provider,
@@ -663,234 +664,438 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             context, 'drawer_menu_delete_account'),
                         icon: Icons.delete_rounded,
                         onTap: () {
-                          showDialog(
+                          showModalBottomSheet(
                             context: context,
+                            isScrollControlled: true, // 🔥 important for height
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20)),
+                            ),
                             builder: (context) {
-                              return AlertDialog(
-                                title: Text(
-                                  LanguageService.getTranslated(
-                                      context, 'delete_account'),
-                                  style: typography.H5_Regular,
-                                ),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      LanguageService.getTranslated(
-                                          context, 'confirm_delete_account'),
-                                      style: typography.Body1,
-                                    ),
-                                    SizedBox(height: CustomSpacing.two),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: CustomButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text(
-                                              LanguageService.getTranslated(
-                                                  context, "cancel"),
-                                              style: typography.ButtonLarge,
+                              bool isDeleting = false;
+
+                              return StatefulBuilder(
+                                builder: (context, setState) {
+                                  return FractionallySizedBox(
+                                    heightFactor: 0.26,
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                        left: 16,
+                                        right: 16,
+                                        top: 20,
+                                        bottom: MediaQuery.of(context)
+                                                .viewInsets
+                                                .bottom +
+                                            20,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.max,
+                                        // 🔥 important
+                                        children: [
+                                          /// 🔘 Drag Handle (optional nice UI)
+                                          Container(
+                                            width: 40,
+                                            height: 4,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade400,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
-                                            type: ButtonType.text,
                                           ),
-                                        ),
-                                        Consumer<AuthNotifier>(
-                                          builder:
-                                              (context, authNotifier, child) {
-                                            return ElevatedButton(
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                // 🔴 Red background
-                                                foregroundColor: Colors.white,
-                                                // ⚪ White text
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 20,
-                                                        vertical: 12),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
+
+                                          const SizedBox(height: 16),
+
+                                          /// 🔴 Title
+                                          Text(
+                                            LanguageService.getTranslated(
+                                                context, 'delete_account'),
+                                            style: typography.H5_Regular,
+                                          ),
+
+                                          const SizedBox(height: 12),
+
+                                          /// 📝 Description
+                                          Text(
+                                            LanguageService.getTranslated(
+                                                context,
+                                                'confirm_delete_account'),
+                                            style: typography.Body1,
+                                            textAlign: TextAlign.center,
+                                          ),
+
+                                          const Spacer(),
+                                          // 🔥 pushes buttons to bottom
+
+                                          /// 🔘 Buttons
+                                          Row(
+                                            children: [
+                                              /// Cancel
+                                              Expanded(
+                                                child: CustomButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: Text(
+                                                    LanguageService
+                                                        .getTranslated(
+                                                            context, "cancel"),
+                                                    style:
+                                                        typography.ButtonLarge,
+                                                  ),
+                                                  type: ButtonType.text,
                                                 ),
                                               ),
-                                              onPressed: () {
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    bool isDeleting =
-                                                        false; // local state
 
-                                                    return StatefulBuilder(
-                                                      builder:
-                                                          (context, setState) {
-                                                        return AlertDialog(
-                                                          title: Text(
-                                                            LanguageService
-                                                                .getTranslated(
-                                                                    context,
-                                                                    "delete_account"),
-                                                            style: typography
-                                                                .H5_Regular,
-                                                          ),
-                                                          content: Column(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              Text(
-                                                                LanguageService
-                                                                    .getTranslated(
-                                                                        context,
-                                                                        "confirm_delete_account"),
-                                                                style:
-                                                                    typography
-                                                                        .Body1,
-                                                              ),
-                                                              SizedBox(
-                                                                  height:
-                                                                      CustomSpacing
-                                                                          .two),
-                                                              Row(
-                                                                children: [
-                                                                  Expanded(
-                                                                    child:
-                                                                        CustomButton(
-                                                                      onPressed:
-                                                                          () =>
-                                                                              Navigator.pop(context),
-                                                                      child:
-                                                                          Text(
-                                                                        LanguageService.getTranslated(
-                                                                            context,
-                                                                            "cancel"),
-                                                                        style: typography
-                                                                            .ButtonLarge,
-                                                                      ),
-                                                                      type: ButtonType
-                                                                          .text,
-                                                                    ),
+                                              const SizedBox(width: 12),
+
+                                              /// Delete
+                                              Expanded(
+                                                child: Consumer<AuthNotifier>(
+                                                  builder: (context,
+                                                      authNotifier, child) {
+                                                    return ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 14),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      onPressed: isDeleting
+                                                          ? null
+                                                          : () async {
+                                                              setState(() =>
+                                                                  isDeleting =
+                                                                      true);
+
+                                                              try {
+                                                                final googleSignIn =
+                                                                    GoogleSignIn();
+
+                                                                if (await googleSignIn
+                                                                    .isSignedIn()) {
+                                                                  await googleSignIn
+                                                                      .disconnect();
+                                                                }
+
+                                                                await authNotifier
+                                                                    .signOut();
+
+                                                                Navigator.pop(
+                                                                    context); // close sheet
+
+                                                                Navigator
+                                                                    .pushAndRemoveUntil(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                      builder:
+                                                                          (_) =>
+                                                                              LoginScreen()),
+                                                                  (route) =>
+                                                                      false,
+                                                                );
+
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  const SnackBar(
+                                                                    content: Text(
+                                                                        "Account deleted successfully"),
                                                                   ),
-                                                                  const SizedBox(
-                                                                      width: 8),
-                                                                  // Consumer<
-                                                                  //     AuthNotifier>(
-                                                                  //   builder: (context,
-                                                                  //       authNotifier,
-                                                                  //       child) {
-                                                                  //     return ElevatedButton(
-                                                                  //       style: ElevatedButton
-                                                                  //           .styleFrom(
-                                                                  //         backgroundColor:
-                                                                  //             Colors.red,
-                                                                  //         foregroundColor:
-                                                                  //             Colors.white,
-                                                                  //         padding: const EdgeInsets
-                                                                  //             .symmetric(
-                                                                  //             horizontal: 20,
-                                                                  //             vertical: 12),
-                                                                  //         shape:
-                                                                  //             RoundedRectangleBorder(
-                                                                  //           borderRadius:
-                                                                  //               BorderRadius.circular(6),
-                                                                  //         ),
-                                                                  //       ),
-                                                                  //       onPressed: isDeleting
-                                                                  //           ? null // disable while deleting
-                                                                  //           : () async {
-                                                                  //               setState(() => isDeleting = true);
-                                                                  //
-                                                                  //               try {
-                                                                  //                 final googleSignIn = GoogleSignIn();
-                                                                  //                 if (await googleSignIn.isSignedIn()) {
-                                                                  //                   await googleSignIn.disconnect();
-                                                                  //                 }
-                                                                  //                 await authNotifier.signOut();
-                                                                  //
-                                                                  //                 Navigator.pushAndRemoveUntil(
-                                                                  //                   context,
-                                                                  //                   MaterialPageRoute(builder: (_) => LoginScreen()),
-                                                                  //                   (route) => false,
-                                                                  //                 );
-                                                                  //
-                                                                  //                 ScaffoldMessenger.of(context).showSnackBar(
-                                                                  //                   const SnackBar(
-                                                                  //                     content: Text("Account deleted successfully"),
-                                                                  //                   ),
-                                                                  //                 );
-                                                                  //               } catch (e) {
-                                                                  //                 ScaffoldMessenger.of(context).showSnackBar(
-                                                                  //                   SnackBar(content: Text("Delete failed: $e")),
-                                                                  //                 );
-                                                                  //                 setState(() => isDeleting = false);
-                                                                  //               }
-                                                                  //             },
-                                                                  //       child: isDeleting
-                                                                  //           ? const SizedBox(
-                                                                  //               height: 20,
-                                                                  //               width: 20,
-                                                                  //               child: CircularProgressIndicator(
-                                                                  //                 strokeWidth: 2,
-                                                                  //                 valueColor: AlwaysStoppedAnimation(Colors.white),
-                                                                  //               ),
-                                                                  //             )
-                                                                  //           : Text(
-                                                                  //               LanguageService.getTranslated(context, "delete"),
-                                                                  //               style: TextStyle(
-                                                                  //                 color: Colors.white,
-                                                                  //                 fontSize: 18,
-                                                                  //                 fontWeight: FontWeight.bold,
-                                                                  //               ),
-                                                                  //             ),
-                                                                  //     );
-                                                                  //   },
-                                                                  // ),
-                                                                ],
+                                                                );
+                                                              } catch (e) {
+                                                                setState(() =>
+                                                                    isDeleting =
+                                                                        false);
+
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                      content: Text(
+                                                                          "Delete failed: $e")),
+                                                                );
+                                                              }
+                                                            },
+                                                      child: isDeleting
+                                                          ? const SizedBox(
+                                                              height: 20,
+                                                              width: 20,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                strokeWidth: 2,
+                                                                valueColor:
+                                                                    AlwaysStoppedAnimation(
+                                                                        Colors
+                                                                            .white),
                                                               ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
+                                                            )
+                                                          : Text(
+                                                              LanguageService
+                                                                  .getTranslated(
+                                                                      context,
+                                                                      "delete"),
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
                                                     );
                                                   },
-                                                );
-                                              },
-
-                                              // onPressed: () async {
-                                              //   final googleSignIn = GoogleSignIn();
-                                              //   if (await googleSignIn.isSignedIn()) {
-                                              //     await googleSignIn.disconnect();
-                                              //   }
-                                              //   await authNotifier.signOut();
-                                              //   Navigator.push(
-                                              //     context,
-                                              //     MaterialPageRoute(builder: (_) => LoginScreen()),
-                                              //   );
-                                              //   ScaffoldMessenger.of(context).showSnackBar(
-                                              //     const SnackBar(
-                                              //       content: Text("Account deleted successfully"),
-                                              //     ),
-                                              //   );
-                                              // },
-                                              child: Text(
-                                                LanguageService.getTranslated(
-                                                    context, "delete"),
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 18,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                ),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      ],
+                                            ],
+                                          ),
+
+                                          const SizedBox(height: 10),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  );
+                                },
                               );
                             },
                           );
+                          // showDialog(
+                          //   context: context,
+                          //   builder: (context) {
+                          //     return AlertDialog(
+                          //       title: Text(
+                          //         LanguageService.getTranslated(
+                          //             context, 'delete_account'),
+                          //         style: typography.H5_Regular,
+                          //       ),
+                          //       content: Column(
+                          //         mainAxisSize: MainAxisSize.min,
+                          //         children: [
+                          //           Text(
+                          //             LanguageService.getTranslated(
+                          //                 context, 'confirm_delete_account'),
+                          //             style: typography.Body1,
+                          //           ),
+                          //           SizedBox(height: CustomSpacing.two),
+                          //           Row(
+                          //             children: [
+                          //               Expanded(
+                          //                 child: CustomButton(
+                          //                   onPressed: () {
+                          //                     Navigator.pop(context);
+                          //                   },
+                          //                   child: Text(
+                          //                     LanguageService.getTranslated(
+                          //                         context, "cancel"),
+                          //                     style: typography.ButtonLarge,
+                          //                   ),
+                          //                   type: ButtonType.text,
+                          //                 ),
+                          //               ),
+                          //               Consumer<AuthNotifier>(
+                          //                 builder:
+                          //                     (context, authNotifier, child) {
+                          //                   return ElevatedButton(
+                          //                     style: ElevatedButton.styleFrom(
+                          //                       backgroundColor: Colors.red,
+                          //                       // 🔴 Red background
+                          //                       foregroundColor: Colors.white,
+                          //                       // ⚪ White text
+                          //                       padding:
+                          //                           const EdgeInsets.symmetric(
+                          //                               horizontal: 20,
+                          //                               vertical: 12),
+                          //                       shape: RoundedRectangleBorder(
+                          //                         borderRadius:
+                          //                             BorderRadius.circular(6),
+                          //                       ),
+                          //                     ),
+                          //                     onPressed: () {
+                          //                       showDialog(
+                          //                         context: context,
+                          //                         builder: (context) {
+                          //                           bool isDeleting =
+                          //                               false; // local state
+                          //
+                          //                           return StatefulBuilder(
+                          //                             builder:
+                          //                                 (context, setState) {
+                          //                               return AlertDialog(
+                          //                                 title: Text(
+                          //                                   LanguageService
+                          //                                       .getTranslated(
+                          //                                           context,
+                          //                                           "delete_account"),
+                          //                                   style: typography
+                          //                                       .H5_Regular,
+                          //                                 ),
+                          //                                 content: Column(
+                          //                                   mainAxisSize:
+                          //                                       MainAxisSize
+                          //                                           .min,
+                          //                                   children: [
+                          //                                     Text(
+                          //                                       LanguageService
+                          //                                           .getTranslated(
+                          //                                               context,
+                          //                                               "confirm_delete_account"),
+                          //                                       style:
+                          //                                           typography
+                          //                                               .Body1,
+                          //                                     ),
+                          //                                     SizedBox(
+                          //                                         height:
+                          //                                             CustomSpacing
+                          //                                                 .two),
+                          //                                     Row(
+                          //                                       children: [
+                          //                                         Expanded(
+                          //                                           child:
+                          //                                               CustomButton(
+                          //                                             onPressed:
+                          //                                                 () =>
+                          //                                                     Navigator.pop(context),
+                          //                                             child:
+                          //                                                 Text(
+                          //                                               LanguageService.getTranslated(
+                          //                                                   context,
+                          //                                                   "cancel"),
+                          //                                               style: typography
+                          //                                                   .ButtonLarge,
+                          //                                             ),
+                          //                                             type: ButtonType
+                          //                                                 .text,
+                          //                                           ),
+                          //                                         ),
+                          //                                         const SizedBox(
+                          //                                             width: 8),
+                          //                                         // Consumer<
+                          //                                         //     AuthNotifier>(
+                          //                                         //   builder: (context,
+                          //                                         //       authNotifier,
+                          //                                         //       child) {
+                          //                                         //     return ElevatedButton(
+                          //                                         //       style: ElevatedButton
+                          //                                         //           .styleFrom(
+                          //                                         //         backgroundColor:
+                          //                                         //             Colors.red,
+                          //                                         //         foregroundColor:
+                          //                                         //             Colors.white,
+                          //                                         //         padding: const EdgeInsets
+                          //                                         //             .symmetric(
+                          //                                         //             horizontal: 20,
+                          //                                         //             vertical: 12),
+                          //                                         //         shape:
+                          //                                         //             RoundedRectangleBorder(
+                          //                                         //           borderRadius:
+                          //                                         //               BorderRadius.circular(6),
+                          //                                         //         ),
+                          //                                         //       ),
+                          //                                         //       onPressed: isDeleting
+                          //                                         //           ? null // disable while deleting
+                          //                                         //           : () async {
+                          //                                         //               setState(() => isDeleting = true);
+                          //                                         //
+                          //                                         //               try {
+                          //                                         //                 final googleSignIn = GoogleSignIn();
+                          //                                         //                 if (await googleSignIn.isSignedIn()) {
+                          //                                         //                   await googleSignIn.disconnect();
+                          //                                         //                 }
+                          //                                         //                 await authNotifier.signOut();
+                          //                                         //
+                          //                                         //                 Navigator.pushAndRemoveUntil(
+                          //                                         //                   context,
+                          //                                         //                   MaterialPageRoute(builder: (_) => LoginScreen()),
+                          //                                         //                   (route) => false,
+                          //                                         //                 );
+                          //                                         //
+                          //                                         //                 ScaffoldMessenger.of(context).showSnackBar(
+                          //                                         //                   const SnackBar(
+                          //                                         //                     content: Text("Account deleted successfully"),
+                          //                                         //                   ),
+                          //                                         //                 );
+                          //                                         //               } catch (e) {
+                          //                                         //                 ScaffoldMessenger.of(context).showSnackBar(
+                          //                                         //                   SnackBar(content: Text("Delete failed: $e")),
+                          //                                         //                 );
+                          //                                         //                 setState(() => isDeleting = false);
+                          //                                         //               }
+                          //                                         //             },
+                          //                                         //       child: isDeleting
+                          //                                         //           ? const SizedBox(
+                          //                                         //               height: 20,
+                          //                                         //               width: 20,
+                          //                                         //               child: CircularProgressIndicator(
+                          //                                         //                 strokeWidth: 2,
+                          //                                         //                 valueColor: AlwaysStoppedAnimation(Colors.white),
+                          //                                         //               ),
+                          //                                         //             )
+                          //                                         //           : Text(
+                          //                                         //               LanguageService.getTranslated(context, "delete"),
+                          //                                         //               style: TextStyle(
+                          //                                         //                 color: Colors.white,
+                          //                                         //                 fontSize: 18,
+                          //                                         //                 fontWeight: FontWeight.bold,
+                          //                                         //               ),
+                          //                                         //             ),
+                          //                                         //     );
+                          //                                         //   },
+                          //                                         // ),
+                          //                                       ],
+                          //                                     ),
+                          //                                   ],
+                          //                                 ),
+                          //                               );
+                          //                             },
+                          //                           );
+                          //                         },
+                          //                       );
+                          //                     },
+                          //
+                          //                     // onPressed: () async {
+                          //                     //   final googleSignIn = GoogleSignIn();
+                          //                     //   if (await googleSignIn.isSignedIn()) {
+                          //                     //     await googleSignIn.disconnect();
+                          //                     //   }
+                          //                     //   await authNotifier.signOut();
+                          //                     //   Navigator.push(
+                          //                     //     context,
+                          //                     //     MaterialPageRoute(builder: (_) => LoginScreen()),
+                          //                     //   );
+                          //                     //   ScaffoldMessenger.of(context).showSnackBar(
+                          //                     //     const SnackBar(
+                          //                     //       content: Text("Account deleted successfully"),
+                          //                     //     ),
+                          //                     //   );
+                          //                     // },
+                          //                     child: Text(
+                          //                       LanguageService.getTranslated(
+                          //                           context, "delete"),
+                          //                       style: TextStyle(
+                          //                           color: Colors.white,
+                          //                           fontSize: 18,
+                          //                           fontWeight:
+                          //                               FontWeight.bold),
+                          //                     ),
+                          //                   );
+                          //                 },
+                          //               ),
+                          //             ],
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     );
+                          //   },
+                          // );
                         },
                         isSelected: provider.selectedItem == "delete_account",
                       ),

@@ -1,4 +1,3 @@
-
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -197,6 +196,30 @@ class _MyLocationListState extends State<MyLocationList>
       });
     });
   }
+
+  // void _reloadPage() {
+  //   if (!mounted) return;
+  //
+  //   if (ModalRoute.of(context)?.isCurrent != true) {
+  //     return;
+  //   }
+  //
+  //   _timer?.cancel();
+  //
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => MyLocationList(
+  //         accountID: widget.accountID,
+  //         subAccountID: widget.subAccountID,
+  //         accountName: widget.accountName,
+  //         subAccountName: widget.subAccountName,
+  //         initialProcessId: widget.initialProcessId,
+  //         initialSubProcessId: widget.initialSubProcessId,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   void _reloadPage() {
     _timer?.cancel(); // IMPORTANT: stop old timer before replacing page
@@ -1508,7 +1531,6 @@ class _MyLocationListState extends State<MyLocationList>
     );
   }
 
-
   Widget _buildOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.7), // dim background/ dim background
@@ -1831,7 +1853,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                     return;
                                                   }
                                                   print(locationIds);
-                                                  print("locationIdslocationIds");
+                                                  print(
+                                                      "locationIdslocationIds");
 
                                                   await p.addSelectedToSOV1(
                                                     context,
@@ -4932,7 +4955,6 @@ class _MyLocationListState extends State<MyLocationList>
       builder: (BuildContext context) {
         return Consumer<UserProfileProvider>(
             builder: (context, userProfileProvider, child) {
-          /// ✅ TAG HANDLER (FIXED)
           void _handleTagInput(String value) {
             if (!value.contains(',')) return;
 
@@ -5380,22 +5402,38 @@ class _MyLocationListState extends State<MyLocationList>
                             children: [
                               Checkbox(
                                 value: addToSOVCheck,
-                                onChanged: (trialStatus.isNotEmpty &&
-                                        !hasAnyPlan)
-                                    ? null // Disable checkbox if `areFieldsDisabled` is true
+                                onChanged: (trialStatus.isNotEmpty && !hasAnyPlan)
+                                    ? null
                                     : (bool? value) {
-                                        setState(() {
-                                          addToSOVCheck = !addToSOVCheck;
-                                        });
-                                      },
-                                // onChanged: trialStatus.isNotEmpty
-                                //     ? null
-                                //     : (bool? value) {
-                                //         setState(() {
-                                //           addToSOVCheck = value ?? false;
-                                //         });
-                                //       },
+                                  setState(() {
+                                    addToSOVCheck = value ?? false;
+                                  });
+
+                                  if (value == true) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("Please select SOV name")),
+                                    );
+                                  }
+                                },
                               ),
+                              // Checkbox(
+                              //   value: addToSOVCheck,
+                              //   onChanged: (trialStatus.isNotEmpty &&
+                              //           !hasAnyPlan)
+                              //       ? null // Disable checkbox if `areFieldsDisabled` is true
+                              //       : (bool? value) {
+                              //           setState(() {
+                              //             addToSOVCheck = !addToSOVCheck;
+                              //           });
+                              //         },
+                              //   // onChanged: trialStatus.isNotEmpty
+                              //   //     ? null
+                              //   //     : (bool? value) {
+                              //   //         setState(() {
+                              //   //           addToSOVCheck = value ?? false;
+                              //   //         });
+                              //   //       },
+                              // ),
                               SizedBox(width: 8),
                               Text(
                                 LanguageService.getTranslated(
@@ -5520,325 +5558,350 @@ class _MyLocationListState extends State<MyLocationList>
                                           child: CircularProgressIndicator())
                                       : Row(
                                           children: [
-                                            // Expanded(
-                                            //   child:
-                                            //       Consumer<UserProfileProvider>(
-                                            //     builder: (context,
-                                            //         userProfileProvider,
-                                            //         child) {
-                                            //       final trialStatus =
-                                            //           userProfileProvider
-                                            //                       .trialInfo[
-                                            //                   'status'] ??
-                                            //               '';
-                                            //       final bool isTrialExpired =
-                                            //           trialStatus.contains(
-                                            //                   'Expired') &&
-                                            //               hasAnyPlan == false;
-                                            //
-                                            //       return CustomButton(
-                                            //         type: ButtonType.elevated,
-                                            //
-                                            //         // 🚫 Disable when expired
-                                            //         onPressed:  () async {
-                                            //           print("Upload");
-                                            //                 if (_formKey
-                                            //                     .currentState!
-                                            //                     .validate()) {
-                                            //                   if (files ==
-                                            //                           null ||
-                                            //                       files!.path
-                                            //                           .isEmpty) {
-                                            //                     ScaffoldMessenger.of(
-                                            //                             context)
-                                            //                         .showSnackBar(
-                                            //                       SnackBar(
-                                            //                         content: Text(
-                                            //                             "Please select a file to upload"),
-                                            //                       ),
-                                            //                     );
-                                            //                     return;
-                                            //                   }
-                                            //
-                                            //                   if (!files!.path
-                                            //                       .endsWith(
-                                            //                           '.xlsx')) {
-                                            //                     ScaffoldMessenger.of(
-                                            //                             context)
-                                            //                         .showSnackBar(
-                                            //                       SnackBar(
-                                            //                         content: Text(
-                                            //                             "Please select a valid file to upload"),
-                                            //                       ),
-                                            //                     );
-                                            //                     return;
-                                            //                   }
-                                            //
-                                            //                   String success =
-                                            //                       await locationListProvider
-                                            //                           .uploadSov(
-                                            //                     context,
-                                            //                     files!,
-                                            //                     accountId,
-                                            //                     subAccountId,
-                                            //                     sovId,
-                                            //                     tagController
-                                            //                         .text,
-                                            //                     _sovNameController
-                                            //                         .text,
-                                            //                   );
-                                            //
-                                            //                   _sovNameController
-                                            //                       .clear();
-                                            //                   print(success.toString());
-                                            //                   print("success".toString());
-                                            //
-                                            //                   if (success
-                                            //                           .isNotEmpty &&
-                                            //                       success
-                                            //                           .contains(
-                                            //                               '+')) {
-                                            //                     showDialog(
-                                            //                       context:
-                                            //                           context,
-                                            //                       builder:
-                                            //                           (BuildContext
-                                            //                               context) {
-                                            //                         return AlertDialog(
-                                            //                           title:
-                                            //                               Text(
-                                            //                             'Empty SOV',
-                                            //                             style: typography
-                                            //                                 .H5_Regular,
-                                            //                           ),
-                                            //                           content:
-                                            //                               Text(
-                                            //                             'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
-                                            //                             style: typography
-                                            //                                 .Body1,
-                                            //                           ),
-                                            //                         );
-                                            //                       },
-                                            //                     );
-                                            //                   } else if (success
-                                            //                       .isNotEmpty) {
-                                            //                     Navigator.push(
-                                            //                       context,
-                                            //                       MaterialPageRoute(
-                                            //                         builder: (_) =>
-                                            //                             MappingScreen(
-                                            //                           tempId:
-                                            //                               success,
-                                            //                           accountId:
-                                            //                               widget
-                                            //                                   .accountID!,
-                                            //                           accountName:
-                                            //                               widget.accountName ??
-                                            //                                   "",
-                                            //                           subAccountName:
-                                            //                               widget.subAccountName ??
-                                            //                                   "",
-                                            //                           subAccountId:
-                                            //                               widget
-                                            //                                   .subAccountID!,
-                                            //                         ),
-                                            //                       ),
-                                            //                     );
-                                            //                   }
-                                            //                 }
-                                            //               },
-                                            //
-                                            //         // 🔴 Change Text if Expired
-                                            //         child: Text(
-                                            //           isTrialExpired
-                                            //               ? "Expired"
-                                            //               : LanguageService
-                                            //                   .getTranslated(
-                                            //                   context,
-                                            //                   "upload2",
-                                            //                 ),
-                                            //           style: typography
-                                            //               .ButtonLarge.copyWith(
-                                            //             color: isTrialExpired
-                                            //                 ? Colors.red
-                                            //                 : Colors.black,
-                                            //           ),
-                                            //         ),
-                                            //       );
-                                            //     },
-                                            //   ),
-                                            // ),
-
-                                            //working piece
                                             Expanded(
                                                 child: CustomButton(
                                                     type: ButtonType.elevated,
                                                     onPressed: () async {
-                                                      if (_formKey.currentState!
-                                                          .validate()) {
-                                                        if (files == null ||
-                                                            files!
-                                                                .path.isEmpty) {
+                                                      if (!_formKey
+                                                          .currentState!
+                                                          .validate()) return;
+
+                                                      // ✅ NEW VALIDATION (IMPORTANT)
+                                                      if (addToSOVCheck) {
+                                                        if (_sovNameController
+                                                                .text
+                                                                .trim()
+                                                                .isEmpty ||
+                                                            !isSovSelected) {
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .showSnackBar(
                                                             SnackBar(
                                                                 content: Text(
-                                                                    "Please select a file to upload")),
+                                                                    "Please select SOV name")),
                                                           );
                                                           return;
                                                         }
-                                                        if (_formKey
-                                                            .currentState!
-                                                            .validate()) {
-                                                          if (!files!.path
-                                                              .endsWith(
-                                                                  '.xlsx')) {
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                                    SnackBar(
-                                                                        content:
-                                                                            Text("Please select a valid file to upload")));
-                                                            return;
-                                                          }
-                                                          String success =
-                                                              await locationListProvider.uploadSov(
-                                                                  context,
-                                                                  files!,
-                                                                  accountId,
-                                                                  subAccountId,
-                                                                  sovId,
-                                                                  tagController
-                                                                      .text,
-                                                                  _sovNameController
-                                                                      .text);
-                                                          _sovNameController
-                                                              .clear();
-                                                          // Navigator.pop(
-                                                          //     context);
+                                                      }
 
-                                                          print(
-                                                              'Success: $success');
+                                                      if (files == null ||
+                                                          files!.path.isEmpty) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                              content: Text(
+                                                                  "Please select a file to upload")),
+                                                        );
+                                                        return;
+                                                      }
 
-                                                          if (success
-                                                                  .isNotEmpty &&
-                                                              success.contains(
-                                                                  '+')) {
-                                                            print(
-                                                                'Inside + success: $success');
-                                                            // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
-                                                            showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder:
-                                                                    (BuildContext
-                                                                        context) {
-                                                                  return AlertDialog(
-                                                                    title: Text(
-                                                                      /*LanguageService.getTranslated(
-                                                              context,
-                                                              "account_list_app_empty_sov_title")*/
-                                                                      'Empty SOV',
-                                                                      style: typography
-                                                                          .H5_Regular,
-                                                                    ),
-                                                                    content:
-                                                                        Column(
-                                                                      mainAxisSize:
-                                                                          MainAxisSize
-                                                                              .min,
-                                                                      children: [
-                                                                        Text(
-                                                                          /* LanguageService.getTranslated(
-                                                                  context,
-                                                                  "account_list_app_empty_sov_text"),*/
-                                                                          'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                      if (!files!.path
+                                                          .endsWith('.xlsx')) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                              content: Text(
+                                                                  "Please select a valid file to upload")),
+                                                        );
+                                                        return;
+                                                      }
+
+                                                      String success =
+                                                          await locationListProvider
+                                                              .uploadSov(
+                                                        context,
+                                                        files!,
+                                                        accountId,
+                                                        subAccountId,
+                                                        sovId,
+                                                        tagController.text,
+                                                        _sovNameController.text,
+                                                      );
+
+                                                      _sovNameController
+                                                          .clear();
+
+                                                      print(
+                                                          'Success: $success');
+
+                                                      if (success.isNotEmpty &&
+                                                          success
+                                                              .contains('+')) {
+                                                        showDialog(
+                                                          context: context,
+                                                          builder: (BuildContext
+                                                              context) {
+                                                            return AlertDialog(
+                                                              title: Text(
+                                                                  'Empty SOV',
+                                                                  style: typography
+                                                                      .H5_Regular),
+                                                              content: Column(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .min,
+                                                                children: [
+                                                                  Text(
+                                                                    'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                                    style: typography
+                                                                        .Body1,
+                                                                  ),
+                                                                  SizedBox(
+                                                                      height: CustomSpacing
+                                                                          .two),
+                                                                  Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .stretch,
+                                                                    children: [
+                                                                      Consumer<
+                                                                          UploadSovProvider>(
+                                                                        builder: (context,
+                                                                            uploadSovProvider,
+                                                                            child) {
+                                                                          return uploadSovProvider.isLoading
+                                                                              ? const Center(child: CircularProgressIndicator())
+                                                                              : CustomButton(
+                                                                                  onPressed: () async {
+                                                                                    var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                                                    await provider.createEmptySov(context, success);
+                                                                                    Navigator.pop(context);
+                                                                                  },
+                                                                                  child: Text(
+                                                                                    LanguageService.getTranslated(context, "create"),
+                                                                                    style: typography.ButtonLarge,
+                                                                                  ),
+                                                                                  type: ButtonType.elevated,
+                                                                                );
+                                                                        },
+                                                                      ),
+                                                                      CustomButton(
+                                                                        onPressed:
+                                                                            () {
+                                                                          Navigator.pop(
+                                                                              context);
+                                                                        },
+                                                                        child:
+                                                                            Text(
+                                                                          'Abort',
                                                                           style:
-                                                                              typography.Body1,
+                                                                              typography.ButtonLarge,
                                                                         ),
-                                                                        SizedBox(
-                                                                          height:
-                                                                              CustomSpacing.two,
-                                                                        ),
-                                                                        Column(
-                                                                          crossAxisAlignment:
-                                                                              CrossAxisAlignment.stretch,
-                                                                          children: [
-                                                                            Consumer<UploadSovProvider>(builder: (context,
-                                                                                uploadSovProvider,
-                                                                                child) {
-                                                                              return uploadSovProvider.isLoading
-                                                                                  ? const Center(
-                                                                                      child: CircularProgressIndicator(),
-                                                                                    )
-                                                                                  : CustomButton(
-                                                                                      onPressed: () async {
-                                                                                        // Create empty SOV
-                                                                                        var provider = Provider.of<UploadSovProvider>(context, listen: false);
-                                                                                        await provider.createEmptySov(context, success);
-                                                                                        Navigator.pop(context);
-                                                                                      },
-                                                                                      child: Text(
-                                                                                        LanguageService.getTranslated(context, "create"),
-                                                                                        style: typography.ButtonLarge,
-                                                                                      ),
-                                                                                      type: ButtonType.elevated,
-                                                                                    );
-                                                                            }),
-                                                                            CustomButton(
-                                                                              onPressed: () {
-                                                                                Navigator.pop(context);
-                                                                              },
-                                                                              child: Text(
-                                                                                'Abort',
-                                                                                style: typography.ButtonLarge,
-                                                                              ),
-                                                                              type: ButtonType.text,
-                                                                            ),
-                                                                          ],
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  );
-                                                                });
-                                                          } else if (success
-                                                              .isNotEmpty) {
-                                                            Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                    builder: (_) =>
-                                                                        MappingScreen(
-                                                                          tempId:
-                                                                              success,
-                                                                          accountId:
-                                                                              widget.accountID!,
-                                                                          accountName:
-                                                                              widget.accountName ?? "",
-                                                                          subAccountName:
-                                                                              widget.subAccountName ?? "",
-                                                                          subAccountId:
-                                                                              widget.subAccountID!,
-                                                                        ))).then(
-                                                                (value) {
-                                                              if (value) {
-                                                                setState(() {
-                                                                  getdata(
-                                                                      widget
-                                                                          .accountID!,
-                                                                      widget
-                                                                          .accountID!);
-                                                                  _getSovUploadStatus();
-                                                                });
-                                                              }
+                                                                        type: ButtonType
+                                                                            .text,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          },
+                                                        );
+                                                      } else if (success
+                                                          .isNotEmpty) {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                MappingScreen(
+                                                              tempId: success,
+                                                              accountId: widget
+                                                                  .accountID!,
+                                                              accountName: widget
+                                                                      .accountName ??
+                                                                  "",
+                                                              subAccountName:
+                                                                  widget.subAccountName ??
+                                                                      "",
+                                                              subAccountId: widget
+                                                                  .subAccountID!,
+                                                            ),
+                                                          ),
+                                                        ).then((value) {
+                                                          if (value) {
+                                                            setState(() {
+                                                              getdata(
+                                                                  widget
+                                                                      .accountID!,
+                                                                  widget
+                                                                      .accountID!);
+                                                              _getSovUploadStatus();
                                                             });
-                                                          } else {
-                                                            print(
-                                                                'Location Upload Failed: $success');
                                                           }
-                                                        }
+                                                        });
+                                                      } else {
+                                                        print(
+                                                            'Location Upload Failed: $success');
                                                       }
                                                     },
+                                                    // onPressed: () async {
+                                                    //   if (_formKey.currentState!
+                                                    //       .validate()) {
+                                                    //     if (files == null ||
+                                                    //         files!
+                                                    //             .path.isEmpty) {
+                                                    //       ScaffoldMessenger.of(
+                                                    //               context)
+                                                    //           .showSnackBar(
+                                                    //         SnackBar(
+                                                    //             content: Text(
+                                                    //                 "Please select a file to upload")),
+                                                    //       );
+                                                    //       return;
+                                                    //     }
+                                                    //     if (_formKey
+                                                    //         .currentState!
+                                                    //         .validate()) {
+                                                    //       if (!files!.path
+                                                    //           .endsWith(
+                                                    //               '.xlsx')) {
+                                                    //         ScaffoldMessenger
+                                                    //                 .of(context)
+                                                    //             .showSnackBar(
+                                                    //                 SnackBar(
+                                                    //                     content:
+                                                    //                         Text("Please select a valid file to upload")));
+                                                    //         return;
+                                                    //       }
+                                                    //       String success =
+                                                    //           await locationListProvider.uploadSov(
+                                                    //               context,
+                                                    //               files!,
+                                                    //               accountId,
+                                                    //               subAccountId,
+                                                    //               sovId,
+                                                    //               tagController
+                                                    //                   .text,
+                                                    //               _sovNameController
+                                                    //                   .text);
+                                                    //       _sovNameController
+                                                    //           .clear();
+                                                    //       // Navigator.pop(
+                                                    //       //     context);
+                                                    //
+                                                    //       print(
+                                                    //           'Success: $success');
+                                                    //
+                                                    //       if (success
+                                                    //               .isNotEmpty &&
+                                                    //           success.contains(
+                                                    //               '+')) {
+                                                    //         print(
+                                                    //             'Inside + success: $success');
+                                                    //         // Show popup with title Empty SoV, body: Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort? with 2 buttons: [create empty SOV]   [abort]
+                                                    //         showDialog(
+                                                    //             context:
+                                                    //                 context,
+                                                    //             builder:
+                                                    //                 (BuildContext
+                                                    //                     context) {
+                                                    //               return AlertDialog(
+                                                    //                 title: Text(
+                                                    //                   /*LanguageService.getTranslated(
+                                                    //           context,
+                                                    //           "account_list_app_empty_sov_title")*/
+                                                    //                   'Empty SOV',
+                                                    //                   style: typography
+                                                    //                       .H5_Regular,
+                                                    //                 ),
+                                                    //                 content:
+                                                    //                     Column(
+                                                    //                   mainAxisSize:
+                                                    //                       MainAxisSize
+                                                    //                           .min,
+                                                    //                   children: [
+                                                    //                     Text(
+                                                    //                       /* LanguageService.getTranslated(
+                                                    //               context,
+                                                    //               "account_list_app_empty_sov_text"),*/
+                                                    //                       'Looks Like, Data has not been specified!! Do you want to continue creating an empty SOV, or abort?',
+                                                    //                       style:
+                                                    //                           typography.Body1,
+                                                    //                     ),
+                                                    //                     SizedBox(
+                                                    //                       height:
+                                                    //                           CustomSpacing.two,
+                                                    //                     ),
+                                                    //                     Column(
+                                                    //                       crossAxisAlignment:
+                                                    //                           CrossAxisAlignment.stretch,
+                                                    //                       children: [
+                                                    //                         Consumer<UploadSovProvider>(builder: (context,
+                                                    //                             uploadSovProvider,
+                                                    //                             child) {
+                                                    //                           return uploadSovProvider.isLoading
+                                                    //                               ? const Center(
+                                                    //                                   child: CircularProgressIndicator(),
+                                                    //                                 )
+                                                    //                               : CustomButton(
+                                                    //                                   onPressed: () async {
+                                                    //                                     // Create empty SOV
+                                                    //                                     var provider = Provider.of<UploadSovProvider>(context, listen: false);
+                                                    //                                     await provider.createEmptySov(context, success);
+                                                    //                                     Navigator.pop(context);
+                                                    //                                   },
+                                                    //                                   child: Text(
+                                                    //                                     LanguageService.getTranslated(context, "create"),
+                                                    //                                     style: typography.ButtonLarge,
+                                                    //                                   ),
+                                                    //                                   type: ButtonType.elevated,
+                                                    //                                 );
+                                                    //                         }),
+                                                    //                         CustomButton(
+                                                    //                           onPressed: () {
+                                                    //                             Navigator.pop(context);
+                                                    //                           },
+                                                    //                           child: Text(
+                                                    //                             'Abort',
+                                                    //                             style: typography.ButtonLarge,
+                                                    //                           ),
+                                                    //                           type: ButtonType.text,
+                                                    //                         ),
+                                                    //                       ],
+                                                    //                     ),
+                                                    //                   ],
+                                                    //                 ),
+                                                    //               );
+                                                    //             });
+                                                    //       } else if (success
+                                                    //           .isNotEmpty) {
+                                                    //         Navigator.push(
+                                                    //             context,
+                                                    //             MaterialPageRoute(
+                                                    //                 builder: (_) =>
+                                                    //                     MappingScreen(
+                                                    //                       tempId:
+                                                    //                           success,
+                                                    //                       accountId:
+                                                    //                           widget.accountID!,
+                                                    //                       accountName:
+                                                    //                           widget.accountName ?? "",
+                                                    //                       subAccountName:
+                                                    //                           widget.subAccountName ?? "",
+                                                    //                       subAccountId:
+                                                    //                           widget.subAccountID!,
+                                                    //                     ))).then(
+                                                    //             (value) {
+                                                    //           if (value) {
+                                                    //             setState(() {
+                                                    //               getdata(
+                                                    //                   widget
+                                                    //                       .accountID!,
+                                                    //                   widget
+                                                    //                       .accountID!);
+                                                    //               _getSovUploadStatus();
+                                                    //             });
+                                                    //           }
+                                                    //         });
+                                                    //       } else {
+                                                    //         print(
+                                                    //             'Location Upload Failed: $success');
+                                                    //       }
+                                                    //     }
+                                                    //   }
+                                                    // },
                                                     child: Text(
                                                         LanguageService
                                                             .getTranslated(

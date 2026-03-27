@@ -5,6 +5,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:qa.risksphere.ai</string>
+		<string>applinks:qa.auth.risksphere.ai</string>
 	</array>
 </dict>
 </plist>

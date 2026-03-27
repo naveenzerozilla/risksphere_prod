@@ -498,6 +498,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+
                         SizedBox(height: 10),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -1884,11 +1885,11 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
                                                 padding: EdgeInsets.all(0.0),
                                                 child: Row(
                                                   children: [
+
+
                                                     Checkbox(
                                                       value: addToSOVCheck,
-                                                      onChanged: (trialStatus
-                                                                  .isNotEmpty &&
-                                                              !hasAnyPlan)
+                                                      onChanged: ( !hasAnyPlan)
                                                           ? null
                                                           : areFieldsDisabled()
                                                               ? null // Disable checkbox if `areFieldsDisabled` is true

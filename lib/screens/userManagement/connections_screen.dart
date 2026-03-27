@@ -1361,8 +1361,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             ),
                             Text(
                                 connectionsProvider
-                                        .corporateConnections[index].role?[0] ??
-                                    "",
+                                        .corporateConnections[index].role
+                                        .toString(),
                                 style: typography.Caption),
                             SizedBox(
                               height: CustomSpacing.two,
