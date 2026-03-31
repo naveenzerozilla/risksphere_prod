@@ -73,7 +73,6 @@ void main() async {
     debugPrint(' AppCheck activation error: $e');
   }
 
-  // Step 3 - Performance
   try {
     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
     httpClient = PerformanceHttpClient();
@@ -336,181 +335,6 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
     });
   }
 
-// work both
-  // void _handleDeepLink() async {
-  //   _appLinks = AppLinks();
-  //
-  //   final uri = await _appLinks.getInitialLink();
-  //   if (uri != null &&
-  //       (uri.host == 'qa.risksphere.ai' ||
-  //           uri.host == 'qa.auth.risksphere.ai')) {
-  //     PendingDeepLink1.pendingUri = uri;
-  //   }
-  //
-  //   _appLinks.uriLinkStream.listen((uri) {
-  //     if ((uri.host == 'qa.risksphere.ai' ||
-  //         uri.host == 'qa.auth.risksphere.ai')) {
-  //       _routeFromDeepLink(uri);
-  //     }
-  //   });
-  // }
-  //
-  // void _routeFromDeepLink(Uri uri) async {
-  //   if (_isHandlingDeepLink) return;
-  //   _isHandlingDeepLink = true;
-  //
-  //   int retries = 0;
-  //   while (navigatorKey.currentContext == null && retries < 10) {
-  //     await Future.delayed(const Duration(milliseconds: 100));
-  //     retries++;
-  //   }
-  //
-  //   final context = navigatorKey.currentContext;
-  //   if (context == null) {
-  //     _isHandlingDeepLink = false;
-  //     return;
-  //   }
-  //
-  //   final user = FirebaseAuth.instance.currentUser;
-  //
-  //   if (uri.pathSegments.contains('register')) {
-  //     final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (_) => CreateAccountScreen(email: email),
-  //       ),
-  //       (route) => false,
-  //     );
-  //     _isHandlingDeepLink = false;
-  //     return;
-  //   }
-  //
-  //   if (uri.pathSegments.contains('login')) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
-  //       (route) => false,
-  //     );
-  //     _isHandlingDeepLink = false;
-  //     return;
-  //   }
-  //
-  //   if (uri.pathSegments.contains('reset-password') ||
-  //       uri.pathSegments.contains('auth-action')) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => Forgotpassword()),
-  //       (route) => false,
-  //     );
-  //     _isHandlingDeepLink = false;
-  //     return;
-  //   }
-  //
-  //   if (user != null) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (_) => AddLocationScreen(
-  //           accountId: '',
-  //           subAccountId: '',
-  //           sovId: '',
-  //         ),
-  //       ),
-  //       (route) => false,
-  //     );
-  //   } else {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
-  //       (route) => false,
-  //     );
-  //   }
-  //
-  //   _isHandlingDeepLink = false;
-  // }
-
-  // void _handleDeepLink() async {
-  //   _appLinks = AppLinks();
-  //
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     final uri = await _appLinks.getInitialLink();
-  //     if (uri != null &&
-  //         (uri.host == 'qa.risksphere.ai' ||
-  //             uri.host == 'qa.auth.risksphere.ai')) {
-  //       _routeFromDeepLink(uri);
-  //     }
-  //   });
-  //
-  //   _appLinks.uriLinkStream.listen((uri) {
-  //     if ((uri.host == 'qa.risksphere.ai' ||
-  //         uri.host == 'qa.auth.risksphere.ai')) {
-  //       _routeFromDeepLink(uri);
-  //     }
-  //   });
-  // }
-  //
-  // void _routeFromDeepLink(Uri uri) async {
-  //   if (_isHandlingDeepLink) return;
-  //
-  //   final context = navigatorKey.currentContext;
-  //   if (context == null) return;
-  //
-  //   _isHandlingDeepLink = true;
-  //
-  //   final user = FirebaseAuth.instance.currentUser;
-  //
-  //   if (uri.pathSegments.contains('register')) {
-  //     final email = Uri.decodeComponent(uri.queryParameters['email'] ?? '');
-  //
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (_) => CreateAccountScreen(email: email),
-  //       ),
-  //       (route) => false,
-  //     );
-  //     return;
-  //   }
-  //   if (uri.pathSegments.contains('login')) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
-  //       (route) => false,
-  //     );
-  //     return;
-  //   }
-  //
-  //   if (uri.pathSegments.contains('reset-password') ||
-  //       uri.pathSegments.contains('auth-action')) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => Forgotpassword()),
-  //       (route) => false,
-  //     );
-  //     return;
-  //   }
-  //
-  //   if (user != null) {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (_) => AddLocationScreen(
-  //           accountId: '',
-  //           subAccountId: '',
-  //           sovId: '',
-  //         ),
-  //       ),
-  //       (route) => false,
-  //     );
-  //   } else {
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const LoginScreen()),
-  //       (route) => false,
-  //     );
-  //   }
-  // }
 
   @override
   void dispose() {
@@ -696,7 +520,7 @@ Future<void> initFCM(String userId) async {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
-      debugPrint('🔔 Foreground message received: ${notification?.title}');
+      debugPrint(' Foreground message received: ${notification?.title}');
       Fluttertoast.showToast(
         msg: notification?.title ?? "Notification",
         toastLength: Toast.LENGTH_SHORT,
@@ -709,7 +533,7 @@ Future<void> initFCM(String userId) async {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('📩 Message opened app: ${message.notification?.title}');
+      debugPrint(' Message opened app: ${message.notification?.title}');
       if (message.data.isNotEmpty) {
         handleNotificationNavigation(message.data);
       }

@@ -578,8 +578,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   // Check if the user is authenticated after login attempt
                                   final user = authNotifier.user;
                                   if (user != null) {
-                                    // Navigate to the home screen or any other screen after login
-                                    var token = await user.getIdToken();
+                                   var token = await user.getIdToken();
                                     print("fcmCall");
                                     initFCM(user.uid);
                                     print("fcmCall");
@@ -589,21 +588,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       MaterialPageRoute(
                                           builder: (context) =>
                                               DashboardScreen()
-                                          /*Home(
-                                          useLightMode: false,
-                                          useMaterial3: true,
-                                          colorSelected: ColorSeed.baseColor,
-                                          imageSelected:
-                                              ColorImageProvider.leaves,
-                                          handleBrightnessChange:
-                                              handleBrightnessChange,
-                                          handleMaterialVersionChange:
-                                              handleMaterialVersionChange,
-                                          handleColorSelect: handleColorSelect,
-                                          handleImageSelect: handleImageSelect,
-                                          colorSelectionMethod:
-                                              ColorSelectionMethod.colorSeed,
-                                        ),*/
+
                                           ),
                                     );
                                   }

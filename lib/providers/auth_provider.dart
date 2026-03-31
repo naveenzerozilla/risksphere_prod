@@ -2688,7 +2688,6 @@ class AuthNotifier extends ChangeNotifier {
         'Authorization': 'Bearer $idToken',
       };
 
-      // Define the request body
       final body = json.encode({
         'type': 'remind',
       });
@@ -2696,7 +2695,6 @@ class AuthNotifier extends ChangeNotifier {
       final response =
           await http.post(Uri.parse(url), headers: headers, body: body);
 
-      // Handle the response
       if (response.statusCode == 200) {
         print('Cloud Function result: ${response.body}');
         return true;
