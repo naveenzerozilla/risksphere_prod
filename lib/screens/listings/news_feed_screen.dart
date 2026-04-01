@@ -472,7 +472,9 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
 
         return InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: (isLoading || isRevoked == true)
+          onTap: (isLoading ||
+                  isRevoked == true ||
+                  (readStatus == true && activityType == 'location_gift'))
               ? null
               : () async {
                   if (feedId == null) return;
@@ -480,6 +482,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                   final payload = {
                     "data": {"id": feedId}
                   };
+
                   final isSuccess =
                       await provider.updateNotificationRead(context, payload);
 
@@ -488,6 +491,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
 
                   if (activityType == 'location_gift') {
                     final giftId = item['payload']?['gift_id'] ?? '';
+
                     if (giftId.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -502,21 +506,17 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                         context, giftId, feedId);
 
                     if (!context.mounted) return;
+
                     if (creditAccepted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            creditAccepted
-                                ? 'Credits accepted successfully! 🎁'
-                                : 'Failed to accept credits.',
+                            'Credits accepted successfully! 🎁',
                           ),
-                          backgroundColor:
-                              creditAccepted ? Colors.green : Colors.red,
+                          backgroundColor: Colors.green,
                         ),
                       );
-                    }
 
-                    if (creditAccepted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -556,6 +556,90 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                     });
                   }
                 },
+          // onTap: (isLoading || isRevoked == true)
+          //     ? null
+          //     : () async {
+          //         if (feedId == null) return;
+          //
+          //         final payload = {
+          //           "data": {"id": feedId}
+          //         };
+          //         final isSuccess =
+          //             await provider.updateNotificationRead(context, payload);
+          //
+          //         if (!context.mounted) return;
+          //         if (!isSuccess) return;
+          //
+          //         if (activityType == 'location_gift') {
+          //           final giftId = item['payload']?['gift_id'] ?? '';
+          //           if (giftId.isEmpty) {
+          //             ScaffoldMessenger.of(context).showSnackBar(
+          //               const SnackBar(
+          //                 content: Text('Gift ID not found.'),
+          //                 backgroundColor: Colors.red,
+          //               ),
+          //             );
+          //             return;
+          //           }
+          //
+          //           final creditAccepted = await provider.acceptLocationCredits(
+          //               context, giftId, feedId);
+          //
+          //           if (!context.mounted) return;
+          //           if (creditAccepted) {
+          //             ScaffoldMessenger.of(context).showSnackBar(
+          //               SnackBar(
+          //                 content: Text(
+          //                   creditAccepted
+          //                       ? 'Credits accepted successfully! 🎁'
+          //                       : 'Failed to accept credits.',
+          //                 ),
+          //                 backgroundColor:
+          //                     creditAccepted ? Colors.green : Colors.red,
+          //               ),
+          //             );
+          //           }
+          //
+          //           if (creditAccepted) {
+          //             Navigator.push(
+          //               context,
+          //               MaterialPageRoute(
+          //                 builder: (context) => PaymentTransactionsPage(
+          //                   initialTabIndex: 1,
+          //                 ),
+          //               ),
+          //             ).then((_) {
+          //               if (!context.mounted) return;
+          //               WidgetsBinding.instance.addPostFrameCallback((_) {
+          //                 Provider.of<NewsFeedProvider>(context, listen: false)
+          //                     .fetchNewsFeed();
+          //               });
+          //             });
+          //           } else {
+          //             Provider.of<NewsFeedProvider>(context, listen: false)
+          //                 .fetchNewsFeed();
+          //           }
+          //
+          //           return;
+          //         } else {
+          //           final processId = item['process_id'] ?? '';
+          //
+          //           Navigator.push(
+          //             context,
+          //             MaterialPageRoute(
+          //               builder: (context) => JobMonitoringDashboard(
+          //                 initialProcessId: processId,
+          //               ),
+          //             ),
+          //           ).then((_) {
+          //             if (!context.mounted) return;
+          //             WidgetsBinding.instance.addPostFrameCallback((_) {
+          //               Provider.of<NewsFeedProvider>(context, listen: false)
+          //                   .fetchNewsFeed();
+          //             });
+          //           });
+          //         }
+          //       },
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -635,7 +719,6 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  // ✅ Date + red dot
                                   Stack(
                                     clipBehavior: Clip.none,
                                     children: [

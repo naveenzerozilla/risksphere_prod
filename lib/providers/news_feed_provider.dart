@@ -84,11 +84,10 @@ class NewsFeedProvider extends ChangeNotifier {
   final Set<String> _loadingIds = {};
 
   bool isLoading(String id) => _loadingIds.contains(id);
-
   Future<bool> updateNotificationRead(
-    BuildContext context,
-    Map<String, dynamic> payload,
-  ) async {
+      BuildContext context,
+      Map<String, dynamic> payload,
+      ) async {
     final feedId = payload['data']?['id'];
     if (feedId == null) return false;
 
@@ -96,11 +95,14 @@ class NewsFeedProvider extends ChangeNotifier {
       _loadingIds.add(feedId);
       notifyListeners();
 
-      ApiService apiService = ApiService(AppConstant.NOTIFICATION_READ);
+      ApiService apiService =
+      ApiService(AppConstant.NOTIFICATION_READ);
 
-      final Map<String, dynamic> response = await apiService.patch(payload);
+      final Map<String, dynamic> response =
+      await apiService.patch(payload);
 
-      if (response['message'] == "Activity feed updated successfully") {
+      if (response['message'] ==
+          "Activity feed updated successfully") {
         return true;
       }
 
@@ -115,12 +117,11 @@ class NewsFeedProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
   Future<bool> acceptLocationCredits(
-    BuildContext context,
-    String giftId,
-    String feedId,
-  ) async {
+      BuildContext context,
+      String giftId,
+      String feedId,
+      ) async {
     try {
       ApiService apiService = ApiService(AppConstant.ACCEPT_CREDITS);
       final Map<String, dynamic> response = await apiService.post({

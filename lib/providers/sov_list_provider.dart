@@ -1078,7 +1078,9 @@ class SOVListProvider extends ChangeNotifier {
 
       // CORRECTED: Use the proper API endpoint
       final URL =
-          'https://us-central1-project-green-prod.cloudfunctions.net/locations/export_sov';
+          "${AppConstant.EXPORT_SOV}";
+      // final URL =
+      //     'https://us-central1-project-green-prod.cloudfunctions.net/locations/export_sov';
       print('Request URL: $URL');
 
       final dio = Dio();

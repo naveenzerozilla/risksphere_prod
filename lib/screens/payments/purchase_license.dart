@@ -85,7 +85,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
 
   _getData() async {
     final accountListProvider =
-        Provider.of<AccountListProvider>(context, listen: false);
+    Provider.of<AccountListProvider>(context, listen: false);
     await accountListProvider.fetchPricingList(context, "", 1, 5);
   }
 
@@ -132,335 +132,335 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
     return SafeArea(
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
-        Map<String, dynamic> getSummary() {
-          dynamic total = 0;
-          List<String> titles = [];
-          List<String> planId = [];
-          List<String> planTypes = [];
-          List<String> licensePrice = [];
-          List<String> userCounts = [];
-          List<String> selectedPlanType = [];
-          List<String> priceperuser = [];
+            Map<String, dynamic> getSummary() {
+              dynamic total = 0;
+              List<String> titles = [];
+              List<String> planId = [];
+              List<String> planTypes = [];
+              List<String> licensePrice = [];
+              List<String> userCounts = [];
+              List<String> selectedPlanType = [];
+              List<String> priceperuser = [];
 
-          // selection.selectedPlanType
-          for (var selection in cardSelections.values) {
-            if (selection.totalPrice != null) {
-              // total += num.parse(selection.totalPrice.toString());
-              total +=
-                  num.tryParse(selection.totalPrice?.toString() ?? '0') ?? 0;
+              // selection.selectedPlanType
+              for (var selection in cardSelections.values) {
+                if (selection.totalPrice != null) {
+                  // total += num.parse(selection.totalPrice.toString());
+                  total +=
+                      num.tryParse(selection.totalPrice?.toString() ?? '0') ?? 0;
 
-              if (selection.title != null && selection.title!.isNotEmpty) {
-                titles.add(selection.title!);
-              }
-              if (selection.planId != null && selection.planId!.isNotEmpty) {
-                planId.add(selection.planId!);
+                  if (selection.title != null && selection.title!.isNotEmpty) {
+                    titles.add(selection.title!);
+                  }
+                  if (selection.planId != null && selection.planId!.isNotEmpty) {
+                    planId.add(selection.planId!);
+                  }
+
+                  if (selection.userCount != null &&
+                      selection.userCount!.isNotEmpty) {
+                    userCounts.add(selection.userCount!);
+                  }
+
+                  if (selection.selectedPlanType != null &&
+                      selection.selectedPlanType!.isNotEmpty) {
+                    selectedPlanType.add(selection.selectedPlanType!);
+                  }
+                  if (selection.priceperuser != null &&
+                      selection.priceperuser!.isNotEmpty) {
+                    priceperuser.add(selection.priceperuser!);
+                  }
+                  if (selection.planType == "event_cost") {
+                    licensePrice.add(selection.licensePrice!);
+                  } else if (selection.licensePrice != null &&
+                      selection.licensePrice!.isNotEmpty) {
+                    licensePrice.add(selection.licensePrice!);
+                  }
+
+                  if (selection.planType != null &&
+                      selection.planType!.isNotEmpty) {
+                    planTypes.add(selection.planType!);
+                  }
+                }
               }
 
-              if (selection.userCount != null &&
-                  selection.userCount!.isNotEmpty) {
-                userCounts.add(selection.userCount!);
-              }
-
-              if (selection.selectedPlanType != null &&
-                  selection.selectedPlanType!.isNotEmpty) {
-                selectedPlanType.add(selection.selectedPlanType!);
-              }
-              if (selection.priceperuser != null &&
-                  selection.priceperuser!.isNotEmpty) {
-                priceperuser.add(selection.priceperuser!);
-              }
-              if (selection.planType == "event_cost") {
-                licensePrice.add(selection.licensePrice!);
-              } else if (selection.licensePrice != null &&
-                  selection.licensePrice!.isNotEmpty) {
-                licensePrice.add(selection.licensePrice!);
-              }
-
-              if (selection.planType != null &&
-                  selection.planType!.isNotEmpty) {
-                planTypes.add(selection.planType!);
-              }
+              return {
+                'total': total,
+                'planId': planId,
+                'titles': titles,
+                'descriptions': "descriptions",
+                'priceperuser': priceperuser,
+                'licenseprice': licensePrice,
+                'usercount': userCounts,
+                'selectedPlanType': selectedPlanType,
+                'planType': planTypes,
+              };
             }
-          }
 
-          return {
-            'total': total,
-            'planId': planId,
-            'titles': titles,
-            'descriptions': "descriptions",
-            'priceperuser': priceperuser,
-            'licenseprice': licensePrice,
-            'usercount': userCounts,
-            'selectedPlanType': selectedPlanType,
-            'planType': planTypes,
-          };
-        }
-
-        return PopScope(
-          onPopInvokedWithResult: (canPop, result) {
-            Provider.of<DrawerSelectionProvider>(context, listen: false)
-                .setSelectedItem("dashboard");
-          },
-          child: Scaffold(
-            key: _scaffoldKey,
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
-            appBar: CustomAppBar(
-              isExpanded: _isExpanded,
-              showNotificationDot: _showNotificationDot,
-              onExpandPressed: (isExpanded) {
-                setState(() {
-                  _isExpanded = isExpanded;
-                });
+            return PopScope(
+              onPopInvokedWithResult: (canPop, result) {
+                Provider.of<DrawerSelectionProvider>(context, listen: false)
+                    .setSelectedItem("dashboard");
               },
-              onSearchPressed: () {
-                setState(() {
-                  _isExpanded = !_isExpanded;
-                });
-              },
-            ),
-            drawer: CustomDrawer(),
-            bottomNavigationBar: Consumer<AccountListProvider>(
-                builder: (context, pricingProvider, child) {
-              return pricingProvider.isLoading ||
-                      pricingProvider.pricingList.isEmpty
-                  ? Container(
-                      height: 10,
-                    )
-                  : Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(),
-                      child: Platform.isIOS
-                          ? Container(height: 10)
-                          : Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Scaffold(
+                key: _scaffoldKey,
+                backgroundColor: themeProvider.getTheme.colorScheme.background,
+                appBar: CustomAppBar(
+                  isExpanded: _isExpanded,
+                  showNotificationDot: _showNotificationDot,
+                  onExpandPressed: (isExpanded) {
+                    setState(() {
+                      _isExpanded = isExpanded;
+                    });
+                  },
+                  onSearchPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                ),
+                drawer: CustomDrawer(),
+                bottomNavigationBar: Consumer<AccountListProvider>(
+                    builder: (context, pricingProvider, child) {
+                      return pricingProvider.isLoading ||
+                          pricingProvider.pricingList.isEmpty
+                          ? Container(
+                        height: 10,
+                      )
+                          : Container(
+                        padding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(),
+                        child: Platform.isIOS
+                            ? Container(height: 10)
+                            : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(height: 10),
+                            getSummary()['total'] == 0
+                                ? Container(height: 0)
+                                : Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                               children: [
-                                SizedBox(height: 10),
-                                getSummary()['total'] == 0
-                                    ? Container(height: 0)
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Total Pricing',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${getSummary()['total'].toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    final summary = getSummary();
-                                    final titles = List<String>.from(
-                                        summary['titles'] ?? []);
-                                    if (titles.isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(
+                                Text(
+                                  'Total Pricing',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '\$${getSummary()['total'].toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                final summary = getSummary();
+                                final titles = List<String>.from(
+                                    summary['titles'] ?? []);
+                                if (titles.isEmpty) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    SnackBar(
+                                        content: Text(
                                           "Please select at least one subscription plan.",
                                         )),
-                                      );
-                                      return;
-                                    }
-                                    print(summary);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => PricingSummary(
-                                          title: titles,
-                                          summary: summary,
-                                          hazardName: hazardName ?? "",
-                                          vendorName: vendorName ?? "",
-                                        ),
-                                      ),
-                                    ).then((value) {
-                                      if (value == false) {
-                                      } else {
-                                        _getData();
-                                        setState(() {
-                                          cardSelections.clear();
-                                          expandedCardIndex = null;
-                                        });
-                                      }
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Color(0xFF99CCFF),
-                                    padding: EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                  );
+                                  return;
+                                }
+                                print(summary);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PricingSummary(
+                                      title: titles,
+                                      summary: summary,
+                                      hazardName: hazardName ?? "",
+                                      vendorName: vendorName ?? "",
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Next',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.arrow_forward_ios,
-                                          color: Colors.black, size: 16),
-                                    ],
-                                  ),
+                                ).then((value) {
+                                  if (value == false) {
+                                  } else {
+                                    _getData();
+                                    setState(() {
+                                      cardSelections.clear();
+                                      expandedCardIndex = null;
+                                    });
+                                  }
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF99CCFF),
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ],
-                            ),
-                    );
-            }),
-            body: Consumer<AccountListProvider>(
-              builder: (context, pricingProvider, child) {
-                var typography = CustomTypography(context);
-                return pricingProvider.isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : pricingProvider.pricingList.isEmpty
-                        ? Center(
-                            child: Text(
-                              "No Pricing Plans Available",
-                              style: typography.Body1.copyWith(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 16,
-                                color: Colors.white,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward_ios,
+                                      color: Colors.black, size: 16),
+                                ],
                               ),
                             ),
-                          )
+                          ],
+                        ),
+                      );
+                    }),
+                body: Consumer<AccountListProvider>(
+                  builder: (context, pricingProvider, child) {
+                    var typography = CustomTypography(context);
+                    return pricingProvider.isLoading
+                        ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                        : pricingProvider.pricingList.isEmpty
+                        ? Center(
+                      child: Text(
+                        "No Pricing Plans Available",
+                        style: typography.Body1.copyWith(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
                         : Padding(
-                            padding: EdgeInsets.all(0), // optional for spacing
-                            child: Column(
-                              children: [
-                                SizedBox(height: CustomSpacing.three),
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHigh,
-                                    borderRadius: BorderRadius.circular(
-                                        12), // Rounded corners
-                                  ),
-                                  child: Text(
-                                    "Bring your business to the safest at scale",
-                                    style: typography.Body1.copyWith(
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 12,
-                                        letterSpacing: 0.4,
-                                        color: Colors.white),
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                Text(
-                                  "Uncover What RiskSphere Can Do for You",
-                                  textAlign: TextAlign.center,
-                                  style: typography.Body1.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 26,
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                Text(
-                                  "Activate your platform license for a tailored experience.",
-                                  textAlign: TextAlign.center,
-                                  style: typography.Body1.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(height: CustomSpacing.three),
-                                Expanded(
-                                  child: Card(
-                                    margin:
-                                        EdgeInsets.only(right: 18, left: 20),
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      side: BorderSide(
-                                        color: Color(0xFF8A3A75),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: EdgeInsets.all(0),
-                                      child: pricingProvider.isLoading
-                                          ? Center(
-                                              child:
-                                                  CircularProgressIndicator())
-                                          : ListView.builder(
-                                              itemCount: pricingProvider
-                                                  .pricingList.length,
-                                              itemBuilder: (context, index) {
-                                                Result item = pricingProvider
-                                                    .pricingList[index];
-                                                return Column(
-                                                  children: [
-                                                    index == 0
-                                                        ? _buildSubscriptionHeaderCard()
-                                                        : SizedBox(),
-                                                    index == 0
-                                                        ? SizedBox(
-                                                            height:
-                                                                CustomSpacing
-                                                                    .four)
-                                                        : Container(),
-                                                    Consumer<
-                                                        UserProfileProvider>(
-                                                      builder: (context,
-                                                          userProfileProvider,
-                                                          child) {
-                                                        bool isNotIndividual =
-                                                            (userProfileProvider
-                                                                    .userData
-                                                                    .isIndividual ??
-                                                                true);
-
-                                                        if (item.planName ==
-                                                                "User License" &&
-                                                            isNotIndividual) {
-                                                          return AbsorbPointer(
-                                                              absorbing: true,
-                                                              child:
-                                                                  Container());
-                                                        }
-                                                        return _buildSubscriptionCard(
-                                                            item, index);
-                                                      },
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                      padding: EdgeInsets.all(0), // optional for spacing
+                      child: Column(
+                        children: [
+                          SizedBox(height: CustomSpacing.three),
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(
+                                  12), // Rounded corners
                             ),
-                          );
-              },
-            ),
-          ),
-        );
-      }),
+                            child: Text(
+                              "Bring your business to the safest at scale",
+                              style: typography.Body1.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12,
+                                  letterSpacing: 0.4,
+                                  color: Colors.white),
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.three),
+                          Text(
+                            "Uncover What RiskSphere Can Do for You",
+                            textAlign: TextAlign.center,
+                            style: typography.Body1.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 26,
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.three),
+                          Text(
+                            "Activate your platform license for a tailored experience.",
+                            textAlign: TextAlign.center,
+                            style: typography.Body1.copyWith(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: CustomSpacing.three),
+                          Expanded(
+                            child: Card(
+                              margin:
+                              EdgeInsets.only(right: 18, left: 20),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: Color(0xFF8A3A75),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(0),
+                                child: pricingProvider.isLoading
+                                    ? Center(
+                                    child:
+                                    CircularProgressIndicator())
+                                    : ListView.builder(
+                                  itemCount: pricingProvider
+                                      .pricingList.length,
+                                  itemBuilder: (context, index) {
+                                    Result item = pricingProvider
+                                        .pricingList[index];
+                                    return Column(
+                                      children: [
+                                        index == 0
+                                            ? _buildSubscriptionHeaderCard()
+                                            : SizedBox(),
+                                        index == 0
+                                            ? SizedBox(
+                                            height:
+                                            CustomSpacing
+                                                .four)
+                                            : Container(),
+                                        Consumer<
+                                            UserProfileProvider>(
+                                          builder: (context,
+                                              userProfileProvider,
+                                              child) {
+                                            bool isNotIndividual =
+                                            (userProfileProvider
+                                                .userData
+                                                .isIndividual ??
+                                                true);
+
+                                            if (item.planName ==
+                                                "User License" &&
+                                                isNotIndividual) {
+                                              return AbsorbPointer(
+                                                  absorbing: true,
+                                                  child:
+                                                  Container());
+                                            }
+                                            return _buildSubscriptionCard(
+                                                item, index);
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          }),
     );
   }
 
@@ -544,8 +544,8 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
 
     if (selection.selectedUserCount.isNotEmpty) {
       final selectedRange = selectedRangeList.firstWhere(
-        (range) =>
-            '${range.startCount}-${range.endCount}' ==
+            (range) =>
+        '${range.startCount}-${range.endCount}' ==
             selection.selectedUserCount,
         orElse: () => RangeYear(
           startCount: '0',
@@ -599,11 +599,11 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                   (context, dashboardProvider, userProfileProvider, child) {
                 final bool isAdminUser =
                     (userProfileProvider.userData.role != null &&
-                            userProfileProvider.userData.role!.isNotEmpty &&
-                            userProfileProvider.userData.role![0].name
-                                    .toString()
-                                    .toLowerCase() ==
-                                "admin") &&
+                        userProfileProvider.userData.role!.isNotEmpty &&
+                        userProfileProvider.userData.role![0].name
+                            .toString()
+                            .toLowerCase() ==
+                            "admin") &&
                         (isSuperAdmin || isPgAdmin || isAdmin);
 
                 return Column(
@@ -640,26 +640,26 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           hintText: 'Choose a user to share locations with',
                           hintStyle: const TextStyle(color: Colors.white38),
                           prefixIcon:
-                              const Icon(Icons.search, color: Colors.white54),
+                          const Icon(Icons.search, color: Colors.white54),
                           suffixIcon: _isSearching
                               ? const Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white54,
-                                    ),
-                                  ),
-                                )
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          )
                               : null,
                           enabledBorder: OutlineInputBorder(
                             borderRadius: _autocompleteUsersList.isNotEmpty
                                 ? const BorderRadius.only(
-                                    topLeft: Radius.circular(12),
-                                    topRight: Radius.circular(12),
-                                  )
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                            )
                                 : BorderRadius.circular(12),
                             borderSide: const BorderSide(
                                 color: Colors.white24, width: 1),
@@ -667,9 +667,9 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           focusedBorder: OutlineInputBorder(
                             borderRadius: _autocompleteUsersList.isNotEmpty
                                 ? const BorderRadius.only(
-                                    topLeft: Radius.circular(12),
-                                    topRight: Radius.circular(12),
-                                  )
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                            )
                                 : BorderRadius.circular(12),
                             borderSide: BorderSide(
                                 color: AppColors.primaryMain, width: 1.5),
@@ -691,7 +691,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                             children: _selectedUsers.map((user) {
                               return Chip(
                                 backgroundColor:
-                                    AppColors.primaryMain.withOpacity(0.15),
+                                AppColors.primaryMain.withOpacity(0.15),
                                 side: BorderSide(
                                     color: AppColors.primaryMain, width: 0.8),
                                 label: Text(
@@ -730,7 +730,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                             padding: EdgeInsets.zero,
                             itemCount: _autocompleteUsersList.length,
                             separatorBuilder: (_, __) =>
-                                const Divider(color: Colors.white12, height: 1),
+                            const Divider(color: Colors.white12, height: 1),
                             itemBuilder: (context, i) {
                               final user = _autocompleteUsersList[i];
                               final bool isSelected = _selectedUsers
@@ -774,11 +774,11 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                             width: 1.5,
                                           ),
                                           borderRadius:
-                                              BorderRadius.circular(4),
+                                          BorderRadius.circular(4),
                                         ),
                                         child: isSelected
                                             ? const Icon(Icons.check,
-                                                color: Colors.white, size: 14)
+                                            color: Colors.white, size: 14)
                                             : null,
                                       ),
                                       const SizedBox(width: 10),
@@ -798,7 +798,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               user.name ?? '',
@@ -812,12 +812,12 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                               user.email ?? '',
                                               style: TextStyle(
                                                 color: (user.email ?? '')
-                                                        .toLowerCase()
-                                                        .contains(
-                                                            _userSearchController
-                                                                .text
-                                                                .trim()
-                                                                .toLowerCase())
+                                                    .toLowerCase()
+                                                    .contains(
+                                                    _userSearchController
+                                                        .text
+                                                        .trim()
+                                                        .toLowerCase())
                                                     ? AppColors.primaryMain
                                                     : Colors.white54,
                                                 fontSize: 13,
@@ -904,79 +904,79 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           onPressed: _isSharing
                               ? null
                               : () async {
-                                  final emails = _selectedUsers
-                                      .map((u) => u.email ?? '')
-                                      .where((e) => e.isNotEmpty)
-                                      .join(',');
-                                  final credits = int.tryParse(
-                                          locationCountController.text
-                                              .trim()) ??
-                                      0;
-                                  final expireDays = int.tryParse(
-                                          _expireDateController.text.trim()) ??
-                                      0;
+                            final emails = _selectedUsers
+                                .map((u) => u.email ?? '')
+                                .where((e) => e.isNotEmpty)
+                                .join(',');
+                            final credits = int.tryParse(
+                                locationCountController.text
+                                    .trim()) ??
+                                0;
+                            final expireDays = int.tryParse(
+                                _expireDateController.text.trim()) ??
+                                0;
 
-                                  if (emails.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Please select at least one user.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  if (credits <= 0) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Please enter a valid location count.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  if (expireDays <= 0) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Please enter valid expire days.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
+                            if (emails.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please select at least one user.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            if (credits <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please enter a valid location count.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            if (expireDays <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please enter valid expire days.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
 
-                                  setState(() => _isSharing = true);
+                            setState(() => _isSharing = true);
 
-                                  await Provider.of<AccountListProvider>(
-                                          context,
-                                          listen: false)
-                                      .shareLocation(
-                                    context,
-                                    recipientEmails: emails,
-                                    credits: credits,
-                                    expireDays: expireDays,
-                                    message: "",
-                                  );
+                            await Provider.of<AccountListProvider>(
+                                context,
+                                listen: false)
+                                .shareLocation(
+                              context,
+                              recipientEmails: emails,
+                              credits: credits,
+                              expireDays: expireDays,
+                              message: "",
+                            );
 
-                                  setState(() {
-                                    _isSharing = false;
-                                    _selectedUsers.clear();
-                                    locationCountController.clear();
-                                    _expireDateController.clear();
-                                    _userSearchController.clear();
-                                  });
-                                },
+                            setState(() {
+                              _isSharing = false;
+                              _selectedUsers.clear();
+                              locationCountController.clear();
+                              _expireDateController.clear();
+                              _userSearchController.clear();
+                            });
+                          },
                           icon: _isSharing
                               ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black87,
-                                  ),
-                                )
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black87,
+                            ),
+                          )
                               : const Icon(Icons.share, color: Colors.black87),
                           label: Text(
                             _isSharing ? 'Sharing...' : 'Share Now',
@@ -1012,7 +1012,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                         LocationManagementScreen()));
                           },
                           icon:
-                              Icon(Icons.history, color: AppColors.primaryMain),
+                          Icon(Icons.history, color: AppColors.primaryMain),
                           label: Text(
                             'Manage',
                             style: TextStyle(
@@ -1039,44 +1039,44 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
               const SizedBox(height: 12),
               index == 0
                   ? Card(
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              index == 0
-                                  ? Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            "SOV Sharing at Zero Cost",
-                                            maxLines: 2,
-                                            style: typography.Body1.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF99CCFF),
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                        ),
-                                        Text(
-                                          "\$0",
-                                          style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w800),
-                                        )
-                                      ],
-                                    )
-                                  : Container(),
-                            ]),
-                      ),
-                    )
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        index == 0
+                            ? Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "SOV Sharing at Zero Cost",
+                                maxLines: 2,
+                                style: typography.Body1.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF99CCFF),
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              "\$0",
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800),
+                            )
+                          ],
+                        )
+                            : Container(),
+                      ]),
+                ),
+              )
                   : Container(),
               index == 0 ? const SizedBox(height: 15) : Container(),
               Card(
@@ -1120,7 +1120,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           children: [
                             ReadMoreText(
                               text:
-                                  item.description ?? "Default description...",
+                              item.description ?? "Default description...",
                               trimLines: 10,
                               colorClickableText: Colors.blueAccent,
                               trimCollapsedText: 'Read more',
@@ -1149,241 +1149,241 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                         const SizedBox(height: 16),
                         item.planName == "Event Count Cost"
                             ? DropdownButtonFormField<String>(
-                                value: selection.selectedPlanType,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  filled: true,
-                                  labelText: "Subscription Type",
-                                ),
-                                hint: const Text("Subscription Type"),
-                                items: [
-                                  if (item.rangeMonth != null &&
-                                      item.rangeMonth!.isNotEmpty)
-                                    DropdownMenuItem<String>(
-                                      value: 'Monthly',
-                                      child: Text('Monthly'),
-                                    ),
-                                  if (item.rangeYear != null &&
-                                      item.rangeYear!.isNotEmpty)
-                                    DropdownMenuItem<String>(
-                                      value: 'Yearly',
-                                      child: Text('Yearly'),
-                                    ),
-                                ],
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    print(value);
-                                    print("value");
-                                    setState(() {
-                                      selection.selectedPlanType = value;
-
-                                      item.planName == "Event Count Cost"
-                                          ? selection.title = "Event Count Cost"
-                                          : "";
-                                      item.planName == "Event Count Cost"
-                                          ? selection.planId = item.planId!
-                                          : '';
-                                      item.planName == "Event Count Cost"
-                                          ? selection.planType = item.planType!
-                                          : '';
-                                      // item.planName == "Event Count Cost"
-                                      //     ? value == 'Monthly'
-                                      //         ? selection.priceperuser =
-                                      //             item.rangeMonth![0].pricePerUser
-                                      //         : selection.priceperuser =
-                                      //             item.rangeYear![0].pricePerUser
-                                      //     : "";
-                                      // item.planName == "Event Count Cost"
-                                      //     ? value == 'Monthly'
-                                      //         ? selection.licensePrice =
-                                      //             item.rangeMonth![0].pricePerUser
-                                      //         : selection.priceperuser =
-                                      //             item.rangeYear![0].pricePerUser
-                                      //     : "";
-                                      // selection.userCount = item.planName ==
-                                      //         "Event Count Cost"
-                                      //     ? (value == 'Monthly'
-                                      //         ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
-                                      //         : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
-                                      //     : selection.userCount;
-                                    });
-                                  }
-                                },
-                              )
-                            : DropdownButtonFormField<String>(
-                                value: selection.selectedPlanType,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  filled: true,
-                                  labelText: "Subscription Type",
-                                ),
-                                hint: const Text("Subscription Type"),
-                                items: [
-                                  if (item.rangeMonth != null &&
-                                      item.rangeMonth!.isNotEmpty)
-                                    DropdownMenuItem<String>(
-                                      value: 'Monthly',
-                                      child: Text('Monthly'),
-                                    ),
-                                  if (item.rangeYear != null &&
-                                      item.rangeYear!.isNotEmpty)
-                                    DropdownMenuItem<String>(
-                                      value: 'Yearly',
-                                      child: Text('Yearly'),
-                                    ),
-                                ],
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    print(value);
-                                    print("value");
-                                    setState(() {
-                                      selection.selectedPlanType = value;
-                                      selection.selectedUserCount = '1-1';
-                                      selection.totalPrice = null;
-
-                                      item.planName == "Event Count Cost"
-                                          ? value == 'Monthly'
-                                              ? selection.totalPrice =
-                                                  item.rangeMonth![0].rangePrice
-                                              : selection.totalPrice =
-                                                  item.rangeYear![0].rangePrice
-                                          : "";
-                                      item.planName == "Event Count Cost"
-                                          ? selection.title = "Event Count Cost"
-                                          : "";
-                                      item.planName == "Event Count Cost"
-                                          ? selection.planId = item.planId!
-                                          : '';
-                                      item.planName == "Event Count Cost"
-                                          ? selection.planType = item.planType!
-                                          : '';
-                                      item.planName == "Event Count Cost"
-                                          ? value == 'Monthly'
-                                              ? selection.priceperuser = item
-                                                  .rangeMonth![0].pricePerUser
-                                              : selection.priceperuser = item
-                                                  .rangeYear![0].pricePerUser
-                                          : "";
-                                      item.planName == "Event Count Cost"
-                                          ? value == 'Monthly'
-                                              ? selection.licensePrice = item
-                                                  .rangeMonth![0].pricePerUser
-                                              : selection.priceperuser = item
-                                                  .rangeYear![0].pricePerUser
-                                          : "";
-                                      selection.userCount = item.planName ==
-                                              "Event Count Cost"
-                                          ? (value == 'Monthly'
-                                              ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
-                                              : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
-                                          : selection.userCount;
-                                    });
-                                  }
-                                },
+                          value: selection.selectedPlanType,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            labelText: "Subscription Type",
+                          ),
+                          hint: const Text("Subscription Type"),
+                          items: [
+                            if (item.rangeMonth != null &&
+                                item.rangeMonth!.isNotEmpty)
+                              DropdownMenuItem<String>(
+                                value: 'Monthly',
+                                child: Text('Monthly'),
                               ),
+                            if (item.rangeYear != null &&
+                                item.rangeYear!.isNotEmpty)
+                              DropdownMenuItem<String>(
+                                value: 'Yearly',
+                                child: Text('Yearly'),
+                              ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              print(value);
+                              print("value");
+                              setState(() {
+                                selection.selectedPlanType = value;
+
+                                item.planName == "Event Count Cost"
+                                    ? selection.title = "Event Count Cost"
+                                    : "";
+                                item.planName == "Event Count Cost"
+                                    ? selection.planId = item.planId!
+                                    : '';
+                                item.planName == "Event Count Cost"
+                                    ? selection.planType = item.planType!
+                                    : '';
+                                // item.planName == "Event Count Cost"
+                                //     ? value == 'Monthly'
+                                //         ? selection.priceperuser =
+                                //             item.rangeMonth![0].pricePerUser
+                                //         : selection.priceperuser =
+                                //             item.rangeYear![0].pricePerUser
+                                //     : "";
+                                // item.planName == "Event Count Cost"
+                                //     ? value == 'Monthly'
+                                //         ? selection.licensePrice =
+                                //             item.rangeMonth![0].pricePerUser
+                                //         : selection.priceperuser =
+                                //             item.rangeYear![0].pricePerUser
+                                //     : "";
+                                // selection.userCount = item.planName ==
+                                //         "Event Count Cost"
+                                //     ? (value == 'Monthly'
+                                //         ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
+                                //         : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
+                                //     : selection.userCount;
+                              });
+                            }
+                          },
+                        )
+                            : DropdownButtonFormField<String>(
+                          value: selection.selectedPlanType,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            labelText: "Subscription Type",
+                          ),
+                          hint: const Text("Subscription Type"),
+                          items: [
+                            if (item.rangeMonth != null &&
+                                item.rangeMonth!.isNotEmpty)
+                              DropdownMenuItem<String>(
+                                value: 'Monthly',
+                                child: Text('Monthly'),
+                              ),
+                            if (item.rangeYear != null &&
+                                item.rangeYear!.isNotEmpty)
+                              DropdownMenuItem<String>(
+                                value: 'Yearly',
+                                child: Text('Yearly'),
+                              ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              print(value);
+                              print("value");
+                              setState(() {
+                                selection.selectedPlanType = value;
+                                selection.selectedUserCount = '1-1';
+                                selection.totalPrice = null;
+
+                                item.planName == "Event Count Cost"
+                                    ? value == 'Monthly'
+                                    ? selection.totalPrice =
+                                    item.rangeMonth![0].rangePrice
+                                    : selection.totalPrice =
+                                    item.rangeYear![0].rangePrice
+                                    : "";
+                                item.planName == "Event Count Cost"
+                                    ? selection.title = "Event Count Cost"
+                                    : "";
+                                item.planName == "Event Count Cost"
+                                    ? selection.planId = item.planId!
+                                    : '';
+                                item.planName == "Event Count Cost"
+                                    ? selection.planType = item.planType!
+                                    : '';
+                                item.planName == "Event Count Cost"
+                                    ? value == 'Monthly'
+                                    ? selection.priceperuser = item
+                                    .rangeMonth![0].pricePerUser
+                                    : selection.priceperuser = item
+                                    .rangeYear![0].pricePerUser
+                                    : "";
+                                item.planName == "Event Count Cost"
+                                    ? value == 'Monthly'
+                                    ? selection.licensePrice = item
+                                    .rangeMonth![0].pricePerUser
+                                    : selection.priceperuser = item
+                                    .rangeYear![0].pricePerUser
+                                    : "";
+                                selection.userCount = item.planName ==
+                                    "Event Count Cost"
+                                    ? (value == 'Monthly'
+                                    ? '${item.rangeMonth![0].startCount}-${item.rangeMonth![0].endCount}'
+                                    : '${item.rangeYear![0].startCount}-${item.rangeYear![0].endCount}')
+                                    : selection.userCount;
+                              });
+                            }
+                          },
+                        ),
                         const SizedBox(height: 16),
                         item.planName == "Event Count Cost"
                             ? SizedBox()
                             : DropdownButtonFormField<String>(
-                                value: userCountOptions
-                                        .contains(selection.selectedUserCount)
-                                    ? selection.selectedUserCount
-                                    : null,
-                                decoration: InputDecoration(
-                                  labelText: item.planName == "User License"
-                                      ? "Select User"
-                                      : "Select Locations",
-                                  border: OutlineInputBorder(),
-                                  filled: true,
-                                ),
-                                items: userCountOptions.map((rangeLabel) {
-                                  return DropdownMenuItem<String>(
-                                      value: rangeLabel,
-                                      child: Text(
-                                          '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      // Set the selected user count from dropdown value
-                                      selection.selectedUserCount = value;
+                          value: userCountOptions
+                              .contains(selection.selectedUserCount)
+                              ? selection.selectedUserCount
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: item.planName == "User License"
+                                ? "Select User"
+                                : "Select Locations",
+                            border: OutlineInputBorder(),
+                            filled: true,
+                          ),
+                          items: userCountOptions.map((rangeLabel) {
+                            return DropdownMenuItem<String>(
+                                value: rangeLabel,
+                                child: Text(
+                                    '$rangeLabel ${item.planName == "User License" ? "User" : "Locations"}'));
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                // Set the selected user count from dropdown value
+                                selection.selectedUserCount = value;
 
-                                      // Set title from the item
-                                      selection.title = item.planName ??
-                                          "Location Count (Hazard)";
+                                // Set title from the item
+                                selection.title = item.planName ??
+                                    "Location Count (Hazard)";
 
-                                      // Find the selected range from the list
-                                      final selectedRange =
-                                          selectedRangeList.firstWhere(
-                                        (range) =>
-                                            '${range.startCount}-${range.endCount}' ==
-                                            value,
-                                        orElse: () => RangeYear(
-                                          startCount: '0',
-                                          endCount: '0',
-                                          pricePerUser: "0",
-                                          rangePrice: 0,
-                                        ),
-                                      );
-                                      // Reformat selected user count (for consistency)
-                                      selection.selectedUserCount =
-                                          '${selectedRange.endCount}-${selectedRange.startCount}';
-                                      selection.planId = item.planId ?? '';
-                                      selection.planType = item.planType ?? '';
+                                // Find the selected range from the list
+                                final selectedRange =
+                                selectedRangeList.firstWhere(
+                                      (range) =>
+                                  '${range.startCount}-${range.endCount}' ==
+                                      value,
+                                  orElse: () => RangeYear(
+                                    startCount: '0',
+                                    endCount: '0',
+                                    pricePerUser: "0",
+                                    rangePrice: 0,
+                                  ),
+                                );
+                                // Reformat selected user count (for consistency)
+                                selection.selectedUserCount =
+                                '${selectedRange.endCount}-${selectedRange.startCount}';
+                                selection.planId = item.planId ?? '';
+                                selection.planType = item.planType ?? '';
 
-                                      // Parse start and end counts
-                                      int start = int.tryParse(selectedRange
-                                              .startCount
-                                              .toString()) ??
-                                          0;
-                                      int end = int.tryParse(selectedRange
-                                              .endCount
-                                              .toString()) ??
-                                          0;
-                                      int numberOfUsers = end - 0;
-                                      selection.userCount = start.toString() +
-                                          '-' +
-                                          end.toString();
+                                // Parse start and end counts
+                                int start = int.tryParse(selectedRange
+                                    .startCount
+                                    .toString()) ??
+                                    0;
+                                int end = int.tryParse(selectedRange
+                                    .endCount
+                                    .toString()) ??
+                                    0;
+                                int numberOfUsers = end - 0;
+                                selection.userCount = start.toString() +
+                                    '-' +
+                                    end.toString();
 
-                                      print(
-                                          'Selected Range → Start: $start, End: $end');
-                                      print(selection.planType.toString());
-                                      print(selection.priceperuser.toString());
-                                      print(
-                                          selectedRange.rangePrice.toString());
+                                print(
+                                    'Selected Range → Start: $start, End: $end');
+                                print(selection.planType.toString());
+                                print(selection.priceperuser.toString());
+                                print(
+                                    selectedRange.rangePrice.toString());
 
-                                      int pricePerUser = int.tryParse(
-                                              selectedRange.pricePerUser
-                                                  .toString()) ??
-                                          0;
-                                      print(pricePerUser.toString());
-                                      selection.totalPrice =
-                                          selectedRange.rangePrice.toString();
-                                      print(totalPrice.toString());
-                                      selection.licensePrice =
-                                          selectedRange.rangePrice.toString();
-                                      selection.priceperuser =
-                                          selection.licensePrice.toString();
-                                    });
-                                  }
-                                },
-                              ),
+                                int pricePerUser = int.tryParse(
+                                    selectedRange.pricePerUser
+                                        .toString()) ??
+                                    0;
+                                print(pricePerUser.toString());
+                                selection.totalPrice =
+                                    selectedRange.rangePrice.toString();
+                                print(totalPrice.toString());
+                                selection.licensePrice =
+                                    selectedRange.rangePrice.toString();
+                                selection.priceperuser =
+                                    selection.licensePrice.toString();
+                              });
+                            }
+                          },
+                        ),
                         SizedBox(height: 2),
                         if (item.planName == "Event Count Cost" ||
                             item.planName!.contains('event')) ...[
                           SizedBox(height: 10),
                           Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 2.0),
+                            const EdgeInsets.symmetric(horizontal: 2.0),
                             child: DropdownButtonFormField<String>(
                               value: (selection.selectedPlanType.toString() ==
-                                                  "Yearly"
-                                              ? item.rangeYear
-                                              : item.rangeMonth)
-                                          ?.any((rangeItem) =>
-                                              rangeItem.vendorId ==
-                                              selectedVendor) ==
-                                      true
+                                  "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)
+                                  ?.any((rangeItem) =>
+                              rangeItem.vendorId ==
+                                  selectedVendor) ==
+                                  true
                                   ? selectedVendor
                                   : null,
                               isExpanded: true,
@@ -1392,7 +1392,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                 fillColor: Colors.grey[800],
                                 labelText: 'Select Vendor',
                                 labelStyle:
-                                    const TextStyle(color: Colors.white),
+                                const TextStyle(color: Colors.white),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -1401,24 +1401,24 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                               icon: const Icon(Icons.arrow_drop_down,
                                   color: Colors.white),
                               items: (selection.selectedPlanType.toString() ==
-                                          "Yearly"
-                                      ? item.rangeYear
-                                      : item.rangeMonth)!
+                                  "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)!
                                   .fold<List<DropdownMenuItem<String>>>([],
                                       (prev, rangeItem) {
-                                if (!prev.any(
-                                    (e) => e.value == rangeItem.vendorId)) {
-                                  prev.add(DropdownMenuItem<String>(
-                                    value: rangeItem.vendorId,
-                                    child: Text(
-                                      rangeItem.vendorNameLabel ?? 'Unknown',
-                                      style:
+                                    if (!prev.any(
+                                            (e) => e.value == rangeItem.vendorId)) {
+                                      prev.add(DropdownMenuItem<String>(
+                                        value: rangeItem.vendorId,
+                                        child: Text(
+                                          rangeItem.vendorNameLabel ?? 'Unknown',
+                                          style:
                                           const TextStyle(color: Colors.white),
-                                    ),
-                                  ));
-                                }
-                                return prev;
-                              }),
+                                        ),
+                                      ));
+                                    }
+                                    return prev;
+                                  }),
                               onChanged: (value) {
                                 setState(() {
                                   selectedVendor = value;
@@ -1426,14 +1426,14 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                   // hazardName = '';
 
                                   final rangeList =
-                                      selection.selectedPlanType.toString() ==
-                                              "Yearly"
-                                          ? item.rangeYear
-                                          : item.rangeMonth;
+                                  selection.selectedPlanType.toString() ==
+                                      "Yearly"
+                                      ? item.rangeYear
+                                      : item.rangeMonth;
 
                                   final selected = (rangeList?.any(
-                                              (r) => r.vendorId == value) ??
-                                          false)
+                                          (r) => r.vendorId == value) ??
+                                      false)
                                       ? rangeList!.firstWhere(
                                           (r) => r.vendorId == value)
                                       : null;
@@ -1450,13 +1450,13 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                                   // Automatically set hazardName if vendor has only 1 hazard
                                   if (selectedVendor != null) {
                                     final vendorData = vendorList.firstWhere(
-                                      (v) => v['vendor_id'] == selectedVendor,
+                                          (v) => v['vendor_id'] == selectedVendor,
                                       orElse: () => {},
                                     );
 
                                     final hazards =
                                         (vendorData['hazard_commercials']
-                                                as List?) ??
+                                        as List?) ??
                                             [];
 
                                     if (hazards.length == 1) {
@@ -1479,241 +1479,241 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                           hazardName.toString().isEmpty
                               ? SizedBox()
                               : Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 2.0),
-                                  child: DropdownButtonFormField<String>(
-                                    value: (selection.selectedPlanType
-                                                            .toString() ==
-                                                        "Yearly"
-                                                    ? item.rangeYear
-                                                    : item.rangeMonth)
-                                                ?.any((rangeItem) =>
-                                                    rangeItem.hazardNameLabel ==
-                                                    hazardName) ==
-                                            true
-                                        ? selectedHazard
-                                        : null,
-                                    isExpanded: true,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      fillColor: Colors.grey[800],
-                                      labelText: 'Select Hazard',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.white),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    dropdownColor: Colors.grey[850],
-                                    icon: const Icon(Icons.arrow_drop_down,
-                                        color: Colors.white),
-                                    items: (selection.selectedPlanType
-                                                    .toString() ==
-                                                "Yearly"
-                                            ? item.rangeYear
-                                            : item.rangeMonth)!
-                                        .where((rangeItem) =>
-                                            rangeItem.hazardNameLabel ==
-                                            hazardName) // Filter here
-                                        .fold<List<DropdownMenuItem<String>>>(
-                                            [], (prev, rangeItem) {
-                                      if (!prev.any((e) =>
-                                          e.value == rangeItem.hazardId)) {
-                                        prev.add(DropdownMenuItem<String>(
-                                          value: rangeItem.hazardId,
-                                          child: Text(
-                                            rangeItem.hazardNameLabel ??
-                                                'Unknown',
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                        ));
-                                      }
-                                      return prev;
-                                    }),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        selectedHazard = value;
-                                        final rangeList = selection
-                                                    .selectedPlanType
-                                                    .toString() ==
-                                                "Yearly"
-                                            ? item.rangeYear
-                                            : item.rangeMonth;
-
-                                        final selected = (rangeList?.any((r) =>
-                                                    r.hazardId == value &&
-                                                    r.hazardNameLabel ==
-                                                        hazardName) ??
-                                                false)
-                                            ? rangeList!.firstWhere((r) =>
-                                                r.hazardId == value &&
-                                                r.hazardNameLabel == hazardName)
-                                            : null;
-
-                                        vendorName =
-                                            selected?.vendorNameLabel ??
-                                                'Unknown';
-                                        hazardName =
-                                            selected?.hazardNameLabel ?? '';
-                                        item.planName == "Event Count Cost"
-                                            ? selection.title =
-                                                "Event Count Cost"
-                                            : "";
-
-                                        print(
-                                            "Selected Hazard: $selectedHazard, Name: $hazardName");
-
-                                        if (selectedVendor != null) {
-                                          final vendorData =
-                                              vendorList.firstWhere(
-                                            (v) =>
-                                                v['vendor_id'] ==
-                                                selectedVendor,
-                                            orElse: () => {},
-                                          );
-
-                                          final hazards =
-                                              (vendorData['hazard_commercials']
-                                                      as List?) ??
-                                                  [];
-
-                                          if (hazards.length == 1) {
-                                            selectedHazard =
-                                                hazards[0]['hazard_id'];
-                                          }
-                                        }
-                                      });
-                                    },
-                                    validator: (value) {
-                                      if (isEventCost &&
-                                          (value == null || value.isEmpty)) {
-                                        return 'Hazard is required';
-                                      }
-                                      return null;
-                                    },
-                                  ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 2.0),
+                            child: DropdownButtonFormField<String>(
+                              value: (selection.selectedPlanType
+                                  .toString() ==
+                                  "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)
+                                  ?.any((rangeItem) =>
+                              rangeItem.hazardNameLabel ==
+                                  hazardName) ==
+                                  true
+                                  ? selectedHazard
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey[800],
+                                labelText: 'Select Hazard',
+                                labelStyle:
+                                const TextStyle(color: Colors.white),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                              ),
+                              dropdownColor: Colors.grey[850],
+                              icon: const Icon(Icons.arrow_drop_down,
+                                  color: Colors.white),
+                              items: (selection.selectedPlanType
+                                  .toString() ==
+                                  "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)!
+                                  .where((rangeItem) =>
+                              rangeItem.hazardNameLabel ==
+                                  hazardName) // Filter here
+                                  .fold<List<DropdownMenuItem<String>>>(
+                                  [], (prev, rangeItem) {
+                                if (!prev.any((e) =>
+                                e.value == rangeItem.hazardId)) {
+                                  prev.add(DropdownMenuItem<String>(
+                                    value: rangeItem.hazardId,
+                                    child: Text(
+                                      rangeItem.hazardNameLabel ??
+                                          'Unknown',
+                                      style: const TextStyle(
+                                          color: Colors.white),
+                                    ),
+                                  ));
+                                }
+                                return prev;
+                              }),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedHazard = value;
+                                  final rangeList = selection
+                                      .selectedPlanType
+                                      .toString() ==
+                                      "Yearly"
+                                      ? item.rangeYear
+                                      : item.rangeMonth;
+
+                                  final selected = (rangeList?.any((r) =>
+                                  r.hazardId == value &&
+                                      r.hazardNameLabel ==
+                                          hazardName) ??
+                                      false)
+                                      ? rangeList!.firstWhere((r) =>
+                                  r.hazardId == value &&
+                                      r.hazardNameLabel == hazardName)
+                                      : null;
+
+                                  vendorName =
+                                      selected?.vendorNameLabel ??
+                                          'Unknown';
+                                  hazardName =
+                                      selected?.hazardNameLabel ?? '';
+                                  item.planName == "Event Count Cost"
+                                      ? selection.title =
+                                  "Event Count Cost"
+                                      : "";
+
+                                  print(
+                                      "Selected Hazard: $selectedHazard, Name: $hazardName");
+
+                                  if (selectedVendor != null) {
+                                    final vendorData =
+                                    vendorList.firstWhere(
+                                          (v) =>
+                                      v['vendor_id'] ==
+                                          selectedVendor,
+                                      orElse: () => {},
+                                    );
+
+                                    final hazards =
+                                        (vendorData['hazard_commercials']
+                                        as List?) ??
+                                            [];
+
+                                    if (hazards.length == 1) {
+                                      selectedHazard =
+                                      hazards[0]['hazard_id'];
+                                    }
+                                  }
+                                });
+                              },
+                              validator: (value) {
+                                if (isEventCost &&
+                                    (value == null || value.isEmpty)) {
+                                  return 'Hazard is required';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                           const SizedBox(height: 20),
                           hazardName.toString().isEmpty
                               ? SizedBox()
                               : Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 2.0),
-                                  child: DropdownButtonFormField<String>(
-                                    value:
-                                        selection.selectedUserCount != null &&
-                                                userCountOptions.contains(
-                                                    selection.selectedUserCount)
-                                            ? selection.selectedUserCount
-                                            : null,
-                                    isExpanded: true,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      fillColor: Colors.grey[800],
-                                      labelText: 'Select Locations',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.white),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    dropdownColor: Colors.grey[850],
-                                    icon: const Icon(Icons.arrow_drop_down,
-                                        color: Colors.white),
-                                    items: (selection.selectedPlanType
-                                                    .toString() ==
-                                                "Yearly"
-                                            ? item.rangeYear
-                                            : item.rangeMonth)!
-                                        .where((rangeItem) =>
-                                                rangeItem.hazardNameLabel ==
-                                                hazardName // filter by hazardName
-                                            )
-                                        .map((rangeItem) {
-                                      return DropdownMenuItem<String>(
-                                        value:
-                                            '${rangeItem.startCount}-${rangeItem.endCount}',
-                                        // Use this as value
-                                        child: Text(
-                                          '${rangeItem.startCount}-${rangeItem.endCount} Locations',
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        selection.selectedUserCount = value!;
-                                        final selectedRange = (selection
-                                                        .selectedPlanType
-                                                        .toString() ==
-                                                    "Yearly"
-                                                ? item.rangeYear
-                                                : item.rangeMonth)!
-                                            .firstWhere(
-                                          (range) =>
-                                              '${range.startCount}-${range.endCount}' ==
-                                                  value &&
-                                              range.hazardNameLabel ==
-                                                  hazardName,
-                                          // ensure hazardName match
-                                          orElse: () => RangeYear(
-                                            startCount: '0',
-                                            endCount: '0',
-                                            pricePerUser: "0",
-                                            rangePrice: 0,
-                                          ),
-                                        );
-
-                                        selection.selectedUserCount =
-                                            '${selectedRange.startCount}-${selectedRange.endCount}';
-
-                                        selection.planId = item.planId ?? '';
-                                        selection.planType =
-                                            item.planType ?? '';
-                                        selection.title = item.planName ??
-                                            "Location Count (Hazard)";
-
-                                        int start = int.tryParse(
-                                                selectedRange.startCount) ??
-                                            0;
-                                        int end = int.tryParse(
-                                                selectedRange.endCount) ??
-                                            0;
-                                        int pricePerUser = int.tryParse(
-                                                selectedRange.pricePerUser) ??
-                                            0;
-
-                                        selection.userCount = '${start}-${end}';
-                                        selection.totalPrice =
-                                            selectedRange.rangePrice.toString();
-                                        selection.licensePrice =
-                                            selectedRange.rangePrice.toString();
-                                        selection.priceperuser = selectedRange
-                                            .pricePerUser
-                                            .toString();
-
-                                        print(
-                                            'Selected Range → Start: $start, End: $end');
-                                        print('Price per user → $pricePerUser');
-                                        print(
-                                            'Total price → ${selectedRange.rangePrice}');
-                                        print(
-                                            'Total price → ${selection.totalPrice}');
-                                        print(
-                                            'Total price1 → ${selectedRange.pricePerUser}');
-                                      });
-                                    },
-                                    validator: (value) {
-                                      if (isEventCost &&
-                                          (value == null || value.isEmpty)) {
-                                        return 'Location is required';
-                                      }
-                                      return null;
-                                    },
-                                  ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 2.0),
+                            child: DropdownButtonFormField<String>(
+                              value:
+                              selection.selectedUserCount != null &&
+                                  userCountOptions.contains(
+                                      selection.selectedUserCount)
+                                  ? selection.selectedUserCount
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey[800],
+                                labelText: 'Select Locations',
+                                labelStyle:
+                                const TextStyle(color: Colors.white),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                              ),
+                              dropdownColor: Colors.grey[850],
+                              icon: const Icon(Icons.arrow_drop_down,
+                                  color: Colors.white),
+                              items: (selection.selectedPlanType
+                                  .toString() ==
+                                  "Yearly"
+                                  ? item.rangeYear
+                                  : item.rangeMonth)!
+                                  .where((rangeItem) =>
+                              rangeItem.hazardNameLabel ==
+                                  hazardName // filter by hazardName
+                              )
+                                  .map((rangeItem) {
+                                return DropdownMenuItem<String>(
+                                  value:
+                                  '${rangeItem.startCount}-${rangeItem.endCount}',
+                                  // Use this as value
+                                  child: Text(
+                                    '${rangeItem.startCount}-${rangeItem.endCount} Locations',
+                                    style: const TextStyle(
+                                        color: Colors.white),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selection.selectedUserCount = value!;
+                                  final selectedRange = (selection
+                                      .selectedPlanType
+                                      .toString() ==
+                                      "Yearly"
+                                      ? item.rangeYear
+                                      : item.rangeMonth)!
+                                      .firstWhere(
+                                        (range) =>
+                                    '${range.startCount}-${range.endCount}' ==
+                                        value &&
+                                        range.hazardNameLabel ==
+                                            hazardName,
+                                    // ensure hazardName match
+                                    orElse: () => RangeYear(
+                                      startCount: '0',
+                                      endCount: '0',
+                                      pricePerUser: "0",
+                                      rangePrice: 0,
+                                    ),
+                                  );
+
+                                  selection.selectedUserCount =
+                                  '${selectedRange.startCount}-${selectedRange.endCount}';
+
+                                  selection.planId = item.planId ?? '';
+                                  selection.planType =
+                                      item.planType ?? '';
+                                  selection.title = item.planName ??
+                                      "Location Count (Hazard)";
+
+                                  int start = int.tryParse(
+                                      selectedRange.startCount) ??
+                                      0;
+                                  int end = int.tryParse(
+                                      selectedRange.endCount) ??
+                                      0;
+                                  int pricePerUser = int.tryParse(
+                                      selectedRange.pricePerUser) ??
+                                      0;
+
+                                  selection.userCount = '${start}-${end}';
+                                  selection.totalPrice =
+                                      selectedRange.rangePrice.toString();
+                                  selection.licensePrice =
+                                      selectedRange.rangePrice.toString();
+                                  selection.priceperuser = selectedRange
+                                      .pricePerUser
+                                      .toString();
+
+                                  print(
+                                      'Selected Range → Start: $start, End: $end');
+                                  print('Price per user → $pricePerUser');
+                                  print(
+                                      'Total price → ${selectedRange.rangePrice}');
+                                  print(
+                                      'Total price → ${selection.totalPrice}');
+                                  print(
+                                      'Total price1 → ${selectedRange.pricePerUser}');
+                                });
+                              },
+                              validator: (value) {
+                                if (isEventCost &&
+                                    (value == null || value.isEmpty)) {
+                                  return 'Location is required';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                         ],
                       ],
                     ],

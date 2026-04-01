@@ -2440,7 +2440,8 @@ class MyLocationListProvider with ChangeNotifier {
 
   Future<void> fetchUserManagement() async {
     final url = Uri.parse(
-      "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
+      "${AppConstant.Fetch_user_managements}"
+      // "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
     );
 
     try {

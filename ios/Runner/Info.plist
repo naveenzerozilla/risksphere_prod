@@ -38,7 +38,7 @@
 
     <!-- Version info -->
     <key>CFBundleShortVersionString</key>
-    <string>7.1.0</string>
+    <string>7.4.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleSignature</key>
@@ -72,37 +72,7 @@
                 <string>app-1-863607711683-ios-f0160ac7f584c6bdbcff76</string>
             </array>
         </dict>
-        <!-- ADD THIS NEW URL SCHEME FOR DEEP LINKS -->
-        <dict>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>CFBundleURLName</key>
-            <string>risksphere</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>risksphere</string>
-            </array>
-        </dict>
     </array>
-
-    <!-- ADD THIS NEW SECTION FOR QUERY SCHEMES -->
-    <key>LSApplicationQueriesSchemes</key>
-    <array>
-        <string>risksphere</string>
-        <string>https</string>
-        <string>http</string>
-    </array>
-
-    <!-- ADD THIS NEW SECTION FOR ASSOCIATED DOMAINS -->
-    <key>com.apple.developer.associated-domains</key>
-    <array>
-        <string>applinks:qa.risksphere.ai</string>
-        <string>applinks:qa.auth.risksphere.ai</string>
-    </array>
-
-    <!-- app_links requires disabling Flutter's default deep linking (Flutter >= 3.24) -->
-    <key>FlutterDeepLinkingEnabled</key>
-    <false/>
 
     <key>FirebaseAppDelegateProxyEnabled</key>
     <true/>

@@ -1,5 +1,4 @@
 import 'package:tuple/tuple.dart';
-import '../../utils/app_update.dart';
 import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
@@ -83,142 +82,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    _scrollController = ScrollController(); // ✅ ADD THIS LINE
+    _initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasNavigated) {
+        _hasNavigated = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final updateStatus = await UpdateService.checkForUpdate();
-      debugPrint("Has update: ${updateStatus.hasUpdate}");
+        _handleFirstTimeNavigation();
 
-      if (updateStatus.hasUpdate && mounted) {
-        await UpdateService.showUpdateDialog(context, updateStatus);
-      }
+        // ✅ HANDLE SHARED LOCATION
+        if (widget.openAddLocation &&
+            widget.latitude != null &&
+            widget.longitude != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AddLocationScreen(
+                accountId: accountId,
+                subAccountId: subAccountId,
+                sovId: "",
+                accountName: accountName,
+                subAccountName: subAccountName,
+                sovName: "sovName",
+                locationId: "",
 
-      _handleFirstTimeNavigation();
+                // nullable-safe
+                locationName:
+                    "locationProfile.finalAddress?.locationName ?? " "",
 
-      if (widget.openAddLocation &&
-          widget.latitude != null &&
-          widget.longitude != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => AddLocationScreen(
-              accountId: accountId,
-              subAccountId: subAccountId,
-              sovId: "",
-              accountName: accountName,
-              subAccountName: subAccountName,
-              sovName: "sovName",
-              locationId: "",
-              locationName: "",
-              locationIdForRef: "",
-              searchQuery: "",
-              page: "1",
-              totalPages: "1",
+                locationIdForRef: "",
+
+                searchQuery: "",
+                page: "1",
+
+                totalPages: "1",
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     });
-
-    // ✅ Initialize data (was missing from initState)
-    _initialize();
-  }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _initialize();
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     await _checkForUpdates();
-  //
-  //     if (!_hasNavigated) {
-  //       _hasNavigated = true;
-  //
-  //       _handleFirstTimeNavigation();
-  //
-  //       if (widget.openAddLocation &&
-  //           widget.latitude != null &&
-  //           widget.longitude != null) {
-  //         Navigator.of(context).push(
-  //           MaterialPageRoute(
-  //             builder: (_) =>
-  //                 AddLocationScreen(
-  //                   accountId: accountId,
-  //                   subAccountId: subAccountId,
-  //                   sovId: "",
-  //                   accountName: accountName,
-  //                   subAccountName: subAccountName,
-  //                   sovName: "sovName",
-  //                   locationId: "",
-  //                   locationName: "",
-  //                   locationIdForRef: "",
-  //                   searchQuery: "",
-  //                   page: "1",
-  //                   totalPages: "1",
-  //                 ),
-  //           ),
-  //         );
-  //       }
-  //     }
-  //   });
-  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
-  //   //   if (!_hasNavigated) {
-  //   //     _hasNavigated = true;
-  //   //
-  //   //     _handleFirstTimeNavigation();
-  //   //     if (widget.openAddLocation &&
-  //   //         widget.latitude != null &&
-  //   //         widget.longitude != null) {
-  //   //       Navigator.of(context).push(
-  //   //         MaterialPageRoute(
-  //   //           builder: (_) => AddLocationScreen(
-  //   //             accountId: accountId,
-  //   //             subAccountId: subAccountId,
-  //   //             sovId: "",
-  //   //             accountName: accountName,
-  //   //             subAccountName: subAccountName,
-  //   //             sovName: "sovName",
-  //   //             locationId: "",
-  //   //
-  //   //             // nullable-safe
-  //   //             locationName:
-  //   //                 "locationProfile.finalAddress?.locationName ?? " "",
-  //   //
-  //   //             locationIdForRef: "",
-  //   //
-  //   //             searchQuery: "",
-  //   //             page: "1",
-  //   //
-  //   //             totalPages: "1",
-  //   //           ),
-  //   //         ),
-  //   //       );
-  //   //     }
-  //   //   }
-  //   // });
-  //
-  // }
-
-  Future<void> _checkForUpdates() async {
-    final updateStatus = await UpdateService.checkForUpdate();
-    print("Current version check triggered");
-    print("Has update: ${updateStatus.hasUpdate}");
-    print("Latest version: ${updateStatus.latestVersion}");
-    if (updateStatus.hasUpdate && mounted) {
-      await UpdateService.showUpdateDialog(context, updateStatus);
-
-      // optional for tracking
-      await SharedPreferenceService.setBool("pending_soft_update", false);
-      await SharedPreferenceService.setString(
-          "pending_update_version", updateStatus.latestVersion ?? "");
-    }
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (!_hasNavigated) {
+    //     _hasNavigated = true;
+    //     _handleFirstTimeNavigation();
+    //   }
+    // });
   }
 
   Future<void> _initialize() async {
-    _scrollController = ScrollController(); // safety
+    await _loadAsyncData();
     await _setClaims();
     await _checkFirstTimeLoader();
-    await _loadAsyncData();
   }
+
   Future<void> _handleFirstTimeNavigation() async {
     if (!mounted) return;
     if (widget.defaultTab == "dashboard") {
@@ -1021,9 +936,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
               (userProfileProvider.userData.role != null &&
                       userProfileProvider.userData.role!.isNotEmpty &&
-                      userProfileProvider.userData.role![0].name
-                              .toString()
-                              .toLowerCase() ==
+                      userProfileProvider.userData.role![0].name.toString().toLowerCase() ==
                           "admin" &&
                       (isSuperAdmin || isPgAdmin || isAdmin))
                   ? _overviewCardHorizontal(
@@ -1262,10 +1175,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(
                 height: CustomSpacing.one,
               ),
+              // (userProfileProvider.userData.role != null &&
+              //         userProfileProvider.userData.role!.isNotEmpty &&
+              //         userProfileProvider.userData.role![0].name
+              //                 .toString() ==
+              //             "Admin" &&
+              //         (isSuperAdmin || isPgAdmin || isAdmin))
+              // InkWell(
+              //   onTap: () async {
+              //     final status = await Permission.camera.request();
+              //     if (status.isGranted) {
+              //       final pickedFile = await ImagePicker()
+              //           .pickImage(source: ImageSource.camera);
+              //       if (pickedFile != null) {
+              //         // Use pickedFile.path
+              //         print('Image path: ${pickedFile.path}');
+              //       }
+              //     } else {
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         SnackBar(content: Text('Camera permission denied')),
+              //       );
+              //     }
+              //   },
+              //   child: Text("Camera", style: typography.H5_Regular),
+              // ),
               showAllUsers
                   ? SizedBox()
                   : Consumer2<UserProfileProvider, ConfigurationProvider>(
                       builder: (context, userProfileProvider, provider, child) {
+                        // if (provider.isLoading) {
+                        //   return Container(
+                        //     padding: const EdgeInsets.symmetric(horizontal: 50),
+                        //     alignment: Alignment.center,
+                        //     width: MediaQuery.of(context).size.width,
+                        //     height: MediaQuery.of(context).size.height / 2,
+                        //     child: const CircularProgressIndicator(),
+                        //   );
+                        // }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

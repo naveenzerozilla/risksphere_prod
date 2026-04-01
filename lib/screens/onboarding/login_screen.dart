@@ -575,21 +575,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                   await authNotifier.signInWithEmailAndPassword(
                                       email, password, context);
 
-                                  // Check if the user is authenticated after login attempt
                                   final user = authNotifier.user;
                                   if (user != null) {
-                                   var token = await user.getIdToken();
-                                    print("fcmCall");
-                                    initFCM(user.uid);
-                                    print("fcmCall");
+                                    // ✅ Don't await - let FCM init run in background
+                                    initFCM(user.uid).catchError((e) {
+                                      debugPrint('FCM init error: $e');
+                                    });
+
                                     TextInput.finishAutofillContext();
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              DashboardScreen()
-
-                                          ),
+                                              DashboardScreen()),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Login failed. Please try again.')),
                                     );
                                   }
                                 }

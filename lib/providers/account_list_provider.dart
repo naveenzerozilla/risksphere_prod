@@ -726,7 +726,51 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<void> shareLocation(
+      BuildContext context, {
+        required String recipientEmails,
+        required int credits,
+        required int expireDays,
+        String message = "",
+      }) async {
+    var typography = CustomTypography(context);
+    try {
+      isDuplicateLoading = true;
+      notifyListeners();
 
+      ApiService apiService = ApiService(AppConstant.GIFT_CREDITS);
+      var response = await apiService.post({
+        'recipient_email': recipientEmails,
+        'credits': credits,
+        'expire_days': expireDays,
+        'message': message,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          'Location shared successfully!',
+          style: typography.ButtonLarge,
+        ),
+        backgroundColor: Colors.green,
+      ));
+
+      isDuplicateLoading = false;
+      notifyListeners();
+    } on BackendException catch (e) {
+      isDuplicateLoading = false;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message, style: typography.ButtonLarge),
+        backgroundColor: Colors.red,
+      ));
+    } catch (e) {
+      isDuplicateLoading = false;
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString(), style: typography.ButtonLarge),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
   Future<void> fetchMissingParameterList(
     BuildContext context,
     String sovId, {
