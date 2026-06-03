@@ -4,7 +4,6 @@ import 'package:RiskSphere/models/TransactionModel.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../design_system/primitives/custom_typography.dart';
-import '../models/payment_success_model.dart' hide Plans;
 import '../screens/payments/paymentScreen.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';
@@ -286,7 +285,7 @@ class PaymentProvider extends ChangeNotifier {
 
       _transactions = transactionListData.result ?? [];
 
-      log('✅ Success: Transaction list fetched successfully. Total records: ${_transactions.length}');
+      log(' Success: Transaction list fetched successfully. Total records: ${_transactions.length}');
 
       _isLoading = false;
       notifyListeners();

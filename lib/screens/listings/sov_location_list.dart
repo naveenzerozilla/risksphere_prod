@@ -276,23 +276,7 @@ class _SovLocationListState extends State<SovLocationList>
 
   void _initializeData() {
     _setClaims();
-    // getdata(widget.accountID!, widget.subAccountID!);
-    // _startRefreshTimer(widget.accountID!, widget.subAccountID!);
-    // _getSovUploadStatus();
-    // _getMaintainancePeriod();
 
-    // final locationListProvider =
-    //     Provider.of<MyLocationListProvider>(context, listen: false);
-    // locationListProvider.clearAllFilters();
-    // locationListProvider.page = 1;
-    //
-    // Provider.of<LocationListProvider>(context, listen: false)
-    //     .fetchLocationSummary(
-    //   widget.accountID!,
-    //   widget.subAccountID!,
-    //   "widget.sovId!",
-    // );
-    // _fetchTabData(0); // Load default tab data
   }
 
   Future<void> _setClaims() async {
@@ -479,8 +463,6 @@ class _SovLocationListState extends State<SovLocationList>
                       myLocationListProvider.selectedLocationIds.isNotEmpty ||
                           myLocationListProvider.isGlobalSelectAll;
 
-                  // final isSelectionMode =
-                  //     myLocationListProvider.selectedLocations.isNotEmpty;
 
                   var typography = CustomTypography(context);
                   return Column(
@@ -715,7 +697,7 @@ class _SovLocationListState extends State<SovLocationList>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               if (isSelectionMode) ...[
-                                // Show selection count and select all button
+
                                 SizedBox(width: CustomSpacing.two),
                                 Container(
                                   padding: EdgeInsets.symmetric(
@@ -729,15 +711,6 @@ class _SovLocationListState extends State<SovLocationList>
                                   child: Text(
                                     locationListProvider.selectedCount
                                         .toString(),
-                                    // locationListProvider.isGlobalSelectAll
-                                    //     ? locationListProvider
-                                    //         .totalLocationCount
-                                    //         .toString()
-                                    //     : locationListProvider
-                                    //         .selectedLocationIds.length
-                                    //         .toString(),
-
-                                    // "${locationListProvider.selectedLocations.length}",
                                     style: typography.Body1.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -752,10 +725,10 @@ class _SovLocationListState extends State<SovLocationList>
                                             listen: false);
 
                                     if (provider.isGlobalSelectAll) {
-                                      // ✅ DESELECT ALL
+
                                       provider.clearSelection();
                                     } else {
-                                      // ✅ SELECT ALL (GLOBAL)
+
                                       provider.selectAllGlobal(
                                         totalCount: _selectedScreen ==
                                                 Screens.certifiedLocationList
@@ -775,109 +748,6 @@ class _SovLocationListState extends State<SovLocationList>
                                   ),
                                 ),
 
-                                // InkWell(
-                                //   onTap: () {
-                                //     final provider =
-                                //         Provider.of<MyLocationListProvider>(
-                                //             context,
-                                //             listen: false);
-                                //
-                                //     if (provider.isGlobalSelectAll) {
-                                //       // ✅ DESELECT ALL
-                                //       provider.clearSelection();
-                                //     } else {
-                                //       // ✅ SELECT ALL (GLOBAL)
-                                //       // provider.selectAllGlobal(
-                                //       //   isCertified: _selectedScreen ==
-                                //       //       Screens.certifiedLocationList,
-                                //       //   totalCount: _selectedScreen ==
-                                //       //           Screens.certifiedLocationList
-                                //       //       ? provider.certifiedLocationHits
-                                //       //       : provider.locationHits,
-                                //       // );
-                                //     }
-                                //   },
-                                //   child: Text(
-                                //     provider.isGlobalSelectAll
-                                //         ? 'Deselect All'
-                                //         : 'Select All',
-                                //     style: typography.Body1.copyWith(
-                                //       fontSize: 16,
-                                //       color: AppColors.primaryMain,
-                                //     ),
-                                //   ),
-                                // ),
-
-                                // InkWell(
-                                //   onTap: () {
-                                //     final locationListProvider =
-                                //         Provider.of<MyLocationListProvider>(
-                                //             context,
-                                //             listen: false);
-                                //     final isCertifiedTab = _selectedScreen ==
-                                //         Screens.certifiedLocationList;
-                                //
-                                //     if (isCertifiedTab) {
-                                //       // Handle certified tab
-                                //       if (locationListProvider
-                                //               .selectedLocations.length <
-                                //           locationListProvider
-                                //               .certifiedLocationList.length) {
-                                //         locationListProvider.selectAllGlobal(
-                                //           isCertified: _selectedScreen ==
-                                //               Screens.certifiedLocationList,
-                                //           totalCount: _selectedScreen ==
-                                //                   Screens.certifiedLocationList
-                                //               ? locationListProvider
-                                //                   .certifiedLocationHits
-                                //               : locationListProvider
-                                //                   .locationHits,
-                                //         );
-                                //         // locationListProvider
-                                //         //     .selectAllLocations(true);
-                                //       } else {
-                                //         locationListProvider.clearSelection();
-                                //       }
-                                //     } else {
-                                //       // Handle regular tab
-                                //       if (locationListProvider
-                                //               .selectedLocations.length <
-                                //           locationListProvider
-                                //               .myLocationList.length) {
-                                //         locationListProvider.selectAllGlobal(
-                                //           isCertified: _selectedScreen ==
-                                //               Screens.certifiedLocationList,
-                                //           totalCount: _selectedScreen ==
-                                //                   Screens.certifiedLocationList
-                                //               ? locationListProvider
-                                //                   .certifiedLocationHits
-                                //               : locationListProvider
-                                //                   .locationHits,
-                                //         );
-                                //         // locationListProvider
-                                //         //     .selectAllLocations(false);
-                                //       } else {
-                                //         locationListProvider.clearSelection();
-                                //       }
-                                //     }
-                                //   },
-                                //   child: Text(
-                                //     locationListProvider
-                                //                 .selectedLocations.length <
-                                //             (_mainTabController!.indexIsChanging
-                                //                 ? locationListProvider
-                                //                     .certifiedLocationList
-                                //                     .length
-                                //                 : locationListProvider
-                                //                     .myLocationList.length)
-                                //         ? 'Select All'
-                                //         : 'Deselect All',
-                                //     style: typography.Body1.copyWith(
-                                //       fontSize: 16,
-                                //       color: AppColors.primaryMain,
-                                //     ),
-                                //   ),
-                                // ),
                                 Spacer(),
                                 SizedBox(width: 10),
                                 //next release
@@ -968,7 +838,6 @@ class _SovLocationListState extends State<SovLocationList>
                                             context,
                                             listen: false);
 
-                                    // 🌍 GLOBAL SELECT ALL
                                     if (provider.isGlobalSelectAll) {
                                       showDialog(
                                         context: context,
@@ -1009,46 +878,7 @@ class _SovLocationListState extends State<SovLocationList>
                                   child: Icon(Icons.download),
                                   // tooltip: 'Export Selected',
                                 ),
-                                // SizedBox(width: 10),
-                                // InkWell(
-                                //   onTap: () {
-                                //     final provider =
-                                //         Provider.of<MyLocationListProvider>(
-                                //             context,
-                                //             listen: false);
-                                //
-                                //     final ids = provider.isGlobalSelectAll
-                                //         ? <String>[] // backend handles global
-                                //         : provider.selectedLocationIds.toList();
-                                //
-                                //     if (ids.isEmpty &&
-                                //         !provider.isGlobalSelectAll) {
-                                //       ScaffoldMessenger.of(context)
-                                //           .showSnackBar(
-                                //         const SnackBar(
-                                //             content: Text(
-                                //                 "Please select at least one location")),
-                                //       );
-                                //       return;
-                                //     }
-                                //
-                                //     provider.addTagsToSelectedLocations(
-                                //       context,
-                                //       widget.accountID!,
-                                //       widget.subAccountID!,
-                                //     );
-                                //   },
-                                //
-                                //   // onTap: () {
-                                //   //   // Implement bulk add to SOV
-                                //   //   locationListProvider
-                                //   //       .addTagsToSelectedLocations(
-                                //   //           context,
-                                //   //           widget.accountID!,
-                                //   //           widget.subAccountID!);
-                                //   // },
-                                //   child: Icon(Symbols.note_stack_add),
-                                // ),
+
                                 SizedBox(width: 10),
                                 InkWell(
                                   onTap: () async {
@@ -1060,7 +890,6 @@ class _SovLocationListState extends State<SovLocationList>
                                     final bool isGlobal =
                                         provider.isGlobalSelectAll;
 
-                                    /// ✅ CORRECT SOURCE OF IDS
                                     final List<String> locationIds = isGlobal
                                         ? provider.myLocationList
                                             .map((e) => e.id)
@@ -1126,60 +955,6 @@ class _SovLocationListState extends State<SovLocationList>
                                           color: Colors.green,
                                         ),
                                 ),
-
-                                // InkWell(
-                                //   onTap: () async {
-                                //     final provider =
-                                //         Provider.of<MyLocationListProvider>(
-                                //             context,
-                                //             listen: false);
-                                //
-                                //     // Show loader
-                                //     setState(() {
-                                //       provider.isLoading = true;
-                                //     });
-                                //
-                                //     await provider.markAsCompleteSov(
-                                //       context,
-                                //       widget.accountID!,
-                                //       widget.subAccountID!,
-                                //       widget.sovID!,
-                                //     );
-                                //
-                                //     provider.clearSelection();
-                                //
-                                //     setState(() {
-                                //       locationListProvider.isLoading = false;
-                                //     });
-                                //
-                                //     setState(() {
-                                //       provider.isLoading = false;
-                                //     });
-                                //
-                                //     provider.fetchLocationList(
-                                //       context,
-                                //       locationQuery,
-                                //       1,
-                                //       11,
-                                //       widget.accountID,
-                                //       widget.subAccountID,
-                                //       widget.initialProcessId,
-                                //       widget.initialSubProcessId,
-                                //       widget.sovID,
-                                //     );
-                                //   },
-                                //   child: locationListProvider.isLoading
-                                //       ? const SizedBox(
-                                //           height: 22,
-                                //           width: 22,
-                                //           child: CircularProgressIndicator(
-                                //               strokeWidth: 2),
-                                //         )
-                                //       : const Icon(
-                                //           Symbols.done_all_rounded,
-                                //           color: Colors.green,
-                                //         ),
-                                // ),
 
                                 SizedBox(width: 10),
                                 InkWell(
@@ -1267,41 +1042,6 @@ class _SovLocationListState extends State<SovLocationList>
                                   child: const Icon(Icons.delete_outline),
                                 ),
 
-                                // InkWell(
-                                //   onTap: () {
-                                //     // Show delete confirmation dialog
-                                //     showDialog(
-                                //       context: context,
-                                //       builder: (context) => AlertDialog(
-                                //         title:
-                                //             Text('Delete Selected Locations'),
-                                //         content: Text(
-                                //             'Are you sure you want to delete ${locationListProvider.selectedLocations.length} locations?'),
-                                //         actions: [
-                                //           TextButton(
-                                //             onPressed: () =>
-                                //                 Navigator.pop(context),
-                                //             child: Text('Cancel'),
-                                //           ),
-                                //           TextButton(
-                                //             onPressed: () {
-                                //               locationListProvider
-                                //                   .deleteSelectedLocations(
-                                //                 context,
-                                //                 widget.accountID!,
-                                //                 widget.subAccountID!,
-                                //               );
-                                //               Navigator.pop(context);
-                                //             },
-                                //             child: Text('Delete'),
-                                //           ),
-                                //         ],
-                                //       ),
-                                //     );
-                                //   },
-                                //   child: Icon(Icons.delete_outline),
-                                //   // tooltip: 'Delete Selected',
-                                // ),
                                 SizedBox(width: 10),
                               ] else ...[
                                 SizedBox(
@@ -1310,18 +1050,12 @@ class _SovLocationListState extends State<SovLocationList>
                                 Expanded(
                                   child: Row(
                                     children: [
-                                      //SizedBox(width: CustomSpacing.two),
                                       Text(
                                         LanguageService.getTranslated(
                                             context, "sov_locations"),
                                         style: typography.Body1,
                                       ),
-                                      /*
-                                                  RatingHalfStars(
-                                                    rating: widget.rating == '' ? 0 : (double.parse(widget.rating) * 5)/100,
-                                                    maxRating: 5,
-                                                    iconSize: 18,
-                                                  ),*/
+
                                       Spacer(),
                                       SizedBox(width: CustomSpacing.two),
                                       selectedMainTab == 0
@@ -1329,7 +1063,6 @@ class _SovLocationListState extends State<SovLocationList>
                                               children: [
                                                 InkWell(
                                                   onTap: () {
-                                                    // Show end drawer
                                                     Scaffold.of(context)
                                                         .openEndDrawer();
                                                   },
@@ -1347,8 +1080,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     ],
                                   ),
                                 ),
-                                // Options are Upload SOV, Add Location, Export Locations
-                                PopupMenuButton(
+                               PopupMenuButton(
                                   icon: Icon(Icons.more_vert),
                                   itemBuilder: (context) => [
                                     PopupMenuItem(
@@ -1400,14 +1132,12 @@ class _SovLocationListState extends State<SovLocationList>
                                     setState(() {
                                       isAllSelected = value ?? false;
                                       if (isAllSelected) {
-                                        // Select all locations
                                         selectedLocations = List.from(
                                             Provider.of<LocationListProvider>(
                                                     context,
                                                     listen: false)
                                                 .locationList);
                                       } else {
-                                        // Deselect all locations
                                         selectedLocations.clear();
                                       }
                                     });
@@ -1436,7 +1166,6 @@ class _SovLocationListState extends State<SovLocationList>
                           child: Builder(builder: (context) {
                             return Column(
                               children: <Widget>[
-                                // Container for the TabBar with arrows
                                 Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
@@ -1447,48 +1176,47 @@ class _SovLocationListState extends State<SovLocationList>
                                   child: TabBar(
                                     controller: _mainTabController,
                                     dividerColor: Colors.transparent,
-                                    indicatorPadding: EdgeInsets.symmetric(
-                                        vertical: 8.0, horizontal: 8.0),
+                                    isScrollable: false,
+                                    tabAlignment: TabAlignment.fill,
+                                    indicatorPadding: const EdgeInsets.symmetric(
+                                        vertical: 8.0, horizontal: 4.0),
+                                    labelPadding: EdgeInsets.zero,
                                     indicator: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      // Makes the tab rounded
-                                      color: AppColors.primaryMain.withOpacity(
-                                          0.16), // Background color for the selected tab
+                                      color: AppColors.primaryMain
+                                          .withOpacity(0.16),
                                     ),
-                                    //indicatorColor: Colors.lightBlueAccent,
                                     labelColor: AppColors.primaryMain,
-                                    isScrollable: true,
-                                    tabAlignment: TabAlignment.start,
                                     unselectedLabelColor: Colors.grey,
                                     splashBorderRadius:
                                         BorderRadius.circular(8),
                                     tabs: [
                                       Tab(
-                                        icon: _buildTabIcon(
-                                            context,
-                                            'assets/images/location_list_icon.svg',
-                                            LanguageService.getTranslated(
-                                                context, "location_list"),
-                                            0,
-                                            18),
+                                        child: _buildTabIcon(
+                                          context,
+                                          LanguageService.getTranslated(
+                                              context, "location_list"),
+                                          0,
+                                          20,
+                                        ),
                                       ),
                                       Tab(
-                                        icon: _buildTabIcon(
-                                            context,
-                                            'assets/images/overall_tab_icon.svg',
-                                            LanguageService.getTranslated(
-                                                context, "overall_score"),
-                                            1,
-                                            30),
+                                        child: _buildTabIcon(
+                                          context,
+                                          LanguageService.getTranslated(
+                                              context, "overall_score"),
+                                          1,
+                                          20,
+                                        ),
                                       ),
                                       Tab(
-                                        icon: _buildTabIcon(
-                                            context,
-                                            'assets/images/map_view_icon.svg',
-                                            LanguageService.getTranslated(
-                                                context, "map_view"),
-                                            2,
-                                            18),
+                                        child: _buildTabIcon(
+                                          context,
+                                          LanguageService.getTranslated(
+                                              context, "map_view"),
+                                          2,
+                                          20,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1503,9 +1231,7 @@ class _SovLocationListState extends State<SovLocationList>
                       Expanded(
                         child: TabBarView(
                           controller: _mainTabController,
-                          // physics: NeverScrollableScrollPhysics(),
                           children: [
-                            // First Tab: List View with Nested Tabs
                             Column(
                               mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1517,14 +1243,11 @@ class _SovLocationListState extends State<SovLocationList>
                                       color: Colors.transparent,
                                       child: TabBar(
                                         controller: _tabController,
-                                        isScrollable: true,
-                                        tabAlignment: TabAlignment.start,
+                                        isScrollable: false,
+                                        tabAlignment: TabAlignment.fill,
                                         padding: EdgeInsets.zero,
-                                        labelPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 15),
-                                        indicatorSize:
-                                            TabBarIndicatorSize.label,
+                                        labelPadding: EdgeInsets.zero,
+                                        indicatorSize: TabBarIndicatorSize.tab,
                                         tabs: [
                                           _buildTab(
                                             context,
@@ -1865,39 +1588,48 @@ class _SovLocationListState extends State<SovLocationList>
     );
   }
 
-  Widget _buildTabIcon(BuildContext context, String iconPath, String label,
-      int tabIndex, double iconSize) {
-    // Check if TabController exists and whether this tab is selected
-    bool isSelected = _mainTabController?.index == tabIndex;
+  Widget _buildTabIcon(
+    BuildContext context,
+    String label,
+    int tabIndex,
+    double iconSize,
+  ) {
+    final isSelected = _mainTabController?.index == tabIndex;
+    final inactiveColor =
+        Theme.of(context).colorScheme.onSurface.withOpacity(0.56);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0),
-      // Adjust padding to control spacing
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(width: 12),
-          // Add space between icon and label
-          label == "Location List"
-              ? Icon(Remix.file_list_3_line)
-              : label == "Map View"
-                  ? Icon(Remix.road_map_line)
-                  : Icon(Remix.bar_chart_box_ai_line),
-          SizedBox(width: 8),
-          // Add space between icon and label
-          if (isSelected) ...[
-            SizedBox(width: 4), // Reduce the space between icon and label
-            Text(
+    final IconData iconData = switch (tabIndex) {
+      0 => Remix.file_list_3_line,
+      1 => Remix.bar_chart_box_ai_line,
+      2 => Remix.road_map_line,
+      _ => Remix.file_list_3_line,
+    };
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        Icon(
+          iconData,
+          size: iconSize,
+          color: isSelected ? AppColors.primaryMain : inactiveColor,
+        ),
+        if (isSelected) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
               label,
-              style: TextStyle(
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: const TextStyle(
                 color: AppColors.primaryMain,
-                fontSize: 14,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(width: 8),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 
@@ -4477,7 +4209,7 @@ class _SovLocationListState extends State<SovLocationList>
                                           Icon(Icons.info_outline,
                                               color: Colors.white54),
                                           SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
+                                          Text('Max file size is 50 MB',
                                               style: typography.Body1),
                                         ],
                                       ),
@@ -4949,20 +4681,29 @@ Tab _buildTab(
 }) {
   return Tab(
     child: Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
       children: [
-        Text(
-          LanguageService.getTranslated(context, labelKey),
+        Flexible(
+          child: Text(
+            LanguageService.getTranslated(context, labelKey),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: typography.BottomNavigationActiveLabel.copyWith(
+              fontSize: 13,
+            ),
+          ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         Chip(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             count.toString(),
             style: typography.BottomNavigationActiveLabel.copyWith(
-              fontSize: 12,
+              fontSize: 11,
               height: 1.1,
             ),
           ),

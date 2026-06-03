@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showNotificationDot = true;
   List<Map<String, dynamic>> subscriptionMeta = [];
   late final String? accountId;
+  late final String? monitoringSovId;
   late final String? subAccountId;
   late final String? accountName;
   late final String? subAccountName;
@@ -66,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isIndivudual = false;
   bool isHasAnyPlan = false;
   String? trialMap;
-  late ScrollController _scrollController;
+  ScrollController? _scrollController;
   GlobalKey keyFeature1 = GlobalKey();
   GlobalKey keyFeature2 = GlobalKey();
   GlobalKey keyFeature3 = GlobalKey();
@@ -77,6 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoadingRoleSwitch = false;
   bool _showOverlay = false;
   bool _hasNavigated = false;
+  bool _isSubscriptionsLoading = true;
 
   @override
   void initState() {
@@ -89,7 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         _handleFirstTimeNavigation();
 
-        // ✅ HANDLE SHARED LOCATION
         if (widget.openAddLocation &&
             widget.latitude != null &&
             widget.longitude != null) {
@@ -103,16 +104,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 subAccountName: subAccountName,
                 sovName: "sovName",
                 locationId: "",
-
-                // nullable-safe
-                locationName:
-                    "locationProfile.finalAddress?.locationName ?? " "",
-
+                locationName: "",
                 locationIdForRef: "",
-
                 searchQuery: "",
                 page: "1",
-
                 totalPages: "1",
               ),
             ),
@@ -120,12 +115,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     });
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (!_hasNavigated) {
-    //     _hasNavigated = true;
-    //     _handleFirstTimeNavigation();
-    //   }
-    // });
   }
 
   Future<void> _initialize() async {
@@ -155,7 +144,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (!mounted) return;
 
-    /// 🟢 CASE 1 → New user → AddLocationScreen
     if (isNewUser) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
@@ -172,8 +160,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
       return;
     }
-
-    /// 🟢 CASE 2 → Existing user + valid IDs → MyLocationList
     if (!isNewUser &&
         accountId != null &&
         accountId!.isNotEmpty &&
@@ -192,66 +178,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
       return;
     }
-
-    /// 🟢 CASE 3 → Existing user but IDs empty → Stay on current page
     debugPrint(
         "Existing user but no account/subAccount ID. Staying on same page.");
   }
-
-  // Future<void> _handleFirstTimeNavigation() async {
-  //   if (!mounted) return;
-  //   bool isNewUser = await SharedPreferenceService.getHasNewUser();
-  //   isNewUser = widget.newUser == "false" ? false : isNewUser;
-  //
-  //   // if (!isNewUser) return;
-  //
-  //   final String? accountId =
-  //       await SharedPreferenceService.getDefaultAccountID();
-  //   final String? subAccountId =
-  //       await SharedPreferenceService.getDefaultSubAccountID();
-  //   final String? accountName =
-  //       await SharedPreferenceService.GetDefaultAccountName();
-  //   final String? subAccountName =
-  //       await SharedPreferenceService.GetDefaultSUBAccountName();
-  //   print("accountId");
-  //   print(isNewUser);
-  //   print(accountId);
-  //   print(accountId);
-  //   print("accountId");
-  //
-  //   if (accountId == null ||
-  //       subAccountId == null ||
-  //       accountName == null ||
-  //       subAccountName == null) {
-  //     debugPrint("First-time data not ready, skipping navigation");
-  //     return;
-  //   }
-  //
-  //   if (!mounted) return;
-  //
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (_) => AddLocationScreen(
-  //         newUser: isNewUser.toString(),
-  //         accountId: accountId,
-  //         subAccountId: subAccountId,
-  //         accountName: accountName,
-  //         subAccountName: subAccountName,
-  //         sovId: '',
-  //       ),
-  //     ),
-  //   );
-  //   Navigator.push(
-  //       context,
-  //       MaterialPageRoute(
-  //           builder: (context) => MyLocationList(
-  //                 accountID: accountId,
-  //                 subAccountID: subAccountId,
-  //                 accountName: accountName ?? "",
-  //                 subAccountName: subAccountName ?? "",
-  //               )));
-  // }
 
   Future<void> _checkFirstTimeLoader() async {
     final pref = await SharedPreferences.getInstance();
@@ -261,7 +190,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (isFirstTime) {
       setState(() => _showFirstTimeLoader = true);
 
-      // Show for 4s (but API is already running)
       await Future.delayed(Duration(seconds: 4));
 
       setState(() => _showFirstTimeLoader = false);
@@ -312,8 +240,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     trialMap = await SharedPreferenceService.getTrialPeriodStartRaw();
     if (mounted) setState(() {});
   }
-
-  bool _isSubscriptionsLoading = true;
 
   Future<void> _loadAsyncData() async {
     final dashboardProvider =
@@ -391,175 +317,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return list;
-  }
-
-  void _prepareSubscriptions() {
-    subscriptionMeta.clear();
-
-    subscriptions.forEach((key, value) {
-      final parts = key.split('_');
-      if (parts.length != 2) return;
-
-      final vendorId = parts[0];
-      final hazardName = parts[1];
-
-      final vendor = vendorList.firstWhere(
-        (v) => v['vendor_id'] == vendorId,
-        orElse: () => null,
-      );
-
-      if (vendor == null) return;
-
-      final hazard = (vendor['hazard_commercials'] as List?)?.firstWhere(
-          (h) => h['hazard_name'] == hazardName,
-          orElse: () => null);
-
-      if (hazard == null) return;
-
-      subscriptionMeta.add({
-        "key": key,
-        "vendorId": vendorId,
-        "vendorName": vendor['vendor_name_label'],
-        "vendorImage": vendor['display_image_url'],
-        "hazardLabel": hazard['hazard_name_label'],
-        "description": value['description'] ?? "",
-        "isSubscribed":
-            value['is_subscribed'] == true || value['is_subscribed'] == "true"
-      });
-    });
-  }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _scrollController = ScrollController();
-  //
-  //   // Kick off initialization in background
-  //   _initializeData();
-  //
-  //   // Show tutorial asynchronously (non-blocking)
-  //   // WidgetsBinding.instance.addPostFrameCallback((_) {
-  //   //   _tryShowTutorialOnce();
-  //   // });
-  // }
-  //
-  // Future<void> _initializeData() async {
-  //   // Load static or cacheable data first (SharedPreferences, claims)
-  //   await _setClaims();
-  //
-  //   // Start async loading of dynamic data (feeds, dashboard, etc.)
-  //   // unawaited(_loadAsyncData());
-  // }
-  //
-  // Future<void> _setClaims() async {
-  //   final results = await Future.wait([
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASTC),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASTU),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASCR),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASCO),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASUO),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.CAMLL),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.CAMVU),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.DASVR),
-  //     SharedPreferenceService.getClaimForSubfeature(
-  //         SharedPreferenceService.INTERNAL),
-  //   ]);
-  //   isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_PG_ADMIN) ??
-  //       false;
-  //   isAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_ADMIN) ??
-  //       false;
-  //   isSuperAdmin = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.IS_SUPER_ADMIN) ??
-  //       false;
-  //   isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
-  //           SharedPreferenceService.Is_Indivudual) ??
-  //       false;
-  //   isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
-  //   showTotalCorporates = results[0] ?? false;
-  //   showAllUsers = results[1] ?? false;
-  //   showConnectionRequests = results[2] ?? false;
-  //   showCompanyOnboardingStats = results[3] ?? false;
-  //   showUserOnboardingStats = results[4] ?? false;
-  //
-  //   bool showCorporateVerificationRequests = results[5] ?? false;
-  //   bool showUserVerificationRequests = results[6] ?? false;
-  //   bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan(),
-  //       showVerificationRequests =
-  //           showCorporateVerificationRequests || showUserVerificationRequests;
-  //
-  //
-  //   // show UI immediately
-  //   if (mounted) setState(() {});
-  //   unawaited(_getData());
-  //   _getMaintainancePeriod();
-  //
-  // }
-  //
-  // Future<void> _loadAsyncData() async {
-  //   final dashboardProvider =
-  //       Provider.of<DashboardProvider>(context, listen: false);
-  //   final userProfileProvider =
-  //       Provider.of<UserProfileProvider>(context, listen: false);
-  //   final configProvider =
-  //       Provider.of<ConfigurationProvider>(context, listen: false);
-  //   final newsProvider = Provider.of<NewsFeedProvider>(context, listen: false);
-  //
-  //   try {
-  //     // Run all heavy network calls concurrently
-  //     await Future.wait([
-  //       // dashboardProvider.getDashboardData(context),
-  //       userProfileProvider.getAllUserData(context, "", ""),
-  //       configProvider.getConfiguration(accountId: null, subAccountId: null),
-  //       configProvider.getVendors(),
-  //       newsProvider.fetchNewsFeed(),
-  //     ]);
-  //
-  //     userProfileProvider.fetchTrialInfo();
-  //
-  //     final config = configProvider.configurations['result'] ?? {};
-  //     subscriptions = config['subscribe'] ?? {};
-  //     vendorList = configProvider.vendors['result'] ?? [];
-  //
-  //     if (mounted) setState(() {});
-  //   } catch (error, stack) {
-  //     debugPrint("⚠️ Error fetching data: $error\n$stack");
-  //   }
-  // }
-
-  void _tryShowTutorialOnce() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool hasShownTutorial = prefs.getBool('dashboard') ?? false;
-
-    // ✅ If the tutorial has already been shown, exit
-    if (hasShownTutorial) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(Duration(milliseconds: 500));
-      await WidgetsBinding.instance.endOfFrame;
-
-      initTargets(); // Make sure GlobalKeys are attached in the widget tree
-
-      if (targets.isNotEmpty) {
-        await Future.delayed(Duration(milliseconds: 300));
-        if (mounted) {
-          showTutorial(); // ✅ Show tutorial
-          await prefs.setBool('dashboard', true); // ✅ Mark as shown
-          print('Tutorial shown and saved to preferences.');
-        }
-      } else {
-        print('No targets were set. Skipping tutorial.');
-      }
-    });
   }
 
   void initTargets() {
@@ -654,14 +411,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ).show(context: context);
   }
 
-  Future<void> _getMaintainancePeriod() async {
-    isMaintenance =
-        await SharedPreferenceService.getScheduleInProgress() ?? "false";
-    startDate =
-        await SharedPreferenceService.getUpcomingScheduleStartTime() ?? "";
-    endDate = await SharedPreferenceService.getUpcomingScheduleEndTime() ?? "";
-  }
-
   Future<void> _getData() async {
     // final dashboardProvider =
     //     Provider.of<DashboardProvider>(context, listen: false);
@@ -702,7 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController!.dispose();
     super.dispose();
   }
 
@@ -936,7 +685,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
               (userProfileProvider.userData.role != null &&
                       userProfileProvider.userData.role!.isNotEmpty &&
-                      userProfileProvider.userData.role![0].name.toString().toLowerCase() ==
+                      userProfileProvider.userData.role![0].name
+                              .toString()
+                              .toLowerCase() ==
                           "admin" &&
                       (isSuperAdmin || isPgAdmin || isAdmin))
                   ? _overviewCardHorizontal(
@@ -1036,79 +787,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ],
                       ),
-
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      //   children: [
-                      //     CustomButton(
-                      //       key: keyFeature1,
-                      //       type: ButtonType.outlined,
-                      //       onPressed: () {
-                      //         Provider.of<DrawerSelectionProvider>(context,
-                      //                 listen: false)
-                      //             .setSelectedItem('user_management');
-                      //         Navigator.of(context).push(
-                      //           MaterialPageRoute(
-                      //             builder: (context) => UserManagementScreen(
-                      //               initialIndex: 0,
-                      //               subIndex: 0,
-                      //               initialScreen: Screens.corporateEmployeeAdd,
-                      //             ),
-                      //           ),
-                      //         );
-                      //       },
-                      //       child: Row(
-                      //         mainAxisSize: MainAxisSize.min,
-                      //         children: [
-                      //           Text(
-                      //               LanguageService.getTranslated(
-                      //                   context, 'dashboard_add_user_text'),
-                      //               style: typography.Body1),
-                      //           SizedBox(width: CustomSpacing.two),
-                      //           Icon(Icons.person_add_alt_1, size: 18),
-                      //         ],
-                      //       ),
-                      //     ),
-                      //     SizedBox(width: 2),
-                      //     CustomButton(
-                      //       key: keyFeature2,
-                      //       type: ButtonType.outlined,
-                      //       onPressed: () {
-                      //         Provider.of<DrawerSelectionProvider>(context,
-                      //                 listen: false)
-                      //             .setSelectedItem('user_management');
-                      //         Navigator.of(context).push(
-                      //           MaterialPageRoute(
-                      //             builder: (context) => UserManagementScreen(
-                      //               initialIndex: 0,
-                      //               subIndex: 0,
-                      //               initialScreen: Screens.verificationList,
-                      //             ),
-                      //           ),
-                      //         );
-                      //       },
-                      //       child: Row(
-                      //         // mainAxisSize: MainAxisSize.min,
-                      //         children: [
-                      //           Container(
-                      //             width:120,
-                      //             child: Text(
-                      //                LanguageService.getTranslated(context, 'dashboard_see_all_text'),
-                      //                 maxLines: 1,
-                      //                 overflow: TextOverflow.ellipsis,
-                      //
-                      //
-                      //                 style: typography.Body1),
-                      //           ),
-                      //           SizedBox(width: CustomSpacing.two),
-                      //           Icon(Icons.arrow_forward_ios, size: 14),
-                      //         ],
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
                     )
-                  : Container(),
+                  : showTotalCorporates.toString() == "true"
+                      ? _overviewCardHorizontal(
+                          title: LanguageService.getTranslated(
+                              context, 'usermanagement_dash_verification_req'),
+                          amount: ((dashboardProvider
+                                          .dashboardModel?.verificationCount ??
+                                      0) +
+                                  (dashboardProvider.dashboardModel
+                                          ?.companyUserLeadCount ??
+                                      0))
+                              .toString(),
+                          icon: 'assets/images/verification_req_checks.svg',
+                          bottomWidget: Row(
+                            children: [
+                              /// ➕ Add User
+                              Expanded(
+                                child: CustomButton(
+                                  key: keyFeature1,
+                                  type: ButtonType.outlined,
+                                  onPressed: () {
+                                    Provider.of<DrawerSelectionProvider>(
+                                            context,
+                                            listen: false)
+                                        .setSelectedItem('user_management');
+
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            UserManagementScreen(
+                                          initialIndex: 0,
+                                          subIndex: 0,
+                                          initialScreen:
+                                              Screens.corporateEmployeeAdd,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          LanguageService.getTranslated(context,
+                                              'dashboard_add_user_text'),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(Icons.person_add_alt_1,
+                                          size: 18),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              /// ➡️ See All
+                              Expanded(
+                                child: CustomButton(
+                                  key: keyFeature2,
+                                  type: ButtonType.outlined,
+                                  onPressed: () {
+                                    Provider.of<DrawerSelectionProvider>(
+                                            context,
+                                            listen: false)
+                                        .setSelectedItem('user_management');
+
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            UserManagementScreen(
+                                          initialIndex: 0,
+                                          subIndex: 0,
+                                          initialScreen:
+                                              Screens.verificationList,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          LanguageService.getTranslated(context,
+                                              'dashboard_see_all_text'),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.Body1,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(Icons.arrow_forward_ios,
+                                          size: 14),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Container(),
               !showConnectionRequests
                   ? SizedBox()
                   : SizedBox(width: CustomSpacing.four),

@@ -1,3 +1,4 @@
+
 import 'package:RiskSphere/providers/data_list_parameters.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/utils/http_client.dart';
@@ -12,9 +13,9 @@ import 'design_system/app_themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 
-late PerformanceHttpClient httpClient; // global client
+late PerformanceHttpClient httpClient;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -33,43 +34,38 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  // Step 1 - Firebase init SEPARATE block
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    debugPrint('✅ Firebase initialized');
+    debugPrint(' Firebase initialized');
   } catch (e) {
-    debugPrint('❌ Firebase init error: $e');
+    debugPrint(' Firebase init error: $e');
   }
 
-  // Step 2 - App Check SEPARATE block
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider:
-          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
       appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
     );
-    debugPrint('✅ AppCheck activated');
+    debugPrint(' AppCheck activated');
   } catch (e) {
-    debugPrint('❌ AppCheck activation error: $e');
+    debugPrint(' AppCheck activation error: $e');
   }
 
-  // Step 3 - Performance SEPARATE block
   try {
     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
     httpClient = PerformanceHttpClient();
     bool isEnabled =
-        await FirebasePerformance.instance.isPerformanceCollectionEnabled();
-    debugPrint('✅ Firebase Performance isEnabled: $isEnabled');
+    await FirebasePerformance.instance.isPerformanceCollectionEnabled();
+    debugPrint(' Firebase Performance isEnabled: $isEnabled');
   } catch (e) {
-    debugPrint('❌ Performance error: $e');
+    debugPrint(' Performance error: $e');
   }
 
-  // Step 4 - Messaging
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Step 5 - Stripe SEPARATE block
   try {
     Stripe.publishableKey = AppConstant.Stripe_prod;
 
@@ -96,54 +92,6 @@ void main() async {
     ),
   );
 }
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await EasyLocalization.ensureInitialized();
-//   try {
-//     await Firebase.initializeApp(
-//       options: DefaultFirebaseOptions.currentPlatform,
-//     );
-//
-//     await FirebaseAppCheck.instance.activate(
-//       androidProvider:
-//           kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-//       appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
-//     );
-//
-//     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
-//     httpClient = PerformanceHttpClient();
-//     bool isEnabled =
-//         await FirebasePerformance.instance.isPerformanceCollectionEnabled();
-//     debugPrint('Firebase Performance isEnabled: $isEnabled');
-//   } catch (e) {
-//     debugPrint('Firebase initialization error: $e');
-//   }
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-//   try {
-//     Stripe.publishableKey =
-//         'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
-//     await Stripe.instance.applySettings();
-//   } catch (e, stackTrace) {
-//     debugPrint('Stripe initialization failed: $e');
-//     debugPrint('Stack trace: $stackTrace');
-//   }
-//   initializeNotifications();
-//   runApp(
-//     EasyLocalization(
-//       supportedLocales: const [
-//         Locale('en'),
-//         Locale('es'),
-//         Locale('fr'),
-//         Locale('ja'),
-//         Locale('zh'),
-//       ],
-//       path: 'assets/translations',
-//       fallbackLocale: const Locale('en'),
-//       child: AppLifecycleManager(),
-//     ),
-//   );
-// }
-
 class AppLifecycleManager extends StatefulWidget {
   @override
   State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
@@ -163,21 +111,21 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 
   void _handleSharedGoogleMapsLink() {
     FlutterSharingIntent.instance.getInitialSharing().then((value) {
-      debugPrint('🔥 getInitialSharing called, count: ${value.length}');
+      debugPrint(' getInitialSharing called, count: ${value.length}');
       if (value.isNotEmpty) {
         final text = value.first.value ?? '';
-        debugPrint('🔥 Shared text: $text');
+        debugPrint(' Shared text: $text');
         PendingSharedLocation.sharedText = text;
         PendingSharedLocation.wasLaunchedViaShare = true;
       } else {
-        debugPrint('🔥 No shared text received');
+        debugPrint(' No shared text received');
       }
     });
 
     FlutterSharingIntent.instance.getMediaStream().listen((value) {
       if (value.isNotEmpty) {
         final text = value.first.value ?? '';
-        debugPrint('🔥 Warm share: $text');
+        debugPrint(' Warm share: $text');
         _extractLatLngAndNavigate(text);
       }
     });
@@ -190,7 +138,6 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
     String resolvedUrl = sharedText.trim();
     debugPrint('Original shared URL: $resolvedUrl');
 
-    // Step 1: Resolve shortened URL (goo.gl or maps.app.goo.gl)
     if (resolvedUrl.contains('goo.gl') || resolvedUrl.contains('maps.app')) {
       try {
         final response = await http.get(
@@ -204,10 +151,8 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
       }
     }
 
-    // Step 2: Parse lat/lng from URL
     final uri = Uri.tryParse(resolvedUrl);
     if (uri != null) {
-      // Format 1: ?q=12.9716,77.5946
       final q = uri.queryParameters['q'];
       if (q != null && q.contains(',')) {
         final parts = q.split(',');
@@ -215,10 +160,9 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
         lng = double.tryParse(parts[1].trim());
       }
 
-      // Format 2: /@12.9716,77.5946,17z
       if (lat == null) {
         final match =
-            RegExp(r'/@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolvedUrl);
+        RegExp(r'/@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolvedUrl);
         if (match != null) {
           lat = double.tryParse(match.group(1) ?? '');
           lng = double.tryParse(match.group(2) ?? '');
@@ -236,25 +180,40 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
     final user = FirebaseAuth.instance.currentUser;
     final context = navigatorKey.currentContext;
     if (context == null) return;
+    final accountId = await SharedPreferenceService.getDefaultAccountID() ?? '';
+
+    final subAccountId =
+        await SharedPreferenceService.getDefaultSubAccountID() ?? '';
+    final accountName =
+        await SharedPreferenceService.GetDefaultAccountName() ?? '';
+    final subAccountName =
+        await SharedPreferenceService.GetDefaultSUBAccountName() ?? '';
 
     if (user != null) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (_) => AddLocationScreen(
-            accountId: '',
-            subAccountId: '',
+            accountId: accountId,
+            subAccountId: subAccountId,
             sovId: '',
-            // pass lat/lng if your screen accepts them
+            locationId: '',
+            accountName: (accountName != null && accountName.isNotEmpty)
+                ? accountName
+                : 'Default Account',
+            subAccountName:
+            (subAccountName != null && subAccountName.isNotEmpty)
+                ? subAccountName
+                : 'Default Subaccount',
           ),
         ),
-        (route) => false,
+            (route) => false,
       );
     } else {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
+            (route) => false,
       );
     }
   }
@@ -264,13 +223,13 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final uri = await _appLinks.getInitialLink();
-      if (uri != null && uri.host == 'qa.risksphere.ai') {
+      if (uri != null && uri.host == 'app.risksphere.ai') {
         _routeFromDeepLink(uri);
       }
     });
 
     _appLinks.uriLinkStream.listen((uri) {
-      if (uri.host == 'qa.risksphere.ai') {
+      if (uri.host == 'app.risksphere.ai') {
         _routeFromDeepLink(uri);
       }
     });
@@ -294,13 +253,13 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
             sovId: '',
           ),
         ),
-        (route) => false,
+            (route) => false,
       );
     } else {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
+            (route) => false,
       );
     }
   }
@@ -339,7 +298,7 @@ class MyApp extends StatelessWidget {
   // static final GlobalKey<NavigatorState> navigatorKey =
   //     GlobalKey<NavigatorState>();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-      GlobalKey<ScaffoldMessengerState>();
+  GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -408,10 +367,10 @@ class MyApp extends StatelessWidget {
 
 Future<void> initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings();
+  DarwinInitializationSettings();
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -475,7 +434,7 @@ void handleNotificationNavigation(Map<String, dynamic> data) {
 }
 
 Future<void> initFCM(String userId) async {
-  debugPrint('🔵 initFCM called with userId: $userId');
+  debugPrint(' initFCM called with userId: $userId');
 
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
@@ -484,10 +443,10 @@ Future<void> initFCM(String userId) async {
     sound: true,
   );
 
-  debugPrint('🔵 Permission status: ${settings.authorizationStatus}');
+  debugPrint(' Permission status: ${settings.authorizationStatus}');
 
   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    debugPrint('✅ Permission granted');
+    debugPrint(' Permission granted');
 
     if (Platform.isIOS) {
       debugPrint(' iOS detected, waiting for APNS token...');
@@ -502,37 +461,37 @@ Future<void> initFCM(String userId) async {
         }
       }
       if (apnsToken == null) {
-        debugPrint('❌ APNS token not available after 10 retries, skipping');
+        debugPrint(' APNS token not available after 10 retries, skipping');
         return;
       }
-      debugPrint('✅ APNS token ready: $apnsToken');
+      debugPrint(' APNS token ready: $apnsToken');
     }
 
     String? token;
     try {
-      debugPrint('🔵 Fetching FCM token...');
+      debugPrint(' Fetching FCM token...');
       token = await messaging.getToken();
-      debugPrint('✅ FCM Token: $token');
+      debugPrint(' FCM Token: $token');
     } catch (e) {
-      debugPrint('❌ FCM token fetch failed: $e');
+      debugPrint(' FCM token fetch failed: $e');
       return;
     }
 
     debugPrint(
-        '🔵 Token null check: ${token == null ? "NULL ❌" : "HAS VALUE ✅"}');
+        ' Token null check: ${token == null ? "NULL " : "HAS VALUE "}');
 
     if (token != null) {
       SharedPreferenceService.saveFcmToken(token);
-      debugPrint('🔵 Calling _subscribeToNotifications with userId: $userId');
+      debugPrint(' Calling _subscribeToNotifications with userId: $userId');
       final result = await _subscribeToNotifications(userId, token);
-      debugPrint('🔵 _subscribeToNotifications result: $result');
+      debugPrint(' _subscribeToNotifications result: $result');
     } else {
-      debugPrint('❌ Token is null, skipping subscribe');
+      debugPrint(' Token is null, skipping subscribe');
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
-      debugPrint('🔔 Foreground message: ${notification?.title}');
+      debugPrint(' Foreground message: ${notification?.title}');
       Fluttertoast.showToast(
         msg: notification?.title ?? "Notification",
         toastLength: Toast.LENGTH_SHORT,
@@ -545,7 +504,7 @@ Future<void> initFCM(String userId) async {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('📩 Message opened app: ${message.notification?.title}');
+      debugPrint('Message opened app: ${message.notification?.title}');
       if (message.data.isNotEmpty) {
         handleNotificationNavigation(message.data);
       }
@@ -553,59 +512,13 @@ Future<void> initFCM(String userId) async {
 
     checkForInitialMessage();
   } else {
-    debugPrint('❌ Permission NOT granted: ${settings.authorizationStatus}');
+    debugPrint(' Permission NOT granted: ${settings.authorizationStatus}');
   }
 }
-//
-// Future<void> initFCM(String userId) async {
-//   FirebaseMessaging messaging = FirebaseMessaging.instance;
-//   NotificationSettings settings = await messaging.requestPermission(
-//     alert: true,
-//     badge: true,
-//     sound: true,
-//   );
-//
-//   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-//     String? token = await messaging.getToken();
-//     print('FCM Token: $token');
-//
-//     if (token != null) {
-//       SharedPreferenceService.saveFcmToken(token);
-//       bool isSubscribed =
-//           await SharedPreferenceService.getNotificationSubscription();
-//
-//       await _subscribeToNotifications(userId, token);
-//     }
-//     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-//       final notification = message.notification;
-//
-//       print(" Foreground message received: ${notification?.title}");
-//
-//       Fluttertoast.showToast(
-//         msg: notification?.title ?? "Notification",
-//         toastLength: Toast.LENGTH_SHORT,
-//         gravity: ToastGravity.TOP,
-//         backgroundColor: Colors.black,
-//         textColor: Colors.white,
-//         fontSize: 16.0,
-//         timeInSecForIosWeb: 1, // works on some platforms
-//       );
-//     });
-//
-//     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-//       print("📩 Foreground message received: ${message.notification?.title}");
-//       if (message.data.isNotEmpty) {
-//         handleNotificationNavigation(message.data);
-//       }
-//     });
-//
-//     checkForInitialMessage();
-//   }
-// }
 
 void checkForInitialMessage() async {
   RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
+  await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage?.data.isNotEmpty ?? false) {
     handleNotificationNavigation(initialMessage!.data);
   }
@@ -630,7 +543,6 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
 class CustomToast {
   static void showToast(String title, String message) {
     print("Foreground notifications");
-    // Example implementation using Flutter's ScaffoldMessenger
     final context = navigatorKey.currentContext;
     if (context != null) {
       ScaffoldMessenger.of(context).showSnackBar(

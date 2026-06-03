@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/models/maintainance_model.dart';
 import 'package:RiskSphere/service/api_service.dart';
+import '../service/firestore_service.dart';
 import '../utils/api_constants.dart';
 
 class JobMonitoringProvider extends ChangeNotifier {
@@ -79,7 +80,7 @@ class JobMonitoringProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  final _fireStore = FirebaseFirestore.instance;
+  final _fireStore = FirestoreService.db;
 
   // Whether the user is a super admin
   bool _isSuperAdmin = false;

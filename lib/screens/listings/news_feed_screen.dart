@@ -32,19 +32,54 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
   String _selectedHazard = "All";
   DateTime? _startDate;
   DateTime? _endDate;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _tabScrollController = ScrollController();
+  final ScrollController _newsFeedScrollController = ScrollController();
+  final ScrollController _eventFeedScrollController = ScrollController();
 
   bool _isExpanded = false;
   bool _showNotificationDot = true;
 
   @override
   void initState() {
-    _tabController = TabController(length: 4, vsync: this);
     super.initState();
+
+    _tabController = TabController(length: 4, vsync: this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<NewsFeedProvider>(context, listen: false).fetchNewsFeed();
       Provider.of<NewsFeedProvider>(context, listen: false).fetchEvent();
     });
+
+    _newsFeedScrollController.addListener(_onNewsFeedScroll);
+    _eventFeedScrollController.addListener(_onEventFeedScroll);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    _tabScrollController.dispose();
+    _newsFeedScrollController.dispose();
+    _eventFeedScrollController.dispose();
+    super.dispose();
+  }
+
+  void _onNewsFeedScroll() {
+    if (_newsFeedScrollController.position.pixels >=
+        _newsFeedScrollController.position.maxScrollExtent - 200) {
+      Provider.of<NewsFeedProvider>(context, listen: false)
+          .fetchNewsFeed(isLoadMore: true);
+    }
+  }
+
+  void _onEventFeedScroll() {
+    if (_eventFeedScrollController.position.pixels >=
+        _eventFeedScrollController.position.maxScrollExtent - 200) {
+      final provider = Provider.of<NewsFeedProvider>(context, listen: false);
+      if (provider.hasMoreEvent && !provider.isEventLoadMore) {
+        provider.fetchEvent(isLoadMore: true);
+      }
+    }
   }
 
   @override
@@ -125,7 +160,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
           ),
           Expanded(
             child: SingleChildScrollView(
-              controller: _scrollController,
+              controller: _tabScrollController,
               scrollDirection: Axis.horizontal,
               child: TabBar(
                 controller: _tabController,
@@ -405,8 +440,18 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       ],
                     )
                   : ListView.builder(
-                      itemCount: provider.newsFeed.length,
+                      controller: _newsFeedScrollController,
+                      itemCount: provider.newsFeed.length +
+                          (provider.isActivityLoadMore ? 1 : 0),
                       itemBuilder: (context, index) {
+                        if (index == provider.newsFeed.length) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
                         var item = provider.newsFeed[index];
                         return _buildNewsCard(item, typography);
                       },
@@ -841,7 +886,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
           onRefresh: () async {
             await provider.fetchEvent(); // Force refresh regardless of content
           },
-          child: provider.isEventLoading
+          child: provider.isEventLoading && provider.eventFeed.isEmpty
               ? Center(
                   child: CircularProgressIndicator(),
                 )
@@ -862,8 +907,19 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
                       ],
                     )
                   : ListView.builder(
-                      itemCount: provider.eventFeed.length,
+                      controller: _eventFeedScrollController,
+                      itemCount: provider.eventFeed.length +
+                          (provider.isEventLoadMore ? 1 : 0),
                       itemBuilder: (context, index) {
+                        if (index == provider.eventFeed.length) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
                         var item = provider.eventFeed[index];
                         return _buildEventCard(item, typography);
                       },
@@ -992,16 +1048,16 @@ class _NewsFeedScreenState extends State<NewsFeedScreen>
   }
 
   void _scrollLeft() {
-    _scrollController.animateTo(
-      _scrollController.offset - 100,
+    _tabScrollController.animateTo(
+      _tabScrollController.offset - 100,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
 
   void _scrollRight() {
-    _scrollController.animateTo(
-      _scrollController.offset + 100,
+    _tabScrollController.animateTo(
+      _tabScrollController.offset + 100,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );

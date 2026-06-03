@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 import 'package:RiskSphere/design_system/primitives/utilities/custom_spacing.dart';
 import 'package:RiskSphere/screens/listings/widgets/duplicates_tab.dart';
 import '../../../design_system/primitives/custom_typography.dart';
+import '../../../service/firestore_service.dart';
 import '../../../service/language_service.dart';
 import 'location_headers.dart';
 import '../../../providers/upload_sov_provider.dart';
@@ -52,7 +54,7 @@ class LocationDataScreenState extends State<LocationDataScreen>
   TextEditingController _textEditingController = TextEditingController();
   List<Map<String, dynamic>> selectedLocations = [];
   String processStatus = '';
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirestoreService.db;
   StreamSubscription<QuerySnapshot>? _processStatusSubscription;
 
   @override

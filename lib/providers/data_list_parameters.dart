@@ -146,25 +146,25 @@ class SubaccountParameterProvider with ChangeNotifier {
                   ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
                   : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
 
-      log("🗑️ DELETE URL: $url");
-      log("🗑️ DELETE imageObject: ${jsonEncode(imageObject)}");
+      log(" DELETE URL: $url");
+      log(" DELETE imageObject: ${jsonEncode(imageObject)}");
 
       ApiService apiService = ApiService(url);
 
-      // ✅ Send ONLY the single image object — NOT the full reference list
+      // Send ONLY the single image object — NOT the full reference list
       final response = await apiService.delete1(imageObject);
 
-      log("✅ DELETE RESPONSE: $response");
+      log("DELETE RESPONSE: $response");
 
       CustomToast.success(
           context, response['message'] ?? "Image deleted successfully");
       return true;
     } on BackendException catch (e, stack) {
-      log("❌ Backend error: ${e.message}");
+      log("Backend error: ${e.message}");
       CustomToast.error(context, e.message);
       return false;
     } catch (e, stack) {
-      log("❌ Unexpected error: $e");
+      log("Unexpected error: $e");
       CustomToast.error(context, "Something went wrong");
       return false;
     } finally {
@@ -172,105 +172,83 @@ class SubaccountParameterProvider with ChangeNotifier {
     }
   }
 
-  // Future<bool> deleteParameterImage({
-  //   required BuildContext context,
-  //   required String selectedParameterList,
-  //   required String locationId,
-  //   required String sovId,
-  //   required String campusId,
-  //   required String subaccountId,
-  //   required String parameterId,
-  //   required Map<String, dynamic> imageObject,
-  // }) async {
-  //   try {
-  //     notifyListeners();
-  //
-  //     // -------- BUILD URL --------
-  //     String url = selectedParameterList.toLowerCase() == 'location'
-  //         ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
-  //         : selectedParameterList.toLowerCase() == 'sov'
-  //         ? "${AppConstant.DELETE_SOV_IMAGE}$sovId/$parameterId"
-  //         : selectedParameterList.toLowerCase() == 'campus'
-  //         ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
-  //         : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
-  //
-  //     log("🗑️ DELETE URL: $url");
-  //     log("🗑️ DELETE imageObject: $imageObject"); // ✅ verify payload here
-  //
-  //     ApiService apiService = ApiService(url);
-  //
-  //     // -------- EXECUTE DELETE WITH BODY --------
-  //     final response = await apiService.delete1(imageObject);
-  //
-  //     log("✅ DELETE RESPONSE: $response");
-  //
-  //     CustomToast.success(
-  //         context, response['message'] ?? "Image deleted successfully");
-  //
-  //     return true;
-  //   } on BackendException catch (e, stack) {
-  //     log("❌ Backend error: ${e.message}");
-  //     log(stack.toString());
-  //     CustomToast.error(context, e.message);
-  //     return false;
-  //   } catch (e, stack) {
-  //     log("❌ Unexpected error: $e");
-  //     log(stack.toString());
-  //     CustomToast.error(context, "Something went wrong");
-  //     return false;
-  //   } finally {
-  //     notifyListeners();
-  //   }
-  // }
-  // Future<bool> deleteParameterImage({
-  //   required BuildContext context,
-  //   required String selectedParameterList,
-  //   required String locationId,
-  //   required String sovId,
-  //   required String campusId,
-  //   required String subaccountId,
-  //   required String parameterId,
-  //   required Map<String, dynamic> imageObject,
-  // }) async {
-  //   try {
-  //     // isLoading = true;
-  //     notifyListeners();
-  //     print(parameterId);
-  //     // -------- BUILD URL --------
-  //     String url = selectedParameterList.toLowerCase() == 'location'
-  //         ? "${AppConstant.DELETE_LOCATION_IMAGE}$locationId/$parameterId"
-  //         : selectedParameterList.toLowerCase() == 'sov'
-  //             ? "${AppConstant.DELETE_SOV_IMAGE}$sovId/$parameterId"
-  //             : selectedParameterList.toLowerCase() == 'campus'
-  //                 ? "${AppConstant.DELETE_CAMPUS_IMAGE}$campusId/$parameterId"
-  //                 : "${AppConstant.DELETE_DATA_IMAGE}$subaccountId/$parameterId";
-  //
-  //     ApiService apiService = ApiService(url);
-  //
-  //     // -------- EXECUTE DELETE WITH BODY --------
-  //     final response = await apiService.delete1(imageObject);
-  //
-  //     log("DELETE RESPONSE: $response");
-  //
-  //     CustomToast.success(
-  //         context, response['message'] ?? "Image deleted successfully");
-  //
-  //     return true;
-  //   } on BackendException catch (e, stack) {
-  //     log("Backend error: ${e.message}");
-  //     log(stack.toString());
-  //     CustomToast.error(context, e.message);
-  //     return false;
-  //   } catch (e, stack) {
-  //     log("Unexpected error: $e");
-  //     log(stack.toString());
-  //     CustomToast.error(context, "Something went wrong");
-  //     return false;
-  //   } finally {
-  //     // isDeleteLocationLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
+  Future<Map<String, dynamic>?> recommendationEngineApi(
+    BuildContext context,
+    String locationId,
+    String dataCategoryId,
+    String extractionKey,
+  ) async {
+    try {
+      // isLoading = true;
+
+      ApiService apiService = ApiService(AppConstant.VENDOR_DATA_COMPARISON);
+      // ApiService apiService = ApiService(AppConstant.RECOMMENDATION_ENGINE_V2);
+      var body = {
+        "location_id": locationId,
+        "data_category_id": dataCategoryId,
+        "vendors": {
+          "hazard_hub": extractionKey,
+        }
+      };
+
+
+      var response = await apiService.post(body);
+
+      log(response.toString());
+
+      return response;
+    } on BackendException catch (e, stackTrace) {
+      log("Recommendation Engine Error: ${e.message}");
+      log(stackTrace.toString());
+
+      CustomToast.error(context, e.message);
+
+      return null;
+    } catch (e, stackTrace) {
+      log("Recommendation Engine Error: $e");
+      log(stackTrace.toString());
+
+      return null;
+    } finally {
+      // isLoading = false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> vendorDataComparisonApi(
+    BuildContext context,
+    String locationId,
+    String dataCategoryId,
+    String extractionKey,
+  ) async {
+    try {
+      ApiService apiService = ApiService(AppConstant.RECOMMENDATION_ENGINE_V2);
+
+      var body = {
+        "location_id": locationId,
+        "data_category_id": dataCategoryId,
+        "selected_vendor": "hazard_hub",
+        "extraction_key": extractionKey,
+      };
+
+      var response = await apiService.post(body);
+
+      log(response.toString());
+
+      return response;
+    } on BackendException catch (e, stackTrace) {
+      log("Vendor Comparison Error: ${e.message}");
+      log(stackTrace.toString());
+
+      CustomToast.error(context, e.message);
+
+      return null;
+    } catch (e, stackTrace) {
+      log("Vendor Comparison Error: $e");
+      log(stackTrace.toString());
+
+      return null;
+    }
+  }
 
   Future<void> submitParameterUpdate({
     required BuildContext context,
@@ -306,14 +284,11 @@ class SubaccountParameterProvider with ChangeNotifier {
 
       final response = await apiService.patch(updatedFields);
 
-      // ✅ SAFE SCORE EXTRACTION
       if (response != null && response['score'] != null) {
         final double score = (response['score'] as num).toDouble();
 
-        /// 1️⃣ Store for local usage (badge, temporary override)
         setUpdatedScore(score.round());
 
-        /// 2️⃣ 🔥 UPDATE LOCATION PROFILE (AUTO UI UPDATE)
         Provider.of<MyLocationListProvider>(
           context,
           listen: false,

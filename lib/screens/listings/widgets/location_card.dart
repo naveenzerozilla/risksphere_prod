@@ -11,8 +11,10 @@ import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart'
 import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/app_colors.dart';
+import '../../../providers/account_list_provider.dart';
 import '../../../providers/location_list_provider.dart';
 import '../../../service/language_service.dart';
+import '../../payments/purchase_license.dart';
 import '../location_profile.dart'; // For SVG rendering.
 
 class MyLocationCard extends StatefulWidget {
@@ -57,50 +59,56 @@ class MyLocationCard extends StatefulWidget {
   List<Conflicts>? conflict;
   bool? isHazardCanStart;
   String? role;
+  bool? hasVendorData;
+  bool? usFlag;
+  bool? hasSov;
+  String? hasHazardHubCount;
 
-  MyLocationCard({
-    super.key,
-    this.locationName,
-    this.hasAnyPlan,
-    this.hazards,
-    this.isConflict,
-    required this.imageUrl,
-    required this.locationId,
-    required this.accountName,
-    required this.ownerName,
-    required this.companyName,
-    required this.address,
-    required this.percentage,
-    required this.geocodingScore,
-    required this.riskScore,
-    required this.dataCompletenessScore,
-    required this.isAutoCertified,
-    required this.tags,
-    required this.campusId,
-    this.onDelete,
-    this.onAddToSOV,
-    this.isCertified = false,
-    this.onAddTag,
-    this.accountId,
-    this.subAccountId,
-    this.lat,
-    this.long,
-    this.overallScore,
-    required this.index,
-    this.sovId,
-    this.sovName,
-    this.subAccountName,
-    this.locationQuery,
-    this.hazardProcess,
-    this.rented,
-    this.getData,
-    this.onNavigateStart,
-    this.onNavigateBack,
-    this.conflict,
-    this.isHazardCanStart,
-    this.role,
-    required,
-  });
+  MyLocationCard(
+      {super.key,
+      this.locationName,
+      this.hasAnyPlan,
+      this.hazards,
+      this.isConflict,
+      required this.imageUrl,
+      required this.locationId,
+      required this.accountName,
+      required this.ownerName,
+      required this.companyName,
+      required this.address,
+      required this.percentage,
+      required this.geocodingScore,
+      required this.riskScore,
+      required this.dataCompletenessScore,
+      required this.isAutoCertified,
+      required this.tags,
+      required this.campusId,
+      this.onDelete,
+      this.onAddToSOV,
+      this.isCertified = false,
+      this.onAddTag,
+      this.accountId,
+      this.subAccountId,
+      this.lat,
+      this.long,
+      this.overallScore,
+      required this.index,
+      this.sovId,
+      this.sovName,
+      this.subAccountName,
+      this.locationQuery,
+      this.hazardProcess,
+      this.rented,
+      this.getData,
+      this.onNavigateStart,
+      this.onNavigateBack,
+      this.conflict,
+      this.isHazardCanStart,
+      this.role,
+      this.hasVendorData,
+      this.hasSov,
+      this.usFlag,
+      this.hasHazardHubCount});
 
   @override
   State<MyLocationCard> createState() => _MyLocationCardState();
@@ -118,6 +126,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   ScrollController _scrollController = ScrollController();
 
+  final Set<String> _optimisticProcessingIds = {};
+  final Set<String> _optimisticUnlockedHazards = {};
   bool selectionMode = false;
 
   @override
@@ -142,10 +152,13 @@ class _MyLocationCardState extends State<MyLocationCard> {
     // Check if the location is selected
     // final isSelected = provider.selectedLocationIds.contains(widget.locationId);
     final isSelected = provider.isSelected(widget.locationId);
-    // final isSelected = Provider.of<MyLocationListProvider>(context)
-    //     .selectedLocations
-    //     .contains(myLocation);
-    // final image = widget.imageUrl;
+    bool showViewHazard = widget.hasVendorData == true &&
+        widget.usFlag == true &&
+        widget.hasSov == true;
+
+    bool showUnlockHazard = widget.hasVendorData == false &&
+        widget.usFlag == true &&
+        widget.hasSov == true;
     return GestureDetector(
       onTap: () {
         var locationListProvider =
@@ -158,23 +171,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
           if (provider.selectedCount == 0) {
             provider.clearSelection();
           }
-        }
-        // if (selectionMode) {
-        //   if (isSelected) {
-        //     locationListProvider.removeIdFromSelection(widget.locationId);
-        //   } else {
-        //     locationListProvider.addIdToSelection(widget.locationId);
-        //   }
-        //
-        //   // Check if we should exit selection mode
-        //   if (locationListProvider.selectedLocationIds.isEmpty &&
-        //       !locationListProvider.isGlobalSelectAll) {
-        //     setState(() {
-        //       selectionMode = false;
-        //     });
-        //   }
-        // }
-        else {
+        } else {
           // Open location details screen
           if (widget.isConflict == true) {
             Navigator.of(context)
@@ -250,34 +247,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
           locationListProvider.addIdToSelection(widget.locationId);
         }
       },
-      // onLongPress: () {
-      //   // Handle the long press event
-      //   MyLocation? myLocation;
-      //   if (widget.isCertified) {
-      //     myLocation =
-      //         Provider.of<MyLocationListProvider>(context, listen: false)
-      //             .getCertifiedLocationById(widget.locationId);
-      //   } else {
-      //     myLocation =
-      //         Provider.of<MyLocationListProvider>(context, listen: false)
-      //             .getLocationById(widget.locationId);
-      //   }
-      //   setState(() {
-      //     selectionMode = !selectionMode;
-      //     if (selectionMode) {
-      //       Provider.of<MyLocationListProvider>(context, listen: false)
-      //           .addIdToSelection(widget.locationId);
-      //
-      //       // Provider.of<MyLocationListProvider>(context, listen: false)
-      //       //     .addToSelection(myLocation);
-      //     } else {
-      //       Provider.of<MyLocationListProvider>(context, listen: false)
-      //           .removeIdFromSelection(widget.locationId);
-      //       // Provider.of<MyLocationListProvider>(context, listen: false)
-      //       //     .removeFromSelection(myLocation);
-      //     }
-      //   });
-      // },
       child: Container(
         color: Colors.grey.withOpacity(0.1),
         child: Card(
@@ -294,8 +263,105 @@ class _MyLocationCardState extends State<MyLocationCard> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Text( widget.imageUrl),
-                // Modify the call to _buildTopRow to handle campusId and tags
+               
+                (showViewHazard || showUnlockHazard)
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              if (showViewHazard) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => LocationProfile(
+                                      accountId: widget.accountId!,
+                                      accountName: widget.accountName,
+                                      subAccountId: widget.subAccountId!,
+                                      subAccountName: widget.subAccountName!,
+                                      sovId: "",
+                                      sovName: "test",
+                                      searchQuery: "",
+                                      locationId: widget.locationId,
+                                      page: "1",
+                                      totalPages: "1",
+                                      tab: 2,
+                                    ),
+                                  ),
+                                );
+                              } else if (showUnlockHazard) {
+                                showInsufficientCreditsBottomSheet(
+                                  context,
+                               locationName: widget.address,
+                                  hasHazardHubCount: widget.hasHazardHubCount,
+                                  selectedLocationIds: [widget.locationId],
+                                  onConfirmStart: () {
+                                    setState(() {
+                                      _optimisticProcessingIds
+                                          .add(widget.locationId);
+                                    });
+                                  },
+                                  onFinish: () async {
+                                    setState(() {
+                                      _optimisticUnlockedHazards.clear();
+                                      _optimisticProcessingIds.clear();
+                                    });
+
+                                    widget.onNavigateBack?.call();
+                                  },
+                                  // onFinish: () async {
+                                  //   setState(() {
+                                  //     _optimisticUnlockedHazards.clear();
+                                  //     _optimisticProcessingIds.clear();
+                                  //     // selectedHazardLocationIds.clear();
+                                  //   });
+                                  //
+                                  //   await context
+                                  //       .read<AccountListProvider>()
+                                  //       .fetchMissingParameterList(
+                                  //         context,
+                                  //         widget.sovId!,
+                                  //         isRefresh: true,
+                                  //       );
+                                  //
+                                  //   widget.getData?.call();
+                                  //   widget.onNavigateBack?.call();
+                                  // },
+                                );
+
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: showViewHazard
+                                      ? AppColors.primaryMain
+                                      : Color(0xFF2ECC71),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                showViewHazard
+                                    ? 'View HazardHub'
+                                    : 'Unlock HazardHub',
+                                style: TextStyle(
+                                  color: showViewHazard
+                                      ? AppColors.primaryMain
+                                      : const Color(0xFF2ECC71),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox(),
                 _buildTopRow(
                   context,
                   widget.campusId != null && widget.campusId!.isNotEmpty
@@ -304,7 +370,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   isSelected,
                   widget.imageUrl,
                 ),
-
                 if (widget.sovId == null || widget.sovId!.isEmpty) ...[
                   Container()
                 ] else ...[
@@ -340,38 +405,38 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 8),
-                  // Text(widget.companyName.toString()),
-                  widget.companyName.toString().isNotEmpty?
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Company : ",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                  widget.companyName.toString().isNotEmpty
+                      ? RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "Company : ",
+                                style: typography.Body2.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: widget.companyName.toString() ?? "",
+                                style: typography.Body2.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.white
+                                      : AppColors.black,
+                                  fontSize: 14,
+                                  // Different font size for owner name
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        TextSpan(
-                          text: widget.companyName.toString() ?? "",
-                          style: typography.Body2.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                            fontSize: 14,
-                            // Different font size for owner name
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ):Container(),
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Container(),
                   SizedBox(height: 8),
                   if (widget.role != null &&
                       widget.role.toString() != "null" &&
@@ -409,7 +474,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   ]
                 ],
                 SizedBox(height: 8),
-
                 _buildScrollableScores(context),
               ],
             ),
@@ -444,8 +508,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   )
                 : widget.isConflict == true
                     ? Container(
-                        height:
-                            50, // same as CircleAvatar's diameter (radius * 2)
+                        height: 50,
                         width: 50,
                         decoration: BoxDecoration(
                           color: AppColors.primaryMain.withOpacity(0.5),
@@ -483,11 +546,8 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                   )
                                 : Container(
                                     color: Colors.lightBlueAccent,
-                                    // Image.asset(
-                                    // 'assets/images/building_image.png',
                                     width: 50,
                                     height: 50,
-                                    // fit: BoxFit.cover,
                                   ),
                       ),
 
@@ -521,47 +581,12 @@ class _MyLocationCardState extends State<MyLocationCard> {
                     maxLines: 6,
                     overflow: TextOverflow.ellipsis,
                   ),
-
-                  // Text(
-                  //   widget.address,
-                  //   style: TextStyle(
-                  //     fontSize: 14,
-                  //     fontWeight: FontWeight.w500,
-                  //     color: AppColors.primaryMain,
-                  //   ),
-                  //   maxLines: 6,
-                  //   overflow: TextOverflow.ellipsis,
-                  // ),
                 ],
               ),
             ),
-            /*SizedBox(width: 12),
-            // Circular score with percentage and gaped border
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 46,
-                  height: 46,
-                  child: CircularProgressIndicator(
-                    value: widget.percentage / 100,
-                    strokeWidth: 4,
-                    strokeCap: StrokeCap.square,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                  ),
-                ),
-                Text(
-                  '${widget.percentage}%',
-                  style: CustomTypography(context).InputLabel.copyWith(fontSize: 10),
-                ),
-              ],
-            ),*/
             SizedBox(width: 4),
             // Popup menu for actions
             CustomPopupMenuButton(
-              // geocodeingScore:  widget.geocodingScore,
-              //   imageUrl: widget.
               locationId: widget.locationId,
               onDelete: widget.onDelete,
               onAddToSOV: widget.onAddToSOV,
@@ -570,15 +595,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
             ),
           ],
         ),
-        // if (chipLabels.length == 0)
-        //   Row(
-        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //     children: [
-        //       _buildChip(context, chipLabels[0], isCampus: true),
-        //     ],
-        //   ),
-        // if (chipLabels.length > 1)
-        // Scrollable chip list with scrollbar for multiple chips
         Scrollbar(
           controller: _scrollController,
           thumbVisibility: true,
@@ -636,6 +652,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
   }
 
   Widget _buildScrollableScores(BuildContext context) {
+    final layout = _ScoreCardLayout.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -677,7 +694,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
               widget.subAccountId!,
             ),
           ),
-          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
+          SizedBox(width: layout.cardSpacing),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -712,7 +729,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                 widget.accountId!,
                 widget.subAccountId!),
           ),
-          if (MediaQuery.of(context).size.width > 400) SizedBox(width: 5),
+          SizedBox(width: layout.cardSpacing),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -773,6 +790,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   Widget _buildScoreCard(BuildContext context, String title, String address,
       dynamic scoreInt, String accountId, String subAccountId) {
+    final layout = _ScoreCardLayout.of(context);
     final int score = scoreInt.toInt();
     bool isCertified = score == 5; // Logic to check if it shows a certificate.
     List<Color> scoreColors = [
@@ -787,9 +805,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
     var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(right: 5),
-      padding: EdgeInsets.all(8),
-      width: MediaQuery.of(context).size.width < 400 ? 165 : 190,
-      height: MediaQuery.of(context).size.height < 400 ? 80 : 80,
+      padding: EdgeInsets.all(layout.cardPadding),
+      width: layout.cardWidth,
+      height: layout.cardHeight,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -811,13 +829,13 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: layout.titleFontSize,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryMain,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    textAlign: MediaQuery.of(context).size.width < 400
+                    textAlign: layout.compactLayout
                         ? TextAlign.center
                         : TextAlign.left,
                   ),
@@ -911,10 +929,10 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             widget.rented);
                       }
                     },
-                    child: VerticalBarIndicator(score: score == 0 ? 1 : score),
+                    child: VerticalBarIndicator(score: score == 0 ? 5 : score),
                   ),
                   SizedBox(width: 1),
-                  isCertified
+                  isCertified || score == 0
                       ? SvgPicture.asset('assets/images/certified_five.svg',
                           width: 24, height: 24)
                       : Container(
@@ -931,10 +949,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
-                                textAlign:
-                                    MediaQuery.of(context).size.width < 400
-                                        ? TextAlign.center
-                                        : TextAlign.left,
+                                textAlign: layout.compactLayout
+                                    ? TextAlign.center
+                                    : TextAlign.left,
                               ),
                             ),
                           ),
@@ -963,6 +980,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
 
   Widget _buildScoreCardcompleteness(BuildContext context, String title,
       String address, dynamic scoreInt, String accountId, String subAccountId) {
+    final layout = _ScoreCardLayout.of(context);
     // final int score = scoreInt.toInt();
     // final dynamic rawScore = (scoreInt).toDouble();
     // final int displayScore = rawScore.ceil().clamp(1, 5);
@@ -980,9 +998,9 @@ class _MyLocationCardState extends State<MyLocationCard> {
     var typography = CustomTypography(context);
     return Container(
       margin: EdgeInsets.only(right: 5),
-      padding: EdgeInsets.all(8),
-      width: MediaQuery.of(context).size.width < 400 ? 165 : 190,
-      height: MediaQuery.of(context).size.height < 400 ? 80 : 80,
+      padding: EdgeInsets.all(layout.cardPadding),
+      width: layout.cardWidth,
+      height: layout.cardHeight,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -1004,13 +1022,13 @@ class _MyLocationCardState extends State<MyLocationCard> {
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: layout.titleFontSize,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryMain,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    textAlign: MediaQuery.of(context).size.width < 400
+                    textAlign: layout.compactLayout
                         ? TextAlign.center
                         : TextAlign.left,
                   ),
@@ -1131,7 +1149,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
-                          textAlign: MediaQuery.of(context).size.width < 400
+                          textAlign: layout.compactLayout
                               ? TextAlign.center
                               : TextAlign.left,
                         ),
@@ -1147,6 +1165,88 @@ class _MyLocationCardState extends State<MyLocationCard> {
           SizedBox(height: 4),
         ],
       ),
+    );
+  }
+}
+
+class _ScoreCardLayout {
+  final double cardWidth;
+  final double cardHeight;
+  final double cardSpacing;
+  final double cardPadding;
+  final double titleFontSize;
+  final bool compactLayout;
+
+  const _ScoreCardLayout({
+    required this.cardWidth,
+    required this.cardHeight,
+    required this.cardSpacing,
+    required this.cardPadding,
+    required this.titleFontSize,
+    required this.compactLayout,
+  });
+
+  static _ScoreCardLayout of(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width;
+    final shortestSide = size.shortestSide;
+
+    // Tablet: iPad, Android tablets, large foldables
+    if (shortestSide >= 600) {
+      return const _ScoreCardLayout(
+        cardWidth: 220,
+        cardHeight: 96,
+        cardSpacing: 20,
+        cardPadding: 10,
+        titleFontSize: 15,
+        compactLayout: false,
+      );
+    }
+
+    // Small phone (e.g. iPhone SE, compact Android)
+    if (width < 360) {
+      return const _ScoreCardLayout(
+        cardWidth: 148,
+        cardHeight: 76,
+        cardSpacing: 8,
+        cardPadding: 6,
+        titleFontSize: 12,
+        compactLayout: true,
+      );
+    }
+
+    // Regular phone (most iPhones / Android)
+    if (width < 400) {
+      return const _ScoreCardLayout(
+        cardWidth: 165,
+        cardHeight: 80,
+        cardSpacing: 10,
+        cardPadding: 8,
+        titleFontSize: 13,
+        compactLayout: true,
+      );
+    }
+
+    // Large phone (Plus / Pro Max / wide Android)
+    if (width < 600) {
+      return const _ScoreCardLayout(
+        cardWidth: 160,
+        cardHeight: 80,
+        cardSpacing: 2,
+        cardPadding: 8,
+        titleFontSize: 14,
+        compactLayout: false,
+      );
+    }
+
+    // Wide layout (landscape phone, foldable inner display)
+    return const _ScoreCardLayout(
+      cardWidth: 200,
+      cardHeight: 88,
+      cardSpacing: 16,
+      cardPadding: 8,
+      titleFontSize: 14,
+      compactLayout: false,
     );
   }
 }
@@ -2208,4 +2308,282 @@ class _GeocodingDialogState extends State<GeocodingDialog> {
       ),
     );
   }
+}
+
+void showInsufficientCreditsBottomSheet(
+  BuildContext context, {
+  required String? locationName,
+  required String? hasHazardHubCount,
+  required List<String> selectedLocationIds,
+  required VoidCallback onConfirmStart,
+  required VoidCallback onFinish,
+}) {
+  final int length = selectedLocationIds.length;
+  final int availableCredits = int.tryParse(hasHazardHubCount ?? '0') ?? 0;
+
+  final int remainingCredits = availableCredits;
+  final int remainingAfterUnlock = remainingCredits - length;
+
+  final bool insufficientCredits = remainingAfterUnlock < 0;
+
+  /// how many locations we can unlock
+  final int unlockableCount =
+      availableCredits.clamp(0, selectedLocationIds.length);
+
+  bool understandResetChecked = false;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xFF0F0F0F),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      insufficientCredits
+                          ? "Insufficient Credits"
+                          : "Unlock HazardHub",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      insufficientCredits
+                          ? "You've selected $length locations, but only $availableCredits credits are available."
+                          : "Unlock HazardHub data for ${locationName}",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      insufficientCredits
+                          ? "To continue, you can purchase more credits."
+                      :"This will consume $length HazardHub credit. You have $hasHazardHubCount credits remaining.",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Text(
+                      insufficientCredits
+                          ? "During payment, your current location selection will not be saved. After purchase, you'll need to reselect locations to unlock HazardHub data."
+                          : "Credits remaining after unlock: $remainingAfterUnlock",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    if (insufficientCredits)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: understandResetChecked,
+                              onChanged: (value) {
+                                setState(() {
+                                  understandResetChecked = value ?? false;
+                                });
+                              },
+                              activeColor: const Color(0xFF8EC9FF),
+                              checkColor: Colors.black,
+                              side: const BorderSide(color: Colors.white70),
+                            ),
+                            const Expanded(
+                              child: Text(
+                                "I understand my selection will reset after payment",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    /// BUTTON SECTION
+                    if (insufficientCredits)
+                      Row(
+                        children: [
+                          /// Cancel
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.shade600),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// Buy Credit
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8EC9FF),
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: understandResetChecked
+                                  ? () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const PurchaseLicensePage(),
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              child: const Text("Buy Credit"),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// Unlock available credits
+                          Expanded(
+                            child: Consumer<AccountListProvider>(
+                              builder: (context, provider, _) {
+                                return ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: const Color(0xFF8EC9FF),
+                                    side: const BorderSide(
+                                        color: Color(0xFF8EC9FF)),
+                                  ),
+                                  onPressed: (!provider.isUpdating &&
+                                          unlockableCount > 0)
+                                      ? () async {
+                                          try {
+                                            onConfirmStart();
+
+                                            await provider.unlockHazardHubData(
+                                              context,
+                                              locationIds: selectedLocationIds
+                                                  .take(unlockableCount)
+                                                  .toList(),
+                                            );
+
+                                            Navigator.pop(context);
+                                            onFinish();
+                                          } catch (e) {
+                                            onFinish();
+                                          }
+                                        }
+                                      : null,
+                                  child: provider.isUpdating
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : Text("Unlock $unlockableCount"),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: Consumer<AccountListProvider>(
+                          builder: (context, provider, _) {
+                            return ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8EC9FF),
+                                foregroundColor: Colors.black,
+                              ),
+                              onPressed: (!provider.isUpdating)
+                                  ? () async {
+                                      try {
+                                        onConfirmStart();
+                                        await provider.unlockHazardHubData(
+                                          context,
+                                          locationIds: selectedLocationIds
+                                              .take(unlockableCount)
+                                              .toList(),
+                                        );
+
+                                        Navigator.pop(context); // close bottom sheet
+
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 300),
+                                        );
+
+                                        onFinish();
+                                      } catch (e) {
+                                        onFinish();
+                                      }
+                                    }
+                                  : null,
+                              child: provider.isUpdating
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2.5),
+                                    )
+                                  : const Text("Confirm Unlock"),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }

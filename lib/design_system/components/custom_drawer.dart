@@ -19,8 +19,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/drawer_selection_provider.dart';
 import '../../providers/my_location_list_provider.dart';
 import '../../screens/listings/location_profile.dart';
+import '../../screens/listings/monitoring_sov.dart';
 import '../../screens/listings/mysov_list.dart';
 import '../../screens/listings/news_feed_screen.dart';
+import '../../screens/listings/users_list.dart';
 import '../../screens/listings/vendor_list.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
 import '../../screens/listings/widgets/message_card.dart';
@@ -29,6 +31,7 @@ import '../../screens/onboarding/splash_screen.dart';
 import '../../screens/onboarding/supportscreen.dart';
 import '../../screens/payments/purchase_license.dart';
 import '../../screens/payments/transaction_summary.dart';
+import '../../screens/settings/link_parameter.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import '../../utils/debouncer.dart';
@@ -49,7 +52,8 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   // final ScrollController _scrollController = ScrollController();
   bool showCorporateManagementTab = true;
-  String selectedSovMenu = "";
+
+  // String selectedSovMenu = "";
   bool showNonCorporateManagementTab = true;
   bool showEmployeeManagementTab = true;
   bool showCorporateList = true;
@@ -70,8 +74,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool showUserOnboardingStats = false;
   bool showVerificationRequests = false;
   String isMaintenance = "";
+  String mononitoringsovId = "";
   String? trialMap;
-
+  bool hasAnyPlan = false;
+  String hasLicenseStatus = "1";
+  String hasGeocodingStatus = "1";
+  String hasHazardLicenseStatus = "1";
+  String getTrailUserCount = "0";
+  String getTrailLocation = "0";
   final TextEditingController searchController = TextEditingController();
   final Debouncer debouncer = Debouncer(milliseconds: 200);
   bool isHasAnyPlan = false;
@@ -79,9 +89,50 @@ class _CustomDrawerState extends State<CustomDrawer> {
   @override
   void initState() {
     super.initState();
-    _setClaims();
-    _getClaims();
+
+    // Run both async in microtask (after init)
+    Future.microtask(() async {
+      await Future.wait([
+        _getData(),
+        _setClaims(),
+      ]);
+
+      if (mounted) setState(() {});
+    });
   }
+
+  Future<void> _getData() async {
+    bool? hasAnyPlans = await SharedPreferenceService.getHasAnyPlan();
+    String? geoCodingStatus =
+        await SharedPreferenceService.getGeocodingLicense();
+    String? userLicenseStatus = await SharedPreferenceService.getUserLicense();
+    String? userCount = await SharedPreferenceService.getTrialUser();
+    String? trailLocation = await SharedPreferenceService.getTrailLocation();
+    String? hazardLicenseStatus =
+        await SharedPreferenceService.getHazardLicense();
+
+    // print("geoCodingStatus: $geoCodingStatus");
+    // print("userLicenseStatus: $userLicenseStatus");
+    // print("hazardLicenseStatus: $hazardLicenseStatus");
+    // print("userCount: $userCount");
+    // print("locationleft: $trailLocation");
+
+    setState(() {
+      hasAnyPlan = hasAnyPlans ?? false;
+      hasLicenseStatus = userLicenseStatus ?? "1";
+      hasGeocodingStatus = geoCodingStatus ?? "1";
+      hasHazardLicenseStatus = hazardLicenseStatus ?? "1";
+      getTrailUserCount = userCount ?? "1";
+      getTrailLocation = trailLocation ?? "1";
+    });
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _setClaims();
+  //   _getClaims();
+  // }
 
   Future<void> _setClaims() async {
     final results = await Future.wait([
@@ -114,10 +165,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
     isIndivudual = await SharedPreferenceService.getClaimForSubfeature(
             SharedPreferenceService.Is_Indivudual) ??
         false;
+    mononitoringsovId =
+        (await SharedPreferenceService.getDefaultMonitoringSov())!;
 
-    print(results.toString());
+    print(mononitoringsovId);
     print(isIndivudual);
-
     showTotalCorporates = results[0] ?? false;
     showAllUsers = results[1] ?? false;
     showConnectionRequests = results[2] ?? false;
@@ -198,60 +250,60 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                   const SizedBox(height: 20),
                   // // Search bar added
-                  Consumer<UserProfileProvider>(
-                    builder: (context, userProfile, child) {
-                      final trialStatus = userProfile.trialInfo['status'] ?? '';
-
-                      // if (trialStatus.contains('Expired'))
-                      if (trialStatus.contains('Expired') &&
-                          isHasAnyPlan == false) {
-                        return Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surface
-                                .withOpacity(0.95),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(height: 10),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: MessageCard(
-                                  messageTextSpans: [
-                                    TextSpan(
-                                      text:
-                                          'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
-                                      style: typography.Body1,
-                                    ),
-                                    // tappable
-                                    TextSpan(
-                                      text: ' Upgrade Now!',
-                                      style: typography.Body1.copyWith(
-                                        color: AppColors.primaryMain,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      PurchaseLicensePage()));
-                                        },
-                                    ),
-                                  ],
-                                  isError: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      return SizedBox.shrink();
-                    },
-                  ),
+                  // Consumer<UserProfileProvider>(
+                  //   builder: (context, userProfile, child) {
+                  //     final trialStatus = userProfile.trialInfo['status'] ?? '';
+                  //
+                  //     // if (trialStatus.contains('Expired'))
+                  //     if (trialStatus.contains('Expired') &&
+                  //         isHasAnyPlan == false) {
+                  //       return Container(
+                  //         padding:
+                  //             EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //         decoration: BoxDecoration(
+                  //           color: Theme.of(context)
+                  //               .colorScheme
+                  //               .surface
+                  //               .withOpacity(0.95),
+                  //         ),
+                  //         child: Column(
+                  //           mainAxisAlignment: MainAxisAlignment.center,
+                  //           children: [
+                  //             SizedBox(height: 10),
+                  //             Padding(
+                  //               padding: const EdgeInsets.all(8.0),
+                  //               child: MessageCard(
+                  //                 messageTextSpans: [
+                  //                   TextSpan(
+                  //                     text:
+                  //                         'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
+                  //                     style: typography.Body1,
+                  //                   ),
+                  //                   // tappable
+                  //                   TextSpan(
+                  //                     text: ' Upgrade Now!',
+                  //                     style: typography.Body1.copyWith(
+                  //                       color: AppColors.primaryMain,
+                  //                     ),
+                  //                     recognizer: TapGestureRecognizer()
+                  //                       ..onTap = () {
+                  //                         Navigator.of(context).push(
+                  //                             MaterialPageRoute(
+                  //                                 builder: (_) =>
+                  //                                     PurchaseLicensePage()));
+                  //                       },
+                  //                   ),
+                  //                 ],
+                  //                 isError: true,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       );
+                  //     }
+                  //     return SizedBox.shrink();
+                  //   },
+                  // ),
                   Column(
                     children: [
                       TextField(
@@ -406,11 +458,26 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
                       if (sovExpanded) ...[
                         buildSubMenuItem(
+                          title: 'Monitoring SOVs',
+                          isSelected:
+                              provider.selectedItem == "monitoring_sovs",
+                          onTap: () {
+                            provider.setSelectedItem("monitoring_sovs");
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => MontoringSovList(
+                                        status: "Monitoring SOV",
+                                        monitoringSovId: mononitoringsovId)));
+                          },
+                        ),
+                        buildSubMenuItem(
                           title: LanguageService.getTranslated(
                               context, 'drawer_menu_mysovs'),
-                          isSelected: selectedSovMenu == "My SOVs",
+                          isSelected: provider.selectedItem == "my_sovs",
+                          // isSelected: selectedSovMenu == "My SOVs",
                           onTap: () {
-                            setState(() => selectedSovMenu = "My SOVs");
+                            provider.setSelectedItem("my_sovs");
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -420,9 +487,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         buildSubMenuItem(
                           title: LanguageService.getTranslated(
                               context, 'drawer_menu_sharedsovs'),
-                          isSelected: selectedSovMenu == "Shared SOVs",
+                          isSelected: provider.selectedItem == "shared_sovs",
                           onTap: () {
-                            setState(() => selectedSovMenu = "Shared SOVs");
+                            provider.setSelectedItem("shared_sovs");
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -433,9 +500,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         buildSubMenuItem(
                           title: LanguageService.getTranslated(
                               context, 'drawer_menu_receivedsovs'),
-                          isSelected: selectedSovMenu == "Received SOVs",
+                          isSelected: provider.selectedItem == "received_sovs",
                           onTap: () {
-                            setState(() => selectedSovMenu = "Received SOVs");
+                            provider.setSelectedItem("received_sovs");
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -482,9 +549,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         if (adminExpanded) ...[
                           buildSubMenuItem(
                             title: 'Vendors',
-                            isSelected: selectedSovMenu == "My SOVs",
+                            isSelected: provider.selectedItem == "my_sovs",
                             onTap: () {
-                              setState(() => selectedSovMenu = "My SOVs");
+                              provider.setSelectedItem("my_sovs");
+                              // setState(() => selectedSovMenu = "My SOVs");
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -494,15 +562,30 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           ),
                           buildSubMenuItem(
                             title: 'Corporate Admin',
-                            isSelected: selectedSovMenu == "Corporate Admin",
+                            isSelected:
+                                provider.selectedItem == "Corporate Admin",
                             onTap: () {
-                              setState(
-                                  () => selectedSovMenu = "Corporate Admin");
+                              provider.setSelectedItem("Corporate Admin");
+                              // setState(
+                              //     () => selectedSovMenu = "Corporate Admin");
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) =>
                                           VendorList(status: 'corporate')));
+                            },
+                          ),
+                          buildSubMenuItem(
+                            title: 'User Management',
+                            isSelected:
+                                provider.selectedItem == "User Management",
+                            onTap: () {
+                              provider.setSelectedItem("User Management");
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          UsersList(status: 'corporate')));
                             },
                           ),
                         ],
@@ -529,23 +612,41 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               "false")
                         ...[]
                       else ...[
-                        _buildDrawerItem(
-                          context,
-                          provider,
-                          title: 'License & Sharing',
-                          // "Purchase License",
-                          icon: Icons.description,
-                          onTap: () {
-                            provider.setSelectedItem("purchase_license");
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => PurchaseLicensePage()),
-                            );
-                          },
-                          isSelected:
-                              provider.selectedItem == "purchase_license",
-                        ),
+                        showTotalCorporates
+                            ? _buildDrawerItem(
+                                context,
+                                provider,
+                                title: 'Location Sharing',
+                                // "Purchase License",
+                                icon: Icons.share_outlined,
+                                onTap: () {
+                                  provider.setSelectedItem("purchase_license");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => PurchaseLicensePage()),
+                                  );
+                                },
+                                isSelected:
+                                    provider.selectedItem == "purchase_license",
+                              )
+                            : _buildDrawerItem(
+                                context,
+                                provider,
+                                title: 'License & Sharing',
+                                // "Purchase License",
+                                icon: Icons.description,
+                                onTap: () {
+                                  provider.setSelectedItem("purchase_license");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => PurchaseLicensePage()),
+                                  );
+                                },
+                                isSelected:
+                                    provider.selectedItem == "purchase_license",
+                              ),
                         _buildDrawerItem(
                           context,
                           provider,
@@ -642,7 +743,24 @@ class _CustomDrawerState extends State<CustomDrawer> {
 //                  ),
 //                ]
 // ,
-
+                      if (showUserOnboardingStats) ...[
+                        _buildDrawerItem(
+                          context,
+                          provider,
+                          title: "Link Parameters",
+                          icon: Icons.link,
+                          onTap: () {
+                            provider.setSelectedItem("link_parameters");
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => LinkParameterPage()),
+                            );
+                          },
+                          isSelected:
+                              provider.selectedItem == "link_parameters",
+                        ),
+                      ],
                       _buildDrawerItem(
                         context,
                         provider,
@@ -689,9 +807,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                             return ElevatedButton(
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.red,
-                                                // 🔴 Red background
                                                 foregroundColor: Colors.white,
-                                                // ⚪ White text
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 20,
@@ -937,12 +1053,194 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       }
                     },
                   ),
+
+                  // Consumer<AuthNotifier>(
+                  //   builder: (context, authNotifier, child) {
+                  //     return IconButton(
+                  //       icon: Icon(Icons.logout_rounded,
+                  //           color: Colors.red.withOpacity(0.8)),
+                  //       onPressed: () {
+                  //         showDialog(
+                  //           context: context,
+                  //           builder: (context) {
+                  //             return AlertDialog(
+                  //               title: Text(
+                  //                 LanguageService.getTranslated(
+                  //                     context, "logout"),
+                  //                 style: typography.Body1.copyWith(
+                  //                     color: iconColor),
+                  //               ),
+                  //               content: Text(
+                  //                 LanguageService.getTranslated(
+                  //                     context, "confirm_logout"),
+                  //                 style: typography.Body1.copyWith(
+                  //                     color: iconColor),
+                  //               ),
+                  //               actions: <Widget>[
+                  //                 TextButton(
+                  //                   onPressed: () {
+                  //                     Navigator.pop(context);
+                  //                   },
+                  //                   child: Text(
+                  //                     LanguageService.getTranslated(
+                  //                         context, "cancel"),
+                  //                     style: typography.Body1.copyWith(
+                  //                         color: iconColor),
+                  //                   ),
+                  //                 ),
+                  //                 TextButton(
+                  //                   style: TextButton.styleFrom(
+                  //                     backgroundColor: Colors.red,
+                  //
+                  //                     foregroundColor: Colors.white,
+                  //                     // ⚪ White text (also sets overlay ripple)
+                  //                     padding: const EdgeInsets.symmetric(
+                  //                         horizontal: 20, vertical: 12),
+                  //                     shape: RoundedRectangleBorder(
+                  //                       borderRadius: BorderRadius.circular(6),
+                  //                     ),
+                  //                   ),
+                  //                   onPressed: () async {
+                  //                     try {
+                  //                       setState(() => isLoggingOut = true);
+                  //
+                  //                       /// 1️⃣ Google SignOut (ONLY if signed in)
+                  //                       // final GoogleSignIn googleSignIn =
+                  //                       //     GoogleSignIn();
+                  //                       //
+                  //                       // if (await googleSignIn.isSignedIn()) {
+                  //                       //   await googleSignIn.signOut();
+                  //                       //
+                  //                       //   // ⚠️ Do NOT call disconnect() on Android unless required
+                  //                       //   // await googleSignIn.disconnect(); ❌ REMOVE
+                  //                       // }
+                  //
+                  //                       /// 2️⃣ Firebase sign out (AFTER Google)
+                  //                       await FirebaseAuth.instance.signOut();
+                  //
+                  //                       /// 3️⃣ Clear local state
+                  //                       final prefs = await SharedPreferences
+                  //                           .getInstance();
+                  //                       await prefs.setBool(
+                  //                           'isFirstTime', false);
+                  //
+                  //                       await authNotifier.signOut();
+                  //
+                  //                       Provider.of<DrawerSelectionProvider>(
+                  //                         context,
+                  //                         listen: false,
+                  //                       ).setSelectedItem("dashboard");
+                  //
+                  //                       /// 4️⃣ Navigate cleanly
+                  //                       if (!context.mounted) return;
+                  //
+                  //                       Navigator.pushAndRemoveUntil(
+                  //                         context,
+                  //                         MaterialPageRoute(
+                  //                             builder: (_) => SplashScreen()),
+                  //                         (_) => false,
+                  //                       );
+                  //                     } catch (e, stack) {
+                  //                       debugPrint("Logout error: $e");
+                  //                       debugPrintStack(stackTrace: stack);
+                  //
+                  //                       if (!context.mounted) return;
+                  //
+                  //                       ScaffoldMessenger.of(context)
+                  //                           .showSnackBar(
+                  //                         const SnackBar(
+                  //                           content: Text(
+                  //                               "Logout failed. Please try again."),
+                  //                         ),
+                  //                       );
+                  //                     } finally {
+                  //                       if (mounted)
+                  //                         setState(() => isLoggingOut = false);
+                  //                     }
+                  //                   },
+                  //                   child: isLoggingOut
+                  //                       ? SizedBox(
+                  //                           height: 18,
+                  //                           width: 18,
+                  //                           child: CircularProgressIndicator(
+                  //                             strokeWidth: 2.0,
+                  //                             color: iconColor,
+                  //                           ),
+                  //                         )
+                  //                       : Text(
+                  //                           LanguageService.getTranslated(
+                  //                               context, "logout"),
+                  //                           style: typography.Body1.copyWith(
+                  //                               color: iconColor,
+                  //                               fontSize: 16,
+                  //                               fontWeight: FontWeight.bold),
+                  //                         ),
+                  //                 ),
+                  //               ],
+                  //             );
+                  //           },
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
                   InkWell(
                       onTap: () {
                         Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => SupportScreen()));
                       },
-                      child: Icon(Icons.support_agent)),
+                      child: Icon(
+                        Icons.support_agent,
+                        size: 28,
+                      )),
+                  if (showCorporateManagementTab ||
+                      showNonCorporateManagementTab ||
+                      showEmployeeManagementTab)
+                    Consumer<DrawerSelectionProvider>(
+                      builder: (context, provider, child) {
+                        return Consumer<UserProfileProvider>(
+                          builder: (context, userProfileProvider, child) {
+                            bool isNotIndividual =
+                                !(userProfileProvider.userData.isIndividual ??
+                                    true); // Defaulting to true if null
+
+                            return userProfileProvider.isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : isNotIndividual
+                                    ? Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(66),
+                                          color: provider.selectedItem ==
+                                                  "user_management"
+                                              ? AppColors.primaryMain
+                                                  .withOpacity(0.4)
+                                              : Colors.transparent,
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.person,
+                                            color: provider.selectedItem ==
+                                                    "user_management"
+                                                ? AppColors.primaryMain
+                                                : iconColor,
+                                          ),
+                                          onPressed: () {
+                                            provider.setSelectedItem(
+                                                "user_management");
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      UserManagementScreen()),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Container();
+                          },
+                        );
+                      },
+                    ),
                   Consumer<AuthNotifier>(
                     builder: (context, authNotifier, child) {
                       return IconButton(
@@ -1158,185 +1456,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       );
                     },
                   ),
-                  // Consumer<AuthNotifier>(
-                  //   builder: (context, authNotifier, child) {
-                  //     return IconButton(
-                  //       icon: Icon(Icons.logout_rounded,
-                  //           color: Colors.red.withOpacity(0.8)),
-                  //       onPressed: () {
-                  //         showDialog(
-                  //           context: context,
-                  //           builder: (context) {
-                  //             return AlertDialog(
-                  //               title: Text(
-                  //                 LanguageService.getTranslated(
-                  //                     context, "logout"),
-                  //                 style: typography.Body1.copyWith(
-                  //                     color: iconColor),
-                  //               ),
-                  //               content: Text(
-                  //                 LanguageService.getTranslated(
-                  //                     context, "confirm_logout"),
-                  //                 style: typography.Body1.copyWith(
-                  //                     color: iconColor),
-                  //               ),
-                  //               actions: <Widget>[
-                  //                 TextButton(
-                  //                   onPressed: () {
-                  //                     Navigator.pop(context);
-                  //                   },
-                  //                   child: Text(
-                  //                     LanguageService.getTranslated(
-                  //                         context, "cancel"),
-                  //                     style: typography.Body1.copyWith(
-                  //                         color: iconColor),
-                  //                   ),
-                  //                 ),
-                  //                 TextButton(
-                  //                   style: TextButton.styleFrom(
-                  //                     backgroundColor: Colors.red,
-                  //
-                  //                     foregroundColor: Colors.white,
-                  //                     // ⚪ White text (also sets overlay ripple)
-                  //                     padding: const EdgeInsets.symmetric(
-                  //                         horizontal: 20, vertical: 12),
-                  //                     shape: RoundedRectangleBorder(
-                  //                       borderRadius: BorderRadius.circular(6),
-                  //                     ),
-                  //                   ),
-                  //                   onPressed: () async {
-                  //                     try {
-                  //                       setState(() => isLoggingOut = true);
-                  //
-                  //                       /// 1️⃣ Google SignOut (ONLY if signed in)
-                  //                       // final GoogleSignIn googleSignIn =
-                  //                       //     GoogleSignIn();
-                  //                       //
-                  //                       // if (await googleSignIn.isSignedIn()) {
-                  //                       //   await googleSignIn.signOut();
-                  //                       //
-                  //                       //   // ⚠️ Do NOT call disconnect() on Android unless required
-                  //                       //   // await googleSignIn.disconnect(); ❌ REMOVE
-                  //                       // }
-                  //
-                  //                       /// 2️⃣ Firebase sign out (AFTER Google)
-                  //                       await FirebaseAuth.instance.signOut();
-                  //
-                  //                       /// 3️⃣ Clear local state
-                  //                       final prefs = await SharedPreferences
-                  //                           .getInstance();
-                  //                       await prefs.setBool(
-                  //                           'isFirstTime', false);
-                  //
-                  //                       await authNotifier.signOut();
-                  //
-                  //                       Provider.of<DrawerSelectionProvider>(
-                  //                         context,
-                  //                         listen: false,
-                  //                       ).setSelectedItem("dashboard");
-                  //
-                  //                       /// 4️⃣ Navigate cleanly
-                  //                       if (!context.mounted) return;
-                  //
-                  //                       Navigator.pushAndRemoveUntil(
-                  //                         context,
-                  //                         MaterialPageRoute(
-                  //                             builder: (_) => SplashScreen()),
-                  //                         (_) => false,
-                  //                       );
-                  //                     } catch (e, stack) {
-                  //                       debugPrint("Logout error: $e");
-                  //                       debugPrintStack(stackTrace: stack);
-                  //
-                  //                       if (!context.mounted) return;
-                  //
-                  //                       ScaffoldMessenger.of(context)
-                  //                           .showSnackBar(
-                  //                         const SnackBar(
-                  //                           content: Text(
-                  //                               "Logout failed. Please try again."),
-                  //                         ),
-                  //                       );
-                  //                     } finally {
-                  //                       if (mounted)
-                  //                         setState(() => isLoggingOut = false);
-                  //                     }
-                  //                   },
-                  //                   child: isLoggingOut
-                  //                       ? SizedBox(
-                  //                           height: 18,
-                  //                           width: 18,
-                  //                           child: CircularProgressIndicator(
-                  //                             strokeWidth: 2.0,
-                  //                             color: iconColor,
-                  //                           ),
-                  //                         )
-                  //                       : Text(
-                  //                           LanguageService.getTranslated(
-                  //                               context, "logout"),
-                  //                           style: typography.Body1.copyWith(
-                  //                               color: iconColor,
-                  //                               fontSize: 16,
-                  //                               fontWeight: FontWeight.bold),
-                  //                         ),
-                  //                 ),
-                  //               ],
-                  //             );
-                  //           },
-                  //         );
-                  //       },
-                  //     );
-                  //   },
-                  // ),
-
-                  if (showCorporateManagementTab ||
-                      showNonCorporateManagementTab ||
-                      showEmployeeManagementTab)
-                    Consumer<DrawerSelectionProvider>(
-                      builder: (context, provider, child) {
-                        return Consumer<UserProfileProvider>(
-                          builder: (context, userProfileProvider, child) {
-                            bool isNotIndividual =
-                                !(userProfileProvider.userData.isIndividual ??
-                                    true); // Defaulting to true if null
-
-                            return userProfileProvider.isLoading
-                                ? Center(child: CircularProgressIndicator())
-                                : isNotIndividual
-                                    ? Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(66),
-                                          color: provider.selectedItem ==
-                                                  "user_management"
-                                              ? AppColors.primaryMain
-                                                  .withOpacity(0.4)
-                                              : Colors.transparent,
-                                        ),
-                                        child: IconButton(
-                                          icon: Icon(
-                                            Icons.person,
-                                            color: provider.selectedItem ==
-                                                    "user_management"
-                                                ? AppColors.primaryMain
-                                                : iconColor,
-                                          ),
-                                          onPressed: () {
-                                            provider.setSelectedItem(
-                                                "user_management");
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      UserManagementScreen()),
-                                            );
-                                          },
-                                        ),
-                                      )
-                                    : Container();
-                          },
-                        );
-                      },
-                    )
                 ],
               ),
             ),

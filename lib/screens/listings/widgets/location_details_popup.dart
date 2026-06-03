@@ -70,6 +70,7 @@ class LocationDetailsPopup extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+
             // Address and Location Details
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,31 +102,6 @@ class LocationDetailsPopup extends StatelessWidget {
                                 ),
                     ),
 
-                    // ClipRRect(
-                    //   borderRadius: BorderRadius.circular(8),
-                    //   child: (geocodingScore == 5)
-                    //       ? Image.network(
-                    //     "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${long}&key=AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI",
-                    //     width: 50,
-                    //     height: 50,
-                    //     height: 50,
-                    //     fit: BoxFit.cover,
-                    //   )
-                    //       :
-                    //   imageUrl!.isNotEmpty
-                    //       ? Image.network(
-                    //     imageUrl!  ,
-                    //     width: 50,
-                    //     height: 50,
-                    //     fit: BoxFit.cover,
-                    //   )
-                    //       : Image.asset(
-                    //     'assets/images/building_image.png',
-                    //     width: 50,
-                    //     height: 50,
-                    //     fit: BoxFit.cover,
-                    //   ),
-                    // ),
                     Container(
                       width: 180,
                       child: Text(
@@ -161,7 +137,7 @@ class LocationDetailsPopup extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: MyScrollableScoresWidget(
                 geocodingScore: geocodingScore,
-            riskScore: (riskScore == 0) ? 1 : riskScore,
+            riskScore: (int.parse(riskScore.toString()) == 0) ? 5 : riskScore,
                 dataCompleteness: dataCompleteness,
                 hazardProcess: hazardProcess,
               ),

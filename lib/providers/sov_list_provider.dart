@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -17,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 import '../models/transfer_autocomplete_model.dart';
+import '../service/firestore_service.dart';
 import '../service/language_service.dart';
 import '../utils/common_headers.dart';
 
@@ -24,7 +26,23 @@ SovListModel parseSovList(Map<String, dynamic> json) {
   return SovListModel.fromJson(json);
 }
 
+SovListModel parseMonitoringSovList(Map<String, dynamic> json) {
+  return SovListModel(
+    events: json['events'] != null
+        ? List<SovItem>.from(
+            (json['events'] as List).map((x) => SovItem.fromJson(x)))
+        : [],
+  );
+}
+
+UserListModel parseUserList(Map<String, dynamic> jsonData) {
+  return UserListModel.fromJson(jsonData);
+}
+
 class SOVListProvider extends ChangeNotifier {
+  List<SovItem> monitoringSovList = [];
+  List<SovItem> monitoringFilterList = [];
+
   bool _isLoading = false;
   bool isRequestSent = false;
   final Set<String> requestedUserIds = {};
@@ -45,14 +63,17 @@ class SOVListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Map<String, dynamic>? companyCredits;
+  bool isCreditsLoading = false;
+
   Map<String, Map<String, dynamic>?> sovMeta = {};
 
   final Map<String, StreamSubscription<DocumentSnapshot>> _sovListeners = {};
 
   void listenToSovMeta(String sovId) {
     if (_sovListeners.containsKey(sovId)) return;
-
-    final sub = FirebaseFirestore.instance
+    final firestore = FirestoreService.db;
+    final sub = firestore
         .collection("location_recommendations")
         .doc(sovId)
         .snapshots()
@@ -141,6 +162,75 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
+  List<UserResult> allUserList = []; // Master list (all users)
+  List<UserResult> filteredUserList = []; // Filtered list (shown in UI)
+
+  String selectedUserType = "All";
+  String selectedRole = "All";
+  String selectedStatus = "All";
+
+  List<String> userTypes = ["All"];
+  List<String> roles = ["All"];
+  List<String> statusList = ["All", "Verified", "Pending"];
+
+  List<String> extractUserTypes(List<UserResult> users) {
+    final types = <String>{};
+    for (var user in users) {
+      if (user.userType != null && user.userType!.isNotEmpty) {
+        types.add(user.userType!);
+      }
+    }
+    return types.toList();
+  }
+
+  List<String> extractRoles(List<UserResult> users) {
+    final roles = <String>{};
+    for (var user in users) {
+      if (user.roles != null) {
+        for (var role in user.roles!) {
+          if (role.isNotEmpty) {
+            roles.add(role);
+          }
+        }
+      }
+    }
+    return roles.toList();
+  }
+
+  void applyFilters() {
+    filteredUserList = allUserList.where((user) {
+      // Filter by user type
+      if (selectedUserType != "All") {
+        if (user.userType?.toLowerCase() != selectedUserType.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // Filter by role
+      if (selectedRole != "All") {
+        final hasRole = user.roles?.any(
+              (role) => role.toLowerCase() == selectedRole.toLowerCase(),
+            ) ??
+            false;
+        if (!hasRole) {
+          return false;
+        }
+      }
+
+      // Filter by verification status
+      if (selectedStatus != "All") {
+        final shouldBeVerified = selectedStatus == "Verified";
+        if (user.isVerified != shouldBeVerified) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+
+    notifyListeners();
+  }
+
   bool _isAddAccountLoading = false;
 
   bool get isAddAccountLoading => _isAddAccountLoading;
@@ -226,6 +316,28 @@ class SOVListProvider extends ChangeNotifier {
 
   set totalPages(int value) {
     _totalPages = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalEvent = 0;
+
+  int get totalEvent => _totalEvent;
+
+  set totalEvent(int value) {
+    _totalEvent = value;
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _totalImpactLocation = 0;
+
+  int get totalImpactLocation => _totalImpactLocation;
+
+  set totalImpactLocation(int value) {
+    _totalImpactLocation = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       notifyListeners();
     });
@@ -363,68 +475,7 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   /// Fetch sov list with pagination and search query
-  // Future<void> fetchSovList(
-  //   BuildContext context,
-  //   String searchQuery,
-  //   int page,
-  //   int pageSize,
-  //   String? type,
-  // ) async {
-  //   try {
-  //     if (isLoading || isNextPageLoading) return;
-  //
-  //     if (page == 1) {
-  //       isLoading = true;
-  //       filtersovlist = []; // reset previous list
-  //       notifyListeners();
-  //       isLoading = true;
-  //     } else {
-  //       if (isNextPageLoading) return;
-  //       isNextPageLoading = true;
-  //       notifyListeners();
-  //     }
-  //
-  //     ApiService apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
-  //
-  //     String url = '?page=$page&pageSize=$pageSize&type=$type';
-  //
-  //     if (searchQuery.isNotEmpty) {
-  //       url += '&search=$searchQuery';
-  //     }
-  //
-  //     var response = await apiService.get(url);
-  //
-  //     // 🔥 Heavy JSON parsing → move to compute isolate
-  //     SovListModel sovListModel = await compute(parseSovList, response);
-  //     // FIXED: correct key name (API returns "result")
-  //     filtersovlist = sovListModel.result ?? [];
-  //     showLocationCount = sovListModel.settings?.locationCount ?? true;
-  //     showOverallScore = sovListModel.settings?.overAllScore ?? true;
-  //
-  //     sovHits = sovListModel.totalRecords ?? 0;
-  //     totalPages = (sovHits / pageSize).ceil();
-  //     sovCounterList = sovListModel.totalCountHeader!;
-  //
-  //     if (page == 1) {
-  //       sovList = sovListModel.result ?? [];
-  //     } else {
-  //       addToSovList(sovListModel.result ?? []);
-  //     }
-  //
-  //     // Keeping listeners
-  //     for (var item in sovList) {
-  //       if (item.sovId != null) {
-  //         listenToSovMeta(item.sovId!);
-  //       }
-  //     }
-  //   } catch (e, stack) {
-  //     print(e);
-  //     print(stack);
-  //   } finally {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //   }
-  // }
+
   Future<void> fetchSovList(
     BuildContext context,
     String searchQuery,
@@ -442,7 +493,7 @@ class SOVListProvider extends ChangeNotifier {
         isNextPageLoading = true;
       }
 
-      notifyListeners(); // ✅ OK (called after frame)
+      notifyListeners();
 
       final apiService = ApiService(AppConstant.GET_SOV_LIST_BY_SOV);
 
@@ -480,60 +531,119 @@ class SOVListProvider extends ChangeNotifier {
     } finally {
       isLoading = false;
       isNextPageLoading = false;
-      notifyListeners(); // ✅ REQUIRED
+      notifyListeners();
     }
   }
 
   List<Result> allVendorList = [];
+  List<UserResult> allVendorList1 = [];
+  List<UserResult> filteredAutoCompleteList12 = [];
 
-  //
-  // Future<void> fetchvendorList(
-  //   BuildContext context,
-  //   String searchQuery,
-  //   int page,
-  //   int pageSize,
-  //   String? type,
-  // ) async {
-  //   if (isLoading || isNextPageLoading) return;
-  //
-  //   try {
-  //     if (page == 1) {
-  //       isLoading = true;
-  //     } else {
-  //       isNextPageLoading = true;
-  //     }
-  //
-  //     notifyListeners();
-  //
-  //     final apiService = ApiService(
-  //       type != "corporate"
-  //           ? AppConstant.GET_CORPORATE_DASHBOARD
-  //           : AppConstant.GET_VENDOR_HAZARD,
-  //     );
-  //
-  //     final response = await apiService.get(searchQuery);
-  //
-  //     final SovListModel sovListModel = await compute(parseSovList, response);
-  //
-  //     filterlist = sovListModel.filters;
-  //     cardlist = sovListModel.cards;
-  //     filteredAutoCompleteList1 = sovListModel.results ?? [];
-  //     allVendorList = parse(response);     // 🔥 MASTER
-  //     filteredAutoCompleteList1 = allVendorList; // 🔥 FILTER VIEW
-  //     for (var item in sovList) {
-  //       if (item.sovId != null) {
-  //         listenToSovMeta(item.sovId!);
-  //       }
-  //     }
-  //   } catch (e, stack) {
-  //     debugPrint(' fetchvendorList error: $e');
-  //     debugPrint('$stack');
-  //   } finally {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     notifyListeners(); // ✅ THIS WAS MISSING
-  //   }
-  // }
+  Future<void> fetchMonitoringSovList(
+      BuildContext context,
+      String searchQuery,
+      int page,
+      int pageSize,
+      String? type,
+      String? monitoringID,
+      ) async {
+
+    if (isLoading || isNextPageLoading) return;
+
+    try {
+      if (page == 1) {
+        isLoading = true;
+      } else {
+        isNextPageLoading = true;
+      }
+
+      notifyListeners();
+
+      final apiService = ApiService(AppConstant.GET_EVENET_SOV_LIST_BY_SOV);
+
+      String url = "/$monitoringID?page=$page&pageSize=$pageSize";
+
+      if (searchQuery.isNotEmpty) {
+        url += '&search=$searchQuery';
+      }
+
+      final response = await apiService.get(url);
+
+      /// 🔥 DEBUG
+      debugPrint("RAW RESPONSE: $response");
+
+      /// ✅ PARSE RESPONSE
+      final SovListModel model = SovListModel.fromJson(response);
+
+      final List<SovItem> newList = model.events ?? [];
+
+      debugPrint("PARSED EVENTS COUNT: ${newList.length}");
+
+      /// ✅ SAFE AGGREGATION COUNTS PARSING
+      if (model.aggregationCounts != null) {
+        // Convert to int safely
+        totalEvent = _safeIntParse(model.aggregationCounts!.totalNoOfEvents);
+        totalImpactLocation = _safeIntParse(model.aggregationCounts!.totalImpactedLocations);
+
+        debugPrint("✅ Total Events: $totalEvent | Total Impact Locations: $totalImpactLocation");
+      } else {
+        debugPrint("⚠️ aggregationCounts is null - setting defaults");
+        totalEvent = 0;
+        totalImpactLocation = 0;
+      }
+
+      /// ✅ ASSIGN DATA
+      if (page == 1) {
+        monitoringSovList = newList;
+      } else {
+        final existingIds = monitoringSovList.map((e) => e.id).toSet();
+        final uniqueList =
+        newList.where((e) => !existingIds.contains(e.id)).toList();
+        monitoringSovList.addAll(uniqueList);
+      }
+
+      /// sync filtered list
+      monitoringFilterList = List.from(monitoringSovList);
+
+      /// pagination
+      if (newList.length < pageSize) {
+        totalPages = page;
+      } else {
+        totalPages = page + 1;
+      }
+
+      /// meta listener
+      for (var item in newList) {
+        if (item.id != null) {
+          listenToSovMeta(item.id!);
+        }
+      }
+
+      debugPrint(
+          "Page: $page | New: ${newList.length} | Total: ${monitoringSovList.length}");
+    } catch (e, stack) {
+      debugPrint('❌ fetchMonitoringSovList error: $e');
+      debugPrint('❌ Stack: $stack');
+    } finally {
+      isLoading = false;
+      isNextPageLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ HELPER METHOD - Safe int parsing
+  int _safeIntParse(dynamic value) {
+    if (value == null) return 0;
+
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+
+    return 0;
+  }
 
   Future<void> fetchvendorList(
     BuildContext context,
@@ -599,69 +709,131 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchCompanyCredits(
+    BuildContext context,
+    String companyId,
+  ) async {
+    // ✅ Prevent multiple calls
+    if (isCreditsLoading) return;
+
+    // ✅ Guard
+    if (companyId.isEmpty) {
+      debugPrint("❌ companyId is empty");
+      return;
+    }
+
+    try {
+      isCreditsLoading = true;
+      notifyListeners();
+
+      // ✅ API Service
+      final apiService = ApiService("${AppConstant.GET_COMPANY_ID}$companyId");
+
+      final response = await apiService.get("");
+
+      final data = jsonEncode(response);
+      companyCredits = data as Map<String, dynamic>?;
+
+      debugPrint(" Company Credits Loaded");
+    } catch (e, stackTrace) {
+      debugPrint("fetchCompanyCredits Error: $e");
+      debugPrint("$stackTrace");
+
+      if (context.mounted) {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text("Error loading credits")),
+        // );
+      }
+    } finally {
+      isCreditsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  bool hasMoreData = true; // ✅ ADD THIS
+
+  Future<void> fetchUserList(
+    BuildContext context,
+    String query,
+    int page,
+    int pageSize,
+    String? type,
+  ) async {
+    // ✅ Prevent extra calls
+    if (isLoading || isNextPageLoading || !hasMoreData) return;
+
+    try {
+      if (page == 1) {
+        isLoading = true;
+        hasMoreData = true; // reset
+        allUserList.clear();
+        filteredUserList.clear();
+      } else {
+        isNextPageLoading = true;
+      }
+
+      notifyListeners();
+
+      final apiService = ApiService(AppConstant.Fetch_USER_LIST);
+
+      final queryParams = {
+        "search": query,
+        "page": page.toString(),
+        "pageSize": pageSize.toString(),
+        if (selectedUserType != "All") "user_type": selectedUserType,
+        if (selectedRole != "All") "role": selectedRole,
+        if (selectedStatus != "All")
+          "is_verified": selectedStatus == "Verified" ? "true" : "false",
+      };
+
+      final queryString = Uri(queryParameters: queryParams).query;
+
+      final response = await apiService.get("?$queryString");
+
+      final UserListModel userListModel =
+          await compute(parseUserList, response);
+
+      final List<UserResult> results = userListModel.result ?? [];
+
+      if (results.isEmpty) {
+        hasMoreData = false;
+        return;
+      }
+
+      if (page == 1) {
+        allUserList = results;
+      } else {
+        allUserList.addAll(results);
+      }
+
+      userTypes = ["All", ...extractUserTypes(allUserList)];
+      roles = ["All", ...extractRoles(allUserList)];
+
+      applyFilters();
+
+      this.page = page;
+
+      debugPrint(' Loaded ${results.length} users | Page: $page');
+    } catch (e, stackTrace) {
+      debugPrint(' fetchUserList Error: $e');
+      debugPrint('$stackTrace');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading users')),
+        );
+      }
+    } finally {
+      isLoading = false;
+      isNextPageLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearVendorList() {
     allVendorList.clear();
     filteredAutoCompleteList1.clear();
   }
-
-  //
-  // Future<void> fetchvendorList(
-  //   BuildContext context,
-  //   String searchQuery,
-  //   int page,
-  //   int pageSize,
-  //   String? type,
-  // ) async {
-  //   try {
-  //     if (isLoading || isNextPageLoading) return;
-  //
-  //     if (page == 1) {
-  //       isLoading = true;
-  //       filterlist; // reset previous list
-  //       cardlist;
-  //       notifyListeners();
-  //       isLoading = true;
-  //     } else {
-  //       if (isNextPageLoading) return;
-  //       isNextPageLoading = true;
-  //       notifyListeners();
-  //     }
-  //
-  //     ApiService apiService = ApiService(
-  //         type.toString() !="corporate"
-  //             ? AppConstant.GET_CORPORATE_DASHBOARD
-  //             :
-  //         AppConstant.GET_VENDOR_HAZARD
-  //     );
-  //
-  //     String url = '';
-  //
-  //     if (searchQuery.isNotEmpty) {
-  //       url += searchQuery;
-  //     }
-  //
-  //     var response = await apiService.get(url);
-  //
-  //     SovListModel sovListModel = await compute(parseSovList, response);
-  //     // FIXED: correct key name (API returns "result")
-  //     filterlist = sovListModel.filters;
-  //     cardlist = sovListModel.cards;
-  //     filteredAutoCompleteList1= sovListModel.results ?? [];
-  //
-  //     // Keeping listeners
-  //     for (var item in sovList) {
-  //       if (item.sovId != null) {
-  //         listenToSovMeta(item.sovId!);
-  //       }
-  //     }
-  //   } catch (e, stack) {
-  //     print(e);
-  //     print(stack);
-  //   } finally {
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //   }
-  // }
 
   /// Rename sov
   Future<void> renameSov(BuildContext context, String accountId,
@@ -852,7 +1024,6 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetch autocomplete sov list
   Future<void> fetchAutoCompleteSovListLocations(
     BuildContext context,
     String accountId,
@@ -863,7 +1034,6 @@ class SOVListProvider extends ChangeNotifier {
     print("autosearch");
 
     try {
-      // ⭐ Show loader immediately
       isAutoCompleteLoading = true;
       notifyListeners();
 
@@ -910,7 +1080,7 @@ class SOVListProvider extends ChangeNotifier {
         );
       }
     } finally {
-      // ⭐ Hide loader
+
       isAutoCompleteLoading = false;
       notifyListeners();
     }
@@ -1071,16 +1241,7 @@ class SOVListProvider extends ChangeNotifier {
       _isExportLoading = true;
       notifyListeners();
 
-      print('Starting export data process...');
-      print('Account ID: $accountId');
-      print('SubAccount ID: $subAccountId');
-      print('SOV IDs: $sovIds');
-
-      // CORRECTED: Use the proper API endpoint
-      final URL =
-          "${AppConstant.EXPORT_SOV}";
-      // final URL =
-      //     'https://us-central1-project-green-prod.cloudfunctions.net/locations/export_sov';
+      final URL = "${AppConstant.EXPORT_SOV}";
       print('Request URL: $URL');
 
       final dio = Dio();
@@ -1172,10 +1333,7 @@ class SOVListProvider extends ChangeNotifier {
       );
     } catch (e) {
       if (e is DioException) {
-        print('Dio error!');
         print('STATUS: ${e.response?.statusCode}');
-        print('DATA: ${e.response?.data}');
-        print('HEADERS: ${e.response?.headers}');
       } else {
         print('Error: $e');
       }
@@ -1435,7 +1593,6 @@ class SOVListProvider extends ChangeNotifier {
         }).toList(),
       };
 
-
       var response = await apiService.post(payload);
       log("Share SOV Response: $response");
 
@@ -1450,20 +1607,19 @@ class SOVListProvider extends ChangeNotifier {
   }
 
   Future<bool> sendConnectionRequest(
-      BuildContext context, {
-        required String userId,
-        required String message,
-      }) async {
+    BuildContext context, {
+    required String userId,
+    required String message,
+  }) async {
     var typography = CustomTypography(context);
 
-    // 🔒 Prevent double click
     if (isConnectRequestLoading) return false;
 
     try {
       isConnectRequestLoading = true;
       notifyListeners();
 
-      print("🔥 API CALL STARTED FOR USER: $userId");
+      print(" API CALL STARTED FOR USER: $userId");
 
       ApiService apiService = ApiService(
         "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/user_management",
@@ -1491,8 +1647,8 @@ class SOVListProvider extends ChangeNotifier {
 
       return false;
     } catch (e, stack) {
-      debugPrint("❌ ERROR: $e");
-      debugPrint("❌ STACK: $stack");
+      debugPrint(" ERROR: $e");
+      debugPrint(" STACK: $stack");
 
       isConnectRequestLoading = false;
       notifyListeners();
@@ -1506,5 +1662,4 @@ class SOVListProvider extends ChangeNotifier {
       return false;
     }
   }
-
 }

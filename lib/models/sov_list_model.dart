@@ -1,6 +1,7 @@
 import 'my_location_list_model.dart';
 
 class SovListModel {
+  List<SovItem>? events;
   int? totalRecords;
   int? page;
   int? pageSize;
@@ -11,8 +12,10 @@ class SovListModel {
   Settings? settings;
   List<Role>? role;
   TotalCountHeader? totalCountHeader;
+  AggregationCounts? aggregationCounts;
 
   SovListModel({
+    this.events,
     this.totalRecords,
     this.page,
     this.pageSize,
@@ -23,30 +26,38 @@ class SovListModel {
     this.settings,
     this.role,
     this.totalCountHeader,
+    this.aggregationCounts,
   });
 
   SovListModel.fromJson(Map<String, dynamic> json) {
     totalRecords = json['totalRecords'] is int ? json['totalRecords'] : 0;
     page = json['page'] is int ? json['page'] : 1;
     pageSize = json['pageSize'] is int ? json['pageSize'] : 0;
+
     filters =
-        json['filters'] != null ? new Filters.fromJson(json['filters']) : null;
-    cards = json['cards'] != null ? new Cards.fromJson(json['cards']) : null;
+        json['filters'] != null ? Filters.fromJson(json['filters']) : null;
+    cards = json['cards'] != null ? Cards.fromJson(json['cards']) : null;
+
     // ✅ Safe 'result' parsing
     if (json['result'] is List) {
       result = (json['result'] as List)
-          .whereType<Map<String, dynamic>>() // ensures each item is a Map
+          .whereType<Map<String, dynamic>>()
           .map((v) => Result.fromJson(v))
           .toList();
     } else {
       result = [];
     }
-    if (json['results'] != null) {
+
+    // ✅ Safe 'results' parsing
+    if (json['results'] is List) {
       results = <Results>[];
-      json['results'].forEach((v) {
-        results!.add(new Results.fromJson(v));
+      (json['results'] as List).forEach((v) {
+        if (v is Map<String, dynamic>) {
+          results!.add(Results.fromJson(v));
+        }
       });
     }
+
     // ✅ Safe 'settings' parsing
     settings = (json['settings'] is Map<String, dynamic>)
         ? Settings.fromJson(json['settings'])
@@ -63,7 +74,6 @@ class SovListModel {
           }
         }
       } else if (roleData is Map<String, dynamic>) {
-        // Sometimes role is an object instead of a list
         roleData.forEach((k, v) {
           if (v is Map<String, dynamic>) {
             role!.add(Role.fromJson(v));
@@ -76,6 +86,23 @@ class SovListModel {
     totalCountHeader = (json['total_count_header'] is Map<String, dynamic>)
         ? TotalCountHeader.fromJson(json['total_count_header'])
         : null;
+
+    // ✅ Safe 'events' parsing (ADD THIS)
+    if (json['events'] is List) {
+      events = <SovItem>[];
+      (json['events'] as List).forEach((v) {
+        if (v is Map<String, dynamic>) {
+          events!.add(SovItem.fromJson(v));
+        }
+      });
+    } else {
+      events = [];
+    }
+
+    // ✅ Safe 'aggregation_counts' parsing (FIXED)
+    aggregationCounts = (json['aggregation_counts'] is Map<String, dynamic>)
+        ? AggregationCounts.fromJson(json['aggregation_counts'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -83,22 +110,141 @@ class SovListModel {
     data['totalRecords'] = totalRecords ?? 0;
     data['page'] = page ?? 1;
     data['pageSize'] = pageSize ?? 0;
-    if (this.filters != null) {
-      data['filters'] = this.filters!.toJson();
+
+    if (filters != null) {
+      data['filters'] = filters!.toJson();
     }
-    if (this.cards != null) {
-      data['cards'] = this.cards!.toJson();
+    if (cards != null) {
+      data['cards'] = cards!.toJson();
     }
+
     data['result'] = result?.map((v) => v.toJson()).toList() ?? [];
-    if (this.results != null) {
-      data['results'] = this.results!.map((v) => v.toJson()).toList();
+
+    if (results != null) {
+      data['results'] = results!.map((v) => v.toJson()).toList();
     }
-    if (settings != null) data['settings'] = settings!.toJson();
+
+    if (settings != null) {
+      data['settings'] = settings!.toJson();
+    }
+
     data['role'] = role?.map((v) => v.toJson()).toList() ?? [];
+
     if (totalCountHeader != null) {
       data['total_count_header'] = totalCountHeader!.toJson();
     }
 
+    // if (events != null) {
+    //   data['events'] = events!.map((v) => v.toJson()).toList();
+    // }
+
+    if (aggregationCounts != null) {
+      data['aggregation_counts'] = aggregationCounts!.toJson();
+    }
+
+    return data;
+  }
+}
+
+// ✅ AggregationCounts class (ADD THIS if it doesn't exist)
+class AggregationCounts {
+  dynamic totalNoOfEvents;
+  dynamic totalImpactedLocations;
+
+  AggregationCounts({
+    this.totalNoOfEvents,
+    this.totalImpactedLocations,
+  });
+
+  factory AggregationCounts.fromJson(Map<String, dynamic> json) {
+    return AggregationCounts(
+      // ✅ Use snake_case from API response
+      totalNoOfEvents: json['total_no_of_events'],
+      totalImpactedLocations: json['total_impacted_locations'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    data['total_no_of_events'] = totalNoOfEvents;
+    data['total_impacted_locations'] = totalImpactedLocations;
+    return data;
+  }
+}
+
+class SovItem {
+  String? id;
+  String? eventName;
+  String? hazardName;
+  String? vendorName;
+  String? status;
+  int? impactedLocCount;
+  LocationCoordinates? locationCoordinates;
+  CreatedAt? updatedAt;
+
+  SovItem({
+    this.id,
+    this.eventName,
+    this.hazardName,
+    this.vendorName,
+    this.status,
+    this.impactedLocCount,
+    this.locationCoordinates,
+    this.updatedAt,
+  });
+
+  factory SovItem.fromJson(Map<String, dynamic> json) {
+    return SovItem(
+      id: json['id'],
+      eventName: json['event_name'],
+      hazardName: json['hazard_name'],
+      vendorName: json['vendor_name'],
+      status: json['status'],
+      impactedLocCount: json['impacted_locations'],
+      locationCoordinates: json['location_coordinates'] != null
+          ? LocationCoordinates.fromJson(json['location_coordinates'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? CreatedAt.fromJson(json['updated_at'])
+          : null,
+    );
+  }
+}
+
+class CreatedAt {
+  int? iSeconds;
+  int? iNanoseconds;
+
+  CreatedAt({this.iSeconds, this.iNanoseconds});
+
+  CreatedAt.fromJson(Map<String, dynamic> json) {
+    iSeconds = json['_seconds'];
+    iNanoseconds = json['_nanoseconds'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_seconds'] = this.iSeconds;
+    data['_nanoseconds'] = this.iNanoseconds;
+    return data;
+  }
+}
+
+class LocationCoordinates {
+  double? longitude;
+  double? latitude;
+
+  LocationCoordinates({this.longitude, this.latitude});
+
+  LocationCoordinates.fromJson(Map<String, dynamic> json) {
+    longitude = json['longitude'];
+    latitude = json['latitude'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['longitude'] = this.longitude;
+    data['latitude'] = this.latitude;
     return data;
   }
 }
@@ -118,7 +264,7 @@ class Results {
   Users? users;
   String? userId;
   String? userName;
-  String? userRole;
+  UserRole? userRole;
   String? date;
   String? vendorName;
   int? apisUsed;
@@ -167,7 +313,11 @@ class Results {
     users = json['users'] != null ? new Users.fromJson(json['users']) : null;
     userId = json['user_id'];
     userName = json['user_name'];
-    userRole = json['user_role'];
+  if (json['user_role'] is Map<String, dynamic>) {
+    userRole = UserRole.fromJson(json['user_role']);
+  } else {
+    userRole = null;
+  }
     date = json['date'];
     vendorName = json['vendor_name'];
     apisUsed = json['apis_used'];
@@ -200,7 +350,9 @@ class Results {
     }
     data['user_id'] = this.userId;
     data['user_name'] = this.userName;
-    data['user_role'] = this.userRole;
+    if (this.userRole != null) {
+      data['user_role'] = this.userRole!.toJson();
+    }
     data['date'] = this.date;
     data['vendor_name'] = this.vendorName;
     data['apis_used'] = this.apisUsed;
@@ -449,6 +601,61 @@ class Filters {
   }
 }
 
+class UserResult {
+  final String? userId;
+  final String? name;
+  final String? email;
+  final String? userType;
+  final List<String>? roles;
+  final String? creditsIdentifier;
+  final String? companyId;
+  final String? companyName;
+  final bool? isCompanySuperadmin;
+  final dynamic status;
+  final bool? isExternal;
+  final bool? isVerified;
+  final DateTime? lastLogin;
+  final int? membersOfCorporate;
+
+  UserResult({
+    this.userId,
+    this.name,
+    this.email,
+    this.userType,
+    this.roles,
+    this.creditsIdentifier,
+    this.companyId,
+    this.companyName,
+    this.isCompanySuperadmin,
+    this.status,
+    this.isExternal,
+    this.isVerified,
+    this.lastLogin,
+    this.membersOfCorporate,
+  });
+
+  factory UserResult.fromJson(Map<String, dynamic> json) {
+    return UserResult(
+      userId: json['user_id'],
+      name: json['name'],
+      email: json['email'],
+      userType: json['user_type'],
+      roles: (json['roles'] as List?)?.map((e) => e.toString()).toList(),
+      creditsIdentifier: json['credits_identifier'],
+      companyId: json['company_id'],
+      companyName: json['company_name'],
+      isCompanySuperadmin: json['is_company_superadmin'],
+      status: json['status'],
+      isExternal: json['is_external'],
+      isVerified: json['is_verified'],
+      lastLogin: json['last_login'] != null
+          ? DateTime.parse(json['last_login'])
+          : null,
+      membersOfCorporate: json['members_of_corporate'],
+    );
+  }
+}
+
 class Result {
   String? companyId;
   String? companyName;
@@ -482,7 +689,7 @@ class Result {
   SharingStatus? sharingStatus;
   int? locationCount;
   dynamic role;
-  String? status;
+  dynamic? status;
   int? geocodeAvg;
   int? overallAvg;
   SovGraphData? sovGraphData;
@@ -907,25 +1114,6 @@ class Owner {
   }
 }
 
-class CreatedAt {
-  int? iSeconds;
-  int? iNanoseconds;
-
-  CreatedAt({this.iSeconds, this.iNanoseconds});
-
-  CreatedAt.fromJson(Map<String, dynamic> json) {
-    iSeconds = json['_seconds'];
-    iNanoseconds = json['_nanoseconds'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_seconds'] = this.iSeconds;
-    data['_nanoseconds'] = this.iNanoseconds;
-    return data;
-  }
-}
-
 class SharingStatus {
   String? email;
   String? userId;
@@ -1180,5 +1368,87 @@ class TotalCountHeader {
     data['all'] = this.all;
     data['completed'] = this.completed;
     return data;
+  }
+}
+
+class UserListModel {
+  final int? totalRecords;
+  final int? page;
+  final int? pageSize;
+  final List<UserResult>? result;
+
+  UserListModel({
+    this.totalRecords,
+    this.page,
+    this.pageSize,
+    this.result,
+  });
+
+  factory UserListModel.fromJson(Map<String, dynamic> json) {
+    return UserListModel(
+      totalRecords: json['totalRecords'],
+      page: json['page'],
+      pageSize: json['pageSize'],
+      result: (json['result'] as List?)
+          ?.map((e) => UserResult.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class CreditItem {
+  final int total;
+  final int used;
+  final int remaining;
+
+  CreditItem({
+    required this.total,
+    required this.used,
+    required this.remaining,
+  });
+
+  factory CreditItem.fromJson(Map<String, dynamic> json) {
+    return CreditItem(
+      total: json['total'] ?? 0,
+      used: json['used'] ?? 0,
+      remaining: json['remaining'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "total": total,
+      "used": used,
+      "remaining": remaining,
+    };
+  }
+}
+
+class CompanyCreditsModel {
+  final CreditItem locationCredits;
+  final CreditItem improvementCredits;
+  final CreditItem userCredits;
+
+  CompanyCreditsModel({
+    required this.locationCredits,
+    required this.improvementCredits,
+    required this.userCredits,
+  });
+
+  factory CompanyCreditsModel.fromJson(Map<String, dynamic> json) {
+    return CompanyCreditsModel(
+      locationCredits: CreditItem.fromJson(json['location_credits'] ?? {}),
+      improvementCredits:
+          CreditItem.fromJson(json['improvement_credits'] ?? {}),
+      userCredits: CreditItem.fromJson(json['user_credits'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "location_credits": locationCredits.toJson(),
+      "improvement_credits": improvementCredits.toJson(),
+      "user_credits": userCredits.toJson(),
+    };
   }
 }

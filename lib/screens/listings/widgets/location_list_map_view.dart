@@ -46,7 +46,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
   String? _selectedReducer;
   int _selectedTabIndex = 0;
   bool _isLoading = false; // used as overlay loader for async work
-  ScrollController _scrollController = ScrollController();
   TabController? _tabController;
 
   // Hazard state
@@ -684,23 +683,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     });
   }
 
-  // ------------ SCROLL HELPERS ------------
-  void _scrollLeft() {
-    _scrollController.animateTo(
-      _scrollController.offset - 100,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _scrollRight() {
-    _scrollController.animateTo(
-      _scrollController.offset + 100,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
   // Map style (kept your style)
   // final String _mapStyle = '''[ ... your long style json ... ]''';
 
@@ -852,7 +834,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           children: [
             SizedBox(height: 8),
 
-            // TabBar container
+            // Geocoding + Hazard Score tabs in a single row
             Container(
               margin: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -860,34 +842,22 @@ class _LocationListMapViewState extends State<LocationListMapView>
                 color: Theme.of(context).colorScheme.surfaceContainerHigh,
               ),
               height: 50,
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.arrow_left, color: Colors.grey),
-                    onPressed: _scrollLeft,
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: false,
+                tabAlignment: TabAlignment.fill,
+                dividerColor: Colors.transparent,
+                labelStyle: typography.Subtitle2,
+                indicatorColor: Colors.lightBlueAccent,
+                labelColor: Colors.lightBlueAccent,
+                unselectedLabelColor: Colors.grey,
+                tabs: [
+                  Tab(
+                    text: LanguageService.getTranslated(context, "geocoding"),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      child: TabBar(
-                        controller: _tabController,
-                        tabAlignment: TabAlignment.start,
-                        labelStyle: typography.Subtitle2,
-                        isScrollable: true,
-                        indicatorColor: Colors.lightBlueAccent,
-                        labelColor: Colors.lightBlueAccent,
-                        unselectedLabelColor: Colors.grey,
-                        tabs: [
-                          Tab(text: LanguageService.getTranslated(
-                              context,
-                              "geocoding"),),
-                          Tab(text: LanguageService.getTranslated(
-                              context,
-                              "hazard_score"),),
-                        ],
-                      ),
-                    ),
+                  Tab(
+                    text: LanguageService.getTranslated(
+                        context, "hazard_score"),
                   ),
                 ],
               ),
@@ -1842,7 +1812,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
   @override
   void dispose() {
     _tabController?.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 }

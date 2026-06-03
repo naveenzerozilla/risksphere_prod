@@ -88,56 +88,6 @@ class RolesBottomSheet1State extends State<RolesBottomSheet1> {
     });
   }
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //
-  //   final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-  //
-  //   if (widget.isUserProfile) {
-  //     // For user profile case (if roles are already loaded)
-  //     filteredOptionsIndividual = [];
-  //     filteredOptionsCorporate = [];
-  //   } else {
-  //     // 🔹 INDIVIDUAL ROLES
-  //     final allIndividual = (authNotifier.companyTypeList ?? [])
-  //         .where((companyType) => companyType.isApplicableForTrial == true)
-  //         .expand((companyType) {
-  //       log("Processing companyType: ${companyType.type}, Roles Count: ${companyType.roles?.length ?? 0}");
-  //       return (companyType.roles ?? []).map((role) => role.toJson());
-  //     }).toList();
-  //
-  //     // ✅ Deduplicate based on 'id' or fallback 'name'
-  //     final Map<dynamic, Map<String, dynamic>> uniqueIndividual = {};
-  //     for (var item in allIndividual) {
-  //       final key = item['id'] ?? item['name'];
-  //       uniqueIndividual[key] = item;
-  //     }
-  //     filteredOptionsIndividual = uniqueIndividual.values.toList();
-  //
-  //     log("✅ Unique Individual Roles Count: ${filteredOptionsIndividual.length}");
-  //     log("✅ Individual Roles: ${filteredOptionsIndividual.map((e) => e['name']).toList()}");
-  //
-  //     // 🔹 CORPORATE ROLES
-  //     final allCorporate = (authNotifier.roleList ?? [])
-  //         .where((role) => role.accountType == 'corporate')
-  //         .expand((role) => (role.categories ?? []).map((cat) => cat.toJson()))
-  //         .toList();
-  //
-  //     // ✅ Deduplicate corporate roles
-  //     final Map<dynamic, Map<String, dynamic>> uniqueCorporate = {};
-  //     for (var item in allCorporate) {
-  //       final key = item['id'] ?? item['name'];
-  //       uniqueCorporate[key] = item;
-  //     }
-  //     filteredOptionsCorporate = uniqueCorporate.values.toList();
-  //
-  //     log("✅ Unique Corporate Roles Count: ${filteredOptionsCorporate.length}");
-  //     log("✅ Corporate Roles: ${filteredOptionsCorporate.map((e) => e['name']).toList()}");
-  //   }
-  //
-  //   _updateSelectedOptions();
-  // }
   void _updateSelectedOptions() {
     final selectedOptionsList =
     widget.selectedOption == SignUpOptions.individual

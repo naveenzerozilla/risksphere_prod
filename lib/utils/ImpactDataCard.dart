@@ -53,6 +53,9 @@ class ImpactDataCard extends StatefulWidget {
 class _ImpactDataCardState extends State<ImpactDataCard> {
   String? expandedElementName;
 
+  /// 0 = collapsed, 1 = HazardHub sync only, 2 = sync + manual value fields
+  final Map<String, int> _hazardHubExpandLevel = {};
+
   @override
   void didUpdateWidget(covariant ImpactDataCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -65,7 +68,22 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
       }
 
       setState(() {
-        expandedElementName = widget.expandElementName!;
+        // expandedElementName = widget.expandElementName!;
+        final match = widget.dataElements
+            .where((e) => e.name == widget.expandElementName)
+            .toList();
+        if (match.isNotEmpty) {
+          final r = match.first.result;
+          final hasTag = r.tags?.contains("hazard_hub") ?? false;
+          final hasItems = r.linkVendor?.hazardHub?.items?.isNotEmpty ?? false;
+          if (hasTag && hasItems) {
+            _hazardHubExpandLevel[widget.expandElementName!] = 1;
+            // expandedElementName = widget.expandElementName!;
+          }
+          // if (hasTag && hasItems) {
+          //   _hazardHubExpandLevel[widget.expandElementName!] = 1;
+          // }
+        }
       });
 
       // now call scroll after layout
@@ -105,7 +123,34 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
           ...widget.dataElements.asMap().entries.map((entry) {
             int index = entry.key;
             ImpactDataElement element = entry.value;
-            final isExpanded = expandedElementName == element.name;
+            final hasHazardHubTag =
+                element.result.tags?.contains("hazard_hub") ?? false;
+            final hasHazardHubItems =
+                element.result.linkVendor?.hazardHub?.items?.isNotEmpty ??
+                    false;
+            // Two-step expand when synced from HazardHub (tag present).
+            final hazardHubExpandFlow = hasHazardHubItems;
+            final expandLevel = _hazardHubExpandLevel[element.name] ?? 1;
+            final isExpanded = hazardHubExpandFlow
+                ? expandLevel == 2
+                : expandedElementName == element.name;
+            // final isExpanded = hazardHubExpandFlow
+            //     ? true
+            //     : expandedElementName == element.name;
+
+            final showManualValueFields =
+                hazardHubExpandFlow && expandLevel == 2;
+            // final isExpanded = hazardHubExpandFlow
+            //     ? expandLevel >= 1
+            //     : expandedElementName == element.name;
+            //
+            // final showManualValueFields =
+            //     hazardHubExpandFlow && expandLevel == 2;
+            // final isExpanded = hazardHubExpandFlow
+            //     ? expandLevel > 0
+            //     : expandedElementName == element.name;
+            // final showManualValueFields =
+            //     hazardHubExpandFlow && expandLevel >= 2;
             final references = element.parameterValue?.reference;
             final rawValue = element.parameterValue?.value;
 
@@ -127,8 +172,23 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                       GestureDetector(
                         onTap: () {
                           setState(() {
-                            expandedElementName =
-                                isExpanded ? null : element.name;
+                            if (hazardHubExpandFlow) {
+                              final level =
+                                  _hazardHubExpandLevel[element.name] ?? 1;
+
+                              if (level == 1) {
+                                // Show value fields
+                                _hazardHubExpandLevel[element.name] = 2;
+                              } else {
+                                // Hide value fields
+                                _hazardHubExpandLevel[element.name] = 1;
+                              }
+                            } else {
+                              expandedElementName =
+                                  isExpanded ? null : element.name;
+
+                              _hazardHubExpandLevel.remove(element.name);
+                            }
                           });
 
                           if (!isExpanded && widget.onExpanded != null) {
@@ -137,6 +197,65 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             });
                           }
                         },
+                        // onTap: () {
+                        //   setState(() {
+                        //     if (hazardHubExpandFlow) {
+                        //       // Default state = sync card visible
+                        //       final level =
+                        //           _hazardHubExpandLevel[element.name] ?? 1;
+                        //
+                        //       if (level == 1) {
+                        //         // Show value fields
+                        //         _hazardHubExpandLevel[element.name] = 2;
+                        //         expandedElementName = element.name;
+                        //       } else {
+                        //         // Back to sync-only card
+                        //         _hazardHubExpandLevel[element.name] = 1;
+                        //         expandedElementName = element.name;
+                        //       }
+                        //     } else {
+                        //       // Normal expand/collapse
+                        //       expandedElementName =
+                        //           isExpanded ? null : element.name;
+                        //
+                        //       _hazardHubExpandLevel.remove(element.name);
+                        //     }
+                        //   });
+                        //
+                        //   if (!isExpanded && widget.onExpanded != null) {
+                        //     WidgetsBinding.instance.addPostFrameCallback((_) {
+                        //       widget.onExpanded!();
+                        //     });
+                        //   }
+                        // },
+                        // onTap: () {
+                        //   setState(() {
+                        //     if (hazardHubExpandFlow) {
+                        //       final level =
+                        //           _hazardHubExpandLevel[element.name] ?? 0;
+                        //       if (level == 0) {
+                        //         _hazardHubExpandLevel[element.name] = 1;
+                        //         expandedElementName = element.name;
+                        //       } else if (level == 1) {
+                        //         _hazardHubExpandLevel[element.name] = 2;
+                        //       } else {
+                        //         _hazardHubExpandLevel[element.name] = 0;
+                        //         expandedElementName = null;
+                        //       }
+                        //     } else {
+                        //       expandedElementName =
+                        //           isExpanded ? null : element.name;
+                        //       _hazardHubExpandLevel.remove(element.name);
+                        //     }
+                        //   });
+                        //
+                        //   if (!isExpanded && widget.onExpanded != null) {
+                        //     WidgetsBinding.instance.addPostFrameCallback((_) {
+                        //       widget.onExpanded!();
+                        //     });
+                        //   }
+                        // },
+
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 5, vertical: 3),
@@ -162,22 +281,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                   ),
                                 ),
                               ),
-                              //                   Expanded(
-                              //                     child: Text(
-                              // element.parameterValue.value.toString(),
-                              //                       // element.name,
-                              //                       style: TextStyle(
-                              //                         color: !isNullOrEmpty(
-                              //                                 element.parameterValue.value)
-                              //                             ? Color(
-                              //                                 0xFF66BB6A) // GREEN when value exists
-                              //                             : Colors.red,
-                              //                         // Default color when value is null/empty
-                              //                         fontSize: 16,
-                              //                         fontWeight: FontWeight.w500,
-                              //                       ),
-                              //                     ),
-                              //                   ),
 
                               (isParameterEmpty(element.parameterValue?.value))
                                   ? Row(
@@ -193,7 +296,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                         ?.reference ??
                                                     [];
 
-                                                // 🔥 Count all valid URLs safely
                                                 final int fileCount = references
                                                     .expand(
                                                         (ref) => ref.url ?? [])
@@ -226,8 +328,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                     fillColor:
                                                         const Color(0xFF2B0000),
                                                     isDense: true,
-
-                                                    // ✅ Show icon + count only if files exist
                                                     prefixIcon: hasFiles
                                                         ? Padding(
                                                             padding:
@@ -263,7 +363,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                             ),
                                                           )
                                                         : null,
-
                                                     enabledBorder:
                                                         OutlineInputBorder(
                                                       borderRadius:
@@ -276,7 +375,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                         width: 0.6,
                                                       ),
                                                     ),
-
                                                     focusedBorder:
                                                         OutlineInputBorder(
                                                       borderRadius:
@@ -299,199 +397,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                               },
                                             ),
                                           ),
-                                          // ConstrainedBox(
-                                          //   constraints: BoxConstraints(
-                                          //       maxWidth: 100, maxHeight: 40),
-                                          //   child: TextFormField(
-                                          //     textAlign: TextAlign.center,
-                                          //     initialValue:
-                                          //         element
-                                          //                         .parameterValue
-                                          //                         .reference !=
-                                          //                     null &&
-                                          //                 element
-                                          //                     .parameterValue!
-                                          //                     .reference!
-                                          //                     .isNotEmpty &&
-                                          //                 element
-                                          //                         .parameterValue!
-                                          //                         .reference!
-                                          //                         .first
-                                          //                         .url !=
-                                          //                     null &&
-                                          //                 element
-                                          //                     .parameterValue!
-                                          //                     .reference!
-                                          //                     .first
-                                          //                     .url!
-                                          //                     .any((u) =>
-                                          //                         u != null &&
-                                          //                         u
-                                          //                             .toString()
-                                          //                             .trim()
-                                          //                             .isNotEmpty)
-                                          //             ? ""
-                                          //             :fileCount >0 ?"": "---",
-                                          //     readOnly: true,
-                                          //     onTap: () {
-                                          //       setState(() {
-                                          //         expandedElementName =
-                                          //             isExpanded
-                                          //                 ? null
-                                          //                 : element.name;
-                                          //       });
-                                          //     },
-                                          //     // since screenshot looks non-editable; remove if needed
-                                          //     decoration: InputDecoration(
-                                          //       filled: true,
-                                          //       fillColor:
-                                          //           const Color(0xFF2B0000),
-                                          //       // darker red background like screenshot
-                                          //       isDense: true,
-                                          //
-                                          //       // contentPadding:
-                                          //       //     const EdgeInsets.symmetric(
-                                          //       //         vertical: 10,
-                                          //       //         horizontal: 12),
-                                          //       prefixIcon: Builder(
-                                          //         builder: (context) {
-                                          //           final references = element
-                                          //               .parameterValue
-                                          //               ?.reference;
-                                          //
-                                          //           if (references != null &&
-                                          //               references.isNotEmpty) {
-                                          //             // 🔥 Count ALL valid urls across all reference blocks
-                                          //             final int fileCount =
-                                          //                 references
-                                          //                     .expand((ref) =>
-                                          //                         ref.url ?? [])
-                                          //                     .where((u) =>
-                                          //                         u != null &&
-                                          //                         u
-                                          //                             .toString()
-                                          //                             .trim()
-                                          //                             .isNotEmpty)
-                                          //                     .length;
-                                          //
-                                          //             if (fileCount > 0) {
-                                          //               return Padding(
-                                          //                 padding:
-                                          //                     const EdgeInsets
-                                          //                         .symmetric(
-                                          //                         horizontal:
-                                          //                             4),
-                                          //                 child: Row(
-                                          //                   mainAxisSize:
-                                          //                       MainAxisSize
-                                          //                           .min,
-                                          //                   children: [
-                                          //                     const Icon(
-                                          //                       Icons
-                                          //                           .description,
-                                          //                       size: 18,
-                                          //                       color: Color(
-                                          //                           0xFFFF6666),
-                                          //                     ),
-                                          //                     const SizedBox(
-                                          //                         width: 4),
-                                          //                     Text(
-                                          //                       "($fileCount)",
-                                          //                       // 👈 Shows (5)
-                                          //                       style:
-                                          //                           const TextStyle(
-                                          //                         fontSize: 13,
-                                          //                         color: Color(
-                                          //                             0xFFFF6666),
-                                          //                       ),
-                                          //                     ),
-                                          //                   ],
-                                          //                 ),
-                                          //               );
-                                          //             }
-                                          //           }
-                                          //
-                                          //           return const SizedBox();
-                                          //         },
-                                          //       ),
-                                          //       // prefixIcon:
-                                          //       //     element.parameterValue
-                                          //       //                     .reference !=
-                                          //       //                 null &&
-                                          //       //             element
-                                          //       //                 .parameterValue!
-                                          //       //                 .reference!
-                                          //       //                 .isNotEmpty &&
-                                          //       //             element
-                                          //       //                     .parameterValue!
-                                          //       //                     .reference!
-                                          //       //                     .first
-                                          //       //                     .url !=
-                                          //       //                 null &&
-                                          //       //             element
-                                          //       //                 .parameterValue!
-                                          //       //                 .reference!
-                                          //       //                 .first
-                                          //       //                 .url!
-                                          //       //                 .any((u) =>
-                                          //       //                     u != null &&
-                                          //       //                     u
-                                          //       //                         .toString()
-                                          //       //                         .trim()
-                                          //       //                         .isNotEmpty)
-                                          //       //         ? Padding(
-                                          //       //             padding:
-                                          //       //                 const EdgeInsets
-                                          //       //                     .only(
-                                          //       //                     left: 2,
-                                          //       //                     right: 2),
-                                          //       //             child: Icon(
-                                          //       //               Icons.description,
-                                          //       //               size: 18,
-                                          //       //               color: Color(
-                                          //       //                   0xFFFF6666),
-                                          //       //             ),
-                                          //       //           )
-                                          //       //         : Container(
-                                          //       //             padding:
-                                          //       //                 const EdgeInsets
-                                          //       //                     .only(
-                                          //       //                     left: 0,
-                                          //       //                     right: 0),
-                                          //       //             child: Text(""),
-                                          //       //           ),
-                                          //       enabledBorder:
-                                          //           OutlineInputBorder(
-                                          //         borderRadius:
-                                          //             BorderRadius.circular(8),
-                                          //         borderSide: const BorderSide(
-                                          //             color: Color(0xFFB00000),
-                                          //             width: 0.6),
-                                          //       ),
-                                          //
-                                          //       // Border (focused)
-                                          //       focusedBorder:
-                                          //           OutlineInputBorder(
-                                          //         borderRadius:
-                                          //             BorderRadius.circular(10),
-                                          //         borderSide: const BorderSide(
-                                          //             color: Color(0xFFFF3333),
-                                          //             width: 0.6),
-                                          //       ),
-                                          //
-                                          //       // No label / clean field
-                                          //       hintText: null,
-                                          //     ),
-                                          //
-                                          //     style: const TextStyle(
-                                          //       fontSize: 13,
-                                          //       color: Color(0xFFFF9999),
-                                          //       // faint red text, similar to screenshot
-                                          //       letterSpacing:
-                                          //           1.0, // gives that spaced “---” effect
-                                          //     ),
-                                          //   ),
-                                          // ),
                                         ],
                                         PopupMenuButton<String>(
                                           icon: Icon(
@@ -672,34 +577,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                         ),
                                                       );
                                                     }
-                                                    // final rawValue = element
-                                                    //     .parameterValue?.value;
-                                                    // final displayValue =
-                                                    //     _extractCleanValue(
-                                                    //         rawValue);
-                                                    //
-                                                    // // 🔥 PRIORITY 1: Show VALUE if exists
-                                                    // if (displayValue != null &&
-                                                    //     displayValue
-                                                    //         .toString()
-                                                    //         .trim()
-                                                    //         .isNotEmpty) {
-                                                    //   return Container(
-                                                    //     padding:
-                                                    //         const EdgeInsets
-                                                    //             .all(6),
-                                                    //     alignment: Alignment
-                                                    //         .centerLeft,
-                                                    //     child: Text(
-                                                    //       displayValue.toString(),
-                                                    //       maxLines: 1,
-                                                    //       overflow: TextOverflow
-                                                    //           .ellipsis,
-                                                    //     ),
-                                                    //   );
-                                                    // }
-
-                                                    // 🔥 PRIORITY 2: Show FILE COUNT with brackets like (5)
                                                     final references = element
                                                         .parameterValue
                                                         ?.reference;
@@ -759,94 +636,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                                                     return const SizedBox();
                                                   },
                                                 ),
-                                                // prefixIcon: Builder(
-                                                //   builder: (context) {
-                                                //     final rawValue = element.parameterValue?.value;
-                                                //
-                                                //     final displayValue = _extractCleanValue(rawValue);
-                                                //
-                                                //     // ✅ If value exists and not empty → show value
-                                                //     if (displayValue != null &&
-                                                //         displayValue.toString().trim().isNotEmpty) {
-                                                //       return Container(
-                                                //         padding: const EdgeInsets.all(6),
-                                                //         alignment: Alignment.centerLeft,
-                                                //         child: Text(
-                                                //           displayValue,
-                                                //           maxLines: 1,
-                                                //           overflow: TextOverflow.ellipsis,
-                                                //         ),
-                                                //       );
-                                                //     }
-                                                //
-                                                //     // ❌ Only show document icon if value is empty
-                                                //     final hasDocument =
-                                                //         element.parameterValue?.reference != null &&
-                                                //             element.parameterValue!.reference!.isNotEmpty &&
-                                                //             element.parameterValue!.reference!.first.url != null &&
-                                                //             element.parameterValue!.reference!.first.url!
-                                                //                 .any((u) => u != null && u.toString().trim().isNotEmpty);
-                                                //
-                                                //     if (hasDocument) {
-                                                //       return const Icon(
-                                                //         Icons.description,
-                                                //         size: 20,
-                                                //         color: Colors.grey,
-                                                //       );
-                                                //     }
-                                                //
-                                                //     return const SizedBox();
-                                                //   },
-                                                // ),
-                                                // prefixIcon: (element
-                                                //                 .parameterValue?.reference !=
-                                                //             null &&
-                                                //         element
-                                                //             .parameterValue!
-                                                //             .reference!
-                                                //             .isNotEmpty &&
-                                                //         element
-                                                //                 .parameterValue!
-                                                //                 .reference!
-                                                //                 .first
-                                                //                 .url !=
-                                                //             null &&
-                                                //         element
-                                                //             .parameterValue!
-                                                //             .reference!
-                                                //             .first
-                                                //             .url!
-                                                //             .any((u) =>
-                                                //                 u != null &&
-                                                //                 u
-                                                //                     .toString()
-                                                //                     .trim()
-                                                //                     .isNotEmpty))
-                                                //     ? Icon(
-                                                //         Icons.description,
-                                                //         size: 20,
-                                                //         color: Colors.grey,
-                                                //       )
-                                                //     : Container(
-                                                //         padding:
-                                                //             EdgeInsets.all(6),
-                                                //         child: Text(
-                                                //           element.parameterValue
-                                                //                       .paramType
-                                                //                       .toString()
-                                                //                       .toUpperCase() ==
-                                                //                   "JSON"
-                                                //               ? "JSON"
-                                                //               : _extractCleanValue(
-                                                //                   element
-                                                //                       .parameterValue
-                                                //                       ?.value),
-                                                //           maxLines: 1,
-                                                //           overflow:
-                                                //               TextOverflow
-                                                //                   .ellipsis,
-                                                //         ),
-                                                //       )
                                               ),
                                               style: TextStyle(fontSize: 14),
                                             ),
@@ -907,7 +696,9 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                           ),
                         ),
                       ),
-                      if (isExpanded)
+                      // Text(element.result.linkVendor!.hazardHub!.items!.keys!.toString()),
+                      // if (isExpanded)
+                      if (isExpanded || hazardHubExpandFlow)
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           child: ImageUploadCard(
@@ -921,12 +712,20 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             result: element.result,
                             parametertype: element.parameterType,
                             parameterValue: element.parameterValue?.value,
+                            linkVendor: element.result.linkVendor,
                             onImagesUpdated: (images) {
                               print("Uploaded Images Count: ${images.length}");
                             },
                             selectedParameterList:
                                 widget.selectedParameterList!,
                             onRefresh: widget.onRefresh,
+                            showManualValueFields: showManualValueFields,
+                            // showManualValueFields: (element.result.linkVendor
+                            //                 ?.hazardHub?.items?.length ??
+                            //             0) ==
+                            //         1
+                            //     ? true
+                            //     : showManualValueFields,
                           ),
                         ),
                     ],

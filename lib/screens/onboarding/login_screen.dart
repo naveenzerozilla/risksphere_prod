@@ -260,22 +260,10 @@ class _LoginScreenState extends State<LoginScreen> {
               },
             ),
 
-            // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
-            //   return SocialMediaButton(
-            //     onPressed: () async {
-            //       // Add your onPressed function here
-            //       await authNotifier.signInWithGoogle(context: context);
-            //
-            //     },
-            //     buttonText: LanguageService.getTranslated(
-            //         context, "login_googlebutton"),
-            //     iconPath: 'assets/images/googleLogo.svg',
-            //   );
-            // }),
 
             SizedBox(height: CustomSpacing.three),
 
-            if (Platform.isAndroid)
+            // if (Platform.isAndroid)
               Consumer<AuthNotifier>(
                 builder: (context, authNotifier, child) {
                   return SocialMediaButton(
@@ -548,56 +536,106 @@ class _LoginScreenState extends State<LoginScreen> {
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 8),
                               ),
-                              onPressed: () async {
-                                saveLoginData();
-                                if (rememberMe) {
-                                  await StorageService.saveLogin(
-                                      emailController.text,
-                                      passwordController.text);
-                                } else {
-                                  await StorageService.clearLogin();
-                                }
-                                if (_formKey.currentState!.validate()) {
-                                  final String email =
-                                      emailController.text.trim();
-                                  final String password =
-                                      passwordController.text.trim();
 
-                                  /* if(isCaptchaVerified == false) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Please verify that you are not a robot.'),
-                                      ),
-                                    );
-                                    return;
-                                  }*/
-                                  await authNotifier.signInWithEmailAndPassword(
-                                      email, password, context);
+                        onPressed: () async {
+                          saveLoginData();
+                          if (rememberMe) {
+                            await StorageService.saveLogin(
+                                emailController.text,
+                                passwordController.text);
+                          } else {
+                            await StorageService.clearLogin();
+                          }
 
-                                  final user = authNotifier.user;
-                                  if (user != null) {
-                                    // ✅ Don't await - let FCM init run in background
-                                    initFCM(user.uid).catchError((e) {
-                                      debugPrint('FCM init error: $e');
-                                    });
+                          if (_formKey.currentState!.validate()) {
+                            final String email = emailController.text.trim();
+                            final String password = passwordController.text.trim();
 
-                                    TextInput.finishAutofillContext();
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              DashboardScreen()),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              'Login failed. Please try again.')),
-                                    );
-                                  }
-                                }
-                              },
+                            // 🔥 Call sign in
+                            await authNotifier.signInWithEmailAndPassword(
+                                email, password, context);
+
+                            // 🔥 ONLY NAVIGATE IF SIGN-IN WAS SUCCESSFUL AND USER IS NOT NULL
+                            final user = authNotifier.user;
+                            if (user != null) {
+                              // ✅ Check if email is verified before proceeding
+                              await user.reload();
+                              final isVerified = user.emailVerified;
+
+                              if (isVerified) {
+                                initFCM(user.uid).catchError((e) {
+                                  debugPrint('FCM init error: $e');
+                                });
+
+                                TextInput.finishAutofillContext();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => DashboardScreen()),
+                                );
+                              }
+                              // 🔥 If email is not verified, the authNotifier already handled
+                              // showing the error message and signing out the user
+                              // so we don't navigate
+                            } else {
+                              // ✅ Sign-in failed - show error
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'Login failed. Please check your email and password.')),
+                              );
+                            }
+                          }
+                        },
+                              // onPressed: () async {
+                              //   saveLoginData();
+                              //   if (rememberMe) {
+                              //     await StorageService.saveLogin(
+                              //         emailController.text,
+                              //         passwordController.text);
+                              //   } else {
+                              //     await StorageService.clearLogin();
+                              //   }
+                              //   if (_formKey.currentState!.validate()) {
+                              //     final String email =
+                              //         emailController.text.trim();
+                              //     final String password =
+                              //         passwordController.text.trim();
+                              //
+                              //     /* if(isCaptchaVerified == false) {
+                              //       ScaffoldMessenger.of(context).showSnackBar(
+                              //         SnackBar(
+                              //           content: Text(
+                              //               'Please verify that you are not a robot.'),
+                              //         ),
+                              //       );
+                              //       return;
+                              //     }*/
+                              //     await authNotifier.signInWithEmailAndPassword(
+                              //         email, password, context);
+                              //
+                              //     final user = authNotifier.user;
+                              //     if (user != null) {
+                              //       initFCM(user.uid).catchError((e) {
+                              //         debugPrint('FCM init error: $e');
+                              //       });
+                              //
+                              //       TextInput.finishAutofillContext();
+                              //       Navigator.pushReplacement(
+                              //         context,
+                              //         MaterialPageRoute(
+                              //             builder: (context) =>
+                              //                 DashboardScreen()),
+                              //       );
+                              //     } else {
+                              //       ScaffoldMessenger.of(context).showSnackBar(
+                              //         SnackBar(
+                              //             content: Text(
+                              //                 'Login failed. Please try again.')),
+                              //       );
+                              //     }
+                              //   }
+                              // },
                               child: Text(
                                 LanguageService.getTranslated(
                                     context, 'login_submit_button'),

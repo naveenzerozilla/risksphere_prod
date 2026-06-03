@@ -18,6 +18,7 @@ import '../../design_system/components/custom_drawer.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/job_monitoring_provier.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../service/firestore_service.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
 import 'maintainance_bottom_sheet.dart';
@@ -34,7 +35,7 @@ class JobMonitoringDashboard extends StatefulWidget {
 }
 
 class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  FirebaseFirestore firestore = FirestoreService.db;
 
   Map<String, bool> expandedJobs = {};
   Map<String, bool> expandedSubprocess = {};
@@ -748,8 +749,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             } else {
               log('Unexpected data format for subprocess: ${entry.value}');
             }
-            String subprocessId =
-                subprocessData['payload']?['subtask_id'] ?? 'Unknown Name';
+            // String subprocessId =
+            //     subprocessData['payload']?['subtask_id'] ?? 'Unknown Name';
             String subprocessName =
                 subprocessData['sub_process_name'] ?? 'Unknown Name';
             String locationSetName = subprocessData['location_set_name'] ??
@@ -761,7 +762,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             int totalTasks = subprocessData['total_location_to_process'] ?? 1;
             int completedTasks = successCount;
             var typography = CustomTypography(context);
-
+            String subprocessId =
+                subprocessData['payload']?['subtask_id']?.toString() ?? 'Unknown Subprocess';
             // Define color variations for hover effect
             final Color collapsedColor = Theme.of(context)
                 .hoverColor

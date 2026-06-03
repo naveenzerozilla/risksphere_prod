@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +34,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' hide Reference;
 import 'package:http/http.dart' as http;
 import '../processing_summary.dart';
+import '../sync_parameter.dart';
 
 class DataTab extends StatefulWidget {
   final String? accountName;
@@ -272,15 +274,13 @@ class _DataTabState extends State<DataTab> {
                   } else if (impact == "low") {
                     bucket = "low";
                   } else {
-                    bucket = "low"; // 👉 Unknown impact → LOW
+                    bucket = "low";
                   }
                 }
 
-                // Always add item to the appropriate bucket
                 groupedResults[bucket]!.add(result);
               }
 
-              // Build displayGroups based on selectedImpactFilter
               final Map<String, List<Result>> displayGroups =
                   selectedImpactFilter == "all"
                       ? groupedResults
@@ -315,26 +315,25 @@ class _DataTabState extends State<DataTab> {
                           : throw StateError('No element found'),
                     );
 
-                    // Move selected element to front if it exists
                     if (reorderedList.contains(selectedElement)) {
                       reorderedList.remove(selectedElement);
                       reorderedList.insert(0, selectedElement);
                     }
                   }
 
-                  // Convert to ImpactDataElements
                   final dataElements = reorderedList
-                      .where((e) =>
-                          e.name != null &&
-                          e.parameterType != null &&
-                          e.user != null)
-                      .map((e) => ImpactDataElement(
-                            name: e.name!,
-                            user: e.user!,
-                            result: e,
-                            parameterType: e.parameterType!,
-                            parameterValue: e.parameterValue!,
-                          ))
+                      .where(
+                        (e) => e.user != null && e.parameterType != null,
+                      )
+                      .map(
+                        (e) => ImpactDataElement(
+                          name: e.name ?? "",
+                          user: e.user!,
+                          result: e,
+                          parameterType: e.parameterType!,
+                          parameterValue: e.parameterValue!,
+                        ),
+                      )
                       .toList();
 
                   if (dataElements.isEmpty) return SizedBox.shrink();
@@ -360,15 +359,26 @@ class _DataTabState extends State<DataTab> {
                       selectedParameterList: selectedParameterList!,
                       onRefresh: () => _getRefreshData(),
                       expandElementName: selectedDropdownLabel,
-                      onExpanded: () {
+                      onExpanded: () async {
+                        await Future.delayed(
+                          const Duration(milliseconds: 150),
+                        );
+
                         final ctx = itemKeys[cardKey]!.currentContext;
+
                         if (ctx != null) {
-                          Scrollable.ensureVisible(
-                            ctx,
-                            duration: Duration(milliseconds: 400),
-                            curve: Curves.easeInOut,
-                            alignment: 0.1,
-                          );
+                          final renderBox = ctx.findRenderObject() as RenderBox;
+                          final position =
+                              renderBox.localToGlobal(Offset.zero).dy;
+
+                          // if (position < 100 || position > MediaQuery.of(context).size.height - 200) {
+                          //   Scrollable.ensureVisible(
+                          //     ctx,
+                          //     duration: const Duration(milliseconds: 250),
+                          //     curve: Curves.easeOut,
+                          //     alignment: 0.1,
+                          //   );
+                          // }
                         }
                       },
                     ),
@@ -741,11 +751,7 @@ class _DataTabState extends State<DataTab> {
                                                     showMissingDataDropdown1 =
                                                         false;
                                                   });
-
-                                                  // Call submitHazard if needed
                                                   submitHazard('');
-
-                                                  // 🔥 Call your API directly when NONE is selected
                                                   final locationListProvider =
                                                       Provider.of<
                                                               MyLocationListProvider>(
@@ -766,7 +772,7 @@ class _DataTabState extends State<DataTab> {
                                                   );
 
                                                   print(
-                                                      "🔄 Peril cleared — refreshed location list");
+                                                      " Peril cleared — refreshed location list");
                                                 },
                                                 title: const Text(
                                                   "None",
@@ -776,7 +782,7 @@ class _DataTabState extends State<DataTab> {
                                                 activeColor: Colors.lightBlue,
                                               ),
 
-                                              // ✅ Dynamic hazard options
+                                              //  Dynamic hazard options
                                               if (hazards.isNotEmpty)
                                                 ...hazards.map((hazard) {
                                                   return RadioListTile<String>(
@@ -955,7 +961,6 @@ class _DataTabState extends State<DataTab> {
                       }),
                       SizedBox(height: 16),
                       Builder(builder: (context) {
-                        // Build a map of groups to show based on the selectedImpactFilter.
                         final Map<String, List<Result>> displayGroups =
                             selectedImpactFilter == "all"
                                 ? groupedResults
@@ -980,10 +985,8 @@ class _DataTabState extends State<DataTab> {
                             final resultsForImpactType =
                                 visibleEntries[index].value;
 
-                            // Selected sub-item for this impact group
                             final selectedName = selectedSubItem[impactType];
 
-                            // Reorder list so selected item comes first
                             List<Result> reorderedList =
                                 List.from(resultsForImpactType);
 
@@ -996,28 +999,19 @@ class _DataTabState extends State<DataTab> {
                               reorderedList.remove(selectedElement);
                               reorderedList.insert(0, selectedElement);
                             }
-
-                            // Convert to ImpactDataElements
-                            final dataElements = reorderedList
-                                .where((e) =>
-                                    e.name != null &&
-                                    e.parameterType != null &&
-                                    e.user != null)
-                                .map(
-                                  (e) => ImpactDataElement(
-                                    name: e.name!,
-                                    user: e.user!,
-                                    result: e,
-                                    parameterType: e.parameterType!,
-                                    parameterValue: e.parameterValue!,
-                                  ),
-                                )
-                                .toList();
+                            final dataElements = reorderedList.map((e) {
+                              return ImpactDataElement(
+                                name: e.name ?? "",
+                                user: e.user!,
+                                result: e,
+                                parameterType: e.parameterType!,
+                                parameterValue: e.parameterValue,
+                              );
+                            }).toList();
 
                             if (dataElements.isEmpty)
                               return const SizedBox.shrink();
 
-                            // Keys & state
                             final cardKey = "card_$impactType";
                             itemKeys.putIfAbsent(cardKey, () => GlobalKey());
                             final isExpanded =
@@ -1110,17 +1104,29 @@ class _DataTabState extends State<DataTab> {
                                       onRefresh: () => _getRefreshData(),
                                       showHeader: false,
                                       expandElementName: selectedDropdownLabel,
-                                      onExpanded: () {
+                                      onExpanded: () async {
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 150),
+                                        );
+
                                         final ctx =
                                             itemKeys[cardKey]!.currentContext;
+
                                         if (ctx != null) {
-                                          Scrollable.ensureVisible(
-                                            ctx,
-                                            duration: const Duration(
-                                                milliseconds: 400),
-                                            curve: Curves.easeInOut,
-                                            alignment: 0.1,
-                                          );
+                                          final renderBox = ctx
+                                              .findRenderObject() as RenderBox;
+                                          final position = renderBox
+                                              .localToGlobal(Offset.zero)
+                                              .dy;
+
+                                          // if (position < 100 || position > MediaQuery.of(context).size.height - 200) {
+                                          //   Scrollable.ensureVisible(
+                                          //     ctx,
+                                          //     duration: const Duration(milliseconds: 250),
+                                          //     curve: Curves.easeOut,
+                                          //     alignment: 0.1,
+                                          //   );
+                                          // }
                                         }
                                       },
                                     ),
@@ -1595,18 +1601,18 @@ class _DataTabState extends State<DataTab> {
     }
 
     // Add zipcode chip
-    if (provider.zipcode.isNotEmpty) {
-      chips.add(
-        Chip(
-          label: Text('Zip: ${provider.zipcode}'),
-          onDeleted: () {
-            // provider.zipcode = '';
-            // provider.fetchLocationList(context, "", 1, 40, widget.accountId,
-            //     widget.subAccountId, widget.initialProcessId, widget.initialSubProcessId);
-          },
-        ),
-      );
-    }
+    // if (provider.zipcode.isNotEmpty) {
+    //   chips.add(
+    //     Chip(
+    //       label: Text('Zip: ${provider.zipcode}'),
+    //       onDeleted: () {
+    //         // provider.zipcode = '';
+    //         // provider.fetchLocationList(context, "", 1, 40, widget.accountId,
+    //         //     widget.subAccountId, widget.initialProcessId, widget.initialSubProcessId);
+    //       },
+    //     ),
+    //   );
+    // }
 
     // Add certification chips
     for (var cert in provider.certifications) {
@@ -1681,10 +1687,14 @@ class ImageUploadCard extends StatefulWidget {
   User user;
   Result result;
   ParameterType? parametertype;
+  LinkVendor? linkVendor;
   final dynamic parameterValue;
   final Function(List<ImageProvider>) onImagesUpdated;
   final String selectedParameterList;
   final Future<void> Function()? onRefresh;
+
+  /// Second expand step for single HazardHub link: show value fields.
+  final bool showManualValueFields;
 
   ImageUploadCard({
     Key? key,
@@ -1698,9 +1708,11 @@ class ImageUploadCard extends StatefulWidget {
     required this.result,
     required this.onImagesUpdated,
     required this.parametertype,
+    this.linkVendor,
     this.parameterValue,
     required this.selectedParameterList,
     this.onRefresh,
+    this.showManualValueFields = false,
   }) : super(key: key);
 
   @override
@@ -1872,19 +1884,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                         tagControllers.remove(file);
                                       });
 
-                                      // await provider.deleteParameterImage(
-                                      //     context: context,
-                                      //     selectedParameterList:
-                                      //         widget.selectedParameterList,
-                                      //     locationId: widget.locationId,
-                                      //     sovId: widget.sovId,
-                                      //     campusId: widget.campusId,
-                                      //     subaccountId: widget.subAccountId,
-                                      //     parameterId:
-                                      //         widget.result.dataCategoryId!,
-                                      //    updatedReferences: "file.path.split('/').last.toString()"
-                                      // );
-
                                       setState(() {
                                         _userEditedFields.clear();
                                       });
@@ -1901,17 +1900,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                           widget.sovId);
                                     },
                                   ),
-
-                                  // IconButton(
-                                  //   icon: Icon(Icons.clear, color: Colors.red),
-                                  //   onPressed: () {
-                                  //     setModalState(() {
-                                  //       selectedImages.remove(file);
-                                  //       fileTags.remove(file);
-                                  //       tagControllers.remove(file);
-                                  //     });
-                                  //   },
-                                  // ),
                                 ],
                               ),
                               TextFormField(
@@ -1972,19 +1960,15 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   setModalState(() => isUploading = true);
 
                                   try {
-                                    print("===== REST UPLOAD STARTED =====");
-
                                     List<String> uploadedUrls = [];
 
-                                    // 🔥 STEP 1: Upload each file
                                     for (File file in selectedImages) {
                                       final url =
                                           await uploadFileToFirebaseRest(file);
-                                      print("🔥 Uploaded URL: $url");
+
                                       uploadedUrls.add(url);
                                     }
 
-                                    // 🔥 STEP 2: Merge existing + new references
                                     final List<Reference> references = [];
 
                                     final existingRefs =
@@ -2020,7 +2004,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                           .toList(),
                                     };
 
-                                    print("===== PATCH API PAYLOAD =====");
                                     print(updatedFields);
 
                                     final subProvider = Provider.of<
@@ -2130,7 +2113,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     );
 
     if (response.statusCode != 200) {
-      print("❌ Upload Error: ${response.body}");
+      print(" Upload Error: ${response.body}");
       throw Exception("Upload failed: ${response.statusCode}");
     }
 
@@ -2141,73 +2124,30 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       throw Exception("Download token missing.");
     }
 
-    // ✅ Correct public URL (same as getDownloadURL in web)
+    //  Correct public URL (same as getDownloadURL in web)
     return "https://firebasestorage.googleapis.com/v0/b/"
         "$bucket/o/$encodedPath?alt=media&token=$downloadToken";
   }
 
-  // Future<String> uploadFileToFirebaseRest(File file) async {
-  //   const bucket = "project-green-r5-1-qa.firebasestorage.app";
-  //
-  //   // 🔹 Ensure user is authenticated
-  //   final user = FirebaseAuth.instance.currentUser;
-  //
-  //   if (user == null) {
-  //     throw Exception("User not authenticated. Please login first.");
-  //   }
-  //
-  //   // 🔹 Get Firebase ID Token
-  //   final idToken = await user.getIdToken();
-  //
-  //   final fileName = file.path.split('/').last;
-  //   final timestamp = DateTime.now().millisecondsSinceEpoch;
-  //   final storagePath = "uploads/$timestamp-$fileName";
-  //
-  //   final encodedPath = Uri.encodeComponent(storagePath);
-  //
-  //   final uri = Uri.parse(
-  //     "https://firebasestorage.googleapis.com/v0/b/$bucket/o"
-  //     "?uploadType=media&name=$encodedPath",
-  //   );
-  //
-  //   final bytes = await file.readAsBytes();
-  //   IdTokenResult? token =
-  //   await FirebaseAuth.instance.currentUser?.getIdTokenResult();
-  //   var headers = {
-  //     'Authorization': 'Bearer ${token?.token ?? ""}',
-  //     'Content-Type': 'multipart/form-data',
-  //   };
-  //   final response = await http.post(
-  //     uri,
-  //     headers: {
-  //       "Content-Type": "application/octet-stream",
-  //       "Authorization": "Bearer $idToken", // 🔥 IMPORTANT
-  //     },
-  //     body: bytes,
-  //   );
-  //
-  //   if (response.statusCode != 200) {
-  //     print("❌ Upload Error Body: ${response.body}");
-  //     throw Exception(
-  //       "Upload failed: ${response.statusCode}",
-  //     );
-  //   }
-  //
-  //   print("✅ Upload Success");
-  //
-  //   // Return same style URL your web uses
-  //   return "https://firebasestorage.googleapis.com/v0/b/"
-  //       "$bucket/o?name=$encodedPath";
-  // }
-
   void deleteImage(int index) {
     setState(() {
       uploadedImages.removeAt(index);
-      widget.onImagesUpdated(uploadedImages); // Notify parent of changes
+      widget.onImagesUpdated(uploadedImages);
     });
   }
 
+  bool isSyncing = false;
   bool selectedBooleanValue = true;
+
+  bool get _hasHazardHubTag =>
+      widget.result.tags?.contains("hazard_hub") ?? false;
+
+  bool get _showHazardHubSyncPanel =>
+      // _hasHazardHubTag &&
+      (widget.linkVendor?.hazardHub?.items?.isNotEmpty ?? false);
+
+  late final displayValue =
+      widget.result.parameterValue?.otherSources?['hazard_hub'];
 
   // final references = widget.result.parameterValue?.reference;
   bool isLoading = false;
@@ -2219,7 +2159,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
   int selectedIndex = 0;
   String? selectedImageUrl;
   Map<String, dynamic>? selectedImageData;
-  File? selectedImageFile; // <--- ADD THIS
+  File? selectedImageFile;
   String? uploadedImageUrl;
   bool _isDeletingImage = false;
 
@@ -2259,7 +2199,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
           unitController.text = rawValue['unit'].toString();
         }
       } else if (rawValue is String && _isJsonObject(rawValue)) {
-        // Handle stringified JSON
         try {
           final parsedJson = jsonDecode(rawValue) as Map<String, dynamic>;
 
@@ -2277,20 +2216,14 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
             unitController.text = parsedJson['unit'].toString();
           }
         } catch (e) {
-          // If it's not valid JSON, treat it as a simple value for paramA
           paramAController.text = rawValue.toString();
         }
       } else {
-        // For simple string/number - put it in paramA
         paramAController.text = rawValue.toString();
       }
     }
-
-    // -------------------------
-    //     JSON TYPE HANDLING
-    // -------------------------
     if (widget.parametertype?.name?.toLowerCase() == "time") {
-      final raw = widget.result.parameterValue?.value?.toString(); // "13:05:00"
+      final raw = widget.result.parameterValue?.value?.toString();
 
       if (raw != null && raw.isNotEmpty) {
         selectedTime = _parseBackendTime(raw);
@@ -2308,36 +2241,27 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
           DateTime? dt;
           dynamic decoded = raw;
 
-          // 🔥 STEP 1: Decode if JSON string
           if (decoded is String &&
               decoded.trim().startsWith("{") &&
               decoded.trim().endsWith("}")) {
             decoded = jsonDecode(decoded);
           }
 
-          // 🔥 STEP 2: Handle nested {"value":"{...}"}
           if (decoded is Map &&
               decoded["value"] is String &&
               decoded["value"].toString().trim().startsWith("{")) {
             decoded["value"] = jsonDecode(decoded["value"]);
           }
 
-          // 🔥 STEP 3: Extract inner ISO value
           if (decoded is Map && decoded["value"] is Map) {
             final isoString = decoded["value"]["value"];
             if (isoString != null) {
               dt = DateTime.tryParse(isoString);
             }
-          }
-
-          // 🔥 STEP 4: Firestore timestamp fallback
-          else if (decoded is Map && decoded.containsKey("_seconds")) {
+          } else if (decoded is Map && decoded.containsKey("_seconds")) {
             final sec = decoded["_seconds"];
             dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
-          }
-
-          // 🔥 STEP 5: Direct ISO string fallback
-          else if (decoded is String) {
+          } else if (decoded is String) {
             dt = DateTime.tryParse(decoded);
           }
 
@@ -2363,7 +2287,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       String? raw = widget.result.parameterValue?.value;
 
       if (raw != null && raw.trim().isNotEmpty) {
-        // ✔ Web shows raw JSON string exactly as received
         jsonController.text = raw;
       } else {
         jsonController.clear();
@@ -2371,19 +2294,22 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     }
   }
 
+  String _hazardHubItemDisplayName() {
+    final items = widget.linkVendor?.hazardHub?.items;
+    if (items == null || items.isEmpty) return '';
+    return items.values.first.name ?? '';
+  }
+
   String fixJson(String input) {
     String text = input.trim();
 
-    // Add quotes around keys (name → "name")
     text = text.replaceAllMapped(
         RegExp(r'(\w+)\s*:'), (match) => '"${match[1]}":');
 
-    // Add quotes around string values (vishal → "vishal")
     text = text.replaceAllMapped(
         RegExp(r':\s*([a-zA-Z]+)(\s|}|,)', multiLine: true),
         (match) => ':"${match[1]}"${match[2]}');
 
-    // Add commas between lines if missing
     text = text.replaceAll(RegExp(r'"\s*\n'), '",\n');
 
     return text;
@@ -2391,17 +2317,236 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
   @override
   Widget build(BuildContext context) {
-    // final urls = widget.result.parameterValue?.reference?.first.url ?? [];
-    // final imageUrls = urls.length > 1 ? urls.sublist(1) : [];
-
-    // if (references == null || references.isEmpty) return Container();
     return Container(
-      // color: AppColors.primaryMain.withOpacity(0.16),
       child: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Column(children: [
+          if (_showHazardHubSyncPanel)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111111),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.12),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.compare_arrows,
+                        color: Colors.white70,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "HazardHub parameter found",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        const TextSpan(
+                          text: "HazardHub key: ",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        TextSpan(
+                          text: (_hazardHubItemDisplayName()) +
+                              " (${widget.result.name.toString()})",
+                          style: TextStyle(
+                            color: Color(0xFF79B8FF),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (widget.linkVendor?.hazardHub?.items?.isNotEmpty ??
+                      false) ...[
+                    (() {
+                      try {
+                        final displayValue = widget
+                            .result.parameterValue?.otherSources?['hazard_hub'];
+
+                        if (displayValue == null ||
+                            displayValue.toString().trim().isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 4),
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  const TextSpan(
+                                    text: "Value : ",
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: displayValue.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      } catch (e) {
+                        debugPrint("Hazard Hub Value Error: $e");
+                        return const SizedBox.shrink();
+                      }
+                    })(),
+                  ],
+                  if (displayValue != null &&
+                      displayValue.toString().trim().isNotEmpty) ...[
+                    Text(""),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 42,
+                      child: StatefulBuilder(
+                        builder: (context, setSyncState) {
+                          final hasHazardHubTag =
+                              widget.result.tags?.contains("hazard_hub") ??
+                                  false;
+
+                          final isSyncButton = !hasHazardHubTag;
+
+                          return OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: hasHazardHubTag
+                                    ? Colors.green
+                                    : Color(0xFF5DA9FF),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: isSyncing || !isSyncButton
+                                ? null
+                                : () async {
+                                    setSyncState(() {
+                                      isSyncing = true;
+                                    });
+
+                                    try {
+                                      final items =
+                                          widget.linkVendor?.hazardHub?.items;
+
+                                      String extractionKey = "";
+
+                                      if (items != null && items.isNotEmpty) {
+                                        final firstItem = items.values.first;
+
+                                        extractionKey = firstItem.path ?? "";
+                                      }
+
+                                      print(
+                                        "Extraction Key => $extractionKey",
+                                      );
+
+                                      if (extractionKey.isEmpty) {
+                                        setSyncState(() {
+                                          isSyncing = false;
+                                        });
+
+                                        return;
+                                      }
+
+                                      final response = await Provider.of<
+                                          SubaccountParameterProvider>(
+                                        context,
+                                        listen: false,
+                                      ).recommendationEngineApi(
+                                        context,
+                                        widget.locationId ?? "",
+                                        widget.result.dataCategoryId ?? "",
+                                        extractionKey,
+                                      );
+
+                                      print(
+                                        "API RESPONSE => $response",
+                                      );
+
+                                      if (response != null) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => SyncParametersPage(
+                                              response: response,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      print(
+                                        "SYNC ERROR => $e",
+                                      );
+                                    } finally {
+                                      setSyncState(() {
+                                        isSyncing = false;
+                                      });
+                                      if (widget.onRefresh != null) {
+                                        await widget.onRefresh!();
+                                      }
+                                    }
+                                  },
+                            child: isSyncing
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF79B8FF),
+                                    ),
+                                  )
+                                : Text(
+                                    hasHazardHubTag
+                                        ? "From HazardHub"
+                                        : "Sync from HazardHub",
+                                    style: TextStyle(
+                                      color: hasHazardHubTag
+                                          ? Colors.green
+                                          : Color(0xFF79B8FF),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          );
+                        },
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
+          if (!_showHazardHubSyncPanel || widget.showManualValueFields) ...[
             if (widget.parametertype!.name!.toLowerCase() == 'boolean') ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -2592,57 +2737,8 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                     ),
                   ),
                 ),
-                // GestureDetector(
-                //   onTap: () {
-                //     // Check if selectedImageData is not null before accessing its 'url' field
-                //     if (selectedImageData != null &&
-                //         selectedImageData!['url'] != null) {
-                //       String existingImageUrl = selectedImageData!['url'] ?? '';
-                //
-                //       if (existingImageUrl.isNotEmpty) {
-                //         // Call the addImage method and pass the existing image URL
-                //         addImage(context, existingImageUrl);
-                //       } else {
-                //         // Handle case where the URL is empty
-                //         addImage(context, existingImageUrl);
-                //         print("No image URL to send");
-                //       }
-                //     } else {
-                //       // Handle case where selectedImageData is null or URL is not available
-                //       print("No image data available");
-                //       addImage(context,
-                //           ''); // Send an empty string or appropriate fallback data
-                //     }
-                //   },
-                //
-                //   // onTap: addImage,
-                //   child: Container(
-                //     padding: EdgeInsets.all(5),
-                //     width: MediaQuery.of(context).size.width / 4,
-                //     decoration: BoxDecoration(
-                //       color: Colors.transparent,
-                //       borderRadius: BorderRadius.circular(5),
-                //       border: Border.all(width: 0.8, color: Colors.white38),
-                //     ),
-                //     child: Center(
-                //       child: Row(
-                //         mainAxisAlignment: MainAxisAlignment.center,
-                //         children: [
-                //           Icon(Icons.add, color: Colors.blueAccent, size: 22),
-                //           SizedBox(width: 6),
-                //           Text("Upload",
-                //               style: TextStyle(
-                //                   color: Colors.white,
-                //                   fontWeight: FontWeight.bold,
-                //                   fontSize: 14)),
-                //         ],
-                //       ),
-                //     ),
-                //   ),
-                // ),
               ],
             ),
-            // SizedBox(height: 16),
             (widget.result.parameterValue?.reference == null ||
                     widget.result.parameterValue!.reference!.isEmpty ||
                     widget.result.parameterValue!.reference!.first.url ==
@@ -2758,8 +2854,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                             }
                                           })
                                         : Container(),
-
-                                    // CLOSE ICON
                                     if (selectedImageData != null)
                                       Positioned(
                                         top: 1,
@@ -2784,7 +2878,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                               listen: false,
                                             );
 
-                                            // ── Extract the clicked image URL ──
                                             final rawUrl =
                                                 selectedImageData?['url'];
                                             String imageUrl = "";
@@ -2794,52 +2887,37 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                 rawUrl.isNotEmpty)
                                               imageUrl = rawUrl.first;
 
-                                            // ── Extract Firebase storage path from URL ──
-                                            // Firebase URL: .../o/uploads%2F1772...-filename.png?alt=media&token=xxx
-                                            // We need: "uploads/1772...-filename.png"
                                             String storageName = "";
                                             try {
                                               final uri = Uri.parse(imageUrl);
-                                              final encodedPath = uri
-                                                  .pathSegments
-                                                  .last; // "uploads%2F1772...-filename.png"
+                                              final encodedPath =
+                                                  uri.pathSegments.last;
                                               storageName = Uri.decodeComponent(
-                                                  encodedPath); // "uploads/1772...-filename.png"
+                                                  encodedPath);
                                             } catch (e) {
                                               storageName =
                                                   selectedImageData?['name'] ??
                                                       'Unknown';
-                                              print(
-                                                  "⚠️ storageName fallback: $e");
+                                              print("storageName fallback: $e");
                                             }
-
-                                            // ── Extract uploadedBy (filename only, not full path) ──
-                                            // Web sends: "Screenshot 2026-02-12 at 10.48.21 AM-4ABC.PNG"
-                                            // i.e. just the filename portion after the timestamp prefix
                                             String uploadedBy = "";
                                             try {
-                                              // storageName = "uploads/1772...-filename.png"
-                                              // Split on first "-" after timestamp to get original filename
-                                              final filenameFull = storageName
-                                                  .split('/')
-                                                  .last; // "1772...-filename.png"
+                                              final filenameFull =
+                                                  storageName.split('/').last;
                                               final dashIndex =
                                                   filenameFull.indexOf('-');
                                               uploadedBy = dashIndex != -1
-                                                  ? filenameFull.substring(
-                                                      dashIndex +
-                                                          1) // "filename.png"
+                                                  ? filenameFull
+                                                      .substring(dashIndex + 1)
                                                   : filenameFull;
                                             } catch (e) {
                                               uploadedBy =
                                                   storageName.split('/').last;
                                             }
 
-                                            // ✅ Match web payload EXACTLY — only this one image
                                             final Map<String, dynamic>
                                                 imageObject = {
                                               "url": [imageUrl],
-                                              // ✅ list with single URL
                                               "tags":
                                                   selectedImageData?['tags'] ??
                                                       [],
@@ -2847,15 +2925,12 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                   selectedImageData?['size'] ??
                                                       0,
                                               "name": uploadedBy,
-                                              // ✅ "uploads/1772...-filename.png"
                                               "uploadedBy": "",
-                                              // ✅ "filename.png" (just the name)
                                             };
 
                                             print(
-                                                "🗑️ DELETE imageObject: ${jsonEncode(imageObject)}");
+                                                " DELETE imageObject: ${jsonEncode(imageObject)}");
 
-                                            // ── Call DELETE API (NOT submitParameterUpdate) ──
                                             final success = await provider
                                                 .deleteParameterImage(
                                               context: context,
@@ -2867,12 +2942,10 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                               subaccountId: widget.subAccountId,
                                               parameterId:
                                                   widget.result.dataCategoryId!,
-                                              imageObject:
-                                                  imageObject, // ✅ single image object
+                                              imageObject: imageObject,
                                             );
 
                                             if (success) {
-                                              // ── Remove deleted image from local references ──
                                               setState(() {
                                                 references =
                                                     references?.where((ref) {
@@ -2909,112 +2982,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                               });
                                             }
                                           },
-                                          // onTap: () async {
-                                          //   if (_isDeletingImage) return;
-                                          //
-                                          //   setState(() {
-                                          //     _isDeletingImage = true;
-                                          //   });
-                                          //
-                                          //   final provider = Provider.of<
-                                          //       SubaccountParameterProvider>(
-                                          //     context,
-                                          //     listen: false,
-                                          //   );
-                                          //
-                                          //   final locationListProvider =
-                                          //       Provider.of<
-                                          //           MyLocationListProvider>(
-                                          //     context,
-                                          //     listen: false,
-                                          //   );
-                                          //
-                                          //   final rawUrl =
-                                          //       selectedImageData?['url'];
-                                          //   String imageUrl = "";
-                                          //
-                                          //   if (rawUrl is String) {
-                                          //     imageUrl = rawUrl;
-                                          //   } else if (rawUrl is List &&
-                                          //       rawUrl.isNotEmpty) {
-                                          //     imageUrl = rawUrl.first;
-                                          //   }
-                                          //
-                                          //   final List<Map<String, dynamic>>
-                                          //       updatedReferences =
-                                          //       (references ?? [])
-                                          //           .where((ref) =>
-                                          //               !(ref.url ?? [])
-                                          //                   .contains(imageUrl))
-                                          //           .map<Map<String, dynamic>>(
-                                          //               (ref) {
-                                          //     return {
-                                          //       "url": List<String>.from(
-                                          //           ref.url ?? []),
-                                          //       "tags": List<dynamic>.from(
-                                          //           ref.tags ?? []),
-                                          //       "size": ref.size ?? 0,
-                                          //       "name": ref.name ?? "",
-                                          //       "uploadedBy": (ref.uploadedBy ==
-                                          //                   null ||
-                                          //               ref.uploadedBy!.isEmpty)
-                                          //           ? ref.name ?? ""
-                                          //           : ref.uploadedBy,
-                                          //     };
-                                          //   }).toList();
-                                          //
-                                          //   final success = await provider
-                                          //       .deleteParameterImage(
-                                          //     context: context,
-                                          //     selectedParameterList:
-                                          //         widget.selectedParameterList,
-                                          //     locationId: widget.locationId,
-                                          //     sovId: widget.sovId,
-                                          //     campusId: widget.campusId,
-                                          //     subaccountId: widget.subAccountId,
-                                          //     parameterId:
-                                          //         widget.result.dataCategoryId!,
-                                          //     updatedReferences:
-                                          //         updatedReferences, // 👈 send FULL LIST
-                                          //   );
-                                          //
-                                          //   if (success) {
-                                          //     setState(() {
-                                          //       references =
-                                          //           references?.where((ref) {
-                                          //         final urls = ref.url ?? [];
-                                          //         return !urls
-                                          //             .contains(imageUrl);
-                                          //       }).toList();
-                                          //
-                                          //       selectedImageData = null;
-                                          //       _isDeletingImage = false;
-                                          //     });
-                                          //
-                                          //     _userEditedFields.clear();
-                                          //
-                                          //     await locationListProvider
-                                          //         .fetchLocationList(
-                                          //       context,
-                                          //       "",
-                                          //       1,
-                                          //       5,
-                                          //       widget.accountId,
-                                          //       widget.subAccountId,
-                                          //       "",
-                                          //       "",
-                                          //       widget.sovId,
-                                          //     );
-                                          //
-                                          //     if (widget.onRefresh != null) {
-                                          //       await widget.onRefresh!();
-                                          //     }
-                                          //   } else {
-                                          //     setState(() {
-                                          //       _isDeletingImage = false;
-                                          //     });
-                                          //   }
-                                          // },
                                           child: _isDeletingImage
                                               ? const SizedBox(
                                                   height: 20,
@@ -3040,143 +3007,9 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                                 ),
                                         ),
                                       ),
-                                    // Positioned(
-                                    //   top: 1,
-                                    //   right: 1,
-                                    //   child: InkWell(
-                                    //     onTap: () async {
-                                    //       if (_isDeletingImage) return;
-                                    //
-                                    //       setState(() {
-                                    //         _isDeletingImage =
-                                    //             true; // show loader
-                                    //       });
-                                    //
-                                    //       final provider = Provider.of<
-                                    //               SubaccountParameterProvider>(
-                                    //           context,
-                                    //           listen: false);
-                                    //       final locationListProvider =
-                                    //           Provider.of<
-                                    //                   MyLocationListProvider>(
-                                    //               context,
-                                    //               listen: false);
-                                    //
-                                    //       // Extract URL
-                                    //       final rawUrl =
-                                    //           selectedImageData?['url'];
-                                    //       String imageUrl = "";
-                                    //
-                                    //       if (rawUrl is String)
-                                    //         imageUrl = rawUrl;
-                                    //       if (rawUrl is List &&
-                                    //           rawUrl.isNotEmpty)
-                                    //         imageUrl = rawUrl.first;
-                                    //
-                                    //       final Map<String, dynamic>
-                                    //           imageObject = {
-                                    //         "url": [imageUrl],
-                                    //         "tags":
-                                    //             selectedImageData?['tags'] ??
-                                    //                 [],
-                                    //         "size":
-                                    //             selectedImageData?['size'] ??
-                                    //                 0,
-                                    //         "name":
-                                    //             selectedImageData?['name'] ??
-                                    //                 'Unknown',
-                                    //         "uploadedBy": selectedImageData?[
-                                    //                 'uploadedBy'] ??
-                                    //             'Unknown',
-                                    //       };
-                                    //
-                                    //       // ❌ DO NOT CLEAR UI HERE (this causes expansion collapse)
-                                    //
-                                    //       // 2️⃣ DELETE API
-                                    //       await provider.deleteParameterImage(
-                                    //           context: context,
-                                    //           selectedParameterList: widget
-                                    //               .selectedParameterList,
-                                    //           locationId: widget.locationId,
-                                    //           sovId: widget.sovId,
-                                    //           campusId: widget.campusId,
-                                    //           subaccountId:
-                                    //               widget.subAccountId,
-                                    //           parameterId: widget
-                                    //               .result.dataCategoryId!,
-                                    //           imageObject: imageObject);
-                                    //
-                                    //       // await provider.deleteParameterImage(
-                                    //       //   context: context,
-                                    //       //   selectedParameterList:
-                                    //       //       widget.selectedParameterList,
-                                    //       //   locationId: widget.locationId,
-                                    //       //   sovId: widget.sovId,
-                                    //       //   campusId: widget.campusId,
-                                    //       //   subaccountId: widget.subAccountId,
-                                    //       //   parameterId:
-                                    //       //       widget.result.dataCategoryId!,
-                                    //       //   imageObject: imageObject,
-                                    //       // );
-                                    //
-                                    //       // 3️⃣ REFRESH LIST
-                                    //       _userEditedFields.clear();
-                                    //       await locationListProvider
-                                    //           .fetchLocationList(
-                                    //         context,
-                                    //         "",
-                                    //         1,
-                                    //         5,
-                                    //         widget.accountId,
-                                    //         widget.subAccountId,
-                                    //         "",
-                                    //         "",
-                                    //         widget.sovId,
-                                    //       );
-                                    //
-                                    //       if (widget.onRefresh != null) {
-                                    //         await widget.onRefresh!();
-                                    //       }
-                                    //
-                                    //       // 4️⃣ NOW SAFE TO CLEAR (after rebuild)
-                                    //       setState(() {
-                                    //         selectedImageData = null;
-                                    //         _isDeletingImage = false;
-                                    //       });
-                                    //     },
-                                    //
-                                    //     child: _isDeletingImage
-                                    //         ? SizedBox(
-                                    //             height: 20,
-                                    //             width: 20,
-                                    //             child:
-                                    //                 CircularProgressIndicator(
-                                    //               strokeWidth: 2,
-                                    //               color: Colors.red,
-                                    //             ),
-                                    //           )
-                                    //         : Container(
-                                    //             decoration: BoxDecoration(
-                                    //               shape: BoxShape.circle,
-                                    //               color: Colors.white,
-                                    //               boxShadow: [
-                                    //                 BoxShadow(
-                                    //                     color: Colors.black26,
-                                    //                     blurRadius: 2),
-                                    //               ],
-                                    //             ),
-                                    //             padding: EdgeInsets.all(3),
-                                    //             child: Icon(Icons.deblur_outlined,
-                                    //                 color: Colors.red),
-                                    //           ),
-                                    //   ),
-                                    // ),
                                   ],
                                 ),
-
                                 SizedBox(width: 16),
-
-                                // MIDDLE: Metadata
                                 Expanded(
                                   child: selectedImageData != null
                                       ? Column(
@@ -3203,8 +3036,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                         )
                                       : SizedBox.shrink(),
                                 ),
-
-                                // RIGHT: DOWNLOAD ICON
                                 if (selectedImageData != null)
                                   IconButton(
                                     icon: Icon(Icons.download,
@@ -3260,7 +3091,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
                               final String? url = imgData['url']?.toString();
 
-                              // 🔥 SAFE URL STRING
                               final String safeUrl = (url ?? "").trim();
                               final String lowerUrl = safeUrl.toLowerCase();
 
@@ -3268,7 +3098,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                   lowerUrl.endsWith(".jpeg") ||
                                   lowerUrl.endsWith(".png");
 
-                              // 🔥 If URL is null or empty → show placeholder box
                               if (safeUrl.isEmpty) {
                                 return Container(
                                   decoration: BoxDecoration(
@@ -3357,206 +3186,13 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
                                 ],
                               );
                             },
-                            // itemBuilder: (context, i) {
-                            //   final imgData = flattenedImages[i];
-                            //   final refIndex = imgData['refIndex'] as int;
-                            //   final imgIndex = imgData['imgIndex'] as int;
-                            //   final url = imgData['url'];
-                            //
-                            //   final isImage =
-                            //       url.toLowerCase().contains(".jpg") ||
-                            //           url.toLowerCase().contains(".jpeg") ||
-                            //           url.toLowerCase().contains(".png");
-                            //
-                            //   return Stack(
-                            //     children: [
-                            //       GestureDetector(
-                            //         onTap: () {
-                            //           final int? timestamp = widget
-                            //                   .result
-                            //                   .parameterValue!
-                            //                   .updatedAt
-                            //                   ?.iSeconds ??
-                            //               1;
-                            //           final dateTime =
-                            //               DateTime.fromMillisecondsSinceEpoch(
-                            //                   timestamp! * 1000);
-                            //           final formattedDate =
-                            //               DateFormat('dd/MM/yyyy HH:mm:ss')
-                            //                   .format(dateTime);
-                            //
-                            //           setState(() {
-                            //             selectedImageData = {
-                            //               'url': url,
-                            //               'uploadedBy':
-                            //                   references![refIndex].name,
-                            //               'tags': references![refIndex].tags,
-                            //               'size': references![refIndex].size,
-                            //               'dateTime': formattedDate,
-                            //             };
-                            //           });
-                            //
-                            //           // setState(() {
-                            //           //   selectedImageUrl = url;
-                            //           //   expandedCardsWithImage[0] = imgIndex;
-                            //           //   selectedImageData = {
-                            //           //     'url': url,
-                            //           //     'uploadedBy':
-                            //           //         references![refIndex].name,
-                            //           //     'dateTime': formattedDate,
-                            //           //     'tags': widget.result.parameterValue!
-                            //           //         .reference!.first.tags,
-                            //           //     'size': widget.result.parameterValue!
-                            //           //         .reference!.first.size,
-                            //
-                            //           //   };
-                            //           // });
-                            //         },
-                            //         child: ClipRRect(
-                            //           borderRadius: BorderRadius.circular(8),
-                            //           child: isImage
-                            //               ? CachedNetworkImage(
-                            //                   imageUrl: url,
-                            //                   width: 100,
-                            //                   height: 200,
-                            //                   fit: BoxFit.cover,
-                            //                   placeholder: (context, url) =>
-                            //                       CircularProgressIndicator(),
-                            //                   errorWidget:
-                            //                       (context, url, error) =>
-                            //                           Icon(Icons.broken_image),
-                            //                 )
-                            //               : Container(
-                            //                   color: Colors.grey.shade900,
-                            //                   width: double.infinity,
-                            //                   padding: const EdgeInsets.all(8),
-                            //                   child: Column(
-                            //                     mainAxisAlignment:
-                            //                         MainAxisAlignment.center,
-                            //                     children: [
-                            //                       SvgPicture.asset(
-                            //                         'assets/images/files.svg',
-                            //                         color: Colors.white54,
-                            //                         width: 30,
-                            //                         height: 30,
-                            //                       ),
-                            //                       const SizedBox(height: 8),
-                            //                       Text(
-                            //                         getFileNameFromUrl(url),
-                            //                         maxLines: 1,
-                            //                         overflow:
-                            //                             TextOverflow.ellipsis,
-                            //                         textAlign: TextAlign.center,
-                            //                         style: const TextStyle(
-                            //                           color: Colors.white70,
-                            //                           fontSize: 14,
-                            //                         ),
-                            //                       ),
-                            //                     ],
-                            //                   ),
-                            //                 ),
-                            //         ),
-                            //       ),
-                            //       // Positioned(
-                            //       //   top: 4,
-                            //       //   right: 4,
-                            //       //   child: GestureDetector(
-                            //       //     onTap: () async {
-                            //       //       final provider = Provider.of<
-                            //       //           SubaccountParameterProvider>(
-                            //       //         context,
-                            //       //         listen: false,
-                            //       //       );
-                            //       //       final locationListProvider =
-                            //       //           Provider.of<MyLocationListProvider>(
-                            //       //         context,
-                            //       //         listen: false,
-                            //       //       );
-                            //       //       final rawUrl =
-                            //       //           selectedImageData?['url'];
-                            //       //       String imageUrl = "";
-                            //       //
-                            //       //       if (rawUrl is String) imageUrl = rawUrl;
-                            //       //       if (rawUrl is List && rawUrl.isNotEmpty)
-                            //       //         imageUrl = rawUrl.first;
-                            //       //
-                            //       //       /// Build image object required by backend
-                            //       //       final Map<String, dynamic> imageObject =
-                            //       //           {
-                            //       //         "url": [imageUrl],
-                            //       //         "tags":
-                            //       //             selectedImageData?['tags'] ?? [],
-                            //       //         "size":
-                            //       //             selectedImageData?['size'] ?? 0,
-                            //       //       };
-                            //       //
-                            //       //       // -------------------------
-                            //       //       // 1️⃣ CLEAR PREVIEW FROM UI
-                            //       //       // -------------------------
-                            //       //       setState(() {
-                            //       //         selectedImageData = null;
-                            //       //       });
-                            //       //
-                            //       //       // -------------------------
-                            //       //       // 2️⃣ CALL DELETE API
-                            //       //       // -------------------------
-                            //       //       await provider.deleteParameterImage(
-                            //       //         context: context,
-                            //       //         selectedParameterList:
-                            //       //             widget.selectedParameterList,
-                            //       //         locationId: widget.locationId,
-                            //       //         sovId: widget.sovId,
-                            //       //         campusId: widget.campusId,
-                            //       //         subaccountId: widget.subAccountId,
-                            //       //         parameterId:
-                            //       //             widget.result.dataCategoryId!,
-                            //       //         imageObject: imageObject,
-                            //       //       );
-                            //       //
-                            //       //       // -------------------------
-                            //       //       // 3️⃣ REFRESH AFTER DELETE
-                            //       //       // -------------------------
-                            //       //       await Provider.of<
-                            //       //                   MyLocationListProvider>(
-                            //       //               context,
-                            //       //               listen: false)
-                            //       //           .fetchLocationList(
-                            //       //               context,
-                            //       //               "",
-                            //       //               1,
-                            //       //               10,
-                            //       //               widget.accountId,
-                            //       //               widget.subAccountId,
-                            //       //               "",
-                            //       //               "",
-                            //       //               '');
-                            //       //     },
-                            //       //     child: Container(
-                            //       //       decoration: BoxDecoration(
-                            //       //         shape: BoxShape.circle,
-                            //       //         color: Colors.white,
-                            //       //         boxShadow: [
-                            //       //           BoxShadow(
-                            //       //               color: Colors.black26,
-                            //       //               blurRadius: 2),
-                            //       //         ],
-                            //       //       ),
-                            //       //       padding: EdgeInsets.all(4),
-                            //       //       child: Icon(Icons.delete,
-                            //       //           size: 16, color: Colors.red),
-                            //       //     ),
-                            //       //   ),
-                            //       // ),
-                            //     ],
-                            //   );
-                            // },
                           ),
                         ],
                       );
                     },
                   ),
           ],
-        ),
+        ]),
       ),
     );
   }
@@ -3607,44 +3243,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     return fields;
   }
 
-  // List<Widget> _buildParameterFields() {
-  //   final fields = <Widget>[];
-  //   final parameterType = widget.parametertype!.name!.toLowerCase();
-  //
-  //   // Define field configurations
-  //   final fieldConfigs = [
-  //     if (widget.result.parameterNameA.toString().trim().isNotEmpty)
-  //       _FieldConfig(
-  //         label: widget.result.parameterNameA.toString(),
-  //         controller: parameterType == 'date' || parameterType == 'timestamp'
-  //             ? _dateController
-  //             : paramAController,
-  //         keyboardType: _getKeyboardType(parameterType),
-  //         isDateField: parameterType == 'date' || parameterType == 'timestamp',
-  //       ),
-  //     if (widget.result.parameterNameB.toString().trim().isNotEmpty)
-  //       _FieldConfig(
-  //         label: widget.result.parameterNameB.toString(),
-  //         controller: paramBController,
-  //         keyboardType: _getKeyboardType(parameterType),
-  //       ),
-  //     if (widget.result.unitName.toString().trim().isNotEmpty)
-  //       _FieldConfig(
-  //         label: widget.result.unitName.toString(),
-  //         controller: unitController,
-  //         keyboardType: _getKeyboardType(parameterType),
-  //       ),
-  //   ];
-  //
-  //   // Build fields with spacing
-  //   for (var config in fieldConfigs) {
-  //     fields.add(_buildTextFormField(config));
-  //     fields.add(const SizedBox(height: 8));
-  //   }
-  //
-  //   return fields;
-  // }
-
   TextInputType _getKeyboardType(String parameterType) {
     switch (parameterType) {
       case 'number':
@@ -3665,11 +3263,8 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     try {
       dynamic current = rv;
 
-      // 🔥 1 — Handle String input first
       if (current is String) {
-        // Check if it's a stringified Firestore timestamp
         if (current.contains("_seconds") && current.contains("_nanoseconds")) {
-          // Extract seconds using regex
           final match = RegExp(r"_seconds[\s:]*(\d+)").firstMatch(current);
           if (match != null) {
             final sec = int.parse(match.group(1)!);
@@ -3678,15 +3273,12 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
           }
         }
 
-        // Check if it's a JSON object (but not a Firestore timestamp)
         if (current.trim().startsWith("{") &&
             current.trim().endsWith("}") &&
             !current.contains("_seconds")) {
           try {
-            current = jsonDecode(current); // Parse JSON
-            // Continue processing as Map below
+            current = jsonDecode(current);
           } catch (e) {
-            // If json decode fails, return as string
             return current.toString();
           }
         }
@@ -3704,10 +3296,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
           return current.toString();
         }
       }
-
-      // 🔥 2 — Now handle Map input (including parsed JSON)
       if (current is Map) {
-        // Check if it's a Firestore timestamp map
         if (current.containsKey("_seconds") &&
             current.containsKey("_nanoseconds")) {
           int sec = current["_seconds"];
@@ -3715,7 +3304,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
           return DateFormat("dd/MM/yyyy hh:mm a").format(dt);
         }
 
-        // Extract field values from the map
         if (fieldName == 'parameterA' ||
             fieldName == widget.result.parameterNameA) {
           return (current['parameterA'] ?? current['value'] ?? "").toString();
@@ -3729,63 +3317,15 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
         if (fieldName == 'unit' || fieldName == widget.result.unitName) {
           return (current['unit'] ?? "").toString();
         }
-
-        // Default: return the whole JSON as string
         return jsonEncode(current);
       }
 
-      // 🔥 3 — For any other type (int, double, bool, etc.)
       return current.toString();
     } catch (e) {
       print("Error extracting value: $e");
       return rv.toString();
     }
   }
-
-  // String _extractCleanValue(dynamic rv, String fieldName) {
-  //   if (rv == null) return "";
-  //
-  //   try {
-  //     dynamic current = rv;
-  //
-  //     // If it's a string that looks like JSON, parse it
-  //     if (current is String &&
-  //         current.trim().startsWith("{") &&
-  //         current.contains(":")) {
-  //       current = jsonDecode(current);
-  //     }
-  //
-  //     // If it's a Map, extract the specific field value
-  //     if (current is Map) {
-  //       // For different field types, extract the right value
-  //       if (fieldName == 'parameterA' ||
-  //           fieldName == widget.result.parameterNameA) {
-  //         return (current['parameterA'] ?? current['value'] ?? "").toString();
-  //       } else if (fieldName == 'parameterB' ||
-  //           fieldName == widget.result.parameterNameB) {
-  //         return (current['parameterB'] ?? "").toString();
-  //       } else if (fieldName == 'unit' || fieldName == widget.result.unitName) {
-  //         return (current['unit'] ?? "").toString();
-  //       }
-  //
-  //       // If we're looking for a specific timestamp/date format
-  //       if (current.containsKey("_seconds") &&
-  //           current.containsKey("_nanoseconds")) {
-  //         int seconds = current["_seconds"];
-  //         DateTime dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
-  //         return DateFormat("dd/MM/yyyy hh:mm a").format(dt);
-  //       }
-  //
-  //       // Default: return the whole JSON as string
-  //       return jsonEncode(current);
-  //     }
-  //
-  //     // If it's not a Map, return as string
-  //     return current.toString();
-  //   } catch (e) {
-  //     return rv.toString();
-  //   }
-  // }
 
   bool _isJsonObject(String s) {
     if (s.trim().startsWith("{") && s.trim().endsWith("}")) {
@@ -3805,17 +3345,11 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     final isIntType = paramType == "int";
     final isNumType = paramType == "number";
 
-    /// ---------------------------------------------------
-    /// CASE: Value comes like:
-    /// {value: 121, unit: , value_a: , value_b: , currency: , valuation_date: }
-    /// ---------------------------------------------------
     if (cleaned.contains("value:")) {
       final match = RegExp(r'value:\s*([^,}]+)').firstMatch(cleaned);
 
       if (match != null) {
         final extractedValue = match.group(1)?.trim() ?? "";
-
-        // ✅ Only set controller text if user hasn't edited this field
         if (!_userEditedFields.contains(fieldKey)) {
           config.controller.text = extractedValue;
         }
@@ -3839,7 +3373,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
             border: const OutlineInputBorder(),
           ),
           onChanged: (value) {
-            // ✅ Mark field as user-edited so rebuilds don't reset it
             if (!_userEditedFields.contains(fieldKey)) {
               setState(() {
                 _userEditedFields.add(fieldKey);
@@ -3850,9 +3383,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       }
     }
 
-    /// ---------------------------------------------------
-    /// NORMAL SIMPLE FIELD
-    /// ---------------------------------------------------
     if (!_userEditedFields.contains(fieldKey)) {
       config.controller.text = cleaned;
     }
@@ -3885,441 +3415,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
       },
     );
   }
-
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rv = widget.result.parameterValue?.value;
-  //   final cleaned = _extractCleanValue(rv, config.label) ?? "";
-  //   final fieldKey = config.label;
-  //
-  //   final paramType =
-  //       widget.result.parameterValue?.paramType?.toLowerCase() ?? "";
-  //
-  //   final isIntType = paramType == "int";
-  //   final isNumType = paramType == "number";
-  //
-  //   /// ---------------------------------------------------
-  //   /// CASE: Value comes like:
-  //   /// {value: 121, unit: , value_a: , value_b: , currency: , valuation_date: }
-  //   /// ---------------------------------------------------
-  //   if (cleaned.contains("value:")) {
-  //     final match = RegExp(r'value:\s*([^,}]+)').firstMatch(cleaned);
-  //
-  //     if (match != null) {
-  //       final extractedValue = match.group(1)?.trim() ?? "";
-  //
-  //       return TextFormField(
-  //         controller: config.controller..text = extractedValue,
-  //         keyboardType: (isIntType || isNumType)
-  //             ? const TextInputType.numberWithOptions(decimal: true)
-  //             : config.keyboardType,
-  //         inputFormatters: isIntType
-  //             ? [FilteringTextInputFormatter.digitsOnly]
-  //             : isNumType
-  //                 ? [
-  //                     FilteringTextInputFormatter.allow(
-  //                       RegExp(r'^\d*\.?\d*'),
-  //                     )
-  //                   ]
-  //                 : null,
-  //         decoration: InputDecoration(
-  //           labelText: config.label,
-  //           border: const OutlineInputBorder(),
-  //         ),
-  //       );
-  //     }
-  //   }
-  //
-  //   /// ---------------------------------------------------
-  //   /// NORMAL SIMPLE FIELD
-  //   /// ---------------------------------------------------
-  //   if (!_userEditedFields.contains(fieldKey)) {
-  //     config.controller.text = cleaned;
-  //   }
-  //
-  //   return TextFormField(
-  //     controller: config.controller,
-  //     readOnly: config.isDateField,
-  //     keyboardType: (isIntType || isNumType)
-  //         ? const TextInputType.numberWithOptions(decimal: true)
-  //         : config.keyboardType,
-  //     inputFormatters: isIntType
-  //         ? [FilteringTextInputFormatter.digitsOnly]
-  //         : isNumType
-  //             ? [
-  //                 FilteringTextInputFormatter.allow(
-  //                   RegExp(r'^\d*\.?\d*'),
-  //                 )
-  //               ]
-  //             : null,
-  //     decoration: InputDecoration(
-  //       labelText: config.label,
-  //       border: const OutlineInputBorder(),
-  //     ),
-  //     onChanged: (value) {
-  //       if (!_userEditedFields.contains(fieldKey)) {
-  //         setState(() {
-  //           _userEditedFields.add(fieldKey);
-  //         });
-  //       }
-  //     },
-  //   );
-  // }
-
-//old to new changes
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rv = widget.result.parameterValue?.value;
-  //   // Pass the field name to extract the correct value
-  //   final cleaned = _extractCleanValue(rv, config.label);
-  //   final fieldKey = config.label; // Use label as unique identifier
-  //
-  //   // -------- CASE: multi-field JSON --------
-  //   if (_isJsonObject(cleaned)) {
-  //     final map = jsonDecode(cleaned) as Map<String, dynamic>;
-  //     final children = map.entries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           keyboardType:
-  //               widget.result.parameterValue?.value.toString().toLowerCase() ==
-  //                       "int"
-  //                   ? TextInputType.number
-  //                   : config.keyboardType,
-  //           inputFormatters: widget.result.parameterValue!.paramType == "int"
-  //               ? [FilteringTextInputFormatter.digitsOnly]
-  //               : null,
-  //           controller: TextEditingController(text: e.value.toString()),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //     return Column(
-  //       children: children,
-  //     );
-  //   }
-  //
-  //   // -------- CASE: simple field --------
-  //   // Initialize the controller value only once when widget is built
-  //   // if (!config.isInitialized) {
-  //   //   config.controller.text = cleaned;
-  //   //   config.isInitialized = true;
-  //   // }
-  //   final paramType =
-  //       widget.result.parameterValue?.paramType?.toLowerCase() ?? "";
-  //   final isIntType = paramType.toLowerCase() == "int";
-  //   final isNumType = paramType.toLowerCase() == "number";
-  //   return
-  //       // Container(child: Text(widget.result.parameterValue!.paramType.toString()),);
-  //       TextFormField(
-  //     controller: config.controller,
-  //     readOnly: config.isDateField,
-  //     keyboardType: (isIntType || isNumType)
-  //         ? const TextInputType.numberWithOptions(decimal: true)
-  //         : config.keyboardType,
-  //     inputFormatters: isIntType
-  //         ? [FilteringTextInputFormatter.digitsOnly]
-  //         : isNumType
-  //             ? [
-  //                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-  //               ]
-  //             : null,
-  //     maxLines: 1,
-  //     decoration: InputDecoration(
-  //       labelText: config.label,
-  //       border: OutlineInputBorder(),
-  //     ),
-  //     onChanged: (value) {
-  //       if (!_userEditedFields.contains(fieldKey)) {
-  //         setState(() {
-  //           _userEditedFields.add(fieldKey);
-  //         });
-  //       }
-  //       print("User typed: $value for field: $fieldKey");
-  //     },
-  //   );
-  // }
-
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rawValue = widget.result.parameterValue?.value;
-  //
-  //   // if (rawValue == null || rawValue.isEmpty) {
-  //   //   return _normalField(config, "");
-  //   // }
-  //
-  //   Map<String, dynamic>? finalMap;
-  //
-  //   try {
-  //     dynamic decoded = rawValue;
-  //
-  //     // Step 1: Decode if string JSON
-  //     if (decoded is String &&
-  //         decoded.trim().startsWith("{") &&
-  //         decoded.trim().endsWith("}")) {
-  //       decoded = jsonDecode(decoded);
-  //     }
-  //
-  //     // Step 2: Handle nested {"value":"{...}"}
-  //     if (decoded is Map &&
-  //         decoded["value"] is String &&
-  //         decoded["value"].toString().trim().startsWith("{")) {
-  //       decoded["value"] = jsonDecode(decoded["value"]);
-  //     }
-  //
-  //     // Step 3: Handle {"value":{...}}
-  //     if (decoded is Map && decoded["value"] is Map) {
-  //       finalMap = Map<String, dynamic>.from(decoded["value"]);
-  //     } else if (decoded is Map) {
-  //       finalMap = Map<String, dynamic>.from(decoded);
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Parsing failed: $e");
-  //   }
-  //
-  //   // ✅ SHOW ONLY NON-EMPTY FIELDS
-  //   if (finalMap != null && finalMap.isNotEmpty) {
-  //     final filteredEntries = finalMap.entries.where((entry) {
-  //       final val = entry.value;
-  //       return val != null &&
-  //           val.toString().trim().isNotEmpty &&
-  //           val.toString().trim() != "null";
-  //     }).toList();
-  //
-  //     if (filteredEntries.isEmpty) {
-  //       return _normalField(config, "");
-  //     }
-  //
-  //     final children = filteredEntries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           controller: TextEditingController(text: e.value.toString()),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: const OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //
-  //     return Column(children: children);
-  //   }
-  //
-  //   return _normalField(config, rawValue);
-  // }
-
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rawValue = widget.result.parameterValue?.value;
-  //   final fieldKey = config.label;
-  //
-  //   if (rawValue == null || rawValue.isEmpty) {
-  //     return _normalField(config, "");
-  //   }
-  //
-  //   Map<String, dynamic>? finalMap;
-  //
-  //   try {
-  //     dynamic decoded = rawValue;
-  //
-  //     // 🔥 STEP 1: If string looks like JSON → decode
-  //     if (decoded is String &&
-  //         decoded.trim().startsWith("{") &&
-  //         decoded.trim().endsWith("}")) {
-  //       decoded = jsonDecode(decoded);
-  //     }
-  //
-  //     // 🔥 STEP 2: If decoded contains nested "value" as String → decode again
-  //     if (decoded is Map &&
-  //         decoded["value"] is String &&
-  //         decoded["value"].toString().trim().startsWith("{")) {
-  //       decoded["value"] = jsonDecode(decoded["value"]);
-  //     }
-  //
-  //     // 🔥 STEP 3: If still nested {value:{value:12}} → extract inner
-  //     if (decoded is Map && decoded["value"] is Map) {
-  //       finalMap = Map<String, dynamic>.from(decoded["value"]);
-  //     } else if (decoded is Map) {
-  //       finalMap = Map<String, dynamic>.from(decoded);
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Safe JSON parsing failed: $e");
-  //   }
-  //
-  //   // 🔥 CASE: Proper JSON Map parsed
-  //   if (finalMap != null && finalMap.isNotEmpty) {
-  //     final children = finalMap.entries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           controller: TextEditingController(text: e.value?.toString() ?? ""),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: const OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //
-  //     return Column(children: children);
-  //   }
-  //
-  //   // 🔥 FALLBACK: Handle invalid format like {value: 12, unit: }
-  //   if (rawValue.trim().startsWith("{") && rawValue.trim().endsWith("}")) {
-  //     final Map<String, String> parsedMap = {};
-  //     final content = rawValue.substring(1, rawValue.length - 1);
-  //
-  //     final pairs = content.split(',');
-  //
-  //     for (var pair in pairs) {
-  //       final parts = pair.split(':');
-  //       if (parts.length >= 2) {
-  //         final key = parts[0].trim();
-  //         final value = parts.sublist(1).join(':').trim();
-  //         parsedMap[key] = value;
-  //       }
-  //     }
-  //
-  //     final children = parsedMap.entries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           controller: TextEditingController(text: e.value),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: const OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //
-  //     return Column(children: children);
-  //   }
-  //
-  //   // 🔥 FINAL FALLBACK
-  //   return _normalField(config, rawValue);
-  // }
-
-  Widget _normalField(_FieldConfig config, String value) {
-    config.controller.text = value;
-
-    return TextFormField(
-      controller: config.controller,
-      decoration: InputDecoration(
-        labelText: config.label,
-        border: const OutlineInputBorder(),
-      ),
-    );
-  }
-
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rv = widget.result.parameterValue?.value;
-  //   // Pass the field name to extract the correct value
-  //   final cleaned = _extractCleanValue(rv, config.label);
-  //   final fieldKey = config.label; // Use label as unique identifier
-  //
-  //   // -------- CASE: multi-field JSON --------
-  //   if (_isJsonObject(cleaned)) {
-  //     final map = jsonDecode(cleaned) as Map<String, dynamic>;
-  //     final children = map.entries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           controller: TextEditingController(text: e.value.toString()),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //     return Column(
-  //       children: children,
-  //     );
-  //   }
-  //
-  //   // -------- CASE: simple field --------
-  //   // Initialize the controller value only once when widget is built
-  //   // if (!config.isInitialized) {
-  //   //   config.controller.text = cleaned;
-  //   //   config.isInitialized = true;
-  //   // }
-  //
-  //   return TextFormField(
-  //     controller: config.controller,
-  //     readOnly: config.isDateField,
-  //     keyboardType: config.keyboardType,
-  //     maxLines: 1,
-  //     decoration: InputDecoration(
-  //       labelText: config.label,
-  //       border: OutlineInputBorder(),
-  //     ),
-  //     onChanged: (value) {
-  //       // Mark this field as edited by user
-  //       if (!_userEditedFields.contains(fieldKey)) {
-  //         setState(() {
-  //           _userEditedFields.add(fieldKey);
-  //         });
-  //       }
-  //       print("User typed: $value for field: $fieldKey");
-  //     },
-  //   );
-  // }
-
-  // Widget _buildTextFormField(_FieldConfig config) {
-  //   final rv = widget.result.parameterValue?.value;
-  //   final cleaned = _extractCleanValue(rv);
-  //   final fieldKey = config.label; // Use label as unique identifier
-  //
-  //   // -------- CASE: multi-field JSON --------
-  //   if (_isJsonObject(cleaned)) {
-  //     final map = jsonDecode(cleaned) as Map<String, dynamic>;
-  //     final children = map.entries.map<Widget>((e) {
-  //       return Padding(
-  //         padding: const EdgeInsets.only(bottom: 12.0),
-  //         child: TextFormField(
-  //           controller: TextEditingController(text: e.value.toString()),
-  //           decoration: InputDecoration(
-  //             labelText: e.key,
-  //             border: OutlineInputBorder(),
-  //           ),
-  //         ),
-  //       );
-  //     }).toList();
-  //     return Column(
-  //       children: children,
-  //     );
-  //   }
-  //
-  //   // -------- CASE: simple field --------
-  //   // Only update from backend if user hasn't edited this field
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     if (!_userEditedFields.contains(fieldKey) &&
-  //         config.controller.text != cleaned) {
-  //       config.controller.text = cleaned;
-  //     }
-  //   });
-  //
-  //   return TextFormField(
-  //     controller: config.controller,
-  //     readOnly: config.isDateField,
-  //     keyboardType: config.keyboardType,
-  //     maxLines: 1,
-  //     decoration: InputDecoration(
-  //       labelText: config.label,
-  //       border: OutlineInputBorder(),
-  //     ),
-  //     onChanged: (value) {
-  //       // Mark this field as edited by user
-  //       if (!_userEditedFields.contains(fieldKey)) {
-  //         setState(() {
-  //           _userEditedFields.add(fieldKey);
-  //         });
-  //       }
-  //       print("User typed: $value");
-  //     },
-  //   );
-  // }
 
   Widget _buildSubmitButton() {
     var typography = CustomTypography(context);
@@ -4548,560 +3643,6 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
     }
   }
 
-  // Future<void> _handleSubmit() async {
-  //   setState(() => isLoading = true);
-  //   List<Map<String, dynamic>> referenceData = [];
-  //
-  //   // Use local `references` state variable (stays in sync with deletions/uploads)
-  //   final currentRefs = references;
-  //
-  //   if (selectedImageFile != null && uploadedImageUrl != null) {
-  //     // New image selected: preserve existing refs + add new one
-  //     if (currentRefs != null && currentRefs.isNotEmpty) {
-  //       referenceData = currentRefs.map<Map<String, dynamic>>((ref) {
-  //         return {
-  //           "url": ref.url ?? [],
-  //           "tags": ref.tags ?? [],
-  //           "name": ref.name ?? "",
-  //           "size": ref.size ?? 0,
-  //         };
-  //       }).toList();
-  //     }
-  //     referenceData.add({
-  //       "url": [uploadedImageUrl],
-  //       "tags": [],
-  //       "name": "",
-  //       "size": selectedImageFile!.lengthSync(),
-  //     });
-  //   } else if (currentRefs != null && currentRefs.isNotEmpty) {
-  //     // No new image: always preserve ALL existing references as-is
-  //     referenceData = currentRefs.map<Map<String, dynamic>>((ref) {
-  //       return {
-  //         "url": ref.url ?? [],
-  //         "tags": ref.tags ?? [],
-  //         "name": ref.name ?? "",
-  //         "size": ref.size ?? 0,
-  //       };
-  //     }).toList();
-  //   } else {
-  //     referenceData = [];
-  //   }
-  //
-  //   try {
-  //     dynamic value;
-  //     final parameterType = widget.parametertype!.name!.toLowerCase();
-  //
-  //     if (parameterType == 'time') {
-  //       if (selectedTime == null) {
-  //         _showError("Please select a time");
-  //         return;
-  //       }
-  //
-  //       final hh = selectedTime!.hour.toString().padLeft(2, '0');
-  //       final mm = selectedTime!.minute.toString().padLeft(2, '0');
-  //
-  //       final formattedTime = "$hh:$mm:00";
-  //
-  //       value = json.encode({
-  //         "value": {"value": formattedTime}
-  //       });
-  //     } else if (parameterType == 'timestamp') {
-  //       String raw = timestampController.text.trim();
-  //
-  //       if (raw.isEmpty) {
-  //         _showError("Please select a timestamp");
-  //         return;
-  //       }
-  //
-  //       try {
-  //         raw = raw
-  //             .replaceAll(
-  //                 RegExp(
-  //                     r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
-  //                 ' ')
-  //             .replaceAll(RegExp(r'[\u200B-\u200D]'), '')
-  //             .replaceAll(RegExp(r'[^\x00-\x7F]'), '')
-  //             .replaceAll(RegExp(r'\s+'), ' ')
-  //             .trim();
-  //
-  //         final match = RegExp(
-  //                 r'([0-3]?\d)[\/\-\.\s]([0-1]?\d)[\/\-\.\s](\d{4})\s+(\d{1,2}:\d{2})\s*([AaPp][Mm])')
-  //             .firstMatch(raw);
-  //
-  //         if (match == null) {
-  //           final sp = raw.split(' ');
-  //           if (sp.length < 3)
-  //             throw FormatException('Unrecognized timestamp format');
-  //           final datePart = sp[0];
-  //           final timePart = sp.sublist(1).join(' ');
-  //           raw = "$datePart $timePart";
-  //         }
-  //
-  //         String datePart;
-  //         String timePart;
-  //         if (match != null) {
-  //           final p1 = match.group(1)!;
-  //           final p2 = match.group(2)!;
-  //           final p3 = match.group(3)!;
-  //           datePart = "$p1/$p2/$p3";
-  //           timePart = "${match.group(4)!} ${match.group(5)!}";
-  //         } else {
-  //           final parts = raw.split(' ');
-  //           datePart = parts[0];
-  //           timePart = parts.sublist(1).join(' ');
-  //         }
-  //
-  //         final dateSegments = datePart.split(RegExp(r'[\/\-\.]'));
-  //         if (dateSegments.length != 3) throw FormatException('Bad date part');
-  //
-  //         final a = int.tryParse(dateSegments[0]) ?? 0;
-  //         final b = int.tryParse(dateSegments[1]) ?? 0;
-  //         final year = int.tryParse(dateSegments[2]) ?? 0;
-  //
-  //         int day;
-  //         int month;
-  //
-  //         if (a > 12 && a <= 31) {
-  //           day = a;
-  //           month = b;
-  //         } else if (b > 12 && b <= 31) {
-  //           month = a;
-  //           day = b;
-  //         } else {
-  //           day = a;
-  //           month = b;
-  //         }
-  //
-  //         timePart =
-  //             timePart.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
-  //
-  //         final parsedTime = DateFormat.jm().parseLoose(timePart);
-  //
-  //         final dtLocal = DateTime(
-  //           year,
-  //           month,
-  //           day,
-  //           parsedTime.hour,
-  //           parsedTime.minute,
-  //           0,
-  //         );
-  //
-  //         final dtUtc = dtLocal.toUtc();
-  //         final formatted = "${dtUtc.year.toString().padLeft(4, '0')}-"
-  //             "${dtUtc.month.toString().padLeft(2, '0')}-"
-  //             "${dtUtc.day.toString().padLeft(2, '0')}T"
-  //             "${dtUtc.hour.toString().padLeft(2, '0')}:"
-  //             "${dtUtc.minute.toString().padLeft(2, '0')}:00.000Z";
-  //
-  //         value = json.encode({
-  //           "value": {"value": formatted}
-  //         });
-  //       } catch (e) {
-  //         print("Timestamp parse error: $e");
-  //         _showError("Invalid timestamp format");
-  //         return;
-  //       }
-  //     } else if (parameterType.toLowerCase() == 'json') {
-  //       String rawText = jsonController.text.trim();
-  //
-  //       rawText = rawText
-  //           .replaceAll('\u201C', '"')
-  //           .replaceAll('\u201D', '"')
-  //           .replaceAll('\u2018', "'")
-  //           .replaceAll('\u2019', "'");
-  //
-  //       value = rawText;
-  //     }
-  //
-  //     // ---------------- NUMBER ----------------
-  //     else if (parameterType == 'number') {
-  //       value = json.encode({
-  //         "value": paramAController.text.trim(),
-  //         "unit": unitController.text.trim().isEmpty
-  //             ? null
-  //             : unitController.text.trim(),
-  //         "parameterB": paramBController.text.trim().isEmpty
-  //             ? null
-  //             : paramBController.text.trim(),
-  //       });
-  //     }
-  //
-  //     // ---------------- BOOLEAN ----------------
-  //     else if (parameterType == 'boolean') {
-  //       if (selectedBooleanValue == null) {
-  //         _showError('Please select Yes or No');
-  //         return;
-  //       }
-  //       value = selectedBooleanValue;
-  //     }
-  //
-  //     // ---------------- DEFAULT TEXT / UNIT / PARAMETER A/B ----------------
-  //     else {
-  //       final paramA = paramAController.text.trim();
-  //       final paramB = paramBController.text.trim();
-  //       final unit = unitController.text.trim();
-  //
-  //       if (widget.result.parameterNameA!.trim().isNotEmpty && paramA.isEmpty) {
-  //         _showError(
-  //             'Please enter a value for ${widget.result.parameterNameA}');
-  //         return;
-  //       }
-  //
-  //       if (widget.result.parameterNameB!.trim().isNotEmpty && paramB.isEmpty) {
-  //         _showError(
-  //             'Please enter a value for ${widget.result.parameterNameB}');
-  //         return;
-  //       }
-  //
-  //       if (widget.result.unitName!.trim().isNotEmpty && unit.isEmpty) {
-  //         _showError('Please enter a value for ${widget.result.unitName}');
-  //         return;
-  //       }
-  //
-  //       value = json.encode({
-  //         "value": paramAController.text.trim(),
-  //         "unit": unitController.text.trim(),
-  //         "parameterB": paramBController.text.trim(),
-  //       });
-  //     }
-  //
-  //     // ---------- BUILD FINAL PAYLOAD ----------
-  //     final updatedFields = {
-  //       "value": value,
-  //       "param_type": widget.parametertype!.name,
-  //       "reference": referenceData,
-  //     };
-  //
-  //     final provider = Provider.of<SubaccountParameterProvider>(
-  //       context,
-  //       listen: false,
-  //     );
-  //     final locationListProvider = Provider.of<MyLocationListProvider>(
-  //       context,
-  //       listen: false,
-  //     );
-  //
-  //     await provider.submitParameterUpdate(
-  //       context: context,
-  //       subaccountId: widget.subAccountId,
-  //       locationId: widget.locationId,
-  //       sovId: widget.sovId,
-  //       campusId: widget.campusId,
-  //       parameterId: widget.result.dataCategoryId!,
-  //       updatedFields: updatedFields,
-  //       selectedParameterList: widget.selectedParameterList!,
-  //     );
-  //
-  //     setState(() {
-  //       _userEditedFields.clear();
-  //     });
-  //
-  //     locationListProvider.fetchLocationList(
-  //       context,
-  //       "",
-  //       1,
-  //       5,
-  //       widget.accountId,
-  //       widget.subAccountId,
-  //       "",
-  //       "",
-  //       widget.sovId,
-  //     );
-  //
-  //     if (widget.onRefresh != null) {
-  //       await widget.onRefresh!();
-  //     }
-  //   } catch (e) {
-  //     _showError('Error: ${e.toString()}');
-  //   } finally {
-  //     if (mounted) setState(() => isLoading = false);
-  //   }
-  // }
-
-//   Future<void> _handleSubmit() async {
-//     setState(() => isLoading = true);
-//     List<Map<String, dynamic>> referenceData = [];
-//
-//     final existingRef = widget.result.parameterValue?.reference;
-// // If new image selected
-//     if (selectedImageFile != null) {
-//       referenceData = [
-//         {
-//           "url": [uploadedImageUrl], // <-- returned from your upload API
-//           "tags": [],
-//           // "name": "",
-//           "size": selectedImageFile!.lengthSync(),
-//         }
-//       ];
-//     }
-// // If no new image, keep existing one
-//     else if (existingRef != null && existingRef.isNotEmpty) {
-//       referenceData = existingRef.map((ref) {
-//         return {
-//           "url": ref.url ?? [],
-//           "tags": ref.tags ?? [],
-//           // "name": ref.name ?? "",
-//           "size": ref.size ?? 0,
-//         };
-//       }).toList();
-//     }
-// // If nothing exists
-//     else {
-//       referenceData = [];
-//       // referenceData = [
-//       //   {"url": [], "tags": [], "size": 0}
-//       // ];
-//     }
-//     try {
-//       dynamic value;
-//       final parameterType = widget.parametertype!.name!.toLowerCase();
-//
-//       if (parameterType == 'time') {
-//         if (selectedTime == null) {
-//           _showError("Please select a time");
-//           return;
-//         }
-//
-//         final hh = selectedTime!.hour.toString().padLeft(2, '0');
-//         final mm = selectedTime!.minute.toString().padLeft(2, '0');
-//
-//         final formattedTime = "$hh:$mm:00";
-//
-//         // 🔥 Wrap exactly like backend expects
-//         value = json.encode({
-//           "value": {"value": formattedTime}
-//         });
-//       } else if (parameterType == 'timestamp') {
-//         String raw = timestampController.text.trim();
-//
-//         if (raw.isEmpty) {
-//           _showError("Please select a timestamp");
-//           return;
-//         }
-//
-//         try {
-//           // ---------- CLEAN ----------
-//           raw = raw
-//               .replaceAll(
-//                   RegExp(
-//                       r'[\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000]'),
-//                   ' ')
-//               .replaceAll(RegExp(r'[\u200B-\u200D]'), '') // zero width
-//               .replaceAll(RegExp(r'[^\x00-\x7F]'), '') // remove non-ascii
-//               .replaceAll(RegExp(r'\s+'), ' ')
-//               .trim();
-//
-//           // Example cleaned: "12/30/2025 11:55 PM" or "30/12/2025 11:55 PM"
-//
-//           // ---------- EXTRACT PARTS (date + time) ----------
-//           // Accepts these common separators (slash, dash, dot)
-//           final match = RegExp(
-//                   r'([0-3]?\d)[\/\-\.\s]([0-1]?\d)[\/\-\.\s](\d{4})\s+(\d{1,2}:\d{2})\s*([AaPp][Mm])')
-//               .firstMatch(raw);
-//
-//           if (match == null) {
-//             // fallback: try a more permissive split (date and time separated by space)
-//             final sp = raw.split(' ');
-//             if (sp.length < 3)
-//               throw FormatException('Unrecognized timestamp format');
-//             final datePart = sp[0]; // could be dd/mm or mm/dd
-//             final timePart = sp.sublist(1).join(' '); // "11:55 PM"
-//             // try to parse with heuristics below
-//             raw = "$datePart $timePart";
-//           }
-//
-//           // If we have a regex match, rebuild normalized parts
-//           String datePart;
-//           String timePart;
-//           if (match != null) {
-//             final p1 = match.group(1)!; // first number
-//             final p2 = match.group(2)!; // second number
-//             final p3 = match.group(3)!; // year
-//             datePart = "$p1/$p2/$p3";
-//             timePart = "${match.group(4)!} ${match.group(5)!}";
-//           } else {
-//             // split fallback (eg. "12/30/2025 11:55 PM")
-//             final parts = raw.split(' ');
-//             datePart = parts[0];
-//             timePart = parts.sublist(1).join(' ');
-//           }
-//
-//           // ---------- DETECT ORDER (dd/mm vs mm/dd) ----------
-//           final dateSegments = datePart.split(RegExp(r'[\/\-\.]'));
-//           if (dateSegments.length != 3) throw FormatException('Bad date part');
-//
-//           final a = int.tryParse(dateSegments[0]) ?? 0;
-//           final b = int.tryParse(dateSegments[1]) ?? 0;
-//           final year = int.tryParse(dateSegments[2]) ?? 0;
-//
-//           int day;
-//           int month;
-//
-//           // Heuristics:
-//           // - if first segment > 12 => it's day (DD/MM/YYYY)
-//           // - else if second segment > 12 => first is month (MM/DD/YYYY)
-//           // - else default to DD/MM/YYYY (your earlier format), but you can change if desired
-//           if (a > 12 && a <= 31) {
-//             day = a;
-//             month = b;
-//           } else if (b > 12 && b <= 31) {
-//             month = a;
-//             day = b;
-//           } else {
-//             // ambiguous (e.g. 05/06). Default to DD/MM/YYYY as your UI used earlier.
-//             day = a;
-//             month = b;
-//           }
-//
-//           // ---------- PARSE timePart using DateFormat.jm ----------
-//           // normalize spaces, uppercase AM/PM
-//           timePart =
-//               timePart.replaceAll(RegExp(r'\s+'), ' ').trim().toUpperCase();
-//
-//           final parsedTime =
-//               DateFormat.jm().parseLoose(timePart); // more forgiving
-//
-//           final dtLocal = DateTime(
-//             year,
-//             month,
-//             day,
-//             parsedTime.hour,
-//             parsedTime.minute,
-//             0,
-//           );
-//
-//           final dtUtc = dtLocal.toUtc();
-//           final formatted = "${dtUtc.year.toString().padLeft(4, '0')}-"
-//               "${dtUtc.month.toString().padLeft(2, '0')}-"
-//               "${dtUtc.day.toString().padLeft(2, '0')}T"
-//               "${dtUtc.hour.toString().padLeft(2, '0')}:"
-//               "${dtUtc.minute.toString().padLeft(2, '0')}:00.000Z";
-//
-//           value = json.encode({
-//             "value": {"value": formatted}
-//           });
-//         } catch (e) {
-//           print("Timestamp parse error: $e");
-//           _showError("Invalid timestamp format");
-//           return;
-//         }
-//       } else if (parameterType.toLowerCase() == 'json') {
-//         String rawText = jsonController.text.trim();
-//
-//         rawText = rawText
-//             .replaceAll('“', '"')
-//             .replaceAll('”', '"')
-//             .replaceAll('‘', "'")
-//             .replaceAll('’', "'");
-//
-//         value = rawText;
-//       }
-//
-//       // ---------------- NUMBER ----------------
-//       else if (parameterType == 'number') {
-//         final txt = paramAController.text.trim();
-//         // if (txt.isEmpty) {
-//         //   _showError('Please enter a number');
-//         //   return;
-//         // }
-//
-//         // Web sends: "{\"value\":\"99\"}"
-//         // value = json.encode({"value": txt});
-//         value = json.encode({
-//           "value": paramAController.text.trim(),
-//           "unit": unitController.text.trim().isEmpty
-//               ? null
-//               : unitController.text.trim(),
-//           "parameterB": paramBController.text.trim().isEmpty
-//               ? null
-//               : paramBController.text.trim(),
-//         });
-//       }
-//
-//       // ---------------- BOOLEAN ----------------
-//       else if (parameterType == 'boolean') {
-//         if (selectedBooleanValue == null) {
-//           _showError('Please select Yes or No');
-//           return;
-//         }
-//
-//         // Web sends boolean normally
-//         value = selectedBooleanValue;
-//       }
-//
-//       // ---------------- DEFAULT TEXT / UNIT / PARAMETER A/B ----------------
-//       else {
-//         final paramA = paramAController.text.trim();
-//         final paramB = paramBController.text.trim();
-//         final unit = unitController.text.trim();
-//
-//         if (widget.result.parameterNameA!.trim().isNotEmpty && paramA.isEmpty) {
-//           _showError(
-//               'Please enter a value for ${widget.result.parameterNameA}');
-//           return;
-//         }
-//
-//         if (widget.result.parameterNameB!.trim().isNotEmpty && paramB.isEmpty) {
-//           _showError(
-//               'Please enter a value for ${widget.result.parameterNameB}');
-//           return;
-//         }
-//
-//         if (widget.result.unitName!.trim().isNotEmpty && unit.isEmpty) {
-//           _showError('Please enter a value for ${widget.result.unitName}');
-//           return;
-//         }
-//         value = json.encode({
-//           "value": paramAController.text.trim(),
-//           "unit": unitController.text.trim(),
-//           "parameterB": paramBController.text.trim(),
-//         });
-//       }
-//
-//       // ---------- MATCH WEB EXACTLY ----------
-//       final updatedFields = {
-//         "value": value, // always stringified JSON when number/json
-//         "param_type": widget.parametertype!.name,
-//         "reference": referenceData,
-//       };
-//
-//       final provider = Provider.of<SubaccountParameterProvider>(
-//         context,
-//         listen: false,
-//       );
-//       final locationListProvider = Provider.of<MyLocationListProvider>(
-//         context,
-//         listen: false,
-//       );
-//
-//       await provider.submitParameterUpdate(
-//         context: context,
-//         subaccountId: widget.subAccountId,
-//         locationId: widget.locationId,
-//         sovId: widget.sovId,
-//         campusId: widget.campusId,
-//         parameterId: widget.result.dataCategoryId!,
-//         updatedFields: updatedFields,
-//         selectedParameterList: widget.selectedParameterList!,
-//       );
-//
-//       setState(() {
-//         _userEditedFields.clear();
-//       });
-//
-//       locationListProvider.fetchLocationList(context, "", 1, 5,
-//           widget.accountId, widget.subAccountId, "", "", widget.sovId);
-//
-//       if (widget.onRefresh != null) {
-//         await widget.onRefresh!();
-//       }
-//     } catch (e) {
-//       _showError('Error: ${e.toString()}');
-//     } finally {
-//       if (mounted) setState(() => isLoading = false);
-//     }
-//   }
-
   void _showError(String message) {
     var typography = CustomTypography(context);
     if (!mounted) return;
@@ -5226,14 +3767,14 @@ class ImpactDataElement {
   final User user;
   final Result result;
   final ParameterType parameterType;
-  final ParameterValue parameterValue;
+  final ParameterValue? parameterValue;
 
   ImpactDataElement({
     required this.name,
     required this.user,
     required this.result,
     required this.parameterType,
-    required this.parameterValue,
+    this.parameterValue,
   });
 }
 
@@ -5863,7 +4404,6 @@ class _HazardHubCardState extends State<HazardHubCard> {
   }
 
   Widget _buildRow(String key, dynamic value) {
-    /// CASE 1: Map → nested table
     if (value is Map<String, dynamic>) {
       return Padding(
         padding: const EdgeInsets.all(8),
@@ -5884,7 +4424,6 @@ class _HazardHubCardState extends State<HazardHubCard> {
       );
     }
 
-    /// CASE 2: List → each item becomes a table
     if (value is List) {
       if (value.isEmpty) return const SizedBox.shrink();
 
@@ -5904,7 +4443,6 @@ class _HazardHubCardState extends State<HazardHubCard> {
             ...value.asMap().entries.map((entry) {
               final item = entry.value;
 
-              // List item is a map → build table
               if (item is Map<String, dynamic>) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -5923,96 +4461,11 @@ class _HazardHubCardState extends State<HazardHubCard> {
       );
     }
 
-    /// CASE 3: Primitive value
     return _dataRow(
       formatKey(key),
       value?.toString() ?? '—',
     );
   }
-
-  // Widget _buildRow(String key, dynamic value) {
-  //   /// Nested JSON → show sub-table
-  //   if (value is Map<String, dynamic>) {
-  //     return Padding(
-  //       padding: const EdgeInsets.all(8),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           Text(
-  //             formatKey(key),
-  //             style: const TextStyle(
-  //               color: Colors.white,
-  //               fontWeight: FontWeight.bold,
-  //             ),
-  //           ),
-  //           const SizedBox(height: 8),
-  //           _buildTable(value),
-  //         ],
-  //       ),
-  //     );
-  //   }
-  //
-  //   /// Normal value
-  //   return _dataRow(
-  //     formatKey(key),
-  //     value?.toString() ?? '—',
-  //   );
-  // }
-
-  // Widget _expandedSection(Map<String, dynamic> data) {
-  //   // Remove keys you don't want in expanded table
-  //   final entries = data.entries
-  //       .where((e) => e.key != 'score' && e.value != null)
-  //       .toList();
-  //
-  //   if (entries.isEmpty) return const SizedBox.shrink();
-  //
-  //   return Container(
-  //     margin: const EdgeInsets.all(12),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: Colors.grey.shade700),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: const Color(0xFF3A3A3A),
-  //     ),
-  //     child: Column(
-  //       children: [
-  //         /// TABLE HEADER
-  //         Container(
-  //           height: 48,
-  //           decoration: BoxDecoration(
-  //             color: Colors.black.withOpacity(0.2),
-  //             borderRadius:
-  //             const BorderRadius.vertical(top: Radius.circular(8)),
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               _headerCell("Category"),
-  //               _verticalDivider(),
-  //               _headerCell("Value / Detail"),
-  //             ],
-  //           ),
-  //         ),
-  //
-  //         /// TABLE ROWS (DYNAMIC)
-  //         ...entries.asMap().entries.map((entry) {
-  //           final index = entry.key;
-  //           final e = entry.value;
-  //
-  //           return Column(
-  //             children: [
-  //               _dataRow(
-  //                 formatKey(e.key),
-  //                 e.value.toString(),
-  //               ),
-  //               if (index != entries.length - 1)
-  //                 Divider(height: 1, color: Colors.grey.shade700),
-  //             ],
-  //           );
-  //         }).toList(),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _headerCell(String text) {
     return Expanded(
@@ -6062,14 +4515,10 @@ class _HazardHubCardState extends State<HazardHubCard> {
                 ),
               ),
             ),
-
-            /// VERTICAL DIVIDER
             Container(
               width: 1,
               color: Colors.grey.shade700,
             ),
-
-            /// VALUE
             Expanded(
               child: Padding(
                 padding:
@@ -6092,12 +4541,10 @@ class _HazardHubCardState extends State<HazardHubCard> {
   Map<String, dynamic> parseParameterValue(dynamic rawValue) {
     if (rawValue == null) return {};
 
-    // If already a map
     if (rawValue is Map<String, dynamic>) {
       return rawValue;
     }
 
-    // If JSON string
     if (rawValue is String) {
       try {
         final decoded = jsonDecode(rawValue);
@@ -6138,15 +4585,3 @@ class _HazardHubCardState extends State<HazardHubCard> {
         .join(' ');
   }
 }
-
-/// ================= STYLES =================
-const _headerStyle = TextStyle(
-  color: Colors.white,
-  fontWeight: FontWeight.w600,
-  fontSize: 13,
-);
-
-const _cellStyle = TextStyle(
-  color: Colors.white,
-  fontSize: 13,
-);

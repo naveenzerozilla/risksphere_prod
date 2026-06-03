@@ -1,3 +1,5 @@
+import '../providers/my_location_list_provider.dart';
+
 class Invoicemodel {
   List<Result>? result;
   String? message;
@@ -310,5 +312,166 @@ class Plan {
     data['product_id'] = this.productId;
     data['price_id'] = this.priceId;
     return data;
+  }
+}
+
+class ParameterResponse {
+  List<ParameterItem>? items;
+
+  ParameterResponse({this.items});
+
+  factory ParameterResponse.fromJson(Map<String, dynamic> json) {
+    List<ParameterItem> tempList = [];
+
+    /// 🔹 Case 1: HazardHub API → keys
+    if (json['keys'] != null) {
+      tempList =
+          (json['keys'] as List).map((e) => ParameterItem.fromJson(e)).toList();
+    }
+
+    /// 🔹 Case 2: RiskSphere API → result
+    else if (json['result'] != null) {
+      tempList = (json['result'] as List)
+          .map((e) => ParameterItem.fromJson(e))
+          .toList();
+    }
+
+    return ParameterResponse(items: tempList);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'items': items?.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class ParameterItem {
+  String? id;
+  String? name;
+  String? path;
+  List<LinkedDataParameter>? linkedDataParameters;
+  CreatedAt? updatedAt;
+
+  ParameterItem(
+      {this.id,
+      this.name,
+      this.path,
+      this.linkedDataParameters,
+      this.updatedAt});
+
+  factory ParameterItem.fromJson(Map<String, dynamic> json) {
+    return ParameterItem(
+      name: json['name']?.toString(),
+      id: json['data_category_id']?.toString() ??
+          json['id']?.toString() ??
+          json['_id']?.toString(),
+      path: json['path']?.toString(),
+      linkedDataParameters: (json['linked_data_parameters'] as List?)
+          ?.map(
+            (e) => LinkedDataParameter.fromJson(e),
+          )
+          .toList(),
+      updatedAt: json['updated_at'] != null
+          ? CreatedAt.fromJson(json['updated_at'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'data_category_id': id,
+      if (path != null) 'path': path,
+      if (linkedDataParameters != null)
+        'linked_data_parameters':
+            linkedDataParameters!.map((e) => e.toJson()).toList(),
+      if (updatedAt != null) 'updated_at': updatedAt!.toJson(),
+    };
+  }
+}
+
+class ParameterLinkResponse {
+  final List<ParameterLinkItem>? keys;
+
+  ParameterLinkResponse({
+    this.keys,
+  });
+
+  factory ParameterLinkResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ParameterLinkResponse(
+      keys: (json['keys'] as List?)
+          ?.map(
+            (e) => ParameterLinkItem.fromJson(e),
+          )
+          .toList(),
+    );
+  }
+}
+
+class ParameterLinkItem {
+  final String? name;
+  final String? path;
+
+  final List<LinkedDataParameter>? linkedDataParameters;
+
+  ParameterLinkItem({
+    this.name,
+    this.path,
+    this.linkedDataParameters,
+  });
+
+  factory ParameterLinkItem.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return ParameterLinkItem(
+      name: json['name'],
+      path: json['path'],
+      linkedDataParameters: (json['linked_data_parameters'] as List?)
+          ?.map(
+            (e) => LinkedDataParameter.fromJson(e),
+          )
+          .toList(),
+    );
+  }
+}
+
+class LinkedDataParameter {
+  String? dataCategoryId;
+  String? dataCategoryName;
+  String? vendorKey;
+
+  CreatedAt? createdAt;
+
+  LinkedDataParameter({
+    this.dataCategoryId,
+    this.dataCategoryName,
+    this.vendorKey,
+    this.createdAt,
+  });
+
+  LinkedDataParameter.fromJson(Map<String, dynamic> json) {
+    dataCategoryId = json['data_category_id'];
+
+    dataCategoryName = json['data_category_name'];
+
+    vendorKey = json['vendor_key'];
+
+    createdAt = json['created_at'] != null
+        ? CreatedAt.fromJson(
+            json['created_at'],
+          )
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "data_category_id": dataCategoryId,
+      "data_category_name": dataCategoryName,
+      "vendor_key": vendorKey,
+      "created_at": createdAt?.toJson(),
+    };
   }
 }

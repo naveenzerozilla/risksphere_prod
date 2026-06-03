@@ -6,23 +6,44 @@ import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/components/custom_toast.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
+import 'package:http/http.dart' as http;
 
 class NewsFeedProvider extends ChangeNotifier {
   bool _isActivityLoading = false;
+  bool _isActivityLoadMore = false;
+  int _activityPage = 1;
+  bool _hasMoreActivity = true;
 
   bool get isActivityLoading => _isActivityLoading;
+
+  bool get isActivityLoadMore => _isActivityLoadMore;
+
+  bool get hasMoreActivity => _hasMoreActivity;
 
   set isActivityLoading(bool value) {
     _isActivityLoading = value;
     notifyListeners();
   }
 
+  set isActivityLoadMore(bool value) {
+    _isActivityLoadMore = value;
+    notifyListeners();
+  }
+
   bool _isEventLoading = false;
+  bool _isEventLoadMore = false;
 
   bool get isEventLoading => _isEventLoading;
 
+  bool get isEventLoadMore => _isEventLoadMore;
+
   set isEventLoading(bool value) {
     _isEventLoading = value;
+    notifyListeners();
+  }
+
+  set isEventLoadMore(bool value) {
+    _isEventLoadMore = value;
     notifyListeners();
   }
 
@@ -84,10 +105,21 @@ class NewsFeedProvider extends ChangeNotifier {
   final Set<String> _loadingIds = {};
 
   bool isLoading(String id) => _loadingIds.contains(id);
+
+  String _newsItemKey(Map<String, dynamic> item) {
+    final id = item['id'] ?? item['notification_id'] ?? item['process_id'];
+    return id?.toString() ?? jsonEncode(item);
+  }
+
+  String _eventItemKey(Map<String, dynamic> item) {
+    final id = item['id'] ?? item['event_id'] ?? item['process_id'];
+    return id?.toString() ?? jsonEncode(item);
+  }
+
   Future<bool> updateNotificationRead(
-      BuildContext context,
-      Map<String, dynamic> payload,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> payload,
+  ) async {
     final feedId = payload['data']?['id'];
     if (feedId == null) return false;
 
@@ -95,14 +127,11 @@ class NewsFeedProvider extends ChangeNotifier {
       _loadingIds.add(feedId);
       notifyListeners();
 
-      ApiService apiService =
-      ApiService(AppConstant.NOTIFICATION_READ);
+      ApiService apiService = ApiService(AppConstant.NOTIFICATION_READ);
 
-      final Map<String, dynamic> response =
-      await apiService.patch(payload);
+      final Map<String, dynamic> response = await apiService.patch(payload);
 
-      if (response['message'] ==
-          "Activity feed updated successfully") {
+      if (response['message'] == "Activity feed updated successfully") {
         return true;
       }
 
@@ -117,11 +146,12 @@ class NewsFeedProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<bool> acceptLocationCredits(
-      BuildContext context,
-      String giftId,
-      String feedId,
-      ) async {
+    BuildContext context,
+    String giftId,
+    String feedId,
+  ) async {
     try {
       ApiService apiService = ApiService(AppConstant.ACCEPT_CREDITS);
       final Map<String, dynamic> response = await apiService.post({
@@ -138,15 +168,24 @@ class NewsFeedProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetch News Feed from API and store as list of maps
   Future<void> fetchNewsFeed({
+    bool isLoadMore = false,
     DateTime? startDate,
     DateTime? endDate,
     String? hazard,
     String? keyword,
   }) async {
-    if (_isActivityLoading) return; // Prevent duplicate requests
-    isActivityLoading = true;
+    if (isLoadMore) {
+      if (_isActivityLoadMore || _isActivityLoading || !_hasMoreActivity)
+        return;
+      isActivityLoadMore = true;
+      _activityPage++;
+    } else {
+      if (_isActivityLoading) return; // Prevent duplicate requests
+      isActivityLoading = true;
+      _activityPage = 1;
+      _hasMoreActivity = true;
+    }
     try {
       String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       if (userId.isEmpty) {
@@ -157,8 +196,8 @@ class NewsFeedProvider extends ChangeNotifier {
       ApiService apiService =
           ApiService('${AppConstant.GET_NEWS_FEED}/$userId');
       String url = _selectedHazard == "All"
-          ? '?page=1&pageSize=100'
-          : '?activity=${_selectedHazard.toLowerCase()}';
+          ? '?page=$_activityPage&page_size=10&pageSize=10'
+          : '?page=$_activityPage&page_size=10&pageSize=10&activity=${_selectedHazard.toLowerCase()}';
       // String url = '?hazard=${hazard ?? _selectedHazard}';
       if (startDate != null && endDate != null) {
         final dateFormat = DateFormat('yyyy-MM-dd');
@@ -174,73 +213,176 @@ class NewsFeedProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       if (response != null && response.containsKey('result')) {
         List<dynamic> results = response['result'];
-        _newsFeed =
+        final parsedResults =
             results.map((item) => Map<String, dynamic>.from(item)).toList();
-        _activityHits = response['notification_count'];
+        final int serverActivityCount = response['notification_count'] is int
+            ? response['notification_count'] as int
+            : parsedResults.length;
+
+        if (isLoadMore) {
+          final existingIds = _newsFeed.map(_newsItemKey).toSet();
+          final uniqueNewItems = parsedResults
+              .where((item) => !existingIds.contains(_newsItemKey(item)))
+              .toList();
+          _newsFeed.addAll(uniqueNewItems);
+          if (uniqueNewItems.isEmpty) {
+            _hasMoreActivity = false;
+          }
+        } else {
+          _newsFeed = parsedResults;
+        }
+
+        if (parsedResults.isEmpty) {
+          _hasMoreActivity = false;
+        }
+
+        // Keep total chip count stable across load-more responses.
+        _activityHits = _newsFeed.length;
+        if (serverActivityCount > _activityHits) {
+          _activityHits = serverActivityCount;
+        }
         log('News Feed Loaded: $_activityHits items');
       } else {
-        _newsFeed = [];
-        _activityHits = 0;
+        if (isLoadMore) {
+          _activityPage = (_activityPage > 1) ? _activityPage - 1 : 1;
+          _hasMoreActivity = false;
+        } else {
+          _newsFeed = [];
+          _activityHits = 0;
+          _hasMoreActivity = false;
+        }
         log('No results found');
       }
     } catch (e, stackTrace) {
+      if (isLoadMore) {
+        _activityPage = (_activityPage > 1) ? _activityPage - 1 : 1;
+      }
       log('Error fetching news feed: $e');
       log(stackTrace.toString());
     } finally {
-      isActivityLoading = false;
+      if (isLoadMore) {
+        isActivityLoadMore = false;
+      } else {
+        isActivityLoading = false;
+      }
     }
   }
 
-  /// Fetch Event from API and store as list of maps
+  int _eventPage = 1;
+  bool _hasMoreEvent = true;
+
+  bool get hasMoreEvent => _hasMoreEvent;
+
+  // bool isEventLoading = false;
+
   Future<void> fetchEvent({
+    bool isLoadMore = false,
     DateTime? startDate,
     DateTime? endDate,
     String? hazard,
     String? keyword,
   }) async {
-    if (_isEventLoading) return; // Prevent duplicate requests
-    isEventLoading = true;
+    if (isLoadMore) {
+      if (isEventLoading || isEventLoadMore || !_hasMoreEvent) return;
+      isEventLoadMore = true;
+      _eventPage++;
+    } else {
+      if (isEventLoading) return;
+      isEventLoading = true;
+      _eventPage = 1;
+      _eventFeed.clear();
+      _hasMoreEvent = true;
+    }
+
     try {
       String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      if (userId.isEmpty) {
-        log('User not logged in');
-        return;
-      }
+      if (userId.isEmpty) return;
 
       ApiService apiService =
           ApiService('${AppConstant.GET_EVENT_FEED}/$userId');
-      String url = '?page=1&page_size=100';
 
-      if (startDate != null && endDate != null) {
-        url +=
-            '&start_date=${startDate.toIso8601String()}&end_date=${endDate.toIso8601String()}';
-      }
-
-      if (keyword != null && keyword.isNotEmpty) {
-        url += '&search=$keyword';
-      }
+      String url = '?page=$_eventPage&pageSize=20';
 
       var response = await apiService.get(url);
+
       if (response != null && response.containsKey('result')) {
         List<dynamic> results = response['result'];
-        _eventFeed =
-            results.map((item) => Map<String, dynamic>.from(item)).toList();
-        _eventHits = _eventFeed.length;
-        log('Event Feed Loaded: $_activityHits items');
-      } else {
-        _newsFeed = [];
-        _eventHits = 0;
-        log('No results found');
+        final parsedResults =
+            results.map((e) => Map<String, dynamic>.from(e)).toList();
+
+        if (parsedResults.isEmpty) {
+          if (isLoadMore) {
+            _eventPage = (_eventPage > 1) ? _eventPage - 1 : 1;
+          }
+          _hasMoreEvent = false;
+        } else {
+          if (isLoadMore) {
+            final existingIds = _eventFeed.map(_eventItemKey).toSet();
+            final uniqueNewItems = parsedResults
+                .where((item) => !existingIds.contains(_eventItemKey(item)))
+                .toList();
+            _eventFeed.addAll(uniqueNewItems);
+            if (uniqueNewItems.isEmpty) {
+              _hasMoreEvent = false;
+            }
+          } else {
+            _eventFeed = parsedResults;
+          }
+        }
+
+        if (isLoadMore) {
+          if (_eventFeed.length > _eventHits) {
+            _eventHits = _eventFeed.length;
+          }
+        } else {
+          _eventHits = _eventFeed.length;
+        }
+        notifyListeners();
       }
-    } catch (e, stackTrace) {
-      log('Error fetching news feed: $e');
-      log(stackTrace.toString());
+    } catch (e) {
+      if (isLoadMore) {
+        _eventPage = (_eventPage > 1) ? _eventPage - 1 : 1;
+      }
+      log('Error: $e');
     } finally {
-      isEventLoading = false;
+      if (isLoadMore) {
+        isEventLoadMore = false;
+      } else {
+        isEventLoading = false;
+      }
     }
   }
 
-  /// Fetch eventInfo from API and store as list of maps
+  Future<String?> fetchMapUrl(String eventId) async {
+    try {
+      ApiService apiService = ApiService('${AppConstant.GET_MAP_URL}');
+
+      var response = await apiService.post({'event_id': eventId});
+
+      print("MAP API RESPONSE 👉 $response");
+
+      //  DIRECT RESPONSE (YOUR CASE)
+      if (response != null && response.containsKey('map_url')) {
+        return response['map_url'];
+      }
+
+      //  BACKUP (if API changes later)
+      if (response != null &&
+          response.containsKey('result') &&
+          response['result'] != null) {
+        return response['result']['map_url'];
+      }
+
+      log('Map URL not found in response');
+    } catch (e, stackTrace) {
+      log('Error fetching map url: $e');
+      log(stackTrace.toString());
+    }
+
+    return null;
+  }
+
+
   Future<void> fetchEventInfo({
     String? eventId,
   }) async {

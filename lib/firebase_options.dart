@@ -19,7 +19,7 @@ class DefaultFirebaseOptions {
     if (kIsWeb) {
       throw UnsupportedError(
         'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
+            'you can reconfigure this by running the FlutterFire CLI again.',
       );
     }
     switch (defaultTargetPlatform) {
@@ -30,14 +30,14 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -51,21 +51,18 @@ class DefaultFirebaseOptions {
     appId: '1:857135835532:android:7dfee0b61d1da828c84ea9',
     messagingSenderId: '857135835532',
     projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.appspot.com', // ✅ FIXED
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-    appId: '1:857135835532:ios:1e1a91db9912a20fc84ea9',
+    appId: '1:857135835532:ios:dce11826e3313f03c84ea9',
     messagingSenderId: '857135835532',
     projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.appspot.com',
-    // ✅ FIXED
-    androidClientId:
-        '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-    iosClientId:
-        '857135835532-518sk0mc0br8kaqpifp2f1up65pp0o71.apps.googleusercontent.com',
-    iosBundleId: 'com.risksphere.green',
+    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
+    iosClientId: '857135835532-al09g5oa31ue7i0ikttr6r1m97t9tep0.apps.googleusercontent.com',
+    iosBundleId: 'com.sonofthunder.risksphere',
   );
 
   // static const FirebaseOptions android = FirebaseOptions(

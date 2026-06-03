@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "857135835532-jnn6kp4e401k1tpcun32vpgcb2jnugup.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green",
+            "certificate_hash": "3667556574deb7acb3bd02b2f11afe5bb07715b9"
+          }
+        },
+        {
           "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
           "client_type": 3
         }

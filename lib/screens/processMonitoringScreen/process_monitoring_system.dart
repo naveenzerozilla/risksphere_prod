@@ -1,3 +1,4 @@
+import '../../service/firestore_service.dart';
 import '../../utils/global_imports.dart';
 import 'package:async/async.dart';
 import '../jobMonitoringSystem/job_monitoring_screen.dart';
@@ -87,7 +88,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                 //       .snapshots();
                 // }
 
-                stream = FirebaseFirestore.instance
+                stream = FirestoreService.db
                     .collection('processes')
                     .where('location_data.account_id',
                         isEqualTo: widget.accountId)
@@ -190,7 +191,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
           'Processing batch ${i ~/ batchSize + 1} with ${batch.length} IDs'); // Debug print
       print('Batch IDs: $batch'); // Debug print
 
-      streams.add(FirebaseFirestore.instance
+      streams.add(FirestoreService.db
           .collection('processes')
           .where(FieldPath.documentId, whereIn: batch)
           .snapshots()

@@ -63,37 +63,6 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
     });
   }
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _tabController = TabController(length: 2, vsync: this);
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _getData();
-  //     _setClaims();
-  //   });
-  //
-  //   _tabController.addListener(() {
-  //     if (!_tabController.indexIsChanging) {
-  //       // Only run when tab has changed
-  //       _tabIndex = _tabController.index;
-  //
-  //       print("Current Tab Index: $_tabIndex");
-  //
-  //       if (_tabIndex == 0) {
-  //         paymentProvider.fetchTransactionList(
-  //           context,
-  //           filterItem ?? '',
-  //           '',
-  //         );
-  //       } else if (_tabIndex == 1) {
-  //         invoiceProvider.fetchInvoiceList(
-  //           context,
-  //           filterItem ?? '',
-  //         );
-  //       }
-  //     }
-  //   });
-  // }
 
   Future<void> _setClaims() async {
     isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
@@ -173,13 +142,13 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                     },
                     controller: _tabController,
                     isScrollable: false,
-                    labelColor: Colors.lightBlueAccent,
+                    labelColor: AppColors.primaryMain,
                     unselectedLabelColor: Colors.grey,
                     labelStyle: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
-                    indicatorColor: Colors.lightBlueAccent,
+                    indicatorColor:  AppColors.primaryMain,
                     indicatorWeight: 1,
                     tabs: [
                       Tab(
@@ -205,19 +174,17 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                   const EdgeInsets.only(right: 3, left: 10),
                               decoration: BoxDecoration(
                                 border:
-                                    Border.all(color: Colors.blue, width: 1.0),
+                                    Border.all(color: AppColors.primaryMain, width: 1.0),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: DropdownButton2<String>(
                                 value: _selectedValue,
                                 buttonStyleData: ButtonStyleData(
-                                  // width: 200, // 👈 WIDTH OF THE BUTTON (adjust as needed)
-                                  padding: const EdgeInsets.symmetric(
+                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10),
                                 ),
                                 dropdownStyleData: DropdownStyleData(
                                   width: 300,
-                                  // 👈 WIDTH OF DROPDOWN MENU (set your custom width)
                                   decoration: BoxDecoration(
                                     color: Color(0xFF1E1E1E),
                                     borderRadius: BorderRadius.circular(8),
@@ -275,7 +242,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
                                 border:
-                                    Border.all(color: Colors.blue, width: 1.0),
+                                    Border.all(color: AppColors.primaryMain, width: 1.0),
                               ),
                               child: TextButton(
                                 onPressed: () => _selectDateRange(context),

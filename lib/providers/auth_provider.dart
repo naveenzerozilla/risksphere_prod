@@ -45,23 +45,23 @@ class AuthNotifier extends ChangeNotifier {
   bool get isSubmittingSupport => _isSubmittingSupport;
 
   // ✅ AadOAuth configuration
-  final AadOAuth oauth = AadOAuth(
-    Config(
-      tenant: "common",
-      clientId: "eb81a783-765c-482d-8fcb-6440ab1d1201",
-      scope: "openid profile offline_access email User.Read",
-      redirectUri: "msauth.com.risksphere.green://auth",
-      navigatorKey: navigatorKey,
-    ),
-  );
-  static const String _clientId = 'eb81a783-765c-482d-8fcb-6440ab1d1201';
-  static const String _tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
+  // final AadOAuth oauth = AadOAuth(
+  //   Config(
+  //     tenant: "common",
+  //     clientId: "eb81a783-765c-482d-8fcb-6440ab1d1201",
+  //     scope: "openid profile offline_access email User.Read",
+  //     redirectUri: "msauth.com.risksphere.green://auth",
+  //     navigatorKey: navigatorKey,
+  //   ),
+  // );
+  // static const String _clientId = 'eb81a783-765c-482d-8fcb-6440ab1d1201';
+  // static const String _tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
   static const String _redirectUrl = 'com.risksphere.green://oauth2redirect';
 
-  final String _discoveryUrl =
-      // 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration';
-
-      'https://login.microsoftonline.com/$_tenantId/v2.0/.well-known/openid-configuration';
+  // final String _discoveryUrl =
+  //     // 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration';
+  //
+  //     'https://login.microsoftonline.com/$_tenantId/v2.0/.well-known/openid-configuration';
 
   final List<String> _scopes = const [
     'openid',
@@ -196,7 +196,7 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> fetchIndividualRoles() async {
     try {
       final response = await http.get(
-        Uri.parse("${AppConstant.baseURL}/send_default_data"),
+        Uri.parse("${AppConstant.baseURL}/send_default_data_v2"),
         headers: {'Accept': 'application/json'},
       );
 
@@ -300,7 +300,7 @@ class AuthNotifier extends ChangeNotifier {
 //   Future<void> fetchIndividualRoles() async {
 //     try {
 //       final response = await http.get(
-//         Uri.parse("${AppConstant.baseURL}/send_default_data"),
+//         Uri.parse("${AppConstant.baseURL}/send_default_data_v2"),
 //         headers: {'Accept': 'application/json'},
 //       );
 //
@@ -358,7 +358,7 @@ class AuthNotifier extends ChangeNotifier {
   // Future<void> fetchIndividualRoles() async {
   //   try {
   //     final response = await http.get(
-  //       Uri.parse("${AppConstant.baseURL}/send_default_data"),
+  //       Uri.parse("${AppConstant.baseURL}/send_default_data_v2"),
   //       headers: {
   //         'Content-Type': 'application/json',
   //         'Accept': 'application/json'
@@ -413,7 +413,7 @@ class AuthNotifier extends ChangeNotifier {
     try {
       final response = await http.get(
         Uri.parse(
-          "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}",
+          "${AppConstant.baseURL}/send_default_data_v2?name=${Uri.encodeComponent(name)}",
         ),
         headers: {
           'Content-Type': 'application/json',
@@ -468,7 +468,7 @@ class AuthNotifier extends ChangeNotifier {
   //   try {
   //     final response = await http.get(
   //       Uri.parse(
-  //           "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
+  //           "${AppConstant.baseURL}/send_default_data_v2?name=${Uri.encodeComponent(name)}"),
   //       headers: {
   //         'Content-Type': 'application/json',
   //         'Accept': 'application/json'
@@ -513,7 +513,7 @@ class AuthNotifier extends ChangeNotifier {
   //   try {
   //     final response = await http.get(
   //       Uri.parse(
-  //           "${AppConstant.baseURL}/send_default_data?name=${Uri.encodeComponent(name)}"),
+  //           "${AppConstant.baseURL}/send_default_data_v2?name=${Uri.encodeComponent(name)}"),
   //       headers: {
   //         'Content-Type': 'application/json',
   //         'Accept': 'application/json'
@@ -569,7 +569,7 @@ class AuthNotifier extends ChangeNotifier {
   //   try {
   //     final response = await http.get(
   //       Uri.parse(
-  //           "${AppConstant.baseURL}send_default_data?name=${Uri.encodeComponent(name)}"),
+  //           "${AppConstant.baseURL}send_default_data_v2?name=${Uri.encodeComponent(name)}"),
   //       headers: {
   //         'Content-Type': 'application/json',
   //         'Accept': 'application/json'
@@ -612,21 +612,17 @@ class AuthNotifier extends ChangeNotifier {
       });
 
       final UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       _user = userCredential.user;
 
-      IdTokenResult token = await userCredential.user!.getIdTokenResult();
-      Map<String, dynamic>? claims = token.claims ?? {};
-
-      String isAdminVerified = await getAllClaims();
-      print("is admin verified" + isAdminVerified.length.toString());
-      print(isAdminVerified.toLowerCase());
-
+      // 🔥 CHECK EMAIL VERIFICATION FIRST - BEFORE ANYTHING ELSE
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
+        await _auth.signOut(); // Sign out immediately if email not verified
+
         var typography = CustomTypography(context1);
         ScaffoldMessenger.of(context1).showSnackBar(
           SnackBar(
@@ -634,18 +630,30 @@ class AuthNotifier extends ChangeNotifier {
               LanguageService.getTranslated(
                   context1, "login_email_not_verified_error"),
             ),
+            duration: Duration(seconds: 3),
           ),
         );
 
-        await _auth.signOut();
         final _googleSignIn = GoogleSignIn();
         var isSignedIn = await _googleSignIn.isSignedIn();
         if (isSignedIn) await _googleSignIn.disconnect();
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-        return;
-      } else if (isAdminVerified.toLowerCase() == "false" ||
+        return; // 🔥 RETURN HERE - DO NOT CONTINUE
+      }
+
+      // ✅ EMAIL IS VERIFIED - NOW GET CLAIMS
+      IdTokenResult token = await userCredential.user!.getIdTokenResult();
+      Map<String, dynamic>? claims = token.claims ?? {};
+
+      String isAdminVerified = await getAllClaims();
+      print("is admin verified" + isAdminVerified.length.toString());
+      print(isAdminVerified.toLowerCase());
+
+      // 🔥 CHECK IF ADMIN IS VERIFIED
+      if (isAdminVerified.toLowerCase() == "false" ||
           isAdminVerified.isEmpty) {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
@@ -656,7 +664,6 @@ class AuthNotifier extends ChangeNotifier {
           builder: (BuildContext context) {
             var typography = CustomTypography(context);
             return StatefulBuilder(
-              // Use StatefulBuilder to update UI inside AlertDialog
               builder: (context, setState) {
                 return AlertDialog(
                   title: Text(
@@ -678,14 +685,12 @@ class AuthNotifier extends ChangeNotifier {
                               child: CustomButton(
                                 type: ButtonType.elevated,
                                 onPressed: () async {
-                                  // Start showing loader
                                   setState(() {
                                     isRemindLoading = true;
                                   });
 
                                   bool result = await remindUser();
 
-                                  // Stop showing loader
                                   setState(() {
                                     isRemindLoading = false;
                                   });
@@ -705,29 +710,27 @@ class AuthNotifier extends ChangeNotifier {
 
                                   final _googleSignIn = GoogleSignIn();
                                   var isSignedIn =
-                                      await _googleSignIn.isSignedIn();
+                                  await _googleSignIn.isSignedIn();
 
                                   if (isSignedIn)
                                     await _googleSignIn.disconnect();
                                   await _auth.signOut();
 
-                                  // Ensure UI updates before closing dialog
                                   Future.delayed(Duration(milliseconds: 500),
-                                      () {
-                                    if (Navigator.canPop(context)) {
-                                      Navigator.pop(context);
-                                    }
-                                  });
+                                          () {
+                                        if (Navigator.canPop(context)) {
+                                          Navigator.pop(context);
+                                        }
+                                      });
                                 },
                                 child: isRemindLoading
                                     ? Center(
-                                        child: CircularProgressIndicator(
-                                            color: Colors
-                                                .white)) // Ensure visibility
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white))
                                     : Text(
-                                        LanguageService.getTranslated(context,
-                                            "login_admin_not_verified_remind_button"),
-                                      ),
+                                  LanguageService.getTranslated(context,
+                                      "login_admin_not_verified_remind_button"),
+                                ),
                               ),
                             ),
                           ],
@@ -741,7 +744,7 @@ class AuthNotifier extends ChangeNotifier {
                                   onPressed: () async {
                                     final _googleSignIn = GoogleSignIn();
                                     var isSignedIn =
-                                        await _googleSignIn.isSignedIn();
+                                    await _googleSignIn.isSignedIn();
                                     if (isSignedIn)
                                       await _googleSignIn.disconnect();
                                     await _auth.signOut();
@@ -754,7 +757,7 @@ class AuthNotifier extends ChangeNotifier {
                                         MaterialPageRoute(
                                             builder: (context) =>
                                                 SplashScreen()),
-                                        (route) => false);
+                                            (route) => false);
                                   },
                                   child: Text(
                                     LanguageService.getTranslated(context,
@@ -779,10 +782,12 @@ class AuthNotifier extends ChangeNotifier {
 
       await SharedPreferenceService.setClaims(claims);
       await SharedPreferenceService.getAllClaims();
+      unawaited(initFCM(_user!.uid));
       _isSigningIn = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
+
     } catch (e) {
       _isSigningIn = false;
       var typography = CustomTypography(context1);
@@ -797,10 +802,208 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-      // Handle error
       print("Error signing in: $e");
     }
   }
+  // Future<void> signInWithEmailAndPassword(
+  //     String email, String password, BuildContext context1) async {
+  //   try {
+  //     _isSigningIn = true;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //
+  //     final UserCredential userCredential =
+  //         await _auth.signInWithEmailAndPassword(
+  //       email: email,
+  //       password: password,
+  //     );
+  //     _user = userCredential.user;
+  //
+  //     IdTokenResult token = await userCredential.user!.getIdTokenResult();
+  //     Map<String, dynamic>? claims = token.claims ?? {};
+  //
+  //     String isAdminVerified = await getAllClaims();
+  //     print("is admin verified" + isAdminVerified.length.toString());
+  //     print(isAdminVerified.toLowerCase());
+  //
+  //     if (!(_user?.emailVerified ?? false)) {
+  //       _isSigningIn = false;
+  //       var typography = CustomTypography(context1);
+  //       ScaffoldMessenger.of(context1).showSnackBar(
+  //         SnackBar(
+  //           content: Text(
+  //             LanguageService.getTranslated(
+  //                 context1, "login_email_not_verified_error"),
+  //           ),
+  //         ),
+  //       );
+  //
+  //       await _auth.signOut();
+  //       final _googleSignIn = GoogleSignIn();
+  //       var isSignedIn = await _googleSignIn.isSignedIn();
+  //       if (isSignedIn) await _googleSignIn.disconnect();
+  //       WidgetsBinding.instance.addPostFrameCallback((_) {
+  //         notifyListeners();
+  //       });
+  //       return;
+  //     } else if (isAdminVerified.toLowerCase() == "false" ||
+  //         isAdminVerified.isEmpty) {
+  //       _isSigningIn = false;
+  //       // Show dialog with reminder to verify email for admin
+  //       // ignore: use_build_context_synchronously
+  //       await showDialog(
+  //         context: context1,
+  //         barrierDismissible: false,
+  //         builder: (BuildContext context) {
+  //           var typography = CustomTypography(context);
+  //           return StatefulBuilder(
+  //             // Use StatefulBuilder to update UI inside AlertDialog
+  //             builder: (context, setState) {
+  //               return AlertDialog(
+  //                 title: Text(
+  //                   LanguageService.getTranslated(
+  //                       context, "login_admin_not_verified_dialog_title"),
+  //                   style: typography.H6.copyWith(color: Colors.white),
+  //                 ),
+  //                 content: Text(
+  //                   LanguageService.getTranslated(
+  //                       context, "login_admin_not_verified_dialog_description"),
+  //                   style: typography.Body1.copyWith(color: Colors.white),
+  //                 ),
+  //                 actions: [
+  //                   Column(
+  //                     children: [
+  //                       Row(
+  //                         children: [
+  //                           Expanded(
+  //                             child: CustomButton(
+  //                               type: ButtonType.elevated,
+  //                               onPressed: () async {
+  //                                 // Start showing loader
+  //                                 setState(() {
+  //                                   isRemindLoading = true;
+  //                                 });
+  //
+  //                                 bool result = await remindUser();
+  //
+  //                                 // Stop showing loader
+  //                                 setState(() {
+  //                                   isRemindLoading = false;
+  //                                 });
+  //
+  //                                 if (result) {
+  //                                   ScaffoldMessenger.of(context).showSnackBar(
+  //                                     SnackBar(
+  //                                       content: Text(
+  //                                         LanguageService.getTranslated(context,
+  //                                             "login_admin_not_verified_remind_success"),
+  //                                         style: typography.H6
+  //                                             .copyWith(color: Colors.black),
+  //                                       ),
+  //                                     ),
+  //                                   );
+  //                                 }
+  //
+  //                                 final _googleSignIn = GoogleSignIn();
+  //                                 var isSignedIn =
+  //                                     await _googleSignIn.isSignedIn();
+  //
+  //                                 if (isSignedIn)
+  //                                   await _googleSignIn.disconnect();
+  //                                 await _auth.signOut();
+  //
+  //                                 // Ensure UI updates before closing dialog
+  //                                 Future.delayed(Duration(milliseconds: 500),
+  //                                     () {
+  //                                   if (Navigator.canPop(context)) {
+  //                                     Navigator.pop(context);
+  //                                   }
+  //                                 });
+  //                               },
+  //                               child: isRemindLoading
+  //                                   ? Center(
+  //                                       child: CircularProgressIndicator(
+  //                                           color: Colors
+  //                                               .white)) // Ensure visibility
+  //                                   : Text(
+  //                                       LanguageService.getTranslated(context,
+  //                                           "login_admin_not_verified_remind_button"),
+  //                                     ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       SizedBox(height: CustomSpacing.four),
+  //                       Row(
+  //                         children: [
+  //                           Expanded(
+  //                             child: CustomButton(
+  //                                 type: ButtonType.text,
+  //                                 onPressed: () async {
+  //                                   final _googleSignIn = GoogleSignIn();
+  //                                   var isSignedIn =
+  //                                       await _googleSignIn.isSignedIn();
+  //                                   if (isSignedIn)
+  //                                     await _googleSignIn.disconnect();
+  //                                   await _auth.signOut();
+  //
+  //                                   if (Navigator.canPop(context)) {
+  //                                     Navigator.pop(context);
+  //                                   }
+  //                                   Navigator.pushAndRemoveUntil(
+  //                                       context,
+  //                                       MaterialPageRoute(
+  //                                           builder: (context) =>
+  //                                               SplashScreen()),
+  //                                       (route) => false);
+  //                                 },
+  //                                 child: Text(
+  //                                   LanguageService.getTranslated(context,
+  //                                       "login_admin_not_verified_cancel_button"),
+  //                                   style: typography.H6
+  //                                       .copyWith(color: Colors.white),
+  //                                 )),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ],
+  //               );
+  //             },
+  //           );
+  //         },
+  //       );
+  //
+  //       return;
+  //     }
+  //
+  //     await SharedPreferenceService.setClaims(claims);
+  //     await SharedPreferenceService.getAllClaims();
+  //     unawaited(initFCM(_user!.uid));
+  //     _isSigningIn = false;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //   } catch (e) {
+  //     _isSigningIn = false;
+  //     var typography = CustomTypography(context1);
+  //     ScaffoldMessenger.of(context1).showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           LanguageService.getTranslated(
+  //               context1, "login_invaild_email_password_error"),
+  //         ),
+  //       ),
+  //     );
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       notifyListeners();
+  //     });
+  //     // Handle error
+  //     print("Error signing in: $e");
+  //   }
+  // }
 
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
@@ -832,6 +1035,7 @@ class AuthNotifier extends ChangeNotifier {
 
         await SharedPreferenceService.setClaims(claims);
         await SharedPreferenceService.getAllClaims();
+        unawaited(initFCM(_user!.uid));
 
         print('Is Individual? ${claims['isIndividual']}');
         _isSigningIn = false; // Stop loader before navigation
@@ -1103,7 +1307,9 @@ class AuthNotifier extends ChangeNotifier {
         // ✅ Step 1 — Call backend API first
         final response = await http.post(
           Uri.parse(
-              "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/auth_handler/user-check"),
+              '${AppConstant.baseURL}/auth_handler/user-check'),
+              // "https://us-central1-project-green-r5-1-qa.cloudfunctions.net"
+
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"email": email.trim()}),
         );
@@ -1249,7 +1455,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1323,7 +1529,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1383,7 +1589,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1454,7 +1660,7 @@ class AuthNotifier extends ChangeNotifier {
 
       // Call the Firebase Cloud Function
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create');
+          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1722,7 +1928,7 @@ class AuthNotifier extends ChangeNotifier {
       /// 3️⃣ CALL CLOUD FUNCTION
       final response = await http.post(
         Uri.parse(
-          '${AppConstant.baseURL}/add_role_at_user_create',
+          '${AppConstant.baseURL}/add_role_at_user_create_v2',
         ),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"data": payload}),
@@ -2057,7 +2263,7 @@ class AuthNotifier extends ChangeNotifier {
   //     /// 4️⃣ CALL CLOUD FUNCTION (HTTP – SAME AS WEB)
   //     final response = await http.post(
   //       Uri.parse(
-  //         "https://us-central1-project-green-prod.cloudfunctions.net/add_role_at_user_create",
+  //         "https://us-central1-project-green-prod.cloudfunctions.net/add_role_at_user_create_v2",
   //       ),
   //       headers: {
   //         "Content-Type": "application/json",
@@ -2297,7 +2503,7 @@ class AuthNotifier extends ChangeNotifier {
   Future<void> initialOptions() async {
     try {
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('send_default_data');
+          FirebaseFunctions.instance.httpsCallable('send_default_data_v2');
       final result = await callable.call();
       log('Cloud Function result: ${json.encode(result.data)}');
       print('Cloud Function result: ${json.encode(result.data)}');
@@ -2363,7 +2569,7 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('assignClaims');
+          FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
 
       String? token = await _auth.currentUser!.getIdToken(false);
 
@@ -2489,7 +2695,7 @@ class AuthNotifier extends ChangeNotifier {
   //     }
   //
   //     final HttpsCallable callable =
-  //         FirebaseFunctions.instance.httpsCallable('assignClaims');
+  //         FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
   //
   //     String? token = await _auth.currentUser!.getIdToken(true);
   //     log("Old Token: $token");
@@ -2578,7 +2784,7 @@ class AuthNotifier extends ChangeNotifier {
   //     if (isAssignClaimsLoading) return "";
   //     isAssignClaimsLoading = true;
   //     final HttpsCallable callable =
-  //         FirebaseFunctions.instance.httpsCallable('assignClaims');
+  //         FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
   //     String? token = await _auth.currentUser!.getIdToken(true);
   //     log("Old: $token");
   //
@@ -2688,6 +2894,7 @@ class AuthNotifier extends ChangeNotifier {
         'Authorization': 'Bearer $idToken',
       };
 
+      // Define the request body
       final body = json.encode({
         'type': 'remind',
       });
@@ -2695,6 +2902,7 @@ class AuthNotifier extends ChangeNotifier {
       final response =
           await http.post(Uri.parse(url), headers: headers, body: body);
 
+      // Handle the response
       if (response.statusCode == 200) {
         print('Cloud Function result: ${response.body}');
         return true;

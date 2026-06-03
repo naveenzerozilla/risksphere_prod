@@ -189,8 +189,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
           .fetchSubAccountList(context, widget.accountId, "", 1, 3);
     });
     setState(() {
-      isPgAdmin = isPgAdmin;
-      isSuperAdmin = isSuperAdmin;
       _selectedScreen = Screens.accountList;
     });
   }
@@ -469,12 +467,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                                     // const Tab(text: 'Shared'),
                                                     // if (isSuperAdmin ||
                                                     //     isPgAdmin)
-                                                      Tab(
-                                                        text: LanguageService
-                                                            .getTranslated(
-                                                                context,
-                                                                "configuration"),
-                                                      ),
+                                                    Tab(
+                                                      text: LanguageService
+                                                          .getTranslated(
+                                                              context,
+                                                              "configuration"),
+                                                    ),
                                                     // const Tab(
                                                     //     text:
                                                     //         'Access Requested'),
@@ -502,11 +500,11 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                         children: [
                                           _getSubAccountUI(),
                                           // if (isSuperAdmin || isPgAdmin)
-                                            ConfigurationTab(
-                                              subAccountName:
-                                                  subaccountlistprovider
-                                                      .showAccountName,
-                                            ),
+                                          ConfigurationTab(
+                                            subAccountName:
+                                                subaccountlistprovider
+                                                    .showAccountName,
+                                          ),
                                         ],
                                       );
                                     },
@@ -1808,7 +1806,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                           Icon(Icons.info_outline,
                                               color: Colors.white54),
                                           SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
+                                          Text('Max file size is 50 MB',
                                               style: typography.Body1),
                                         ],
                                       ),

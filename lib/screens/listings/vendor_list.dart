@@ -260,11 +260,11 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
     final provider = context.read<SOVListProvider>();
 
     provider.page = 1;
-    provider.clearVendorList();
+    // provider.clearVendorList();
 
     final query = buildQuery();
 
-    debugPrint('✅ FINAL URL QUERY: $query');
+    debugPrint(' FINAL URL QUERY: $query');
 
     await provider.fetchvendorList(
       context,
@@ -958,7 +958,10 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 12),
             _infoRow("User", vendorData.userName ?? "NA"),
-            _infoRow("Role", vendorData.userRole.toString() ?? "NA"),
+            _infoRow(
+              "Role",
+              vendorData.userRole?.name ?? "NA",
+            ),
             _infoRow("Vendor", vendorData.vendorName.toString() ?? "—"),
             const SizedBox(height: 2),
             Divider(color: Colors.white.withOpacity(0.2)),

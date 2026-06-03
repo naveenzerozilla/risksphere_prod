@@ -34,6 +34,7 @@ import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../models/locationDocument.dart';
 import '../screens/listings/widgets/auto_complete_options.dart';
+import '../service/firestore_service.dart';
 import '../service/language_service.dart';
 
 MyLocationModel parseLocationModel(Map<String, dynamic> json) {
@@ -65,6 +66,16 @@ class MyLocationListProvider with ChangeNotifier {
   bool isChatLoading = false;
 
   String? get chatSessionId => _chatSessionId;
+  bool _isMonitorLoading = false;
+
+  bool get isMonitorLoading => _isMonitorLoading;
+
+  set isMonitorLoading(bool value) {
+    _isMonitorLoading = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
   // 🔹 Dialog submit button
   bool isAddToSOVSubmitting = false;
@@ -90,7 +101,6 @@ class MyLocationListProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // 🔹 CHECK IF ITEM IS SELECTED
   bool isSelected(String id) {
     if (isGlobalSelectAll) {
       return !excludedLocationIds.contains(id);
@@ -98,7 +108,6 @@ class MyLocationListProvider with ChangeNotifier {
     return selectedLocationIds.contains(id);
   }
 
-  // 🔹 SELECT ALL (GLOBAL)
   void selectAllGlobal({required int totalCount}) {
     isGlobalSelectAll = true;
     totalLocationCount = totalCount;
@@ -115,7 +124,6 @@ class MyLocationListProvider with ChangeNotifier {
   void removeIdFromSelection(String id) {
     selectedLocationIds.remove(id);
 
-    // 👇 VERY IMPORTANT
     if (isGlobalSelectAll) {
       isGlobalSelectAll = false;
     }
@@ -143,7 +151,7 @@ class MyLocationListProvider with ChangeNotifier {
   bool isDeleting(String documentId) => deletingDocumentId == documentId;
 
   // Add these state variables alongside your existing ones
-  // ✅ KEEP THESE:
+
   List<Map<String, dynamic>> galleryMedia = [];
   bool isGalleryLoading = false;
   bool isGalleryLoaded = false;
@@ -167,8 +175,6 @@ class MyLocationListProvider with ChangeNotifier {
       final headers = await CommonHeaders.createHeaders();
       final url = "${AppConstant.IMAGE_LIST}/$locationId";
 
-      // final url = "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations/getmedia/$locationId";
-
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
@@ -176,8 +182,8 @@ class MyLocationListProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        galleryMedia = List<Map<String, dynamic>>.from(
-            jsonResponse['uploads'] ?? []); // ✅ CORRECT
+        galleryMedia =
+            List<Map<String, dynamic>>.from(jsonResponse['uploads'] ?? []);
         isGalleryLoaded = true;
       } else {
         throw Exception("Failed to load gallery media");
@@ -235,6 +241,51 @@ class MyLocationListProvider with ChangeNotifier {
     } finally {
       isDocumentsLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> addToSovMonitoring({
+    required BuildContext context,
+    required List<String> locationIds,
+    required String sovId,
+  }) async {
+    try {
+      isMonitorLoading = true;
+
+      final headers = await CommonHeaders.createHeaders();
+
+      final response = await http.post(
+        Uri.parse(
+          'https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations_v2/add_to_sov_monitoring',
+        ),
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'location_id': locationIds,
+          'sov_id': sovId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        clearSelection();
+        CustomToast.success(
+          context,
+          json.decode(response.body)['message'] ?? 'Added to SOV monitoring',
+        );
+        return true;
+      } else {
+        final msg = json.decode(response.body)['message'] ?? 'Failed';
+        CustomToast.error(context, msg);
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Monitor Error: $e');
+      CustomToast.error(context, 'Something went wrong');
+      return false;
+    } finally {
+      isMonitorLoading = false;
     }
   }
 
@@ -357,7 +408,6 @@ class MyLocationListProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        /// 🔥 remove exact document safely
         documents.removeWhere((doc) => doc.id == documentId);
       } else {
         throw Exception("Failed to delete document");
@@ -422,52 +472,6 @@ class MyLocationListProvider with ChangeNotifier {
       }
     }
   }
-
-  // Future<void> deleteGalleryImage({
-  //   required BuildContext context,
-  //   required String locationId,
-  //   required String imageUrl,
-  //   required int index,
-  // }) async {
-  //   try {
-  //     final headers = await CommonHeaders.createHeaders();
-  //
-  //     final url = Uri.parse("${AppConstant.UPLOAD_IMAGES_NEW}/$locationId");
-  //
-  //     final response = await http.delete(
-  //       url,
-  //       headers: {
-  //         ...headers,
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: jsonEncode({
-  //         "data": {
-  //           "image_url": imageUrl,
-  //         }
-  //       }),
-  //     );
-  //
-  //     if (response.statusCode == 200 || response.statusCode == 204) {
-  //       if (index >= 0 && index < galleryMedia.length) {
-  //         galleryMedia.removeAt(index);
-  //         notifyListeners();
-  //       }
-  //     } else {
-  //       if (context.mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           const SnackBar(content: Text("Failed to delete image")),
-  //         );
-  //       }
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Delete image error: $e");
-  //     if (context.mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("Error deleting image")),
-  //       );
-  //     }
-  //   }
-  // }
 
   bool _isLoading = false;
   int currentPage = 1;
@@ -614,7 +618,7 @@ class MyLocationListProvider with ChangeNotifier {
     // Prevent duplicate listeners
     if (_listeners.containsKey(sovId)) return;
 
-    final sub = FirebaseFirestore.instance
+    final sub = FirestoreService.db
         .collection("location_recommendations")
         .doc(sovId)
         .snapshots()
@@ -1497,7 +1501,6 @@ class MyLocationListProvider with ChangeNotifier {
         CustomToast.success(context, response['message']);
       }
 
-      // ✅ Return full API response to the caller
       return response;
     } on BackendException catch (e, stackTrace) {
       log("Error adding tags to location: ${e.message}");
@@ -2439,10 +2442,9 @@ class MyLocationListProvider with ChangeNotifier {
   UserManagementResponse? userManagement;
 
   Future<void> fetchUserManagement() async {
-    final url = Uri.parse(
-      "${AppConstant.Fetch_user_managements}"
-      // "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
-    );
+    final url = Uri.parse("${AppConstant.Fetch_user_managements}"
+        // "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
+        );
 
     try {
       final headers = await CommonHeaders.createHeaders();
@@ -4785,7 +4787,7 @@ class MyLocationListProvider with ChangeNotifier {
     String accountId,
     String subAccountId,
     String sovId,
-    List<String> locationIds, // ✅ RECEIVE IDS
+    List<String> locationIds,
   ) async {
     final typography = CustomTypography(context);
 
@@ -4799,7 +4801,7 @@ class MyLocationListProvider with ChangeNotifier {
       final body = {
         "status": "completed",
         "sov_id": sovId,
-        "location_id": locationIds, // ✅ SEND ALL / SELECTED IDS
+        "location_id": locationIds,
       };
 
       final response = await apiService.patch(body);
@@ -4828,7 +4830,7 @@ class MyLocationListProvider with ChangeNotifier {
       return false;
     } finally {
       isLoading = false;
-      notifyListeners(); // ✅ only once
+      notifyListeners();
     }
   }
 
@@ -5121,7 +5123,6 @@ class MyLocationListProvider with ChangeNotifier {
       isLoading = false;
       print(e);
       print(stackTrace);
-      // Todo: Add condition based on response
       if (e.statusCode != 422) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(e.message, style: typography.ButtonLargeBlack),
@@ -5163,7 +5164,6 @@ class MyLocationListProvider with ChangeNotifier {
       var body = data;
       var response = await apiService.patch(body);
       if (response.containsKey('result')) {
-        //result = LocationProfileModel.fromJson(response['result']);
         subdestinations = locationProfile?.subdestinations ?? [];
       } else {
         locationProfile = null;
@@ -5194,20 +5194,6 @@ class MyLocationListProvider with ChangeNotifier {
   }
 
   // Change Occupancy
-
-/*
-Request URL:
-https://us-central1-project-green-f4d78.cloudfunctions.net/locations/rented
-Request Method:
-PATCH
-{
-  "data": {
-    "location_id": "bUysRMYYFTaQJiti48u1",
-    "rented": true,
-    "base_location_id": "B6tQ2lb3MRwirg9LtKJl"
-  }
-}
- */
 
   Future<bool> changeOccupancy(BuildContext context, String locationId,
       bool rented, String baseLocationId) async {

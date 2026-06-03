@@ -426,361 +426,471 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                     padding: EdgeInsets.symmetric(
                                         horizontal: 22, vertical: 8),
                                   ),
+
                                   onPressed: () async {
+                                    // ✅ CHECK 1: Terms and conditions
                                     if (!_termsAccepted) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
                                               'Please accept the Terms & Conditions.'),
+                                          backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
                                     }
 
+                                    // ✅ CHECK 2: Privacy policy
                                     if (!_privacyAccepted) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
                                               'Please accept the Privacy Policy.'),
+                                          backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
                                     }
 
-                                    if (_formKey.currentState!.validate()) {
-                                      /* if(isCaptchaVerified == false) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                    'Please verify that you are not a robot.'),
+                                    // ✅ CHECK 3: Validate form fields
+                                    if (!_formKey.currentState!.validate()) {
+                                      return;
+                                    }
+
+                                    if (_selectedRoles.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Please select at least one role to continue.',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                      return; // 🔥 STOP HERE - DO NOT PROCEED
+                                    }
+
+                                    // ✅ ALL VALIDATIONS PASSED - NOW PROCEED WITH SIGNUP
+                                    if (authNotifier.isNewUser) {
+                                      String result = await authNotifier
+                                          .signUpIndividualWithGoogle(
+                                        widget.userCredential!,
+                                        mobileController.value?.nsn ?? "",
+                                        mobileController.value?.countryCode ??
+                                            "",
+                                        _selectedRoles,
+                                        context,
+                                      );
+                                      if (result == 'role_assigned') {
+                                        final _googleSignIn = GoogleSignIn();
+                                        var isSignedIn =
+                                            await _googleSignIn.isSignedIn();
+                                        if (isSignedIn)
+                                          await _googleSignIn.disconnect();
+                                        FirebaseAuth.instance.signOut();
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "register_non_corporate_success_status_title"),
+                                                style: typography.ButtonLarge,
                                               ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pushReplacement(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                LoginScreen()));
+                                                  },
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.arrow_back),
+                                                      SizedBox(
+                                                          width: CustomSpacing
+                                                              .four),
+                                                      Text('Back to Login'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             );
-                                            return;
-                                          }*/
-                                      if (authNotifier.isNewUser) {
-                                        String result = await authNotifier
-                                            .signUpIndividualWithGoogle(
-                                          widget.userCredential!,
-                                          mobileController.value?.nsn ?? "",
-                                          mobileController.value?.countryCode ??
-                                              "",
-                                          _selectedRoles,
-                                          context,
+                                          },
                                         );
-                                        if (result == 'role_assigned') {
-                                          /*Navigator.push(context, MaterialPageRoute(builder: (context) => */ /*Home(
-                                                useLightMode: false,
-                                                useMaterial3: true,
-                                                colorSelected: ColorSeed.baseColor,
-                                                imageSelected: ColorImageProvider.leaves,
-                                                handleBrightnessChange: handleBrightnessChange,
-                                                handleMaterialVersionChange: handleMaterialVersionChange,
-                                                handleColorSelect: handleColorSelect,
-                                                handleImageSelect: handleImageSelect,
-                                                colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                                              )*/ /*HomeScreen()));*/
-                                          final _googleSignIn = GoogleSignIn();
-                                          var isSignedIn =
-                                              await _googleSignIn.isSignedIn();
-                                          if (isSignedIn)
-                                            await _googleSignIn.disconnect();
-                                          FirebaseAuth.instance.signOut();
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "register_non_corporate_success_status_title"),
-                                                  style: typography.ButtonLarge,
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () {
-                                                      Navigator.pushReplacement(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                              builder: (context) =>
-                                                                  LoginScreen()));
-                                                    },
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(Icons.arrow_back),
-                                                        SizedBox(
-                                                            width: CustomSpacing
-                                                                .four),
-                                                        Text('Back to Login'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        }
-                                      } else if (widget.user == "apple") {
-                                        String result = await authNotifier
-                                            .signUpIndividualWithApple(
-                                          emailController.text,
-                                          passwordController.text,
-                                          nameController.text,
-                                          displayNameController.text,
-                                          mobileController.value?.nsn ?? "",
-                                          mobileController.value?.countryCode ??
-                                              "",
-                                          _selectedRoles,
-                                          widget.userCredential!,
-                                          context,
-                                        );
-                                        if (result == 'role_assigned') {
-                                          /*Navigator.push(context, MaterialPageRoute(builder: (context) => */ /*Home(
-                                                useLightMode: false,
-                                                useMaterial3: true,
-                                                colorSelected: ColorSeed.baseColor,
-                                                imageSelected: ColorImageProvider.leaves,
-                                                handleBrightnessChange: handleBrightnessChange,
-                                                handleMaterialVersionChange: handleMaterialVersionChange,
-                                                handleColorSelect: handleColorSelect,
-                                                handleImageSelect: handleImageSelect,
-                                                colorSelectionMethod: ColorSelectionMethod.colorSeed,
-                                              )*/ /*HomeScreen()));*/
-                                          final _googleSignIn = GoogleSignIn();
-                                          var isSignedIn =
-                                              await _googleSignIn.isSignedIn();
-                                          if (isSignedIn)
-                                            await _googleSignIn.disconnect();
-                                          FirebaseAuth.instance.signOut();
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "register_non_corporate_success_status_title"),
-                                                  style: typography.ButtonLarge,
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () {
-                                                      Navigator.pushReplacement(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                              builder: (context) =>
-                                                                  LoginScreen()));
-                                                    },
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(Icons.arrow_back),
-                                                        SizedBox(
-                                                            width: CustomSpacing
-                                                                .four),
-                                                        Text('Back to Login'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        }
-                                      } else if (_selectedOption ==
-                                          SignUpOptions.individual) {
-                                        print('Individual Account');
-                                        print('Name: ${nameController.text}');
-                                        print(
-                                            'Display Name: ${displayNameController.text}');
-                                        print('Email: ${emailController.text}');
-                                        print(
-                                            'Mobile: $_selectedCountryCode ${mobileController.value?.nsn ?? ""}');
-                                        print('Roles: $_selectedRoles');
-                                        print('Account Type: $_selectedOption');
-                                        if (_selectedCorporateCountryName
-                                            .isEmpty) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "usermanagement_app_corporate_create_company_country_invalid_error_text")),
-                                            ),
-                                          );
-                                        }
-                                        bool isApplicableForTrial = authNotifier
-                                                .companyTypeList
-                                                ?.where((companyType) =>
-                                                    companyType.type
-                                                        .toLowerCase() ==
-                                                    'individual_account')
-                                                .first
-                                                .isApplicableForTrial ??
-                                            false;
-                                        int trialPeriodDays = authNotifier
-                                                .companyTypeList
-                                                ?.where((companyType) =>
-                                                    companyType.type
-                                                        .toLowerCase() ==
-                                                    'individual_account')
-                                                .first
-                                                .trialPeriodDays ??
-                                            0;
-                                        authNotifier
-                                            .signUpIndividualWithEmailAndPassword(
-                                          emailController.text,
-                                          passwordController.text,
-                                          nameController.text,
-                                          displayNameController.text,
-                                          mobileController.value?.nsn ?? "",
-                                          mobileController.value?.countryCode ??
-                                              "",
-                                          _selectedRoles,
-                                          isApplicableForTrial,
-                                          trialPeriodDays,
-                                          context,
-                                        );
-                                      } else {
-                                        print('Corporate Account');
-                                        print(
-                                            'Company Legal Name: ${companyName}');
-                                        print(
-                                            'Company Type: $selectedCompanyType');
-                                        print(
-                                            'Company Display Name: ${companyDisplayNameController.text}');
-                                        print(
-                                            'Admin Email: ${adminEmailController.text}');
-                                        print(
-                                            'Admin Mobile: $_selectedAdminCountryCode ${adminMobileController.text}');
-                                        print('Roles: $_selectedRoles');
-                                        print('Account Type: $_selectedOption');
-                                        bool isApplicableForTrial = authNotifier
-                                                .companyTypeList
-                                                ?.where((companyType) =>
-                                                    companyType.id ==
-                                                    selectedCompanyType?.id)
-                                                .first
-                                                .isApplicableForTrial ??
-                                            true;
-                                        int trialPeriodDays = authNotifier
-                                                .companyTypeList
-                                                ?.where((companyType) =>
-                                                    companyType.id ==
-                                                    selectedCompanyType?.id)
-                                                .first
-                                                .trialPeriodDays ??
-                                            7;
-
-                                        print(
-                                            "=========== SIGN UP CORPORATE INPUT LOG ===========");
-
-                                        print("company_id: $selectedCompanyId");
-                                        print(
-                                            "companyLegalName: ${companyName.trim()}");
-                                        print(
-                                            "companyTypeName: $selectedCompanyType1");
-                                        print(
-                                            "companyDisplayName: ${companyDisplayNameController.text.trim()}");
-
-                                        print(
-                                            "adminName: ${adminNameController.text.trim()}");
-                                        print(
-                                            "adminEmail: ${adminEmailController.text.trim()}");
-
-                                        print(
-                                            "adminCountryCode: +${mobileController.value?.countryCode ?? ""}");
-                                        print(
-                                            "adminPhone: ${mobileController.value?.nsn ?? ""}");
-
-                                        print(
-                                            "adminPassword: ${adminPasswordController.text.trim()}");
-
-                                        print(
-                                            "roles: ${selectedCompanyRole?.toJson()}");
-
-                                        print(
-                                            "selectedCompany: ${jsonEncode(selectedCompany?.toJson())}");
-
-                                        print(
-                                            "isApplicableForTrial: $isApplicableForTrial");
-                                        print(
-                                            "trialPeriodDays: $trialPeriodDays");
-
-                                        print(
-                                            "selectedCorporateCountryName: $_selectedCorporateCountryName");
-                                        print(
-                                            "companyTypeId: $selectedCompanyTypeId");
-
-                                        print(
-                                            "====================================================");
-
-                                        authNotifier
-                                            .signUpCorporateWithEmailAndPassword(
-                                          selectedCompanyId,
-                                          // company_id
-                                          companyName.trim(),
-                                          // companyLegalName
-                                          selectedCompanyType1!,
-                                          // companyTypeName
-                                          companyDisplayNameController.text
-                                              .trim(),
-                                          // companyDisplayName
-                                          adminNameController.text.trim(),
-                                          // adminName
-                                          adminEmailController.text.trim(),
-                                          // adminEmail
-                                          "+${mobileController.value?.countryCode ?? ""}",
-                                          // adminCountryCode
-                                          mobileController.value?.nsn ?? "",
-                                          // adminPhone
-                                          adminPasswordController.text.trim(),
-                                          // password
-                                          selectedCompanyRole,
-                                          // roles
-                                          context,
-                                          selectedCompany,
-                                          // selected company object
-                                          isApplicableForTrial,
-                                          trialPeriodDays,
-                                          _selectedCorporateCountryName,
-                                          // selected country
-                                          selectedCompanyTypeId, // companyTypeId
-                                        );
-
-                                        // authNotifier
-                                        //     .signUpCorporateWithEmailAndPassword(
-                                        //   selectedCompanyId,
-                                        //   // companyName,
-                                        //   companyDisplayNameController.text
-                                        //       .trim(),
-                                        //   selectedCompanyType1!,
-                                        //   // <-- correct name
-                                        //   companyDisplayNameController.text,
-                                        //   adminNameController.text,
-                                        //   adminEmailController.text,
-                                        //   "+${mobileController.value?.countryCode ?? ""}",
-                                        //   mobileController.value?.nsn ?? "",
-                                        //   adminPasswordController.text,
-                                        //   selectedCompanyRole,
-                                        //   context,
-                                        //   selectedCompany,
-                                        //   isApplicableForTrial,
-                                        //   trialPeriodDays,
-                                        //   _selectedCorporateCountryName,
-                                        //   selectedCompanyTypeId, // <-- THE MISSING ONE
-                                        // );
                                       }
+                                    } else if (widget.user == "apple") {
+                                      String result = await authNotifier
+                                          .signUpIndividualWithApple(
+                                        emailController.text,
+                                        passwordController.text,
+                                        nameController.text,
+                                        displayNameController.text,
+                                        mobileController.value?.nsn ?? "",
+                                        mobileController.value?.countryCode ??
+                                            "",
+                                        _selectedRoles,
+                                        widget.userCredential!,
+                                        context,
+                                      );
+                                      if (result == 'role_assigned') {
+                                        final _googleSignIn = GoogleSignIn();
+                                        var isSignedIn =
+                                            await _googleSignIn.isSignedIn();
+                                        if (isSignedIn)
+                                          await _googleSignIn.disconnect();
+                                        FirebaseAuth.instance.signOut();
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "register_non_corporate_success_status_title"),
+                                                style: typography.ButtonLarge,
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pushReplacement(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                LoginScreen()));
+                                                  },
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.arrow_back),
+                                                      SizedBox(
+                                                          width: CustomSpacing
+                                                              .four),
+                                                      Text('Back to Login'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
+                                    } else if (_selectedOption ==
+                                        SignUpOptions.individual) {
+                                      if (_selectedCorporateCountryName
+                                          .isEmpty) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                LanguageService.getTranslated(
+                                                    context,
+                                                    "usermanagement_app_corporate_create_company_country_invalid_error_text")),
+                                          ),
+                                        );
+                                      }
+                                      bool isApplicableForTrial = authNotifier
+                                              .companyTypeList
+                                              ?.where((companyType) =>
+                                                  companyType.type
+                                                      .toLowerCase() ==
+                                                  'individual_account')
+                                              .first
+                                              .isApplicableForTrial ??
+                                          false;
+                                      int trialPeriodDays = authNotifier
+                                              .companyTypeList
+                                              ?.where((companyType) =>
+                                                  companyType.type
+                                                      .toLowerCase() ==
+                                                  'individual_account')
+                                              .first
+                                              .trialPeriodDays ??
+                                          0;
+                                      authNotifier
+                                          .signUpIndividualWithEmailAndPassword(
+                                        emailController.text,
+                                        passwordController.text,
+                                        nameController.text,
+                                        displayNameController.text,
+                                        mobileController.value?.nsn ?? "",
+                                        mobileController.value?.countryCode ??
+                                            "",
+                                        _selectedRoles,
+                                        isApplicableForTrial,
+                                        trialPeriodDays,
+                                        context,
+                                      );
+                                    } else {
+                                      bool isApplicableForTrial = authNotifier
+                                              .companyTypeList
+                                              ?.where((companyType) =>
+                                                  companyType.id ==
+                                                  selectedCompanyType?.id)
+                                              .first
+                                              .isApplicableForTrial ??
+                                          true;
+                                      int trialPeriodDays = authNotifier
+                                              .companyTypeList
+                                              ?.where((companyType) =>
+                                                  companyType.id ==
+                                                  selectedCompanyType?.id)
+                                              .first
+                                              .trialPeriodDays ??
+                                          7;
+
+                                      authNotifier
+                                          .signUpCorporateWithEmailAndPassword(
+                                        selectedCompanyId,
+                                        companyName.trim(),
+                                        selectedCompanyType1!,
+                                        companyDisplayNameController.text
+                                            .trim(),
+                                        adminNameController.text.trim(),
+                                        adminEmailController.text.trim(),
+                                        "+${mobileController.value?.countryCode ?? ""}",
+                                        mobileController.value?.nsn ?? "",
+                                        adminPasswordController.text.trim(),
+                                        selectedCompanyRole,
+                                        context,
+                                        selectedCompany,
+                                        isApplicableForTrial,
+                                        trialPeriodDays,
+                                        _selectedCorporateCountryName,
+                                        selectedCompanyTypeId,
+                                      );
                                     }
                                   },
+                                  // onPressed: () async {
+                                  //   if (!_termsAccepted) {
+                                  //     ScaffoldMessenger.of(context)
+                                  //         .showSnackBar(
+                                  //       SnackBar(
+                                  //         content: Text(
+                                  //             'Please accept the Terms & Conditions.'),
+                                  //       ),
+                                  //     );
+                                  //     return;
+                                  //   }
+                                  //
+                                  //   if (!_privacyAccepted) {
+                                  //     ScaffoldMessenger.of(context)
+                                  //         .showSnackBar(
+                                  //       SnackBar(
+                                  //         content: Text(
+                                  //             'Please accept the Privacy Policy.'),
+                                  //       ),
+                                  //     );
+                                  //     return;
+                                  //   }
+                                  //
+                                  //   if (_formKey.currentState!.validate()) {
+                                  //     if (authNotifier.isNewUser) {
+                                  //       String result = await authNotifier
+                                  //           .signUpIndividualWithGoogle(
+                                  //         widget.userCredential!,
+                                  //         mobileController.value?.nsn ?? "",
+                                  //         mobileController.value?.countryCode ??
+                                  //             "",
+                                  //         _selectedRoles,
+                                  //         context,
+                                  //       );
+                                  //       if (result == 'role_assigned') {
+                                  //         final _googleSignIn = GoogleSignIn();
+                                  //         var isSignedIn =
+                                  //             await _googleSignIn.isSignedIn();
+                                  //         if (isSignedIn)
+                                  //           await _googleSignIn.disconnect();
+                                  //         FirebaseAuth.instance.signOut();
+                                  //         showDialog(
+                                  //           context: context,
+                                  //           builder: (BuildContext context) {
+                                  //             return AlertDialog(
+                                  //               title: Text(
+                                  //                 LanguageService.getTranslated(
+                                  //                     context,
+                                  //                     "register_non_corporate_success_status_title"),
+                                  //                 style: typography.ButtonLarge,
+                                  //               ),
+                                  //               actions: [
+                                  //                 TextButton(
+                                  //                   onPressed: () {
+                                  //                     Navigator.pushReplacement(
+                                  //                         context,
+                                  //                         MaterialPageRoute(
+                                  //                             builder: (context) =>
+                                  //                                 LoginScreen()));
+                                  //                   },
+                                  //                   child: Row(
+                                  //                     children: [
+                                  //                       Icon(Icons.arrow_back),
+                                  //                       SizedBox(
+                                  //                           width: CustomSpacing
+                                  //                               .four),
+                                  //                       Text('Back to Login'),
+                                  //                     ],
+                                  //                   ),
+                                  //                 ),
+                                  //               ],
+                                  //             );
+                                  //           },
+                                  //         );
+                                  //       }
+                                  //     } else if (widget.user == "apple") {
+                                  //       String result = await authNotifier
+                                  //           .signUpIndividualWithApple(
+                                  //         emailController.text,
+                                  //         passwordController.text,
+                                  //         nameController.text,
+                                  //         displayNameController.text,
+                                  //         mobileController.value?.nsn ?? "",
+                                  //         mobileController.value?.countryCode ??
+                                  //             "",
+                                  //         _selectedRoles,
+                                  //         widget.userCredential!,
+                                  //         context,
+                                  //       );
+                                  //       if (result == 'role_assigned') {
+                                  //         final _googleSignIn = GoogleSignIn();
+                                  //         var isSignedIn =
+                                  //             await _googleSignIn.isSignedIn();
+                                  //         if (isSignedIn)
+                                  //           await _googleSignIn.disconnect();
+                                  //         FirebaseAuth.instance.signOut();
+                                  //         showDialog(
+                                  //           context: context,
+                                  //           builder: (BuildContext context) {
+                                  //             return AlertDialog(
+                                  //               title: Text(
+                                  //                 LanguageService.getTranslated(
+                                  //                     context,
+                                  //                     "register_non_corporate_success_status_title"),
+                                  //                 style: typography.ButtonLarge,
+                                  //               ),
+                                  //               actions: [
+                                  //                 TextButton(
+                                  //                   onPressed: () {
+                                  //                     Navigator.pushReplacement(
+                                  //                         context,
+                                  //                         MaterialPageRoute(
+                                  //                             builder: (context) =>
+                                  //                                 LoginScreen()));
+                                  //                   },
+                                  //                   child: Row(
+                                  //                     children: [
+                                  //                       Icon(Icons.arrow_back),
+                                  //                       SizedBox(
+                                  //                           width: CustomSpacing
+                                  //                               .four),
+                                  //                       Text('Back to Login'),
+                                  //                     ],
+                                  //                   ),
+                                  //                 ),
+                                  //               ],
+                                  //             );
+                                  //           },
+                                  //         );
+                                  //       }
+                                  //     } else if (_selectedOption ==
+                                  //         SignUpOptions.individual) {
+                                  //       if (_selectedCorporateCountryName
+                                  //           .isEmpty) {
+                                  //         ScaffoldMessenger.of(context)
+                                  //             .showSnackBar(
+                                  //           SnackBar(
+                                  //             content: Text(
+                                  //                 LanguageService.getTranslated(
+                                  //                     context,
+                                  //                     "usermanagement_app_corporate_create_company_country_invalid_error_text")),
+                                  //           ),
+                                  //         );
+                                  //       }
+                                  //       bool isApplicableForTrial = authNotifier
+                                  //               .companyTypeList
+                                  //               ?.where((companyType) =>
+                                  //                   companyType.type
+                                  //                       .toLowerCase() ==
+                                  //                   'individual_account')
+                                  //               .first
+                                  //               .isApplicableForTrial ??
+                                  //           false;
+                                  //       int trialPeriodDays = authNotifier
+                                  //               .companyTypeList
+                                  //               ?.where((companyType) =>
+                                  //                   companyType.type
+                                  //                       .toLowerCase() ==
+                                  //                   'individual_account')
+                                  //               .first
+                                  //               .trialPeriodDays ??
+                                  //           0;
+                                  //       authNotifier
+                                  //           .signUpIndividualWithEmailAndPassword(
+                                  //         emailController.text,
+                                  //         passwordController.text,
+                                  //         nameController.text,
+                                  //         displayNameController.text,
+                                  //         mobileController.value?.nsn ?? "",
+                                  //         mobileController.value?.countryCode ??
+                                  //             "",
+                                  //         _selectedRoles,
+                                  //         isApplicableForTrial,
+                                  //         trialPeriodDays,
+                                  //         context,
+                                  //       );
+                                  //     } else {
+                                  //       bool isApplicableForTrial = authNotifier
+                                  //               .companyTypeList
+                                  //               ?.where((companyType) =>
+                                  //                   companyType.id ==
+                                  //                   selectedCompanyType?.id)
+                                  //               .first
+                                  //               .isApplicableForTrial ??
+                                  //           true;
+                                  //       int trialPeriodDays = authNotifier
+                                  //               .companyTypeList
+                                  //               ?.where((companyType) =>
+                                  //                   companyType.id ==
+                                  //                   selectedCompanyType?.id)
+                                  //               .first
+                                  //               .trialPeriodDays ??
+                                  //           7;
+                                  //
+                                  //       authNotifier
+                                  //           .signUpCorporateWithEmailAndPassword(
+                                  //         selectedCompanyId,
+                                  //         companyName.trim(),
+                                  //         selectedCompanyType1!,
+                                  //         companyDisplayNameController.text
+                                  //             .trim(),
+                                  //         adminNameController.text.trim(),
+                                  //         adminEmailController.text.trim(),
+                                  //         "+${mobileController.value?.countryCode ?? ""}",
+                                  //         mobileController.value?.nsn ?? "",
+                                  //         adminPasswordController.text.trim(),
+                                  //         selectedCompanyRole,
+                                  //         context,
+                                  //         selectedCompany,
+                                  //         isApplicableForTrial,
+                                  //         trialPeriodDays,
+                                  //         _selectedCorporateCountryName,
+                                  //         selectedCompanyTypeId,
+                                  //       );
+                                  //     }
+                                  //   }
+                                  // },
                                   child: _selectedOption ==
                                           SignUpOptions.individual
                                       ? Text(
-                                          // If companyTypeList contains an individual_account with isApplicableForTrial as true, show 'Start Trial' else 'Create Account'
                                           (authNotifier.companyTypeList ?? [])
                                                   .any((companyType) {
-                                            log("Processing companyType: ${companyType.type}, isApplicableForTrial: ${companyType.isApplicableForTrial}");
                                             return companyType.type
                                                         .toLowerCase() ==
                                                     'individual_account' &&
@@ -810,10 +920,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                                   color: Colors.black),
                                         )
                                       : Text(
-                                          // Check selected_company_type in the companyTypeList
                                           (authNotifier.companyTypeList ?? [])
                                                   .any((companyType) {
-                                            // log("Checking selectedCompanyType: ${selectedCompanyType}");
                                             return companyType.id ==
                                                     selectedCompanyType?.id &&
                                                 companyType
@@ -1140,22 +1248,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(
           height: CustomSpacing.one,
         ),
-        if (Platform.isAndroid)
-          Consumer<AuthNotifier>(
-            builder: (context, authNotifier, child) {
-              return SocialMediaButton(
-                onPressed: () async {
-                  await authNotifier.signInWithMicrosoft(context: context);
-                  print(authNotifier.user.toString());
-                  print(authNotifier.userProfile.toString());
-                  print(authNotifier.isNewUser.toString());
-                },
-                buttonText: LanguageService.getTranslated(
-                    context, "login_microsoft_button"),
-                iconPath: 'assets/images/microsoftLogo.svg',
-              );
-            },
-          ),
+        // if (Platform.isAndroid)
+        Consumer<AuthNotifier>(
+          builder: (context, authNotifier, child) {
+            return SocialMediaButton(
+              onPressed: () async {
+                await authNotifier.signInWithMicrosoft(context: context);
+                print(authNotifier.user.toString());
+                print(authNotifier.userProfile.toString());
+                print(authNotifier.isNewUser.toString());
+              },
+              buttonText: LanguageService.getTranslated(
+                  context, "login_microsoft_button"),
+              iconPath: 'assets/images/microsoftLogo.svg',
+            );
+          },
+        ),
 
         // if (Platform.isIOS)
         // Consumer<AuthNotifier>(builder: (context, authNotifier, child) {

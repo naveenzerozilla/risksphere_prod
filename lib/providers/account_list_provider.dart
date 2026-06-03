@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:RiskSphere/models/PricingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -16,14 +17,15 @@ import 'package:RiskSphere/utils/api_constants.dart';
 
 import '../design_system/components/custom_toast.dart';
 import '../main.dart' hide CustomToast;
+import '../service/firestore_service.dart';
 import '../utils/toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
-  /// Firestore listeners per location
+
   String? loadingAccountId;
   final Map<String, StreamSubscription<DocumentSnapshot>> _sovListeners = {};
   final Map<String, Map<String, dynamic>?> sovMeta = {};
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore firestore = FirestoreService.db;
   AccountListModel? accountListModel;
   StreamSubscription<DocumentSnapshot>? _locRecSub;
   String? _listeningSovId;
@@ -53,7 +55,9 @@ class AccountListProvider extends ChangeNotifier {
   void listenToSovMeta(String sovId) {
     if (_sovMetaListeners.containsKey(sovId)) return;
 
-    final sub = FirebaseFirestore.instance
+    final firestore = FirestoreService.db;
+
+    final sub = firestore
         .collection("location_recommendations")
         .doc(sovId)
         .snapshots()
@@ -63,7 +67,7 @@ class AccountListProvider extends ChangeNotifier {
       } else {
         sovMeta[sovId] = null;
       }
-      notifyListeners(); // updates only dependent UI
+      notifyListeners();
     });
 
     _sovMetaListeners[sovId] = sub;
@@ -114,10 +118,15 @@ class AccountListProvider extends ChangeNotifier {
 
   set isRenameLoading(bool value) {
     _isRenameLoading = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
+
+  // set isRenameLoading(bool value) {
+  //   _isRenameLoading = value;
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     notifyListeners();
+  //   });
+  // }
 
   bool _isDuplicateLoading = false;
 
@@ -329,7 +338,9 @@ class AccountListProvider extends ChangeNotifier {
     _isLocationUpdating[locationId] = true;
     notifyListeners();
 
-    final sub = FirebaseFirestore.instance
+    final firestore = FirestoreService.db;
+
+    final sub = firestore
         .collection("location_recommendations")
         .doc(locationId)
         .snapshots()
@@ -503,7 +514,7 @@ class AccountListProvider extends ChangeNotifier {
       }
 
       final response = await apiService.get(url);
-      log('API response: $response');
+      // log('API response: $response');
 
       final pricingListData = await compute(PricingModel.fromJson, response);
 
@@ -519,7 +530,7 @@ class AccountListProvider extends ChangeNotifier {
       isNextPageLoading = false;
       notifyListeners();
 
-      log('BackendException: ${e.message}');
+      // log('BackendException: ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -529,7 +540,7 @@ class AccountListProvider extends ChangeNotifier {
         ),
       );
     } catch (e, stackTrace) {
-      print(stackTrace);
+      // print(stackTrace);
 
       isLoading = false;
       isNextPageLoading = false;
@@ -580,7 +591,6 @@ class AccountListProvider extends ChangeNotifier {
       // Prepend the duplicated account to the beginning of the list
       accountList = [duplicatedAccount, ...accountList];
 
-      // ✅ Success message
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           'Success login',
@@ -657,21 +667,21 @@ class AccountListProvider extends ChangeNotifier {
 
   Future<void> fetchAccountList(
       BuildContext context, String searchQuery, int page, int pageSize) async {
-    lastSearchQuery = searchQuery;
+    if (isLoading || isNextPageLoading) return;
+
+    if (page == 1) {
+      isLoading = true;
+      // accountList.clear();
+    } else {
+      isNextPageLoading = true;
+    }
+
+    notifyListeners(); // ✅ only once at start
 
     try {
-      if (isLoading || isNextPageLoading) return;
-
-      if (page == 1) {
-        isLoading = true;
-        accountList.clear();
-      } else {
-        isNextPageLoading = true;
-      }
-
       final apiService = ApiService(AppConstant.GET_ACCOUNT_LIST);
-      var url = '?page=$page&pageSize=$pageSize';
 
+      var url = '?page=$page&pageSize=$pageSize';
       if (searchQuery.isNotEmpty) {
         url += '&search=$searchQuery';
       }
@@ -679,28 +689,29 @@ class AccountListProvider extends ChangeNotifier {
       final response = await apiService.get(url);
       final model = await compute(AccountListModel.fromJson, response);
 
-      showOwner = model.settings?.owner ?? true;
-      showSOVCount = model.settings?.sovCount ?? true;
-      showSubAccountCount = model.settings?.subAccountCount ?? true;
-      showOverallScore = model.settings?.overallScore ?? true;
-      showAccountName =
+      _showOwner = model.settings?.owner ?? true;
+      _showSOVCount = model.settings?.sovCount ?? true;
+      _showSubAccountCount = model.settings?.subAccountCount ?? true;
+      _showOverallScore = model.settings?.overallScore ?? true;
+      _accountName =
           model.settings!.companyGlobalConfiguration!.accountName.toString();
 
       accountHits = model.totalRecords ?? 0;
-      totalPages = (accountHits / pageSize).ceil();
+      _totalPages = (accountHits / pageSize).ceil();
 
       if (page == 1) {
-        accountList = model.results ?? [];
+        _accountList = model.results ?? [];
       } else {
-        addToAccountList(model.results ?? []);
+        _accountList.addAll(model.results ?? []);
       }
-      hasLoadedOnce = true;
-      forceReload = false;
-    } finally {
-      isLoading = false;
-      isNextPageLoading = false;
-      notifyListeners();
+    } catch (e) {
+      debugPrint("Error: $e");
     }
+
+    isLoading = false;
+    isNextPageLoading = false;
+
+    notifyListeners();
   }
 
   Future<void> unlockHazardHubData(
@@ -726,51 +737,7 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<void> shareLocation(
-      BuildContext context, {
-        required String recipientEmails,
-        required int credits,
-        required int expireDays,
-        String message = "",
-      }) async {
-    var typography = CustomTypography(context);
-    try {
-      isDuplicateLoading = true;
-      notifyListeners();
 
-      ApiService apiService = ApiService(AppConstant.GIFT_CREDITS);
-      var response = await apiService.post({
-        'recipient_email': recipientEmails,
-        'credits': credits,
-        'expire_days': expireDays,
-        'message': message,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          'Location shared successfully!',
-          style: typography.ButtonLarge,
-        ),
-        backgroundColor: Colors.green,
-      ));
-
-      isDuplicateLoading = false;
-      notifyListeners();
-    } on BackendException catch (e) {
-      isDuplicateLoading = false;
-      notifyListeners();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message, style: typography.ButtonLarge),
-        backgroundColor: Colors.red,
-      ));
-    } catch (e) {
-      isDuplicateLoading = false;
-      notifyListeners();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString(), style: typography.ButtonLarge),
-        backgroundColor: Colors.red,
-      ));
-    }
-  }
   Future<void> fetchMissingParameterList(
     BuildContext context,
     String sovId, {
@@ -822,7 +789,6 @@ class AccountListProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   List<Accounts> parameterList = [];
 
@@ -1149,7 +1115,6 @@ class AccountListProvider extends ChangeNotifier {
       ));
     } catch (e, stackTrace) {
       print(stackTrace);
-
     } finally {
       isAutoCompleteLoading = false;
     }

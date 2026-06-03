@@ -1,7 +1,7 @@
 name: RiskSphere
 description: "A new Flutter project."
 publish_to: 'none'
-version: 7.4.0+116
+version: 9.3.0+446
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
@@ -87,6 +87,7 @@ dependencies:
   firebase_app_check:
   app_links:
   flutter_sharing_intent: ^2.0.4
+  in_app_update: ^4.2.5
 
 
 

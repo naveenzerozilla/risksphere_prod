@@ -1410,7 +1410,7 @@ class _LocationListState extends State<LocationList>
                                           Icon(Icons.info_outline,
                                               color: Colors.white54),
                                           SizedBox(width: 3),
-                                          Text('Max file size is 200 MB',
+                                          Text('Max file size is 50 MB',
                                               style: typography.Body1),
                                         ],
                                       ),

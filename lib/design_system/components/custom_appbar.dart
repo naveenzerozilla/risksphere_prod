@@ -86,7 +86,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
       if (mounted) setState(() {});
     });
-
   }
 
   Future<void> _setClaims() async {
@@ -146,13 +145,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
     String? trailLocation = await SharedPreferenceService.getTrailLocation();
     String? hazardLicenseStatus =
         await SharedPreferenceService.getHazardLicense();
-
-    // print("geoCodingStatus: $geoCodingStatus");
-    // print("userLicenseStatus: $userLicenseStatus");
-    // print("hazardLicenseStatus: $hazardLicenseStatus");
-    // print("userCount: $userCount");
-    // print("locationleft: $trailLocation");
-
     setState(() {
       hasAnyPlan = hasAnyPlans ?? false;
       hasLicenseStatus = userLicenseStatus ?? "1";
@@ -164,16 +156,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   String? selectedRole;
-
-  String _getInitials(String? firstName, String? lastName) {
-    if ((firstName == null || firstName.isEmpty) &&
-        (lastName == null || lastName.isEmpty)) return '';
-    String firstInitial =
-        firstName?.isNotEmpty == true ? firstName![0].toUpperCase() : '';
-    String lastInitial =
-        lastName?.isNotEmpty == true ? lastName![0].toUpperCase() : '';
-    return '$firstInitial$lastInitial';
-  }
 
   bool isLoadingRoleSwitch = false;
 
@@ -218,93 +200,99 @@ class _CustomAppBarState extends State<CustomAppBar> {
             (userProfileProvider.userData.role == null ||
                     userProfileProvider.userData.role!.isEmpty)
                 ? const SizedBox.shrink() // or Container()
-                : (userProfileProvider.userData.role![0].name.toString().toLowerCase() ==
+                : (userProfileProvider.userData.role![0].name
+                                .toString()
+                                .toLowerCase() ==
                             "admin" &&
                         (isSuperAdmin || isPgAdmin || isAdmin))
                     ? const SizedBox.shrink()
-                    : Center(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton2<String>(
-                            customButton: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.white30, width: 1),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.switch_account,
-                                      color: Colors.grey, size: 20),
-                                  SizedBox(width: 4),
-                                  Icon(Icons.arrow_drop_down,
-                                      color: Colors.grey, size: 18),
-                                ],
-                              ),
-                            ),
-                            items: userProfileProvider.userData.role!
-                                .map<DropdownMenuItem<String>>((role) {
-                              return DropdownMenuItem<String>(
-                                value: role.name.toString(),
-                                child: Text(
-                                  role.name.toString(),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(color: Colors.grey.shade400),
+                    : showTotalCorporates
+                        ? Container()
+                        : Center(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton2<String>(
+                                customButton: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: Colors.white30, width: 1),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.switch_account,
+                                          color: Colors.grey, size: 20),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_drop_down,
+                                          color: Colors.grey, size: 18),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) async {
-                              if (newValue == null) return;
-                              setState(() {
-                                isLoadingRoleSwitch = true;
-                              });
-                              try {
-                                final selectedRoleObj = userProfileProvider
-                                    .userData.role!
-                                    .firstWhere((role) =>
-                                        role.name.toString() == newValue);
+                                items: userProfileProvider.userData.role!
+                                    .map<DropdownMenuItem<String>>((role) {
+                                  return DropdownMenuItem<String>(
+                                    value: role.name.toString(),
+                                    child: Text(
+                                      role.name.toString(),
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: Colors.grey.shade400),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (newValue) async {
+                                  if (newValue == null) return;
+                                  setState(() {
+                                    isLoadingRoleSwitch = true;
+                                  });
+                                  try {
+                                    final selectedRoleObj = userProfileProvider
+                                        .userData.role!
+                                        .firstWhere((role) =>
+                                            role.name.toString() == newValue);
 
-                                final payload = {
-                                  "user_id":
-                                      userProfileProvider.userData.userId,
-                                  "last_selected_role": {
-                                    "role": selectedRoleObj.id,
-                                    "name": selectedRoleObj.name
+                                    final payload = {
+                                      "user_id":
+                                          userProfileProvider.userData.userId,
+                                      "last_selected_role": {
+                                        "role": selectedRoleObj.id,
+                                        "name": selectedRoleObj.name
+                                      }
+                                    };
+
+                                    await userProfileProvider
+                                        .signInRoleBasedSwitch(
+                                            context, payload);
+                                  } finally {
+                                    setState(() {
+                                      isLoadingRoleSwitch = false;
+                                    });
                                   }
-                                };
-
-                                await userProfileProvider.signInRoleBasedSwitch(
-                                    context, payload);
-                              } finally {
-                                setState(() {
-                                  isLoadingRoleSwitch = false;
-                                });
-                              }
-                            },
-                            dropdownStyleData: DropdownStyleData(
-                              width: 200,
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 6, horizontal: 8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: Colors.black26,
-                                border:
-                                    Border.all(color: Colors.grey, width: 1),
+                                },
+                                dropdownStyleData: DropdownStyleData(
+                                  width: 200,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 6, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.black26,
+                                    border: Border.all(
+                                        color: Colors.grey, width: 1),
+                                  ),
+                                  offset: const Offset(0, 0),
+                                ),
+                                menuItemStyleData: MenuItemStyleData(
+                                  customHeights: List<double>.filled(
+                                      userProfileProvider.userData.role!.length,
+                                      48),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                ),
                               ),
-                              offset: const Offset(0, 0),
-                            ),
-                            menuItemStyleData: MenuItemStyleData(
-                              customHeights: List<double>.filled(
-                                  userProfileProvider.userData.role!.length,
-                                  48),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
                             ),
                           ),
-                        ),
-                      ),
             SizedBox(width: 5),
             Consumer<AuthNotifier>(
               builder: (context, authNotifier, child) {

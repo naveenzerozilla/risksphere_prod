@@ -524,24 +524,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                                 context,
                                                 "connections_user_connection_chats__tab"),
                                           ),
-
-                                          // SizedBox(width: CustomSpacing.two),
-                                          // SizedBox(
-                                          //   height: 25,
-                                          //   width: 35,
-                                          //   child: Chip(
-                                          //     labelPadding: EdgeInsets.all(0),
-                                          //     materialTapTargetSize:
-                                          //         MaterialTapTargetSize
-                                          //             .shrinkWrap,
-                                          //     label: Text(
-                                          //       '0',
-                                          //       style: typography
-                                          //               .BottomNavigationActiveLabel
-                                          //           .copyWith(height: -0.6),
-                                          //     ),
-                                          //   ),
-                                          // ),
                                         ],
                                       ),
                                     ),
@@ -1361,8 +1343,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             ),
                             Text(
                                 connectionsProvider
-                                        .corporateConnections[index].role
-                                        .toString(),
+                                    .corporateConnections[index].role
+                                    .toString(),
                                 style: typography.Caption),
                             SizedBox(
                               height: CustomSpacing.two,
@@ -2336,38 +2318,40 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 🔹 SEND BUTTON / LOADER
-              connectionsProvider.isConnectLoading
-                  ? const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  : CustomButton(
-                      onPressed: () {
-                        connectionsProvider
-                            .connectUser(
-                          context,
-                          connectionsProvider.networkingUsers[index].id ?? "",
-                          _messageController.text,
+              Consumer<ConnectionsProvider>(
+                builder: (context, provider, _) {
+                  return provider.isConnectLoading
+                      ? const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(),
+                          ),
                         )
-                            .then((value) {
-                          if (value) {
-                            _getData();
-                            Navigator.of(dialogContext).pop();
-                            _messageController.clear();
-                          }
-                        });
-                      },
-                      type: ButtonType.filled,
-                      child: Text(
-                        "Send",
-                        style: typography.ButtonLargeBlack,
-                      ),
-                    ),
+                      : CustomButton(
+                          onPressed: () async {
+                            final success = await provider.connectUser(
+                              context,
+                              provider.networkingUsers[index].id ?? "",
+                              _messageController.text,
+                            );
+
+                            if (success) {
+                              _getData();
+                              Navigator.of(dialogContext).pop();
+                              _messageController.clear();
+                            }
+                          },
+                          type: ButtonType.filled,
+                          child: Text(
+                            "Send",
+                            style: typography.ButtonLargeBlack,
+                          ),
+                        );
+                },
+              ),
               SizedBox(height: CustomSpacing.two),
-              // 🔹 CANCEL BUTTON
+
               OutlinedButton(
                 onPressed: () {
                   _messageController.clear();

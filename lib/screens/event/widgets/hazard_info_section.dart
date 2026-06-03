@@ -16,7 +16,7 @@ class HazardInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(16.0),
+      margin: EdgeInsets.all(8.0),
       padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -34,7 +34,7 @@ class HazardInfoSection extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          SizedBox(height: 8.0),
+          // SizedBox(height: 2.0),
           Row(
             children: [
               Text(
@@ -44,31 +44,32 @@ class HazardInfoSection extends StatelessWidget {
                   color: Colors.grey.shade400,
                 ),
               ),
-              SizedBox(width: 8.0),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  border: Border.all(color: Colors.grey.shade800),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: DropdownButton<String>(
-                  padding: EdgeInsets.zero,
-                  value: selectedDate,
-                  dropdownColor: Colors.grey.shade900,
-                  underline: SizedBox.shrink(),
-                  onChanged: onDateChanged,
-                  items: availableDates.map((String date) {
-                    return DropdownMenuItem<String>(
-                      value: date,
-                      child: Text(
-                        date,
-                        style: TextStyle(color: Colors.white, fontSize: 14.0),
-                      ),
-                    );
-                  }).toList(),
-                ),
+              SizedBox(width: 10.0),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: Border.all(color: Colors.grey.shade800),
+                borderRadius: BorderRadius.circular(8.0),
               ),
+              child: DropdownButton<String>(
+                padding: EdgeInsets.zero,
+                value: selectedDate,
+                dropdownColor: Colors.grey.shade900,
+                underline: SizedBox.shrink(),
+                onChanged: onDateChanged,
+                icon: SizedBox.shrink(),
+                items: availableDates.map((String date) {
+                  return DropdownMenuItem<String>(
+                    value: date,
+                    child: Text(
+                      date,
+                      style: TextStyle(color: Colors.white, fontSize: 14.0),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
             ],
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:RiskSphere/screens/listings/widgets/score_card_layout.dart';
 import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -126,8 +127,8 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
   bool _isDisposed = false;
 
-// State fields
   final _processIndex$ = BehaviorSubject<int>.seeded(0);
+  String selectedSov = 'my';
 
   @override
   void initState() {
@@ -135,22 +136,16 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
     _setClaims();
 
+    selectedSov = widget.status ?? "my";
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SOVListProvider>();
 
       provider.page = 1;
       provider.totalPages = 1;
 
-      provider.fetchSovList(
-        context,
-        _sovQuery,
-        1,
-        5,
-        widget.status,
-      );
+      provider.fetchSovList(context, _sovQuery, 1, 5, selectedSov);
     });
 
-    /// 🔥 PAGINATION LISTENER (SAFE)
     _scrollController1.addListener(() {
       if (!_scrollController1.hasClients) return;
 
@@ -163,14 +158,30 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
         provider.page++;
 
         provider.fetchSovList(
-          context,
-          _sovQuery,
-          provider.page,
-          5,
-          widget.status,
-        );
+            context, _sovQuery, provider.page, 5, selectedSov);
       }
     });
+  }
+
+  Future<void> _reloadSovByStatus(
+    String status,
+  ) async {
+    final provider = context.read<SOVListProvider>();
+
+    provider.page = 1;
+    provider.totalPages = 1;
+
+    provider.sovList.clear();
+
+    provider.notifyListeners();
+
+    await provider.fetchSovList(
+      context,
+      _sovQuery,
+      1,
+      5,
+      status,
+    );
   }
 
   MyLocationListProvider? _myLocationProvider;
@@ -224,8 +235,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
   String? _activeAccountKey; // track which account/subaccount timer belongs to
 
-  String selectedSov = 'my';
-
   @override
   Widget build(BuildContext context1) {
     var typography = CustomTypography(context);
@@ -265,30 +274,42 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // InkWell(
-                          //     onTap: () {
-                          //       Navigator.push(
-                          //         context,
-                          //         MaterialPageRoute(
-                          //             builder: (_) => ChatbotWebView()),
-                          //       );
-                          //     },
-                          //     child: Text("chatbot")),
-                          Container(
-                              padding: EdgeInsets.only(left: 20),
-                              child: Text(
-                                widget.status.toString() == "received"
-                                    ? "Received SOVs"
-                                    : widget.status.toString() == "my"
-                                        ? "My SOVs"
-                                        : widget.status.toString() == "shared"
-                                            ? "Shared SOVs"
-                                            : "SOVs",
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
-                              )),
+                          Row(
+                            children: [
+                              Container(
+                                  padding: EdgeInsets.only(left: 20),
+                                  child: Text(
+                                    selectedSov == "received"
+                                        ? "Received SOVs"
+                                        : selectedSov == "my"
+                                            ? "My SOVs"
+                                            : selectedSov == "shared"
+                                                ? "Shared SOVs"
+                                                : "SOVs",
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600),
+                                  )),
+                              Spacer(),
+                              if (!selectedList.contains(true)) ...[
+                                IconButton(
+                                  icon: Icon(Icons.share),
+                                  onPressed: () {
+                                    if (!selectedList.contains(true)) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Please select an SOV to share. long-press the SOV card to share it.')),
+                                      );
+                                    } else {}
+                                  },
+                                ),
+                              ],
+                              SizedBox(width: 30),
+                            ],
+                          ),
                           Expanded(
                             child: Container(
                               margin: EdgeInsets.symmetric(
@@ -323,9 +344,9 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       await provider.fetchSovList(
         context,
         _sovQuery,
-        1, // Always start from page 1 for new searches
+        1,
         5,
-        widget.status ?? "my",
+        selectedSov ?? "my",
       );
     });
   }
@@ -387,10 +408,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
               controller: _scrollController1,
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                /// 🔹 Selection bar
                 if (selectedList.contains(true)) _buildSelectionBar(typography),
-
-                /// 🔹 Search bar
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   height: 50,
@@ -407,72 +425,119 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-
                 SizedBox(height: CustomSpacing.three),
-
-                /// 🔹 Horizontal cards (ONLY horizontal scroll)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Consumer<SOVListProvider>(
                     builder: (context, sovListProvider, _) {
                       return Row(
                         children: [
-                          // InkWell(
-                          //     onTap: () {
-                          //       Navigator.push(
-                          //         context,
-                          //         MaterialPageRoute(
-                          //             builder: (_) => ChatbotWebView()),
-                          //       );
-                          //     },
-                          //     child: Text("chatbot")),
-                          InfoCard(
-                            title: LanguageService.getTranslated(
-                                context, "total_sovs"),
-                            count: safeParseInt(
-                                sovListProvider.sovCounterList.all.toString()),
-                            icon: Icons.file_copy_outlined,
+                          InkWell(
+                            onTap: () async {},
+                            child: InfoCard(
+                              title: LanguageService.getTranslated(
+                                  context, "total_sovs"),
+                              count: safeParseInt(sovListProvider
+                                  .sovCounterList.all
+                                  .toString()),
+                              icon: Icons.file_copy_outlined,
+                              status: false,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          InfoCard(
-                            title: LanguageService.getTranslated(
-                                context, "drawer_menu_mysovs"),
-                            count:
-                                safeParseInt(sovListProvider.sovCounterList.my),
-                            icon: Icons.file_copy_outlined,
+                          InkWell(
+                            onTap: () async {
+                              selectedSov = "my";
+
+                              await _reloadSovByStatus(
+                                "my",
+                              );
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            },
+                            child: InfoCard(
+                              title: LanguageService.getTranslated(
+                                  context, "drawer_menu_mysovs"),
+                              count: safeParseInt(
+                                  sovListProvider.sovCounterList.my),
+                              icon: Icons.file_copy_outlined,
+                              status: true,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          InfoCard(
-                            title: LanguageService.getTranslated(
-                                context, "drawer_menu_sharedsovs"),
-                            count: safeParseInt(
-                                sovListProvider.sovCounterList.shared),
-                            icon: Icons.ios_share_outlined,
+                          InkWell(
+                            onTap: () async {
+                              selectedSov = "shared";
+
+                              await _reloadSovByStatus(
+                                "shared",
+                              );
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            },
+                            child: InfoCard(
+                              title: LanguageService.getTranslated(
+                                  context, "drawer_menu_sharedsovs"),
+                              count: safeParseInt(
+                                  sovListProvider.sovCounterList.shared),
+                              icon: Icons.ios_share_outlined,
+                              status: true,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          InfoCard(
+                          InkWell(
+                            onTap: () async {
+                              selectedSov = "received";
+
+                              await _reloadSovByStatus(
+                                "received",
+                              );
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            },
+                            child: InfoCard(
                               title: LanguageService.getTranslated(
                                   context, "drawer_menu_receivedsovs"),
                               count: safeParseInt(
                                   sovListProvider.sovCounterList.received),
-                              icon: Icons.call_received_outlined),
+                              icon: Icons.call_received_outlined,
+                              status: true,
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          InfoCard(
-                            title: LanguageService.getTranslated(
-                                context, "completed_sovs"),
-                            count: safeParseInt(
-                                sovListProvider.sovCounterList.completed),
-                            icon: Icons.ios_share_outlined,
+                          InkWell(
+                            onTap: () async {
+                              // selectedSov = "completed";
+                              //
+                              // await _reloadSovByStatus(
+                              //   "completed",
+                              // );
+                              //
+                              // if (mounted) {
+                              //   setState(() {});
+                              // }
+                            },
+                            child: InfoCard(
+                              title: LanguageService.getTranslated(
+                                  context, "completed_sovs"),
+                              count: safeParseInt(
+                                  sovListProvider.sovCounterList.completed),
+                              icon: Icons.ios_share_outlined,
+                              status: false,
+                            ),
                           ),
                         ],
                       );
                     },
                   ),
                 ),
-
                 SizedBox(height: CustomSpacing.four),
-
-                /// 🔹 SOV list (NON-scrollable, scroll handled by parent)
                 Consumer<SOVListProvider>(
                   builder: (context, sovListProvider, _) {
                     if (sovListProvider.isLoading) {
@@ -497,7 +562,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                     return ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      // ✅ IMPORTANT
+
                       itemCount: sovListProvider.isNextPageLoading
                           ? sovListProvider.sovList.length + 1
                           : sovListProvider.sovList.length,
@@ -515,541 +580,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                 ),
               ],
             );
-
-      // ListView(
-      //         // crossAxisAlignment: CrossAxisAlignment.start,
-      //         children: [
-      //           if (selectedList.contains(true)) ...[
-      //             Container(
-      //               margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-      //               padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-      //               decoration: BoxDecoration(
-      //                 borderRadius: BorderRadius.circular(16),
-      //                 border: Border.all(
-      //                   color: Theme.of(context)
-      //                       .colorScheme
-      //                       .surfaceContainerHighest,
-      //                   // Set your border color here
-      //                   width: 1.0, // Set the width of the border
-      //                 ),
-      //                 //color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      //               ),
-      //               child: Consumer<UserProfileProvider>(
-      //                   builder: (context, userProfileProvider, child) {
-      //                 final trialStatus =
-      //                     userProfileProvider.trialInfo['status'] ?? '';
-      //                 return Consumer<MyLocationListProvider>(
-      //                     builder: (context, locationListProvider, child) {
-      //                   return Row(
-      //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      //                     children: [
-      //                       if (selectedList.contains(true)) ...[
-      //                         // Show selection count and select all button
-      //                         SizedBox(width: CustomSpacing.two),
-      //                         Container(
-      //                           padding: EdgeInsets.symmetric(
-      //                               horizontal: 8, vertical: 4),
-      //                           decoration: BoxDecoration(
-      //                             color: Theme.of(context)
-      //                                 .colorScheme
-      //                                 .surfaceContainerHigh,
-      //                             borderRadius: BorderRadius.circular(8),
-      //                           ),
-      //                           child: Text(
-      //                             "${selectedList.where((s) => s).length}",
-      //                             style: typography.Body1.copyWith(
-      //                               fontWeight: FontWeight.bold,
-      //                             ),
-      //                           ),
-      //                         ),
-      //                         SizedBox(width: 2),
-      //                         TextButton(
-      //                           onPressed: () {
-      //                             setState(() {
-      //                               final bool selectAll =
-      //                                   selectedList.any((s) => s == false);
-      //
-      //                               // Apply the same toggle logic as Checkbox
-      //                               for (int i = 0;
-      //                                   i < selectedList.length;
-      //                                   i++) {
-      //                                 selectedList[i] = selectAll;
-      //                               }
-      //                               if (!selectAll) {
-      //                                 isSelectionMode = false;
-      //                               }
-      //                             });
-      //                           },
-      //                           child: Text(
-      //                             // Dynamically show "Select All" or "Deselect All"
-      //                             selectedList.any((s) => s == false)
-      //                                 ? 'Select All'
-      //                                 : 'Deselect All',
-      //                             style: typography.Body1.copyWith(
-      //                               color: AppColors.primaryMain,
-      //                             ),
-      //                           ),
-      //                         ),
-      //
-      //                         Spacer(),
-      //
-      //                         IconButton(
-      //                           onPressed: () {
-      //                             // Collect selected SOV IDs
-      //                             List<String> selectedSovIds = [];
-      //                             for (int i = 0;
-      //                                 i < selectedList.length;
-      //                                 i++) {
-      //                               if (selectedList[i] &&
-      //                                   i < sovListProvider.sovList.length) {
-      //                                 final sov = sovListProvider.sovList[i];
-      //                                 if (sov.sovId != null) {
-      //                                   selectedSovIds.add(sov.sovId!);
-      //                                 }
-      //                               }
-      //                             }
-      //
-      //                             if (selectedSovIds.isEmpty) {
-      //                               ScaffoldMessenger.of(context).showSnackBar(
-      //                                 SnackBar(
-      //                                     content: Text("No items selected")),
-      //                               );
-      //                               return;
-      //                             }
-      //
-      //                             final firstSelectedIndex = selectedList
-      //                                 .indexWhere((element) => element == true);
-      //
-      //                             final selectedSov = sovListProvider
-      //                                 .sovList[firstSelectedIndex];
-      //
-      //                             showDialog(
-      //                               context: context,
-      //                               builder: (context) => AlertDialog(
-      //                                 title: Text('Export Selected Sov'),
-      //                                 content: Text(
-      //                                     'Are you sure you want to export ${selectedSovIds.length} Sov?'),
-      //                                 actions: [
-      //                                   TextButton(
-      //                                     onPressed: () =>
-      //                                         Navigator.pop(context),
-      //                                     child: Text('Cancel'),
-      //                                   ),
-      //                                   TextButton(
-      //                                     onPressed: () {
-      //                                       Navigator.pop(context);
-      //
-      //                                       final payload = {
-      //                                         "fileType": "profile",
-      //                                         "format": "excel",
-      //                                         "includeImage": false,
-      //                                         "sov_ids": selectedSovIds,
-      //                                         // List<String>
-      //                                       };
-      //
-      //                                       Provider.of<SOVListProvider>(
-      //                                               context,
-      //                                               listen: false)
-      //                                           .exportDataSov(
-      //                                         context,
-      //                                         selectedSov.accountId!,
-      //                                         selectedSov.subAccountId!,
-      //                                         payload,
-      //                                         // ✔ Only MAP, not LIST
-      //                                         selectedSov.sovId!,
-      //                                       );
-      //                                     },
-      //                                     child: Text('Export'),
-      //                                   ),
-      //                                 ],
-      //                               ),
-      //                             );
-      //                           },
-      //                           icon: Icon(Icons.download),
-      //                           tooltip: 'Export Selected',
-      //                         ),
-      //
-      //                         // IconButton(
-      //                         //   onPressed: () {
-      //                         //     // Collect selected SOV IDs
-      //                         //     List<String> selectedSovIds = [];
-      //                         //     for (int i = 0; i < selectedList.length; i++) {
-      //                         //       if (selectedList[i] && i < sovListProvider.sovList.length) {
-      //                         //         final sov = sovListProvider.sovList[i];
-      //                         //         if (sov.sovId != null) {
-      //                         //           selectedSovIds.add(sov.sovId!);
-      //                         //         }
-      //                         //       }
-      //                         //     }
-      //                         //
-      //                         //     if (selectedSovIds.isEmpty) {
-      //                         //       ScaffoldMessenger.of(context).showSnackBar(
-      //                         //         SnackBar(
-      //                         //           content: Text(
-      //                         //             LanguageService.getTranslated(context, "no_items_selected_error"),
-      //                         //             style: typography.Body1,
-      //                         //           ),
-      //                         //         ),
-      //                         //       );
-      //                         //       return;
-      //                         //     }
-      //                         //
-      //                         //     // Get the FIRST selected SOV
-      //                         //     final firstSelectedIndex =
-      //                         //     selectedList.indexWhere((element) => element == true);
-      //                         //
-      //                         //     final selectedSov = sovListProvider.sovList[firstSelectedIndex];
-      //                         //
-      //                         //     showDialog(
-      //                         //       context: context,
-      //                         //       builder: (context) => AlertDialog(
-      //                         //         title: Text('Export Selected Locations'),
-      //                         //         content: Text(
-      //                         //             'Are you sure you want to export ${selectedSovIds.length} locations?'),
-      //                         //         actions: [
-      //                         //           TextButton(
-      //                         //             onPressed: () => Navigator.pop(context),
-      //                         //             child: Text('Cancel'),
-      //                         //           ),
-      //                         //           TextButton(
-      //                         //             onPressed: () {
-      //                         //               Navigator.pop(context);
-      //                         //
-      //                         //               showDialog(
-      //                         //                 context: context,
-      //                         //                 builder: (BuildContext context) {
-      //                         //                   return ExportDialogSov(
-      //                         //                     accountId: selectedSov.accountId!,      // ✅ Correct ID
-      //                         //                     subAccountId: selectedSov.subAccountId!, // ✅ Correct ID
-      //                         //                     locationId: [selectedSovIds.first],      // send first selected
-      //                         //                   );
-      //                         //                 },
-      //                         //               );
-      //                         //             },
-      //                         //             child: Text('Export', style: typography.Body1),
-      //                         //           ),
-      //                         //         ],
-      //                         //       ),
-      //                         //     );
-      //                         //   },
-      //                         //   icon: Icon(Icons.download),
-      //                         //   tooltip: 'Export Selected',
-      //                         // ),
-      //                         widget.status.toString() == "received"
-      //                             ? Container()
-      //                             : IconButton(
-      //                                 onPressed: () {
-      //                                   if (selectedList.length !=
-      //                                       sovListProvider.sovList.length) {
-      //                                     selectedList = List.generate(
-      //                                       sovListProvider.sovList.length,
-      //                                       (_) => false,
-      //                                     );
-      //                                   }
-      //
-      //                                   final selectedSovs = sovListProvider
-      //                                       .sovList
-      //                                       .asMap()
-      //                                       .entries
-      //                                       .where((entry) =>
-      //                                           selectedList[entry.key])
-      //                                       .map((entry) => entry.value)
-      //                                       .toList();
-      //
-      //                                   if (selectedSovs.isEmpty) {
-      //                                     ScaffoldMessenger.of(context)
-      //                                         .showSnackBar(
-      //                                       const SnackBar(
-      //                                           content: Text(
-      //                                               "Please select at least one SOV to share.")),
-      //                                     );
-      //                                     return;
-      //                                   }
-      //
-      //                                   _showTransferDialog(
-      //                                       context, selectedSovs);
-      //                                 },
-      //                                 icon: const Icon(
-      //                                   Symbols.share,
-      //                                   color: Color(0xFF90CAF9),
-      //                                 ),
-      //                                 tooltip: 'Share Selected',
-      //                               ),
-      //                       ]
-      //                     ],
-      //                   );
-      //                 });
-      //               }),
-      //             ),
-      //           ],
-      //           // Search
-      //           Container(
-      //             padding: const EdgeInsets.symmetric(horizontal: 8),
-      //             height: 50,
-      //             child: TextField(
-      //               controller: _textEditingController,
-      //               onChanged: (query) => sovSearchClient(query),
-      //               decoration: InputDecoration(
-      //                 border: OutlineInputBorder(
-      //                   borderRadius: BorderRadius.circular(8),
-      //                 ),
-      //                 hintText: LanguageService.getTranslated(
-      //                     context, "search_by_sov_name"),
-      //                 hintStyle: typography.Body2,
-      //                 prefixIcon: const Icon(Icons.search),
-      //                 suffixIcon: _textEditingController.text.isNotEmpty
-      //                     ? IconButton(
-      //                         icon: const Icon(Icons.clear),
-      //                         onPressed: () {
-      //                           _textEditingController.clear();
-      //                           sovSearchClient('');
-      //                         },
-      //                       )
-      //                     : null,
-      //               ),
-      //             ),
-      //           ),
-      //           SizedBox(height: CustomSpacing.three),
-      //           SingleChildScrollView(
-      //             controller: _scrollController1,
-      //             physics: const AlwaysScrollableScrollPhysics(),
-      //             child: Column(
-      //               crossAxisAlignment: CrossAxisAlignment.start,
-      //               children: [
-      //                 /// 🔹 Horizontal cards (scrolls horizontally only)
-      //                 SingleChildScrollView(
-      //                   scrollDirection: Axis.horizontal,
-      //                   child: Consumer<SOVListProvider>(
-      //                     builder: (context, sovListProvider, _) {
-      //                       return Row(
-      //                         children: [
-      //                           InfoCard(
-      //                             title: LanguageService.getTranslated(
-      //                                 context, "total_sovs"),
-      //                             count: safeParseInt(sovListProvider
-      //                                 .sovCounterList.all
-      //                                 .toString()),
-      //                             icon: Icons.file_copy_outlined,
-      //                           ),
-      //                           const SizedBox(width: 10),
-      //                           InfoCard(
-      //                             title: LanguageService.getTranslated(
-      //                                 context, "drawer_menu_mysovs"),
-      //                             count: safeParseInt(
-      //                                 sovListProvider.sovCounterList.my),
-      //                             icon: Icons.file_copy_outlined,
-      //                           ),
-      //                           const SizedBox(width: 12),
-      //                           InfoCard(
-      //                             title: LanguageService.getTranslated(
-      //                                 context, "drawer_menu_sharedsovs"),
-      //                             count: safeParseInt(
-      //                                 sovListProvider.sovCounterList.shared),
-      //                             icon: Icons.ios_share_outlined,
-      //                           ),
-      //                           const SizedBox(width: 12),
-      //                           InfoCard(
-      //                             title: LanguageService.getTranslated(
-      //                                 context, "drawer_menu_receivedsovs"),
-      //                             count: safeParseInt(
-      //                                 sovListProvider.sovCounterList.received),
-      //                             icon: Icons.call_received,
-      //                           ),
-      //                           const SizedBox(width: 12),
-      //                           InfoCard(
-      //                             title: LanguageService.getTranslated(
-      //                                 context, "completed_sovs"),
-      //                             count: safeParseInt(
-      //                                 sovListProvider.sovCounterList.completed),
-      //                             icon: Icons.done_all,
-      //                           ),
-      //                         ],
-      //                       );
-      //                     },
-      //                   ),
-      //                 ),
-      //
-      //                 SizedBox(height: CustomSpacing.four),
-      //
-      //                 /// 🔹 List section (scrolls with parent)
-      //                 Consumer<SOVListProvider>(
-      //                   builder: (context, sovListProvider, _) {
-      //                     if (sovListProvider.isLoading) {
-      //                       return const Padding(
-      //                         padding: EdgeInsets.only(top: 100),
-      //                         child: Center(child: CircularProgressIndicator()),
-      //                       );
-      //                     }
-      //
-      //                     if (sovListProvider.sovList.isEmpty) {
-      //                       return SizedBox(
-      //                         height: MediaQuery.of(context).size.height * 0.5,
-      //                         child: Center(
-      //                           child: Text(
-      //                             "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
-      //                             style: typography.Body1,
-      //                             textAlign: TextAlign.center,
-      //                           ),
-      //                         ),
-      //                       );
-      //                     }
-      //
-      //                     return ListView.builder(
-      //                       shrinkWrap: true,
-      //                       physics: const NeverScrollableScrollPhysics(),
-      //                       itemCount: sovListProvider.isNextPageLoading
-      //                           ? sovListProvider.sovList.length + 1
-      //                           : sovListProvider.sovList.length,
-      //                       itemBuilder: (context, index) {
-      //                         if (index == sovListProvider.sovList.length) {
-      //                           return const Padding(
-      //                             padding: EdgeInsets.all(16),
-      //                             child: Center(
-      //                                 child: CircularProgressIndicator()),
-      //                           );
-      //                         }
-      //                         return _buildSovCard(index, sovListProvider);
-      //                       },
-      //                     );
-      //                   },
-      //                 ),
-      //               ],
-      //             ),
-      //           ),
-      //
-      //           // SingleChildScrollView(
-      //           //   scrollDirection: Axis.horizontal,
-      //           //   child: Consumer<SOVListProvider>(
-      //           //       builder: (context, sovListProvider, _) {
-      //           //         // if (sovListProvider.isLoading) {
-      //           //         return Row(
-      //           //           children: [
-      //           //             InfoCard(
-      //           //               title: LanguageService.getTranslated(
-      //           //                   context, "total_sovs"),
-      //           //               count: safeParseInt(
-      //           //                   sovListProvider.sovCounterList.all.toString()),
-      //           //               icon: Icons.file_copy_outlined,
-      //           //             ),
-      //           //             SizedBox(width: 10),
-      //           //             InfoCard(
-      //           //               title: LanguageService.getTranslated(
-      //           //                   context, "drawer_menu_mysovs"),
-      //           //               count:
-      //           //               safeParseInt(sovListProvider.sovCounterList.my),
-      //           //               icon: Icons.file_copy_outlined,
-      //           //             ),
-      //           //             SizedBox(width: 12),
-      //           //             InfoCard(
-      //           //               title: LanguageService.getTranslated(
-      //           //                   context, "drawer_menu_sharedsovs"),
-      //           //               count: safeParseInt(
-      //           //                   sovListProvider.sovCounterList.shared),
-      //           //               icon: Icons.ios_share_outlined,
-      //           //             ),
-      //           //             SizedBox(width: 12),
-      //           //             InfoCard(
-      //           //               title: LanguageService.getTranslated(
-      //           //                   context, "drawer_menu_receivedsovs"),
-      //           //               count: safeParseInt(
-      //           //                   sovListProvider.sovCounterList.received),
-      //           //               icon: Icons.call_received,
-      //           //             ),
-      //           //             SizedBox(width: 12),
-      //           //             InfoCard(
-      //           //               title: LanguageService.getTranslated(
-      //           //                   context, "completed_sovs"),
-      //           //               count: safeParseInt(
-      //           //                   sovListProvider.sovCounterList.completed),
-      //           //               icon: Icons.done_all,
-      //           //             ),
-      //           //           ],
-      //           //         );
-      //           //       }),
-      //           // ),
-      //           //
-      //           // SizedBox(height: CustomSpacing.four),
-      //           //
-      //           // Expanded(
-      //           //   child: Consumer<SOVListProvider>(
-      //           //     builder: (context, sovListProvider, _) {
-      //           //       if (sovListProvider.isLoading) {
-      //           //         return const Center(
-      //           //           child: Padding(
-      //           //             padding: EdgeInsets.only(top: 100),
-      //           //             child: CircularProgressIndicator(),
-      //           //           ),
-      //           //         );
-      //           //       }
-      //           //
-      //           //       if (sovListProvider.sovList.isEmpty) {
-      //           //         return RefreshIndicator(
-      //           //           onRefresh: () async {
-      //           //             sovListProvider.page = 1;
-      //           //             await sovListProvider.fetchSovList(
-      //           //               context,
-      //           //               // widget.accountID!,
-      //           //               // widget.subAccountID!,
-      //           //               _sovQuery,
-      //           //               1,
-      //           //               7,
-      //           //               "my",
-      //           //             );
-      //           //           },
-      //           //           child: ListView(
-      //           //             physics: const AlwaysScrollableScrollPhysics(),
-      //           //             children: [
-      //           //               SizedBox(
-      //           //                 height:
-      //           //                 MediaQuery.of(context).size.height * 0.5,
-      //           //                 child: Center(
-      //           //                   child: Text(
-      //           //                     "Looks like you don’t have a sov yet. No worries! Just create a new one and start adding your locations.",
-      //           //                     style: typography.Body1,
-      //           //                     textAlign: TextAlign.center,
-      //           //                   ),
-      //           //                 ),
-      //           //               ),
-      //           //             ],
-      //           //           ),
-      //           //         );
-      //           //       }
-      //           //       return RefreshIndicator(
-      //           //         onRefresh: () async {
-      //           //           sovListProvider.page = 1;
-      //           //           await sovListProvider.fetchSovList(
-      //           //             context,
-      //           //             // sovListProvider.sovList.first.accountId!,
-      //           //             // sovListProvider.sovList.first.subAccountId!,
-      //           //             _sovQuery,
-      //           //             1,
-      //           //             7,
-      //           //             widget.status,
-      //           //           );
-      //           //         },
-      //           //         child: ListView.builder(
-      //           //           controller: _scrollController1,
-      //           //           physics: const AlwaysScrollableScrollPhysics(),
-      //           //           itemCount: sovListProvider.isNextPageLoading
-      //           //               ? sovListProvider.sovList.length + 1
-      //           //               : sovListProvider.sovList.length,
-      //           //           itemBuilder: (context, index) {
-      //           //             if (index == sovListProvider.sovList.length) {
-      //           //               return const Padding(
-      //           //                 padding: EdgeInsets.all(16),
-      //           //                 child:
-      //           //                 Center(child: CircularProgressIndicator()),
-      //           //               );
-      //           //             }
-      //           //             return _buildSovCard(index, sovListProvider);
-      //           //           },
-      //           //         ),
-      //           //       );
-      //           //     },
-      //           //   ),
-      //           // ),
-      //         ],
-      //       );
     });
   }
 
@@ -1185,7 +715,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
               ),
 
               /// 🔹 Share (hide for received)
-              if (widget.status != "received")
+              if (selectedSov != "received")
                 IconButton(
                   tooltip: 'Share Selected',
                   icon: const Icon(
@@ -1313,11 +843,11 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                 } else {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
                     return SovLocationList(
-                      status: widget.status.toString() == "received"
+                      status: selectedSov == "received"
                           ? "Received SOVs"
-                          : widget.status.toString() == "my"
+                          : selectedSov == "my"
                               ? "My SOVs"
-                              : widget.status.toString() == "shared"
+                              : selectedSov == "shared"
                                   ? "Shared SOVs"
                                   : "SOVs",
                       accountID: sov.accountId,
@@ -1531,114 +1061,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                 _buildMoreMenu(index, sov),
                                               ],
                                             ),
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                // Expanded(
-                                                //     child: Row(
-                                                //   children: [
-                                                //     Expanded(
-                                                //       child: Row(
-                                                //         children: [
-                                                //           Flexible(
-                                                //             child: Text(
-                                                //               sov.name ?? "",
-                                                //               style: typography
-                                                //                       .Body2
-                                                //                   .copyWith(
-                                                //                 fontSize: 20,
-                                                //                 fontWeight:
-                                                //                     FontWeight
-                                                //                         .w400,
-                                                //                 color: const Color(
-                                                //                     0xFF90CAF9),
-                                                //               ),
-                                                //               overflow:
-                                                //                   TextOverflow
-                                                //                       .ellipsis,
-                                                //             ),
-                                                //           ),
-                                                //           const SizedBox(
-                                                //               width: 6),
-                                                //           InkWell(
-                                                //             onTap: () =>
-                                                //                 _showRenameDialog(
-                                                //                     index, sov),
-                                                //             child: const Icon(
-                                                //               Icons.edit,
-                                                //               size: 16,
-                                                //               color: Colors
-                                                //                   .white70,
-                                                //             ),
-                                                //           ),
-                                                //         ],
-                                                //       ),
-                                                //     ),
-                                                //     _buildMoreMenu(index),
-                                                //   ],
-                                                // )),
-                                                // widget.status
-                                                //             .toString()
-                                                //             .toLowerCase() ==
-                                                //         "shared"
-                                                //     ? InkWell(
-                                                //         // onTap: () =>
-                                                //         // _showSharedWithDialog(
-                                                //         //     context,
-                                                //         //     sov.sharingStatus),
-                                                //         child: Container(
-                                                //           padding:
-                                                //               const EdgeInsets
-                                                //                   .symmetric(
-                                                //                   horizontal: 5,
-                                                //                   vertical: 6),
-                                                //           decoration:
-                                                //               BoxDecoration(
-                                                //             color: const Color(
-                                                //                 0xFF2A2A2A),
-                                                //             borderRadius:
-                                                //                 BorderRadius
-                                                //                     .circular(
-                                                //                         8),
-                                                //             border: Border.all(
-                                                //                 color: const Color(
-                                                //                     0xFF3A3A3A)),
-                                                //           ),
-                                                //           child: Row(
-                                                //             mainAxisSize:
-                                                //                 MainAxisSize
-                                                //                     .min,
-                                                //             children: [
-                                                //               const Icon(
-                                                //                 Icons.mail,
-                                                //                 size: 16,
-                                                //                 color: Colors
-                                                //                     .white,
-                                                //               ),
-                                                //               const SizedBox(
-                                                //                   width: 4),
-                                                //               Text(
-                                                //                 "",
-                                                //                 // "${sov.sharingStatus!.users.values.toList().length ?? 0}",
-                                                //                 style: typography
-                                                //                         .Body2
-                                                //                     .copyWith(
-                                                //                   color: Colors
-                                                //                       .white,
-                                                //                   fontWeight:
-                                                //                       FontWeight
-                                                //                           .w500,
-                                                //                 ),
-                                                //               ),
-                                                //             ],
-                                                //           ),
-                                                //         ),
-                                                //       )
-                                                //     : Container(),
-                                                SizedBox(width: 4),
-                                              ],
-                                            ),
                                             if (isExpanded) ...[
                                               Row(
                                                 children: [
@@ -1710,7 +1132,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                     ),
                                                   ),
                                                   SizedBox(width: 6),
-                                                  widget.status
+                                                  selectedSov
                                                               .toString()
                                                               .toLowerCase() ==
                                                           "shared"
@@ -1890,7 +1312,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            if (widget.status.toString() != "received")
+            if (selectedSov.toString() != "received")
               PopupMenuItem<MoreMenuAction>(
                 value: MoreMenuAction.delete,
                 child: Row(
@@ -1958,7 +1380,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                     if (success) {
                       Navigator.pop(context);
                       await sovProvider.fetchSovList(
-                          context, "", 1, 5, widget.status);
+                          context, "", 1, 5, selectedSov);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("SOV deleted successfully"),
@@ -2028,7 +1450,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                     if (success) {
                       Navigator.pop(context);
                       await sovProvider.fetchSovList(
-                          context, "", 1, 5, widget.status);
+                          context, "", 1, 5, selectedSov);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("SOV duplicated successfully"),
@@ -2056,271 +1478,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
       },
     );
   }
-
-  // Widget _buildMoreMenu(int index) {
-  //   return Consumer2<SubAccountListProvider, SOVListProvider>(
-  //     builder: (context, subAccountListProvider, sovProvider, child) {
-  //       return PopupMenuButton<String>(
-  //         color: const Color(0xFF1E1E1E),
-  //         shape: RoundedRectangleBorder(
-  //           borderRadius: BorderRadius.circular(10),
-  //         ),
-  //         icon: const Icon(Icons.more_vert, color: Colors.white),
-  //         onSelected: (value) async {
-  //           if (value == 'delete') {
-  //             showDialog(
-  //               context: context,
-  //               barrierDismissible: false,
-  //               builder: (context) {
-  //                 bool loading = false;
-  //
-  //                 return StatefulBuilder(
-  //                   builder: (context, setState) {
-  //                     return AlertDialog(
-  //                       backgroundColor: const Color(0xFF1E1E1E),
-  //                       shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(12),
-  //                       ),
-  //                       title: Text(
-  //                         LanguageService.getTranslated(
-  //                             context, "confirm_deletion"),
-  //                         style: TextStyle(
-  //                           color: Colors.white,
-  //                           fontWeight: FontWeight.bold,
-  //                         ),
-  //                       ),
-  //                       content: Text(
-  //                         LanguageService.getTranslated(
-  //                             context, "confirm_delete_sov_message"),
-  //                         style: TextStyle(color: Colors.white70),
-  //                       ),
-  //                       actions: [
-  //                         TextButton(
-  //                           onPressed: () => Navigator.pop(context),
-  //                           child: Text(
-  //                             LanguageService.getTranslated(context, "cancel"),
-  //                             style: TextStyle(color: Colors.grey),
-  //                           ),
-  //                         ),
-  //                         TextButton(
-  //                           onPressed: () async {
-  //                             setState(() => loading = true);
-  //
-  //                             bool isSuccess = false;
-  //
-  //                             try {
-  //                               isSuccess = await subAccountListProvider
-  //                                   .deleteSOVAccount(
-  //                                 context,
-  //                                 sovProvider.sovList[index].accountId!,
-  //                                 sovProvider.sovList[index].subAccountId!,
-  //                                 sovProvider.sovList[index].sovId!,
-  //                               );
-  //                             } catch (e) {
-  //                               debugPrint("Error deleting SOV: $e");
-  //                               ScaffoldMessenger.of(context).showSnackBar(
-  //                                 const SnackBar(
-  //                                   content: Text(
-  //                                       "Failed to delete SOV. Please try again."),
-  //                                 ),
-  //                               );
-  //                             }
-  //
-  //                             if (isSuccess) {
-  //                               Navigator.pop(context);
-  //
-  //                               await sovProvider.fetchSovList(
-  //                                 context,
-  //                                 "",
-  //                                 1,
-  //                                 5,
-  //                                 widget.status,
-  //                               );
-  //
-  //                               ScaffoldMessenger.of(context).showSnackBar(
-  //                                 const SnackBar(
-  //                                   content: Text("SOV deleted successfully."),
-  //                                 ),
-  //                               );
-  //                             }
-  //
-  //                             setState(() => loading = false);
-  //                           },
-  //                           child: loading
-  //                               ? const SizedBox(
-  //                                   width: 24,
-  //                                   height: 24,
-  //                                   child: CircularProgressIndicator(
-  //                                     strokeWidth: 2,
-  //                                     color: Colors.red,
-  //                                   ),
-  //                                 )
-  //                               : Text(
-  //                                   LanguageService.getTranslated(
-  //                                       context, "delete"),
-  //                                   style: TextStyle(
-  //                                     color: Colors.redAccent,
-  //                                     fontSize: 16,
-  //                                   ),
-  //                                 ),
-  //                         ),
-  //                       ],
-  //                     );
-  //                   },
-  //                 );
-  //               },
-  //             );
-  //           }
-  //         },
-  //         itemBuilder: (context) => [
-  //           PopupMenuItem<String>(
-  //             value: 'delete',
-  //             child: Row(
-  //               children: [
-  //                 Icon(Icons.delete, color: Colors.redAccent),
-  //                 SizedBox(width: 8),
-  //                 Text(
-  //                   LanguageService.getTranslated(context, "delete"),
-  //                   style: TextStyle(color: Colors.white),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //
-  //
-  //           IconButton(
-  //             icon: const Icon(Icons
-  //                 .file_copy_rounded),
-  //             color: AppColors
-  //                 .primaryMain,
-  //             onPressed: () {
-  //               // Show duplicate dialog
-  //               showDialog(
-  //                 context: context,
-  //                 barrierDismissible:
-  //                 false,
-  //                 builder: (context) {
-  //                   return AlertDialog(
-  //                     title: Text(
-  //                       LanguageService
-  //                           .getTranslated(
-  //                           context,
-  //                           "duplicate_sov_account"),
-  //                       style: typography
-  //                           .H5_Regular,
-  //                     ),
-  //                     content: Column(
-  //                       mainAxisSize:
-  //                       MainAxisSize
-  //                           .min,
-  //                       children: [
-  //                         Text(
-  //                           LanguageService.getTranslated(
-  //                               context,
-  //                               "sov_list_app_duplicate_text"),
-  //                           style: typography
-  //                               .Body1,
-  //                         ),
-  //                         SizedBox(
-  //                           height:
-  //                           CustomSpacing
-  //                               .two,
-  //                         ),
-  //                         Row(
-  //                           children: [
-  //                             Expanded(
-  //                               child:
-  //                               CustomButton(
-  //                                 onPressed:
-  //                                     () {
-  //                                   // Cancel
-  //                                   Navigator.pop(context);
-  //                                 },
-  //                                 child:
-  //                                 Text(
-  //                                   LanguageService.getTranslated(context, "cancel"),
-  //                                   style: typography.ButtonLarge,
-  //                                 ),
-  //                                 type:
-  //                                 ButtonType.text,
-  //                               ),
-  //                             ),
-  //                             Expanded(
-  //                               child:
-  //                               Consumer<SOVListProvider>(
-  //                                 builder: (context,
-  //                                     provider,
-  //                                     child) {
-  //                                   if (provider.isDuplicateLoading) {
-  //                                     return Center(
-  //                                       child: SizedBox(
-  //                                         height: 28,
-  //                                         width: 28,
-  //                                         child: CircularProgressIndicator(strokeWidth: 2),
-  //                                       ),
-  //                                     );
-  //                                   }
-  //
-  //                                   return CustomButton(
-  //                                     onPressed: () async {
-  //                                       provider.isDuplicateLoading = true;
-  //                                       provider.notifyListeners();
-  //
-  //                                       try {
-  //                                         // 1️⃣ Duplicate Sub Account
-  //                                         await provider.duplicateSov(
-  //                                           context,
-  //                                           sov.sovId!,
-  //                                         );
-  //
-  //                                         final sovProvider = Provider.of<SOVListProvider>(context, listen: false);
-  //                                         Navigator.pop(context);
-  //                                         await sovProvider.fetchSovList(
-  //                                           context,
-  //                                           "",
-  //                                           1,
-  //                                           5,
-  //                                           widget.status,
-  //                                         );
-  //                                         sOVListProvider.notifyListeners();
-  //
-  //                                         /// STOP LOADER
-  //                                         // accountListProvider.isRenameLoading = false;
-  //                                         // accountListProvider.notifyListeners();
-  //                                       } finally {
-  //                                         provider.isDuplicateLoading = false;
-  //                                         provider.notifyListeners();
-  //                                       }
-  //                                     },
-  //                                     child: Text(
-  //                                       LanguageService.getTranslated(
-  //                                         context,
-  //                                         "duplicate",
-  //                                       ),
-  //                                     ),
-  //                                     type: ButtonType.elevated,
-  //                                   );
-  //                                 },
-  //                               ),
-  //                             )
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   );
-  //                 },
-  //               );
-  //             },
-  //             tooltip: LanguageService
-  //                 .getTranslated(
-  //                 context,
-  //                 "sub_account_list_app_duplicate_tooltip_text"),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   void _showRenameDialog(int index, Result sov) {
     final typography = CustomTypography(context);
@@ -2409,12 +1566,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                           listen: false);
 
                                   await sovProvider.fetchSovList(
-                                    context,
-                                    "",
-                                    1,
-                                    5,
-                                    widget.status,
-                                  );
+                                      context, "", 1, 5, selectedSov);
 
                                   /// STOP LOADER
                                   accountListProvider.isRenameLoading = false;
@@ -2443,6 +1595,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
   Widget _buildScrollableScores(BuildContext context, String geocoding,
       String riskScore, String completeness) {
+    final layout = ScoreCardLayout.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -2456,8 +1609,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
               int.tryParse(geocoding) ?? 1,
             ),
           ),
-          // if (MediaQuery.of(context).size.width > 400) SizedBox(width: 10),
-          SizedBox(width: 10),
+          SizedBox(width: layout.cardSpacing),
           InkWell(
             onTap: () {},
             child: _buildScoreCard(
@@ -2466,8 +1618,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
               int.tryParse(riskScore) ?? 1,
             ),
           ),
-          // if (MediaQuery.of(context).size.width > 400)
-          SizedBox(width: 10),
+          SizedBox(width: layout.cardSpacing),
           InkWell(
             onTap: () {},
             child: _buildScoreCard(
@@ -2488,6 +1639,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
     String title,
     int score,
   ) {
+    final layout = ScoreCardLayout.of(context);
     bool isCertified = score == 5; // Logic to check if it shows a certificate.
     List<Color> scoreColors = [
       Colors.grey[300]!, // Default color for unfilled bars
@@ -2500,10 +1652,9 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
 
     var typography = CustomTypography(context);
     return Container(
-      // margin: EdgeInsets.fromLTRB(0, 2, 1, 1),
-      padding: EdgeInsets.fromLTRB(1, 4, 1, 1),
-      width: MediaQuery.of(context).size.width < 400 ? 150 : 150,
-      height: MediaQuery.of(context).size.height < 400 ? 80 : 70,
+      padding: EdgeInsets.all(layout.cardPadding),
+      width: layout.cardWidth,
+      height: layout.cardHeight,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
@@ -2529,31 +1680,18 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: layout.titleFontSize,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryMain,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    textAlign: MediaQuery.of(context).size.width < 400
+                    textAlign: layout.compactLayout
                         ? TextAlign.center
                         : TextAlign.left,
                   ),
                 ),
                 SizedBox(width: 4),
-                // if (title == 'Risk Score' || title == 'Geocoding') ...[
-                //   InkWell(
-                //     onTap: () {
-                //       showDialog(
-                //         context: context,
-                //         builder: (context) => GeocodingDialog(title: title),
-                //       );
-                //     },
-                //     child: Icon(Icons.info),
-                //   ),
-                // ] else ...[
-                //   Icon(Icons.info, color: Colors.transparent),
-                // ]
               ],
             ),
           ),
@@ -2567,7 +1705,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                   onTap: () {},
                   child: VerticalBarIndicator(score: score == 0 ? 1 : score),
                 ),
-                SizedBox(width: 1),
                 isCertified
                     ? SvgPicture.asset('assets/images/certified_five.svg',
                         width: 24, height: 24)
@@ -2584,7 +1721,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
-                              textAlign: MediaQuery.of(context).size.width < 400
+                              textAlign: layout.compactLayout
                                   ? TextAlign.center
                                   : TextAlign.left,
                             ),
@@ -2679,8 +1816,8 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
           elevation: 12,
           shadowColor: Colors.black.withOpacity(0.6),
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20), // 👈 LEFT CORNER
-            topRight: Radius.circular(20), // 👈 RIGHT CORNER
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
@@ -2788,7 +1925,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                     _isShareEnabled = canShareAll();
                                   });
                                   debugPrint(
-                                      "✅ Selected Users JSON: $selectedUsersJson");
+                                      " Selected Users JSON: $selectedUsersJson");
                                 }
 
                                 void toggleSelection(bool? value) {
@@ -2982,7 +2119,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                     final roles =
                                                         user.roles ?? [];
 
-                                                    // 🔥 Reset when unchecked
+                                                    //  Reset when unchecked
                                                     if (!isSelected) {
                                                       _selectedRoles[index] =
                                                           null;
@@ -3026,7 +2163,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                       );
                                                     }
 
-                                                    // 🔥 CASE 2: MULTIPLE roles → show dropdown with same width
+                                                    //  CASE 2: MULTIPLE roles → show dropdown with same width
                                                     return Container(
                                                       width: double.infinity,
                                                       padding: const EdgeInsets
@@ -3342,7 +2479,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                 return;
                                               }
 
-                                              /// ✅ SHOW LOADER
+                                              ///  SHOW LOADER
                                               setState(() =>
                                                   _isSendingInvite1 = true);
 
@@ -3390,7 +2527,9 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                     _selectedDeadline = null;
                                                     _userSearchController
                                                         .clear(); // optional
+                                                    isSelectionMode = false;
                                                   });
+
                                                   Navigator.pop(dialogContext);
                                                   ScaffoldMessenger.of(context)
                                                       .showSnackBar(
@@ -4474,12 +3613,14 @@ class InfoCard extends StatelessWidget {
   final String title;
   final dynamic count;
   final IconData icon;
+  final bool? status;
 
   const InfoCard({
     super.key,
     required this.title,
     required this.count,
     required this.icon,
+    this.status,
   });
 
   @override
@@ -4491,7 +3632,9 @@ class InfoCard extends StatelessWidget {
         color: Colors.white12,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Colors.white38, width: 1),
+          side: BorderSide(
+              color: status! ? AppColors.primaryMain : Colors.white38,
+              width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(8, 1, 8, 2),
@@ -4690,16 +3833,16 @@ void _showRequestConnectionDialog(
                                       final text =
                                           messageController.text.trim();
 
-                                      if (text.isEmpty) {
-                                        setState(() {
-                                          messageError = "Message is required";
-                                        });
-                                        return;
-                                      }
-
-                                      setState(() {
-                                        messageError = null;
-                                      });
+                                      // if (text.isEmpty) {
+                                      //   setState(() {
+                                      //     messageError = "Message is required";
+                                      //   });
+                                      //   return;
+                                      // }
+                                      //
+                                      // setState(() {
+                                      //   messageError = null;
+                                      // });
 
                                       print("🔥 BUTTON CLICKED"); // DEBUG
 

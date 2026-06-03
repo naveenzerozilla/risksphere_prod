@@ -71,7 +71,6 @@ class RatingWidget extends StatelessWidget {
     }
   }
 
-  // Method to determine the star color based on score
   Color _getStarColor() {
     if (score == 5) {
       return Colors.green.shade300; // Light green for stars

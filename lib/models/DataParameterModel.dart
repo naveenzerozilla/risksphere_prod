@@ -1,3 +1,5 @@
+import 'invoice_model.dart';
+
 class DataParametersModel {
   List<Result>? result;
   HasUpgraded? hasUpgraded;
@@ -52,6 +54,8 @@ class Result {
   ParameterState? parameterState;
   Private? private;
   String? dataCategoryId;
+  LinkVendor? linkVendor;
+  List<String>? tags;
   ParamConfig? paramConfig;
   HelpDocumantion? helpDocumantion;
   dynamic criticality;
@@ -91,6 +95,8 @@ class Result {
     this.parameterState,
     this.private,
     this.dataCategoryId,
+    this.linkVendor,
+    this.tags,
     this.paramConfig,
     this.helpDocumantion,
     this.criticality,
@@ -139,7 +145,10 @@ class Result {
         : null;
 
     dataCategoryId = json['data_category_id'];
-
+    linkVendor = json['link_vendor'] is Map
+        ? LinkVendor.fromJson(Map<String, dynamic>.from(json['link_vendor']))
+        : null;
+    tags = json['tags'] != null ? List<String>.from(json['tags']) : [];
     paramConfig = json['param_config'] is Map
         ? ParamConfig.fromJson(Map<String, dynamic>.from(json['param_config']))
         : null;
@@ -149,29 +158,22 @@ class Result {
             Map<String, dynamic>.from(json['help_documantion']))
         : null;
 
-    // ------------------------------------------------------------------
-    // 🔥 UNIVERSAL CRITICALITY HANDLER
-    // ------------------------------------------------------------------
     var crit = json['criticality'];
 
     if (crit == null) {
-      // null → empty list
       criticality = [];
     } else if (crit is List) {
-      // list → parse each
       criticality = crit
           .where((e) => e is Map)
           .map((e) => Criticality.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } else if (crit is Map) {
-      // map → convert to list
       if (crit.isEmpty) {
         criticality = [];
       } else {
         criticality = [Criticality.fromJson(Map<String, dynamic>.from(crit))];
       }
     } else {
-      // unknown → empty
       criticality = [];
     }
 
@@ -247,7 +249,8 @@ class Result {
       data['parameter_state'] = parameterState!.toJson();
     if (private != null) data['private'] = private!.toJson();
     data['data_category_id'] = dataCategoryId;
-
+    data['link_vendor'] = linkVendor != null ? linkVendor!.toJson() : null;
+    data['tags'] = tags;
     if (paramConfig != null) data['param_config'] = paramConfig!.toJson();
     if (helpDocumantion != null)
       data['help_documantion'] = helpDocumantion!.toJson();
@@ -296,335 +299,25 @@ class Result {
   }
 }
 
-// class Result {
-//   String? id;
-//   String? hazardName;
-//   String? name;
-//   String? parentId;
-//   ParameterState? parameterState;
-//   Private? private;
-//   String? dataCategoryId;
-//   ParamConfig? paramConfig;
-//   HelpDocumantion? helpDocumantion;
-//   List<Criticality>? criticality;
-//   String? parameterNameA;
-//   String? parameterNameB;
-//   ParameterType? parameterType;
-//   int? selectedParameterType;
-//   String? unitName;
-//   String? tooltip;
-//   bool? status;
-//   String? ratingStyle;
-//   String? fileType;
-//   bool? isList;
-//   bool? isMultiSelectionList;
-//   bool? isMultiFiles;
-//   bool? isDisplayListing;
-//   bool? isItRangeParameter;
-//   String? moduleName;
-//   String? categoryType;
-//   String? pdElement;
-//   String? date;
-//   String? startDate;
-//   String? endDate;
-//   String? dataGroupRef;
-//   Version? version;
-//   StateManager? stateManager;
-//   User? user;
-//   ParameterValue? parameterValue;
-//   String? currency;
-//   List<History>? history;
-//
-//   Result(
-//       {this.id,
-//       this.hazardName,
-//       this.name,
-//       this.parentId,
-//       this.parameterState,
-//       this.private,
-//       this.dataCategoryId,
-//       this.paramConfig,
-//       this.helpDocumantion,
-//       this.criticality,
-//       this.parameterNameA,
-//       this.parameterNameB,
-//       this.parameterType,
-//       this.selectedParameterType,
-//       this.unitName,
-//       this.tooltip,
-//       this.status,
-//       this.ratingStyle,
-//       this.fileType,
-//       this.isList,
-//       this.isMultiSelectionList,
-//       this.isMultiFiles,
-//       this.isDisplayListing,
-//       this.isItRangeParameter,
-//       this.moduleName,
-//       this.categoryType,
-//       this.pdElement,
-//       this.date,
-//       this.startDate,
-//       this.endDate,
-//       this.dataGroupRef,
-//       this.version,
-//       this.stateManager,
-//       this.user,
-//       this.parameterValue,
-//       this.currency,
-//       this.history});
-//   Result.fromJson(Map<String, dynamic> json) {
-//     id = json['id'];
-//     hazardName = json['hazard_name'];
-//     name = json['name'];
-//     parentId = json['parent_id'];
-//
-//     parameterState = json['parameter_state'] is Map
-//         ? ParameterState.fromJson(Map<String, dynamic>.from(json['parameter_state']))
-//         : null;
-//
-//     private = json['private'] is Map
-//         ? Private.fromJson(Map<String, dynamic>.from(json['private']))
-//         : null;
-//
-//     dataCategoryId = json['data_category_id'];
-//
-//     paramConfig = json['param_config'] is Map
-//         ? ParamConfig.fromJson(Map<String, dynamic>.from(json['param_config']))
-//         : null;
-//
-//     helpDocumantion = json['help_documantion'] is Map
-//         ? HelpDocumantion.fromJson(Map<String, dynamic>.from(json['help_documantion']))
-//         : null;
-//
-//     // --------------------------------------------------------------------------
-//     // 🔥 UNIVERSAL CRITICALITY PARSER (handles list, map, empty map, null)
-//     // --------------------------------------------------------------------------
-//     var crit = json['criticality'];
-//
-//     if (crit == null) {
-//       criticality = [];
-//     }
-//     else if (crit is List) {
-//       criticality = crit
-//           .map((e) => Criticality.fromJson(Map<String, dynamic>.from(e)))
-//           .toList();
-//     }
-//     else if (crit is Map) {
-//       if (crit.isEmpty) {
-//         criticality = [];
-//       } else {
-//         criticality = [Criticality.fromJson(Map<String, dynamic>.from(crit))];
-//       }
-//     }
-//     else {
-//       criticality = [];
-//     }
-//
-//     parameterNameA = json['parameter_name_a'];
-//     parameterNameB = json['parameter_name_b'];
-//
-//     parameterType = json['parameter_type'] is Map
-//         ? ParameterType.fromJson(Map<String, dynamic>.from(json['parameter_type']))
-//         : null;
-//
-//     selectedParameterType = json['selected_parameter_type'];
-//     unitName = json['unit_name'];
-//     tooltip = json['tooltip'];
-//     status = json['status'];
-//     ratingStyle = json['rating_style'];
-//     fileType = json['file_type'];
-//     isList = json['is_list'];
-//     isMultiSelectionList = json['is_multi_selection_list'];
-//     isMultiFiles = json['is_multi_files'];
-//     isDisplayListing = json['is_display_listing'];
-//     isItRangeParameter = json['is_it_range_parameter'];
-//     moduleName = json['module_name'];
-//     categoryType = json['category_type'];
-//     pdElement = json['pd_element'];
-//     date = json['date'];
-//     startDate = json['startDate'];
-//     endDate = json['endDate'];
-//     dataGroupRef = json['data_group_ref'];
-//
-//     version = json['version'] is Map
-//         ? Version.fromJson(Map<String, dynamic>.from(json['version']))
-//         : null;
-//
-//     stateManager = json['state_manager'] is Map
-//         ? StateManager.fromJson(Map<String, dynamic>.from(json['state_manager']))
-//         : null;
-//
-//     user = json['user'] is Map
-//         ? User.fromJson(Map<String, dynamic>.from(json['user']))
-//         : null;
-//
-//     parameterValue = json['parameter_value'] is Map
-//         ? ParameterValue.fromJson(Map<String, dynamic>.from(json['parameter_value']))
-//         : null;
-//
-//     currency = json['currency'];
-//
-//     // --------------------------------------------------------------------------
-//     // 🔥 SAFE HISTORY PARSER
-//     // --------------------------------------------------------------------------
-//     history = [];
-//     if (json['history'] is List) {
-//       for (var v in json['history']) {
-//         if (v is Map) {
-//           history!.add(History.fromJson(Map<String, dynamic>.from(v)));
-//         }
-//       }
-//     }
-//   }
-//
-//   // Result.fromJson(Map<String, dynamic> json) {
-//   //   id = json['id'];
-//   //   hazardName = json['hazard_name'];
-//   //   name = json['name'];
-//   //   parentId = json['parent_id'];
-//   //   parameterState = json['parameter_state'] != null
-//   //       ? ParameterState.fromJson(json['parameter_state'])
-//   //       : null;
-//   //   private =
-//   //       json['private'] != null ? Private.fromJson(json['private']) : null;
-//   //   dataCategoryId = json['data_category_id'];
-//   //   paramConfig = json['param_config'] != null
-//   //       ? ParamConfig.fromJson(json['param_config'])
-//   //       : null;
-//   //   helpDocumantion = json['help_documantion'] != null
-//   //       ? new HelpDocumantion.fromJson(json['help_documantion'])
-//   //       : null;
-//   //   // --- FIX: universal criticality parser ---
-//   //   if (json['criticality'] == null) {
-//   //     criticality = [];
-//   //   }
-//   //   else if (json['criticality'] is List) {
-//   //     // Case 1: List
-//   //     criticality = (json['criticality'] as List)
-//   //         .map((e) => Criticality.fromJson(e))
-//   //         .toList();
-//   //   }
-//   //   else if (json['criticality'] is Map) {
-//   //     // Case 2: Single object
-//   //     final map = json['criticality'] as Map;
-//   //
-//   //     if (map.isEmpty) {
-//   //       criticality = [];
-//   //     } else {
-//   //       criticality = [Criticality.fromJson(map)];
-//   //     }
-//   //   }
-//   //   else {
-//   //     criticality = [];
-//   //   }
-//   //
-//   //   parameterNameA = json['parameter_name_a'];
-//   //   parameterNameB = json['parameter_name_b'];
-//   //   parameterType = json['parameter_type'] != null
-//   //       ? ParameterType.fromJson(json['parameter_type'])
-//   //       : null;
-//   //   selectedParameterType = json['selected_parameter_type'];
-//   //   unitName = json['unit_name'];
-//   //   tooltip = json['tooltip'];
-//   //   status = json['status'];
-//   //   ratingStyle = json['rating_style'];
-//   //   fileType = json['file_type'];
-//   //   isList = json['is_list'];
-//   //   isMultiSelectionList = json['is_multi_selection_list'];
-//   //   isMultiFiles = json['is_multi_files'];
-//   //   isDisplayListing = json['is_display_listing'];
-//   //   isItRangeParameter = json['is_it_range_parameter'];
-//   //   moduleName = json['module_name'];
-//   //   categoryType = json['category_type'];
-//   //   pdElement = json['pd_element'];
-//   //   date = json['date'];
-//   //   startDate = json['startDate'];
-//   //   endDate = json['endDate'];
-//   //   dataGroupRef = json['data_group_ref'];
-//   //   version =
-//   //       json['version'] != null ? Version.fromJson(json['version']) : null;
-//   //   stateManager = json['state_manager'] != null
-//   //       ? StateManager.fromJson(json['state_manager'])
-//   //       : null;
-//   //   user = json['user'] != null ? User.fromJson(json['user']) : null;
-//   //
-//   //   parameterValue = json['parameter_value'] != null
-//   //       ? new ParameterValue.fromJson(json['parameter_value'])
-//   //       : null;
-//   //   currency = json['currency'];
-//   //   if (json['history'] != null) {
-//   //     history = <History>[];
-//   //     json['history'].forEach((v) {
-//   //       history!.add(new History.fromJson(v));
-//   //     });
-//   //   }
-//   // }
-//
-//   Map<String, dynamic> toJson() {
-//     final Map<String, dynamic> data = {};
-//     data['id'] = this.id;
-//     data['hazard_name'] = this.hazardName;
-//     data['name'] = this.name;
-//     data['parent_id'] = this.parentId;
-//     if (this.parameterState != null) {
-//       data['parameter_state'] = this.parameterState!.toJson();
-//     }
-//     if (this.private != null) {
-//       data['private'] = this.private!.toJson();
-//     }
-//     data['data_category_id'] = this.dataCategoryId;
-//     if (this.paramConfig != null) {
-//       data['param_config'] = this.paramConfig!.toJson();
-//     }
-//     if (this.helpDocumantion != null) {
-//       data['help_documantion'] = this.helpDocumantion!.toJson();
-//     }
-//     if (this.criticality != null) {
-//       data['criticality'] = this.criticality!.map((v) => v.toJson()).toList();
-//     }
-//     data['parameter_name_a'] = this.parameterNameA;
-//     data['parameter_name_b'] = this.parameterNameB;
-//     if (this.parameterType != null) {
-//       data['parameter_type'] = this.parameterType!.toJson();
-//     }
-//     data['selected_parameter_type'] = this.selectedParameterType;
-//     data['unit_name'] = this.unitName;
-//     data['tooltip'] = this.tooltip;
-//     data['status'] = this.status;
-//     data['rating_style'] = this.ratingStyle;
-//     data['file_type'] = this.fileType;
-//     data['is_list'] = this.isList;
-//     data['is_multi_selection_list'] = this.isMultiSelectionList;
-//     data['is_multi_files'] = this.isMultiFiles;
-//     data['is_display_listing'] = this.isDisplayListing;
-//     data['is_it_range_parameter'] = this.isItRangeParameter;
-//     data['module_name'] = this.moduleName;
-//     data['category_type'] = this.categoryType;
-//     data['pd_element'] = this.pdElement;
-//     data['date'] = this.date;
-//     data['startDate'] = this.startDate;
-//     data['endDate'] = this.endDate;
-//     data['data_group_ref'] = this.dataGroupRef;
-//     if (this.version != null) {
-//       data['version'] = this.version!.toJson();
-//     }
-//     if (this.stateManager != null) {
-//       data['state_manager'] = this.stateManager!.toJson();
-//     }
-//     if (this.user != null) {
-//       data['user'] = this.user!.toJson();
-//     }
-//     if (this.parameterValue != null) {
-//       data['parameter_value'] = this.parameterValue!.toJson();
-//     }
-//     data['currency'] = this.currency;
-//     if (this.history != null) {
-//       data['history'] = this.history!.map((v) => v.toJson()).toList();
-//     }
-//     return data;
-//   }
-// }
+class LinkVendor {
+  HazardHub? hazardHub;
+
+  LinkVendor({this.hazardHub});
+
+  LinkVendor.fromJson(Map<String, dynamic> json) {
+    hazardHub = json['hazard_hub'] != null
+        ? new HazardHub.fromJson(json['hazard_hub'])
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    if (this.hazardHub != null) {
+      data['hazard_hub'] = this.hazardHub!.toJson();
+    }
+    return data;
+  }
+}
 
 class History {
   dynamic? value;
@@ -718,13 +411,15 @@ class ParameterValue {
   List<Reference>? reference;
   String? userName;
   UpdatedAt? updatedAt;
-
+  Map<String, dynamic>? otherSources;
   ParameterValue(
       {this.value,
       this.paramType,
       this.reference,
       this.userName,
-      this.updatedAt});
+      this.updatedAt,
+      this.otherSources
+      });
 
   ParameterValue.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -739,6 +434,9 @@ class ParameterValue {
     updatedAt = json['updated_at'] != null
         ? new UpdatedAt.fromJson(json['updated_at'])
         : null;
+    otherSources = json['other_sources'] != null
+        ? Map<String, dynamic>.from(json['other_sources'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -751,6 +449,9 @@ class ParameterValue {
     data['user_name'] = this.userName;
     if (this.updatedAt != null) {
       data['updated_at'] = this.updatedAt!.toJson();
+    }
+    if (this.otherSources != null) {
+      data['other_sources'] = this.otherSources;
     }
     return data;
   }
@@ -811,16 +512,16 @@ class Reference {
   dynamic tags;
   dynamic size;
   String? name;
-  String ? uploadedBy;
+  String? uploadedBy;
 
-  Reference({this.url, this.tags, this.size, this.name,this.uploadedBy});
+  Reference({this.url, this.tags, this.size, this.name, this.uploadedBy});
 
   Reference.fromJson(Map<String, dynamic> json) {
     url = json['url'];
     tags = json['tags'];
     size = json['size'];
     name = json['name'];
-      uploadedBy = json['uploaded_by'];
+    uploadedBy = json['uploaded_by'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1356,8 +1057,12 @@ class VendorData {
 
 class HazardHub {
   List<DataCategories>? dataCategories;
+  Map<String, HazardHubItem>? items;
 
-  HazardHub({this.dataCategories});
+  HazardHub({
+    this.dataCategories,
+    this.items,
+  });
 
   HazardHub.fromJson(Map<String, dynamic> json) {
     if (json['data_categories'] != null) {
@@ -1366,14 +1071,141 @@ class HazardHub {
         dataCategories!.add(new DataCategories.fromJson(v));
       });
     }
+
+    items = {};
+
+    json.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        items![key] = HazardHubItem.fromJson(
+          value,
+        );
+      }
+    });
+
+    if (items!.isEmpty) {
+      items = null;
+    }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data = {};
     if (this.dataCategories != null) {
       data['data_categories'] =
           this.dataCategories!.map((v) => v.toJson()).toList();
     }
+    if (items != null) {
+      items!.forEach(
+        (key, value) {
+          data[key] = value.toJson();
+        },
+      );
+    }
+
+    return data;
+  }
+}
+// class HazardHub {
+//   List<DataCategories>? dataCategories;
+//   Map<String, HazardHubItem>? items;
+//
+//   HazardHub({this.items, this.dataCategories});
+//
+//   HazardHub.fromJson(Map<String, dynamic> json) {
+//     if (json['data_categories'] != null) {
+//       dataCategories = <DataCategories>[];
+//       json['data_categories'].forEach((v) {
+//         dataCategories!.add(new DataCategories.fromJson(v));
+//       });
+//     }
+//     items = {};
+//
+//     json.forEach((key, value) {
+//       if (value is Map<String, dynamic>) {
+//         items![key] = HazardHubItem.fromJson(
+//           value,
+//         );
+//       }
+//     });
+//
+//     if (items!.isEmpty) {
+//       items = null;
+//     }
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     final Map<String, dynamic> data = {};
+//     if (this.dataCategories != null) {
+//       data['data_categories'] =
+//           this.dataCategories!.map((v) => v.toJson()).toList();
+//     }
+//     if (items != null) {
+//       items!.forEach(
+//         (key, value) {
+//           data[key] = value.toJson();
+//         },
+//       );
+//     }
+//
+//     return data;
+//   }
+// }
+
+class HazardHubItem {
+  String? name;
+  String? path;
+
+  UpdatedAt? updatedAt;
+
+  List<LinkedDataParameter>? linkedDataParameters;
+
+  HazardHubItem({
+    this.name,
+    this.path,
+    this.updatedAt,
+    this.linkedDataParameters,
+  });
+
+  HazardHubItem.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+
+    path = json['path'];
+
+    updatedAt = json['updated_at'] != null
+        ? UpdatedAt.fromJson(
+            json['updated_at'],
+          )
+        : null;
+
+    if (json['linked_data_parameters'] != null) {
+      linkedDataParameters = <LinkedDataParameter>[];
+
+      (json['linked_data_parameters'] as List).forEach((v) {
+        linkedDataParameters!.add(
+          LinkedDataParameter.fromJson(v),
+        );
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+
+    data['name'] = name;
+
+    data['path'] = path;
+
+    if (updatedAt != null) {
+      data['updated_at'] = updatedAt!.toJson();
+    }
+
+    if (linkedDataParameters != null) {
+      data['linked_data_parameters'] = linkedDataParameters!
+          .map(
+            (v) => v.toJson(),
+          )
+          .toList();
+    }
+
     return data;
   }
 }
@@ -1453,6 +1285,7 @@ class ParameterData {
   String? dataCategoryId;
   Null? date;
   String? tooltip;
+
   // List<String>? parents;
   bool? isCustom;
   String? pdElement;
@@ -1485,50 +1318,51 @@ class ParameterData {
   String? moduleName;
   String? parameterNameA;
   bool? isItRangeParameter;
+
   // String? path;
 
-  ParameterData(
-      {this.unitName,
-      this.isMultiSelectionList,
-      this.isDisplayListing,
-      this.parameterValue,
-      this.selectedParameterType,
-      this.isList,
-      this.dataCategoryId,
-      this.date,
-      this.tooltip,
-      // this.parents,
-      this.isCustom,
-      this.pdElement,
-      this.parentId,
-      this.user,
-      this.private,
-      this.parameterType,
-      this.valueList,
-      this.startDate,
-      this.tags,
-      this.endDate,
-      this.helpDocumantion,
-      this.paramConfig,
-      this.isMultiFiles,
-      this.criticality,
-      this.parameterNameB,
-      this.dataGroupRef,
-      this.categoryType,
-      this.ratingStyle,
-      this.fileType,
-      this.version,
-      this.masterParentId,
-      this.name,
-      this.status,
-      this.stateManager,
-      this.parameterTypeFields,
-      this.parameterState,
-      this.moduleName,
-      this.parameterNameA,
-      this.isItRangeParameter,
-      // this.path
-      });
+  ParameterData({
+    this.unitName,
+    this.isMultiSelectionList,
+    this.isDisplayListing,
+    this.parameterValue,
+    this.selectedParameterType,
+    this.isList,
+    this.dataCategoryId,
+    this.date,
+    this.tooltip,
+    // this.parents,
+    this.isCustom,
+    this.pdElement,
+    this.parentId,
+    this.user,
+    this.private,
+    this.parameterType,
+    this.valueList,
+    this.startDate,
+    this.tags,
+    this.endDate,
+    this.helpDocumantion,
+    this.paramConfig,
+    this.isMultiFiles,
+    this.criticality,
+    this.parameterNameB,
+    this.dataGroupRef,
+    this.categoryType,
+    this.ratingStyle,
+    this.fileType,
+    this.version,
+    this.masterParentId,
+    this.name,
+    this.status,
+    this.stateManager,
+    this.parameterTypeFields,
+    this.parameterState,
+    this.moduleName,
+    this.parameterNameA,
+    this.isItRangeParameter,
+    // this.path
+  });
 
   ParameterData.fromJson(Map<String, dynamic> json) {
     unitName = json['unit_name'];

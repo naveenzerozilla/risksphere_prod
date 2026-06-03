@@ -137,6 +137,10 @@ class MyLocation with ClusterItem {
   List<Screenshots>? screenshots;
   bool? isHazardProcess;
   var dataCompleteness;
+  bool? hasVendorData;
+  bool? usFlag;
+  bool? hasSov;
+
 
   MyLocation(
       {this.accountId,
@@ -166,7 +170,12 @@ class MyLocation with ClusterItem {
       this.subdestinations,
       this.screenshots,
       this.isHazardProcess,
-      this.dataCompleteness});
+      this.dataCompleteness,
+      this.hasVendorData,
+        this.hasSov,
+        this.usFlag
+
+      });
 
   MyLocation.fromJson(Map<String, dynamic> json) {
     accountId = json['account_id'];
@@ -255,6 +264,9 @@ class MyLocation with ClusterItem {
     }
     isHazardProcess = json['is_hazard_processed'] ?? false;
     dataCompleteness = json['data_completeness'];
+    hasVendorData = json['has_vendor_data'];
+    usFlag = json['us_flag'];
+    hasSov = json['has_sov'];
   }
 
   Map<String, dynamic> toJson() {
@@ -308,6 +320,9 @@ class MyLocation with ClusterItem {
     }
     data['is_hazard_processed'] = isHazardProcess;
     data['data_completeness'] = this.dataCompleteness;
+    data['has_vendor_data'] = this.hasVendorData;
+    data['us_flag'] = this.usFlag;
+    data['has_sov'] = this.hasSov;
     return data;
   }
 

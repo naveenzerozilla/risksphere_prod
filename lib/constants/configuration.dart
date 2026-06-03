@@ -1,4 +1,5 @@
 import 'environment.dart';
+import 'app_env.dart';
 
 class Configuration {
   static String environment = Environment.qa;

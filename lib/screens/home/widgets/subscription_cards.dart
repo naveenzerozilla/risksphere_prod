@@ -173,7 +173,6 @@ class SubscriptionCard extends StatelessWidget {
             ),
             Consumer<UserProfileProvider>(
                 builder: (context, userProfile, child) {
-              final trialStatus = userProfile.trialInfo['status'] ?? '';
               return Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -191,106 +190,11 @@ class SubscriptionCard extends StatelessWidget {
                       ),
                       child: Text(
                         "Coming Soon",
-                        // isSubscribed == true
-                        //     ? "subscribed"
-                        //     : "Try now",
                         style: typography.Body1.copyWith(
                           color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
-                    // isSubscribed
-                    //     ? isPgAdmin || isAdmin || isSuperAdmin
-                    //         ? Row(
-                    //             mainAxisSize: MainAxisSize.min,
-                    //             mainAxisAlignment: MainAxisAlignment.end,
-                    //             children: [
-                    //               isPgAdmin || isAdmin || isSuperAdmin
-                    //                   ? ElevatedButton(
-                    //                       onPressed: () {},
-                    //
-                    //                       // onSubscribe,
-                    //                       style: ElevatedButton.styleFrom(
-                    //                         shape: RoundedRectangleBorder(
-                    //                           borderRadius:
-                    //                               BorderRadius.circular(4.0),
-                    //                         ),
-                    //                         backgroundColor: Colors.grey,
-                    //                       ),
-                    //                       child: Text(
-                    //                         "Coming Soon",
-                    //                         // isSubscribed == true
-                    //                         //     ? "subscribed"
-                    //                         //     : "Try now",
-                    //                         style: typography.Body1.copyWith(
-                    //                           color: Theme.of(context)
-                    //                               .colorScheme
-                    //                               .surface,
-                    //                         ),
-                    //                       ),
-                    //                     )
-                    //                   : ElevatedButton(
-                    //                       onPressed: () {},
-                    //                       // onPressed: onSubscribe,
-                    //                       style: ElevatedButton.styleFrom(
-                    //                         shape: RoundedRectangleBorder(
-                    //                           borderRadius:
-                    //                               BorderRadius.circular(4.0),
-                    //                         ),
-                    //                         backgroundColor: Colors.amber,
-                    //                       ),
-                    //                       child: Text(
-                    //                         "Coming Soon",
-                    //                         // trialStatus.isEmpty
-                    //                         //     ? "  Unsubscribe  "
-                    //                         //     : trialStatus.toLowerCase() ==
-                    //                         //             'expired'
-                    //                         //         ? "  Upgrade Now  "
-                    //                         //         : "  Trial Activated",
-                    //                         style: typography.Body1.copyWith(
-                    //                           color: Theme.of(context)
-                    //                               .colorScheme
-                    //                               .surface,
-                    //                         ),
-                    //                       ),
-                    //                     ),
-                    //             ],
-                    //           )
-                    //         : ElevatedButton(
-                    //             onPressed: () {},
-                    //             // onPressed: onSubscribe,
-                    //             child: Text(
-                    //               "Coming Soon",
-                    //               // "unSubscribed",
-                    //               // style: typography.Body1.copyWith(
-                    //               //   color: Theme.of(context).colorScheme.surface,
-                    //               // ),
-                    //             ),
-                    //           )
-                    //     : Row(
-                    //         mainAxisSize: MainAxisSize.min,
-                    //         mainAxisAlignment: MainAxisAlignment.end,
-                    //         children: [
-                    //           ElevatedButton(
-                    //             onPressed: () {},
-                    //             // onPressed: onSubscribe,
-                    //             style: ElevatedButton.styleFrom(
-                    //               shape: RoundedRectangleBorder(
-                    //                 borderRadius: BorderRadius.circular(4.0),
-                    //               ),
-                    //               backgroundColor: AppColors.primaryMain,
-                    //             ),
-                    //             child: Text(
-                    //               "Coming Soon",
-                    //               // "Subscribe Now",
-                    //               style: typography.Body1.copyWith(
-                    //                 color:
-                    //                     Theme.of(context).colorScheme.surface,
-                    //               ),
-                    //             ),
-                    //           )
-                    //         ],
-                    //       ),
                   ),
                 ],
               );

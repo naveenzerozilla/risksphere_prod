@@ -16,6 +16,13 @@ class AppConstant {
 
   static String get PAYMNET_DETAILS_URL => '$baseURL/pricing_v2/session_status';
 
+  static String get RECOMMENDATION_ENGINE_V2 =>
+      '$baseURL/recommendation_engine_v2/confirm_sync';
+  static String VENDOR_DATA_COMPARISON =
+      '$baseURL/recommendation_engine_v2/vendor_data_comparison';
+  static String UNLINK_PARAMETER =
+      '$baseURL/vendor_management_v2/unlink_parameter';
+
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
       '$baseURL/user_management_new_v2/companies_list';
 
@@ -66,9 +73,17 @@ class AppConstant {
   static String get GET_EMPLOYEES_NEW =>
       '$baseURL/user_management_new_v2/employee_list';
 
+  static String get HANDLE_CHATBOT => '$baseURL/handle_chatbot_v2';
+
+  static String get Fetch_user_managements =>
+      '$baseURL/user_management_v2?current_role=true&current_user=true';
+
   static String get CREATE_EMPLOYEES => '$baseURL/new_user_create_v2';
 
   static String get UPDATE_EMPLOYEES => '$baseURL/user_management_v2';
+
+  static String get Fetch_USER_LIST =>
+      '$baseURL/user_management_new_v2/comprehensive_users';
 
   static String get VIEW_EMPLOYEES => '$baseURL/user_management_v2';
 
@@ -143,6 +158,15 @@ class AppConstant {
       '$baseURL/pricing_v2/transactions/details';
 
   static String get GET_INVOICE_LIST => '$baseURL/pricing_v2/payment/details';
+
+  static String get GET_HAZARDHUB_LIST =>
+      '$baseURL/vendor_management_v2/vendor_key/hazard_hub';
+
+  static String get GET_RISKSPHERE_LIST =>
+      '$baseURL/data_categories_v2?get_filtered=true';
+
+  static String get PARAMETER_CONFIRM_API =>
+      '$baseURL/vendor_management_v2/link_company_db_with_vendor_dp';
 
   static String get GET_RECOMMENDATION_LIST =>
       '$baseURL/recommendation_engine_v2/sov';
@@ -222,13 +246,16 @@ class AppConstant {
   /// ---------------- Vendor ----------------
 
   static String get VENDOR_MANAGEMENT_URL =>
-      '$baseURL/vendor_management_v2/vendor_list';
+      '$baseURL/vendor_management_v2/vendor_list/%20%20';
 
   static String get GET_VENDOR_HAZARD =>
       '$baseURL/vendor_hazards_v2/vendor_usage_dashboard';
 
   static String get GET_CORPORATE_DASHBOARD =>
       '$baseURL/vendor_hazards_v2/corporate_usage_dashboard';
+
+  static String get GET_COMPANY_ID =>
+      '$baseURL/user_management_new_v2/company_credits/';
 
   static String get RENAME_ACCOUNT => '$baseURL/accounts_v2';
 
@@ -239,6 +266,8 @@ class AppConstant {
 
   static String get GET_NEWS_FEED =>
       '$baseURL/user_management_new_v2/getActivityFeed';
+
+  static String get GET_MAP_URL => '$baseURL/vendor_management_v2/get_map_url';
 
   static String get GET_EVENT_INFO =>
       '$baseURL/user_management_new_v2/eventinfo';
@@ -347,10 +376,15 @@ class AppConstant {
   static String get CHANGE_OCCUPANCY => '$baseURL/locations_V2/rented';
 
   static String get UPDATE_HAZARD => '$baseURL/locations_v2/updatehazard';
+
   static String get GIFT_CREDITS => '$baseURL/locations_v2/gift_credits';
+
   static String get ACCEPT_CREDITS => '$baseURL/locations_v2/accept_credits';
+
   static String get SENT_GIFTS => '$baseURL/locations_v2/sent_gifts';
+
   static String get RENAME_SUB_ACCOUNT => '$baseURL/accounts_v2';
+
   static String get REVOKE_GIFTS => '$baseURL/locations_v2/revoke_gift';
 
   static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts_v2';
@@ -372,6 +406,9 @@ class AppConstant {
 
   static String get GET_SOV_LIST_BY_SOV =>
       '$baseURL/locations_v2/accessible_sov';
+
+  static String get GET_EVENET_SOV_LIST_BY_SOV =>
+      '$baseURL/vendor_management_v2/event_based_on_monitoring_sov';
 
   static String get CHANGE_CORPORATE_STATUS => '$baseURL/companies_v2';
 
