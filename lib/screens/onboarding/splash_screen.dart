@@ -27,7 +27,6 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _animation;
   late ThemeProvider themeProvider;
 
-  // ✅ No longer initialized immediately — waits for update check first
   late Future<Widget> _initialScreenFuture;
 
   @override
@@ -44,102 +43,103 @@ class _SplashScreenState extends State<SplashScreen>
     themeProvider = context.read<ThemeProvider>();
 
     // ✅ Single pipeline: update check FIRST, then navigate
-    _initialScreenFuture = _checkUpdateThenNavigate();
+    // _initialScreenFuture = _checkUpdateThenNavigate();
+    _initialScreenFuture = _determineInitialScreen();
   }
 
   /// Step 1: Check for update → show dialog if needed → then determine screen
-  Future<Widget> _checkUpdateThenNavigate() async {
-    try {
-      final updateStatus = await UpdateService.checkForUpdate();
-
-      debugPrint('── Splash Update Check ──');
-      debugPrint('hasUpdate : ${updateStatus.hasUpdate}');
-      debugPrint('isForce   : ${updateStatus.isForce}');
-      debugPrint('version   : ${updateStatus.latestVersion}');
-
-      if (updateStatus.hasUpdate && mounted) {
-        // ✅ Wait for dialog/bottom sheet to be dismissed before continuing
-        await UpdateService.showUpdateDialog(context, updateStatus);
-
-        // Track update status in prefs (optional)
-        await SharedPreferenceService.setBool(
-          "pending_soft_update",
-          updateStatus.isForce != true,
-        );
-        await SharedPreferenceService.setString(
-          "pending_update_version",
-          updateStatus.latestVersion ?? "",
-        );
-
-        // ✅ If force update: keep showing splash (user must update)
-        // The bottom sheet is non-dismissible so app stays blocked
-        if (updateStatus.isForce == true) {
-          // Return a blocker screen — user cannot proceed
-          return _buildBlockerScreen();
-        }
-      }
-    } catch (e) {
-      debugPrint('Update check error: $e');
-    }
-
-    // ✅ Step 2: Proceed to determine actual screen
-    return _determineInitialScreen();
-  }
+  // Future<Widget> _checkUpdateThenNavigate() async {
+  //   try {
+  //     final updateStatus = await UpdateService.checkForUpdate();
+  //
+  //     debugPrint('── Splash Update Check ──');
+  //     debugPrint('hasUpdate : ${updateStatus.hasUpdate}');
+  //     debugPrint('isForce   : ${updateStatus.isForce}');
+  //     debugPrint('version   : ${updateStatus.latestVersion}');
+  //
+  //     if (updateStatus.hasUpdate && mounted) {
+  //       // ✅ Wait for dialog/bottom sheet to be dismissed before continuing
+  //       await UpdateService.showUpdateDialog(context, updateStatus);
+  //
+  //       // Track update status in prefs (optional)
+  //       await SharedPreferenceService.setBool(
+  //         "pending_soft_update",
+  //         updateStatus.isForce != true,
+  //       );
+  //       await SharedPreferenceService.setString(
+  //         "pending_update_version",
+  //         updateStatus.latestVersion ?? "",
+  //       );
+  //
+  //       // ✅ If force update: keep showing splash (user must update)
+  //       // The bottom sheet is non-dismissible so app stays blocked
+  //       if (updateStatus.isForce == true) {
+  //         // Return a blocker screen — user cannot proceed
+  //         return _buildBlockerScreen();
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Update check error: $e');
+  //   }
+  //
+  //   // ✅ Step 2: Proceed to determine actual screen
+  //   return _determineInitialScreen();
+  // }
 
   /// Blocker screen shown after force update dialog is dismissed
   /// (user tapped "Update Now" and came back without updating)
-  Widget _buildBlockerScreen() {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/images/logo.svg',
-                width: 120,
-                height: 120,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Update Required',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Please update the app to continue.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () async {
-                  await UpdateService.performForceUpdate();
-                },
-                child: const Text(
-                  'Update Now',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildBlockerScreen() {
+  //   return Scaffold(
+  //     body: Center(
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(32.0),
+  //         child: Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             SvgPicture.asset(
+  //               'assets/images/logo.svg',
+  //               width: 120,
+  //               height: 120,
+  //             ),
+  //             const SizedBox(height: 32),
+  //             const Text(
+  //               'Update Required',
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 12),
+  //             const Text(
+  //               'Please update the app to continue.',
+  //               textAlign: TextAlign.center,
+  //               style: TextStyle(fontSize: 15, color: Colors.grey),
+  //             ),
+  //             const SizedBox(height: 32),
+  //             ElevatedButton(
+  //               style: ElevatedButton.styleFrom(
+  //                 padding: const EdgeInsets.symmetric(
+  //                   horizontal: 40,
+  //                   vertical: 14,
+  //                 ),
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(10),
+  //                 ),
+  //               ),
+  //               onPressed: () async {
+  //                 await UpdateService.performForceUpdate();
+  //               },
+  //               child: const Text(
+  //                 'Update Now',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Future<Widget> _determineInitialScreen() async {
     final auth = FirebaseAuth.instance;
@@ -389,7 +389,6 @@ class _SplashScreenState extends State<SplashScreen>
     final subAccountName =
         await SharedPreferenceService.GetDefaultSUBAccountName() ?? '';
 
-
     Navigator.pushAndRemoveUntil(
       ctx,
       MaterialPageRoute(
@@ -420,7 +419,6 @@ class _SplashScreenState extends State<SplashScreen>
       future: _initialScreenFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-
           return Scaffold(
             backgroundColor: themeProvider.getTheme.scaffoldBackgroundColor,
             body: Center(

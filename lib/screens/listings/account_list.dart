@@ -146,9 +146,7 @@ class _AccountListScreenState extends State<AccountListScreen>
     var userProfileProvider =
     Provider.of<UserProfileProvider>(context, listen: false);
 
-    final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-    int tabCount = (trialStatus.isEmpty) ? 2 : 3;
-    _tabController = TabController(length: tabCount, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   void _setClaims() async {

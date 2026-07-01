@@ -120,6 +120,7 @@ class SharedPreferenceService {
   static const String DEFAULT_ACCOUNTID = 'DEFAULT_ACCOUNTID';
   static const String DEFAULT_MONITORING_SOV = 'DEFAULT_MONITORING_SOV';
   static const String DEFAULT_SUBACCOUNTID = 'DEFAULT_SUBACCOUNTID';
+  static const String DEFAULT_DATASETID = 'DEFAULT_DATASETID';
   static const String DEFAULT_ACCOUNTNAME = 'DEFAULT_ACCOUNTNAME';
   static const String DEFAULT_SUBACCOUNTNAME = 'DEFAULT_SUBACCOUNTNAME';
 
@@ -516,6 +517,16 @@ class SharedPreferenceService {
     return prefs.getString(DEFAULT_SUBACCOUNTID);
   }
 
+  static Future<void> setDefaultDatasetID(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(DEFAULT_DATASETID, value);
+  }
+
+  static Future<String?> getDefaultDatasetID() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(DEFAULT_DATASETID);
+  }
+
   static Future<void> setDefaultAccountName(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(DEFAULT_ACCOUNTNAME, value);
@@ -639,6 +650,34 @@ class SharedPreferenceService {
     //print('Retrieved hazard license with value $value');
     return value;
   }
+
+  static Future<void> setHurricane(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('hurricane_kineticast', value);
+    print('Set hazard hub license to $value');
+  }
+
+  static Future<String?> getHurricane() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('hurricane_kineticast');
+    //print('Retrieved hazard license with value $value');
+    return value;
+  }
+
+  static Future<void> setEarthquake(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('earthquake_usgs', value);
+    print('Set hazard hub license to $value');
+  }
+
+  static Future<String?> getEathquake() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? value = prefs.getString('earthquake_usgs');
+    //print('Retrieved hazard license with value $value');
+    return value;
+  }
+
+
 
   // static Future<void> setScheduleInProgress(bool value) async {
   //   SharedPreferences prefs = await SharedPreferences.getInstance();

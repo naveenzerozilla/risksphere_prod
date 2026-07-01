@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
 import 'dart:ui';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,7 +15,11 @@ import '../../../models/my_location_list_model.dart';
 import 'package:RiskSphere/providers/my_location_list_provider.dart';
 import '../../../providers/custom_tile_providers.dart';
 import '../../../providers/custom_tile_providers_main_hazards.dart';
+import '../../../service/api_service.dart';
 import '../../../service/language_service.dart';
+import '../../../service/shared_preference_service.dart';
+import '../../../utils/api_constants.dart';
+import '../../../utils/common_headers.dart';
 import 'location_details_popup.dart';
 import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart'
     as cluster_manager;
@@ -45,8 +53,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
   List<String> _reducers = [];
   String? _selectedReducer;
   int _selectedTabIndex = 0;
-  bool _isLoading = false; // used as overlay loader for async work
+  bool _isLoading = false;
   TabController? _tabController;
+  String? datasetID = "1";
 
   // Hazard state
   List<HazardData> mainHazards = [];
@@ -62,234 +71,534 @@ class _LocationListMapViewState extends State<LocationListMapView>
   int _currentLocationIndex = 0;
   bool _isAnimating = false;
   bool _mapReady = false;
-  bool _locationsLoaded = false; // initial first-page loaded flag
-  bool _firstAttachDone = false; // attach camera once after first data load
+  bool _locationsLoaded = false;
+  bool _firstAttachDone = false;
+
+  List<MyLocation> _allDatasetLocations = []; // full unfiltered list
+  List<MyLocation> _filteredLocations = []; // filtered by subAccountId
+  String? _activeSubAccountFilter; // null = show ALL
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
       setState(() => _selectedTabIndex = _tabController!.index);
     });
-
-    // initialize cluster manager with empty list - will set items later
     clusterManager = cluster_manager.ClusterManager<MyLocation>(
-      [],
+      _filteredLocations,
       _updateMarkers,
       markerBuilder: _markerBuilder,
-      levels: [1, 4.25, 6.75],
+      levels: const [
+        1,
+        4,
+        7,
+        10,
+        13,
+        16,
+        18,
+      ],
+      stopClusteringZoom: 18,
       extraPercent: 0.2,
-      stopClusteringZoom: 5.0,
     );
+    // clusterManager = cluster_manager.ClusterManager<MyLocation>(
+    //   [],
+    //   _updateMarkers,
+    //   markerBuilder: _markerBuilder,
+    //   levels: [
+    //     1,
+    //     5,
+    //     10,
+    //     15,
+    //     20,
+    //   ],
+    //   stopClusteringZoom: 16,
+    // );
+
     _initializeClusterManager();
     _fetchMainHazardLayers();
-    // call after build to fetch first page
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadLocationsFirstTime();
+
+    // Load dataset ID first, then download the dataset.
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await getdata();
+
+    debugPrint("Dataset ID Loaded: $datasetID");
+
+    if (datasetID != null && datasetID!.isNotEmpty && datasetID != "1") {
+      await loadDatasetLocations();
+    } else {
+      debugPrint("Invalid Dataset ID: $datasetID");
+    }
+  }
+
+  Future<void> getdata() async {
+    if (!mounted) return;
+
+    String? datasetIdd = await SharedPreferenceService.getDefaultDatasetID();
+    setState(() {
+      datasetID = datasetIdd.toString();
     });
+    print("DatasetId => $datasetID");
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _applySubAccountFilter() {
+    if (_activeSubAccountFilter == null || _activeSubAccountFilter!.isEmpty) {
+      _filteredLocations = List.from(_allDatasetLocations);
+    } else {
+      _filteredLocations = _allDatasetLocations
+          .where((loc) =>
+              loc.finalAddress?.subAccountId == _activeSubAccountFilter)
+          .toList();
+    }
+    if (_mapReady) {
+      clusterManager.setItems(_filteredLocations);
+
+      if (_filteredLocations.isNotEmpty && !_firstAttachDone) {
+        _moveCameraToLatLng(_filteredLocations.first.location);
+        _firstAttachDone = true;
+      }
+    }
+
+    debugPrint(
+        " Filter '$_activeSubAccountFilter' → ${_filteredLocations.length} locations");
+  }
+
+  Future<String?> getGoogleAccessToken() async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
+
+      log(headers.toString());
+
+      final uri = Uri.parse(AppConstant.GET_GOOGLE_TOKEN);
+
+      final response = await http.get(
+        uri,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final token = data['token']?.toString();
+
+        debugPrint("Google Token: $token");
+
+        return token;
+      } else {
+        debugPrint("Token API failed: ${response.statusCode} ${response.body}");
+        return null;
+      }
+    } on BackendException catch (e, stackTrace) {
+      debugPrint(stackTrace.toString());
+      debugPrint(e.message);
+      return null;
+    } catch (e, stackTrace) {
+      debugPrint(stackTrace.toString());
+      debugPrint("getGoogleAccessToken error: $e");
+      return null;
+    }
+  }
+
+  Future<void> loadDatasetLocations() async {
+    const projectId = "project-green-r5-1-qa";
+
+    final googleAccessToken = await getGoogleAccessToken();
+
+    if (googleAccessToken == null || googleAccessToken.isEmpty) {
+      debugPrint(" Failed to get Google access token.");
+      return;
+    }
+
+    try {
+      final downloadResponse = await http.get(
+        Uri.parse(
+          "https://mapsplatformdatasets.googleapis.com/download/v1/projects/$projectId/datasets/$datasetID:download?alt=media",
+        ),
+        headers: {
+          "Authorization": "Bearer $googleAccessToken",
+          "X-Goog-User-Project": projectId,
+        },
+      );
+
+      if (downloadResponse.statusCode != 200) {
+        debugPrint(
+            " Download failed ${downloadResponse.statusCode}: ${downloadResponse.body}");
+
+        if (mounted) {
+          setState(() => _locationsLoaded = true);
+        }
+        return;
+      }
+
+      final geoJson = jsonDecode(downloadResponse.body);
+
+      final features = geoJson['features'] as List? ?? [];
+
+      debugPrint("📍 Features in dataset: ${features.length}");
+
+      final List<MyLocation> allLocations = [];
+
+      final String selectedSubAccountId = widget.subAccountId;
+
+      for (final feature in features) {
+        final geometry = feature['geometry'];
+        final props = feature['properties'] as Map<String, dynamic>? ?? {};
+
+        if (geometry?['type'] != 'Point') continue;
+
+        final coords = geometry['coordinates'] as List;
+
+        final lng = (coords[0] as num).toDouble();
+        final lat = (coords[1] as num).toDouble();
+
+        if (lat == 0.0 || lng == 0.0) {
+          debugPrint("⚠️ Skipping invalid location");
+          continue;
+        }
+
+        final locationId = props['location_id']?.toString() ?? '';
+        final address = props['address']?.toString() ?? '';
+        final city = props['city']?.toString() ?? '';
+        final overallScore = props['overall_score'] ?? 0;
+        final subAccountId = props['sub_account_id']?.toString() ?? '';
+
+        debugPrint(
+            "Dataset SubAccount: $subAccountId | Selected: $selectedSubAccountId");
+
+        // Filter based on selected Sub Account Id
+        if (selectedSubAccountId.isNotEmpty &&
+            subAccountId != selectedSubAccountId) {
+          continue;
+        }
+
+        allLocations.add(
+          MyLocation(
+            id: locationId,
+            latitude: lat,
+            longitude: lng,
+            location: LatLng(lat, lng),
+            finalAddress: FinalAddress(
+              address: "$address, $city",
+              score: (overallScore as num).toInt(),
+              subAccountId: subAccountId,
+              latitude: lat,
+              longitude: lng,
+            ),
+          ),
+        );
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _allDatasetLocations = allLocations;
+        _activeSubAccountFilter = selectedSubAccountId;
+        _filteredLocations = List.from(allLocations);
+        _locationsLoaded = true;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (_mapReady && _filteredLocations.isNotEmpty) {
+        clusterManager.setItems(_filteredLocations);
+
+        if (!_firstAttachDone) {
+          await _zoomToAllLocations();
+
+          setState(() {
+            _firstAttachDone = true;
+          });
+        }
+      }
+
+      debugPrint(" Final Marker Count: ${_filteredLocations.length}");
+    } catch (e, stackTrace) {
+      debugPrint(" loadDatasetLocations error: $e");
+      debugPrint(stackTrace.toString());
+
+      if (mounted) {
+        setState(() => _locationsLoaded = true);
+      }
+    }
+  }
+
+  void _moveCameraToLatLng(LatLng target) {
+    mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: target,
+          zoom: 18,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _zoomToAllLocations() async {
+    if (_filteredLocations.isEmpty) return;
+
+    double minLat = _filteredLocations.first.location.latitude;
+    double maxLat = _filteredLocations.first.location.latitude;
+    double minLng = _filteredLocations.first.location.longitude;
+    double maxLng = _filteredLocations.first.location.longitude;
+
+    for (final loc in _filteredLocations) {
+      minLat = minLat < loc.location.latitude ? minLat : loc.location.latitude;
+
+      maxLat = maxLat > loc.location.latitude ? maxLat : loc.location.latitude;
+
+      minLng =
+          minLng < loc.location.longitude ? minLng : loc.location.longitude;
+
+      maxLng =
+          maxLng > loc.location.longitude ? maxLng : loc.location.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    mapController.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        bounds,
+        112,
+      ),
+    );
   }
 
   void _initializeClusterManager() {
     final allLocations =
         Provider.of<MyLocationListProvider>(context, listen: false)
             .fullLocationList;
-
     clusterManager = cluster_manager.ClusterManager<MyLocation>(
-      allLocations,
+      _filteredLocations,
       _updateMarkers,
       markerBuilder: _markerBuilder,
-      levels: [1, 4.25, 6.75],
-      // Optional zoom levels
-      extraPercent: 0.2,
-      // Optional padding to prevent clusters from popping in/out
-      stopClusteringZoom: 5.0,
-    );
-  }
-
-  // ------------ INITIAL DATA LOAD ------------
-  Future<void> _loadLocationsFirstTime() async {
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-
-    // show loader for initial load
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // load page 1 with pageSize 10 (matches your API)
-      await provider.fetchLocationListMapSov(
-        context,
-        "",
+      levels: const [
         1,
-        10000,
-        widget.accountId,
-        widget.subAccountId,
-        "",
-        "",
-        widget.sovId,
-      );
-
-      // mark loaded
-      _locationsLoaded = true;
-
-      // attach items to cluster manager if map is ready
-      _tryAttachMarkers();
-    } catch (e, st) {
-      print("Error loading first page of locations: $e\n$st");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Ensure cluster items attached and animate camera to first location once
-  void _tryAttachMarkers() {
-    if (!_mapReady || !_locationsLoaded) return;
-
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-
-    clusterManager.setItems(provider.fullLocationList);
-
-    if (!_firstAttachDone && provider.fullLocationList.isNotEmpty) {
-      _moveCameraTo(0); // show first pin
-      _firstAttachDone = true;
-    }
-  }
-
-  void _moveCameraTo(int index) {
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-
-    if (provider.fullLocationList.isEmpty) return;
-    if (index < 0 || index >= provider.fullLocationList.length) return;
-
-    final target = provider.fullLocationList[index].location;
-
-    mapController.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: target, zoom: 15),
-      ),
+        4,
+        7,
+        10,
+        13,
+        16,
+        18,
+      ],
+      stopClusteringZoom: 18,
+      extraPercent: 0.2,
     );
   }
 
-  // ------------ MARKER / CLUSTER HELPERS ------------
   Future<Marker> _markerBuilder(
       cluster_manager.Cluster<MyLocation> cluster) async {
     if (cluster.isMultiple) {
+      debugPrint(
+        " Building marker. Cluster=${cluster.isMultiple} Count=${cluster.count}",
+      );
       return Marker(
         markerId: MarkerId(cluster.getId()),
         position: cluster.location,
-        icon: await _getClusterBitmap(
-          125,
-          text: cluster.count.toString(),
-        ),
+        icon: await _getClusterBitmap(125, text: cluster.count.toString()),
       );
     }
 
-    MyLocation location = cluster.items.first;
+    final location = cluster.items.first;
+    final isCurrent = _filteredLocations.isNotEmpty &&
+        _currentLocationIndex < _filteredLocations.length &&
+        location.id == _filteredLocations[_currentLocationIndex].id;
+    final score = location.finalAddress?.score ?? 0;
 
-    bool isCurrent = location.id ==
-        Provider.of<MyLocationListProvider>(context, listen: false)
-            .fullLocationList[_currentLocationIndex]
-            .id;
+    double hue;
+
+    switch (score) {
+      case 1:
+        hue = BitmapDescriptor.hueRed;
+        break;
+      case 2:
+        hue = BitmapDescriptor.hueOrange;
+        break;
+      case 3:
+        hue = BitmapDescriptor.hueYellow;
+        break;
+      case 4:
+        hue = BitmapDescriptor.hueGreen;
+        break;
+      case 5:
+        hue = BitmapDescriptor.hueAzure;
+        break;
+      default:
+        hue = BitmapDescriptor.hueBlue;
+    }
 
     return Marker(
       markerId: MarkerId(location.id ?? ''),
       position: location.location,
-      icon: BitmapDescriptor.defaultMarkerWithHue(
-        isCurrent ? BitmapDescriptor.hueRed : BitmapDescriptor.hueBlue,
-      ),
-      onTap: () async {
-        print("Marker tapped!");
 
+      icon: BitmapDescriptor.defaultMarkerWithHue(
+        isCurrent ? BitmapDescriptor.hueRed : hue,
+      ),
+
+      onTap: () async {
         setState(() {
-          _focusedLocation = location.location; // ⭐ SET FOCUSED LOCATION HERE
-          is3DView = false; // Reset back to 2D
+          _focusedLocation = location.location;
+          is3DView = false;
         });
 
         await mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: location.location,
-              zoom: 17,
+              zoom: 20.5,
               tilt: 0,
               bearing: 0,
             ),
           ),
         );
 
-        showLocationDetailsPopup(context, location);
+        await _showLocationPopup(
+          context,
+          location.id!,
+        );
       },
-
-      // onTap: () {
-      //   showLocationDetailsPopup(context, location);
-      // },
     );
   }
 
-  // Future<Marker> _markerBuilder(
-  //     cluster_manager.Cluster<MyLocation> cluster) async {
-  //   if (cluster.isMultiple) {
-  //     Color clusterColor = _determineClusterColor(cluster.items.toList());
-  //     return Marker(
-  //       markerId: MarkerId(cluster.getId()),
-  //       position: cluster.location,
-  //       icon: await _getClusterBitmap(125,
-  //           text: cluster.count.toString(), color: clusterColor),
-  //       onTap: () {
-  //         // optionally handle cluster tap
-  //       },
-  //     );
-  //   } else {
-  //     MyLocation location = cluster.items.first;
-  //     final score = location.finalAddress?.score;
-  //
-  //     // ⭐ CURRENT LOCATION MARKER (RED)
-  //     bool isCurrent = location.id ==
-  //         Provider.of<MyLocationListProvider>(context, listen: false)
-  //             .fullLocationList[_currentLocationIndex]
-  //             .id;
-  //
-  //     return Marker(
-  //       markerId: MarkerId(location.id ?? ''),
-  //       position: location.location,
-  //
-  //       // ⭐ If current → RED, else use score color
-  //       icon: BitmapDescriptor.defaultMarkerWithHue(
-  //         isCurrent ? BitmapDescriptor.hueRed : BitmapDescriptor.hueBlue, //_getMarkerHue(score ?? 0),
+  Future<void> _showLocationPopup(
+    BuildContext context,
+    String locationId,
+  ) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final response = await getLocationDetails(locationId);
+
+      // Close loader FIRST
+      Navigator.of(context).pop();
+
+      if (response != null) {
+        showLocationDetailsPopup(
+          context,
+          response["result"],
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+  // Future<void> _showLocationPopup(
+  //   BuildContext context,
+  //   String locationId,
+  // ) async {
+  //   try {
+  //     showDialog(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (_) => const Center(
+  //         child: CircularProgressIndicator(),
   //       ),
+  //     );
   //
-  //       visible:
-  //           _showPins && (_selectedScore == null || _selectedScore == score),
+  //     final response = await getLocationDetails(locationId);
   //
-  //       onTap: () {
-  //         showLocationDetailsPopup(context, location);
-  //       },
+  //     if (response != null) {
+  //       showLocationDetailsPopup(
+  //         context,
+  //         response["result"],
+  //       );
+  //     }
+  //     Navigator.pop(context);
+  //     final result = response!["result"];
+  //     final finalAddress = result["final_address"];
+  //
+  //     showDialog(
+  //       context: context,
+  //       builder: (_) => LocationDetailsPopup(
+  //         lat: finalAddress["latitude"].toString(),
+  //         long: finalAddress["longitude"].toString(),
+  //         imageUrl: "",
+  //         address: finalAddress["address"] ?? "",
+  //         locationId: finalAddress["location_id"] ?? "",
+  //         geocodingScore: finalAddress["score"] ?? 0,
+  //         riskScore: result["hazard"]["Overall"]["rating"] ?? 0,
+  //         dataCompleteness: 100,
+  //         hazards: {},
+  //         // next step
+  //         geocodedAt: [finalAddress["location_type"] ?? ""],
+  //         occupancy: List<String>.from(
+  //           finalAddress["place_types"] ?? [],
+  //         ),
+  //         accountId: finalAddress["account_id"],
+  //         accountName: finalAddress["account_name"],
+  //         subAccountId: finalAddress["sub_account_id"],
+  //         subAccountName: finalAddress["sub_account_name"],
+  //         rented: finalAddress["rented"],
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     Navigator.pop(context);
+  //
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(e.toString())),
   //     );
   //   }
   // }
 
-  Color _determineClusterColor(List<MyLocation> items) {
-    Map<int, int> colorCounts = {};
-    for (var item in items) {
-      int score = item.finalAddress?.score ?? 0;
-      colorCounts[score] = (colorCounts[score] ?? 0) + 1;
-    }
-    if (colorCounts.isEmpty) return Colors.blue;
-    int dominantScore =
-        colorCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-    return _getColorFromScore(dominantScore);
-  }
+  Future<Map<String, dynamic>?> getLocationDetails(
+    String locationId,
+  ) async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
 
-  Color _getColorFromScore(int score) {
-    // You had blue for all — keep original
-    return Colors.blue;
+      log(headers.toString());
+
+      final uri = Uri.parse(
+        "${AppConstant.GET_LOCATION_DETAILS}?location_id=$locationId",
+      );
+
+      final response = await http.get(
+        uri,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        debugPrint("Location Details => $data");
+
+        return data;
+      } else {
+        debugPrint(
+          "Location API failed: ${response.statusCode} ${response.body}",
+        );
+        return null;
+      }
+    } on BackendException catch (e, stackTrace) {
+      debugPrint(stackTrace.toString());
+      debugPrint(e.message);
+      return null;
+    } catch (e, stackTrace) {
+      debugPrint(stackTrace.toString());
+      debugPrint("getLocationDetails error: $e");
+      return null;
+    }
   }
 
   Future<BitmapDescriptor> _getClusterBitmap(int size,
@@ -298,7 +607,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     final Canvas canvas = Canvas(pictureRecorder);
     final Paint paint = Paint()..color = color;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2.0, paint);
-
     if (text != null) {
       TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
       painter.text = TextSpan(
@@ -317,180 +625,54 @@ class _LocationListMapViewState extends State<LocationListMapView>
   }
 
   void _updateMarkers(Set<Marker> markers) {
+    debugPrint(" Markers Received: ${markers.length}");
+
+    for (final marker in markers) {
+      debugPrint(
+        " Marker: ${marker.markerId.value}",
+      );
+    }
+
     if (!mounted) return;
+
     setState(() {
       _markers = markers;
     });
   }
 
-  double _getMarkerHue(int score) {
+  Color _getColorFromScore(int score) {
     switch (score) {
       case 1:
-        return BitmapDescriptor.hueRed;
+        return Colors.red;
       case 2:
-        return BitmapDescriptor.hueOrange;
+        return Colors.deepOrange;
       case 3:
-        return BitmapDescriptor.hueYellow;
+        return Colors.yellow;
       case 4:
-        return BitmapDescriptor.hueGreen;
+        return Colors.lightGreen;
       case 5:
-        return BitmapDescriptor.hueBlue;
+        return Colors.green;
       default:
-        return BitmapDescriptor.hueCyan;
+        return Colors.blue;
     }
   }
 
-  final String _mapStyle = '''
-     [
-    {
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#f5f5f5" }
-      ]
-    },
-    {
-      "elementType": "labels.icon",
-      "stylers": [
-        { "visibility": "off" }
-      ]
-    },
-    {
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#616161" }
-      ]
-    },
-    {
-      "elementType": "labels.text.stroke",
-      "stylers": [
-        { "color": "#f5f5f5" }
-      ]
-    },
-    {
-      "featureType": "administrative",
-      "elementType": "geometry.stroke",
-      "stylers": [
-        { "visibility": "on" },
-        { "color": "#a0a0a0" }, 
-        { "weight": 1 }
-      ]
-    },
-    {
-      "featureType": "administrative.province",
-      "elementType": "geometry.stroke",
-      "stylers": [
-        { "visibility": "on" },
-        { "color": "#808080" }, 
-        { "weight": 1.5 }
-      ]
-    },
-    {
-      "featureType": "administrative.land_parcel",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#bdbdbd" }
-      ]
-    },
-    {
-      "featureType": "poi",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#eeeeee" }
-      ]
-    },
-    {
-      "featureType": "poi",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#757575" }
-      ]
-    },
-    {
-      "featureType": "road",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#ffffff" }
-      ]
-    },
-    {
-      "featureType": "road.arterial",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#757575" }
-      ]
-    },
-    {
-      "featureType": "road.highway",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#dadada" }
-      ]
-    },
-    {
-      "featureType": "road.highway",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#616161" }
-      ]
-    },
-    {
-      "featureType": "road.local",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#9e9e9e" }
-      ]
-    },
-    {
-      "featureType": "transit.line",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#e5e5e5" }
-      ]
-    },
-    {
-      "featureType": "transit.station",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#eeeeee" }
-      ]
-    },
-    {
-      "featureType": "water",
-      "elementType": "geometry",
-      "stylers": [
-        { "color": "#c9c9c9" }
-      ]
-    },
-    {
-      "featureType": "water",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        { "color": "#9e9e9e" }
-      ]
-    }
-  ]
-  
-    ''';
-
-  void _handleClusterTap(dynamic cluster) async {
-    double currentZoom = await mapController.getZoomLevel();
-    mapController.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        cluster.position,
-        currentZoom + 2,
-      ),
-    );
-  }
+  final String _mapStyle = '''[
+    {"elementType":"geometry","stylers":[{"color":"#f5f5f5"}]},
+    {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
+    {"elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},
+    {"elementType":"labels.text.stroke","stylers":[{"color":"#f5f5f5"}]},
+    {"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"visibility":"on"},{"color":"#a0a0a0"},{"weight":1}]},
+    {"featureType":"water","elementType":"geometry","stylers":[{"color":"#c9c9c9"}]},
+    {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]}
+  ]''';
 
   bool is3DView = false;
   LatLng? _focusedLocation;
   LatLng _currentCenter = LatLng(20.5937, 78.9629);
 
-  // ------------ HAZARD LAYER / TILE PROVIDER (kept mostly unchanged) ------------
   _fetchMainHazardLayers() async {
-    setState(() {
-      isLoadingMainHazards = true;
-    });
+    setState(() => isLoadingMainHazards = true);
     try {
       var provider =
           Provider.of<MyLocationListProvider>(context, listen: false);
@@ -502,20 +684,14 @@ class _LocationListMapViewState extends State<LocationListMapView>
           selectedVendor = "";
           selectedHazardId =
               mainHazards.isNotEmpty ? mainHazards.first.id : null;
-          if (selectedHazardId != null) {
-            _changeHazardLayer(selectedHazardId!);
-          }
+          if (selectedHazardId != null) _changeHazardLayer(selectedHazardId!);
           _changeVendor("");
         });
       }
-    } catch (e, stackTrace) {
-      print("Error while fetching main hazard layers: $e");
-      print(stackTrace);
+    } catch (e) {
+      debugPrint("Error fetching main hazard layers: $e");
     } finally {
-      if (mounted)
-        setState(() {
-          isLoadingMainHazards = false;
-        });
+      if (mounted) setState(() => isLoadingMainHazards = false);
     }
   }
 
@@ -526,11 +702,8 @@ class _LocationListMapViewState extends State<LocationListMapView>
       } else {
         selectedHazardId = hazardId;
         final hazard = mainHazards.firstWhere((h) => h.id == hazardId);
-        if (hazard.vendors.isNotEmpty) {
-          selectedVendor = hazard.vendors.first.name;
-        } else {
-          selectedVendor = null;
-        }
+        selectedVendor =
+            hazard.vendors.isNotEmpty ? hazard.vendors.first.name : null;
       }
     });
   }
@@ -549,14 +722,10 @@ class _LocationListMapViewState extends State<LocationListMapView>
   }
 
   Future<void> _fetchHazardLayers({bool regenerate = false}) async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       var provider =
           Provider.of<MyLocationListProvider>(context, listen: false);
-
       if (_selectedTabIndex == 1) {
         if (regenerate ||
             provider.hazardData == null ||
@@ -566,64 +735,45 @@ class _LocationListMapViewState extends State<LocationListMapView>
           var trialStatus = userProfileProvider.trialInfo['status'] ?? '';
           if (trialStatus.isNotEmpty) return;
           await provider.generateHeatMapForLocationsGeocoding(
-            context,
-            widget.accountId,
-            widget.subAccountId,
-            false,
-            regenerate,
-            widget.sovId,
-          );
+              context,
+              widget.accountId,
+              widget.subAccountId,
+              false,
+              regenerate,
+              widget.sovId);
         }
-
         Map<String, dynamic>? data = provider.hazardData;
-        if (data == null || data.containsKey('message')) {
-          print(
-              "Re-fetching due to incomplete hazard data: ${data?['message']}");
-          return;
-        }
-
+        if (data == null || data.containsKey('message')) return;
         final hazards = data['heatmap'];
-        if (hazards == null) {
-          print("Error: 'heatmap' data is missing in the response.");
-          return;
-        }
-
+        if (hazards == null) return;
         if (hazards.isNotEmpty) {
           _reducers = hazards.entries.first.value.keys.toList();
           _selectedReducer =
               _reducers.contains("mean") ? "mean" : _reducers.first;
         }
-
         hazards.forEach((hazard, urls) {
           Map<String, Map<int, String>> intensityMap = {};
-
           urls.forEach((intensity, zoomUrls) {
             Map<int, String> zoomLevelUrls = {};
-            zoomUrls.forEach((zoom, url) {
-              zoomLevelUrls[int.parse(zoom)] = url;
-            });
+            zoomUrls
+                .forEach((zoom, url) => zoomLevelUrls[int.parse(zoom)] = url);
             intensityMap[intensity] = zoomLevelUrls;
           });
-
           _tileProviders[hazard] = CustomTileProvider(
             tileUrls: {hazard: intensityMap},
             hazardType: hazard,
             currentReducer: _selectedReducer ?? "mean",
           );
         });
-
         setState(() {
           _isInitialized = true;
           _selectedHazard = _tileProviders.keys.first;
         });
       }
     } catch (e) {
-      print("Error in _fetchHazardLayers: $e");
+      debugPrint("Error in _fetchHazardLayers: $e");
     } finally {
-      if (mounted)
-        setState(() {
-          _isLoading = false;
-        });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -631,11 +781,8 @@ class _LocationListMapViewState extends State<LocationListMapView>
     setState(() {
       _isHeatmapOn = !_isHeatmapOn;
       _isLoading = true;
-      if (!_isHeatmapOn) {
-        if (_showPins) _togglePinVisibility();
-      }
+      if (!_isHeatmapOn && _showPins) _togglePinVisibility();
     });
-
     if (!_isHeatmapOn) {
       setState(() {
         _selectedHazard = null;
@@ -653,12 +800,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
         try {
           await _fetchHazardLayers();
         } catch (e) {
-          print("Error while fetching hazard layers: $e");
+          debugPrint("Error toggling heatmap: $e");
         } finally {
-          if (mounted)
-            setState(() {
-              _isLoading = false;
-            });
+          if (mounted) setState(() => _isLoading = false);
         }
       }
     }
@@ -669,10 +813,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
       _selectedReducer = newReducer;
       if (_selectedHazard != null && newReducer != null) {
         _tileProviders[_selectedHazard]?.updateReducer(newReducer);
-        _selectedHazard = ""; // clear temporarily
+        _selectedHazard = "";
       }
     });
-
     Future.delayed(Duration(milliseconds: 100), () {
       if (!mounted) return;
       setState(() {
@@ -683,948 +826,541 @@ class _LocationListMapViewState extends State<LocationListMapView>
     });
   }
 
-  // Map style (kept your style)
-  // final String _mapStyle = '''[ ... your long style json ... ]''';
-
-  // ------------ NAVIGATION + PAGINATION ------------
-  // This is central: when we request zoom to index, if it's the last item of current data
-  // and more pages are available, load next page then proceed.
   Future<void> _zoomToLocation(int index) async {
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
+    if (_filteredLocations.isEmpty) return;
+    if (index < 0 || index >= _filteredLocations.length) return;
 
-    if (provider.fullLocationList.isEmpty) return;
+    setState(() {
+      _isAnimating = true;
+      _currentLocationIndex = index;
+    });
 
-    setState(() => _isAnimating = true);
+    final location = _filteredLocations[index];
 
-    try {
-      _moveCameraTo(index);
+    await mapController.animateCamera(
+      CameraUpdate.newCameraPosition(CameraPosition(
+        target: location.location,
+        zoom: 20.5, // or 20
+        tilt: 0,
+        bearing: 0,
+      )),
+    );
 
-      setState(() => _currentLocationIndex = index);
+    // Don't recreate cluster items.
+    clusterManager.updateMap();
 
-      // ⭐ IMPORTANT: rebuild cluster markers to update RED PIN
-      clusterManager.setItems(provider.fullLocationList);
-    } catch (e) {
-      print("Zoom error: $e");
-    }
-
-    setState(() => _isAnimating = false);
+    setState(() {
+      _isAnimating = false;
+    });
   }
+
 
   void _togglePinVisibility() {
-    setState(() {
-      _showPins = !_showPins;
-    });
-
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
+    setState(() => _showPins = !_showPins);
     clusterManager.setItems(
-      provider.fullLocationList
-          .where((location) =>
-              _showPins || location.finalAddress?.score == _selectedScore)
+      _filteredLocations
+          .where(
+              (loc) => _showPins || loc.finalAddress?.score == _selectedScore)
           .toList(),
     );
   }
+  void _filterPins() {
+    List<MyLocation> filteredLocations;
 
-  void _toggleScoreFilter(int score) {
-    setState(() {
-      if (_selectedScore == score) {
-        _selectedScore = null;
-      } else {
-        _selectedScore = score;
-      }
-    });
+    if (_selectedScore == null) {
+      filteredLocations = List.from(_filteredLocations);
+    } else {
+      filteredLocations = _filteredLocations.where((location) {
+        return location.finalAddress?.score == _selectedScore;
+      }).toList();
+    }
 
-    final provider =
-        Provider.of<MyLocationListProvider>(context, listen: false);
-    clusterManager.setItems(
-      provider.fullLocationList
-          .where((location) =>
-              _selectedScore == null ||
-              location.finalAddress?.score == _selectedScore)
-          .toList(),
-    );
+    clusterManager.setItems(filteredLocations);
+    clusterManager.updateMap();
   }
 
   Future<void> _toggle2D3DView() async {
-    // Use focused location when marker selected, else map center
     final LatLng target = _focusedLocation ?? _currentCenter;
-
     final zoom = await mapController.getZoomLevel();
-
     await mapController.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: target,
-          zoom: zoom,
-          tilt: is3DView ? 0 : 60,
-          bearing: is3DView ? 0 : 45,
-        ),
-      ),
+      CameraUpdate.newCameraPosition(CameraPosition(
+        target: target,
+        zoom: zoom,
+        tilt: is3DView ? 0 : 60,
+        bearing: is3DView ? 0 : 45,
+      )),
     );
-
     setState(() => is3DView = !is3DView);
   }
 
-  // ------------ BUILD ------------
+  // ─────────────────────────────────────────────
+  //  BUILD
+  // ─────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
 
-    return Consumer<MyLocationListProvider>(
-      builder: (context, myLocationProvider, child) {
-        MyLocation? currentLocation;
+    if (!_locationsLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        if (myLocationProvider.fullLocationList.isNotEmpty &&
+    final currentLocation = (_filteredLocations.isNotEmpty &&
             _currentLocationIndex >= 0 &&
-            _currentLocationIndex <
-                myLocationProvider.fullLocationList.length) {
-          currentLocation =
-              myLocationProvider.fullLocationList[_currentLocationIndex];
-        }
-        // Attach markers when provider list changes (and map ready)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_mapReady && myLocationProvider.fullLocationList.isNotEmpty) {
-            clusterManager.setItems(myLocationProvider.fullLocationList);
-            if (!_firstAttachDone) {
-              final first = myLocationProvider.fullLocationList.first.location;
-              try {
-                mapController.animateCamera(
-                  CameraUpdate.newCameraPosition(
-                    CameraPosition(target: first, zoom: 14),
-                  ),
-                );
-              } catch (_) {}
-              _firstAttachDone = true;
-            }
-          }
-        });
+            _currentLocationIndex < _filteredLocations.length)
+        ? _filteredLocations[_currentLocationIndex]
+        : null;
 
-        // WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   if (_mapReady && myLocationProvider.fullLocationList.isNotEmpty) {
-        //     clusterManager.setItems(myLocationProvider.fullLocationList);
-        //     if (!_firstAttachDone) {
-        //       // animate to first item on first load
-        //       if (myLocationProvider.fullLocationList.isNotEmpty) {
-        //         final first =
-        //             myLocationProvider.fullLocationList.first.location;
-        //         try {
-        //           mapController.animateCamera(
-        //             CameraUpdate.newCameraPosition(
-        //               CameraPosition(target: first, zoom: 14),
-        //             ),
-        //           );
-        //         } catch (_) {}
-        //         _firstAttachDone = true;
-        //       }
-        //     }
-        //   }
-        // });
+    return Column(
+      children: [
+        const SizedBox(height: 8),
 
-        // If initial data not loaded yet -> full screen loader
-        if (!_locationsLoaded) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
+        // ── Tab bar ──────────────────────────────
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          ),
+          height: 50,
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: false,
+            tabAlignment: TabAlignment.fill,
+            dividerColor: Colors.transparent,
+            labelStyle: typography.Subtitle2,
+            indicatorColor: Colors.lightBlueAccent,
+            labelColor: Colors.lightBlueAccent,
+            unselectedLabelColor: Colors.grey,
+            tabs: [
+              Tab(text: LanguageService.getTranslated(context, "geocoding")),
+              Tab(text: LanguageService.getTranslated(context, "hazard_score")),
+            ],
+          ),
+        ),
 
-        final providerListLength = myLocationProvider.totalRecords.toString();
-
-        return Column(
-          children: [
-            SizedBox(height: 8),
-
-            // Geocoding + Hazard Score tabs in a single row
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16),
+        if (_filteredLocations.isNotEmpty)
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
               ),
-              height: 50,
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: false,
-                tabAlignment: TabAlignment.fill,
-                dividerColor: Colors.transparent,
-                labelStyle: typography.Subtitle2,
-                indicatorColor: Colors.lightBlueAccent,
-                labelColor: Colors.lightBlueAccent,
-                unselectedLabelColor: Colors.grey,
-                tabs: [
-                  Tab(
-                    text: LanguageService.getTranslated(context, "geocoding"),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    // cloudMapId: Platform.isAndroid
+                    //     ? "d00bf4d659df058f3cd32c75"
+                    //     : "d00bf4d659df058f45c4338c",
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(20.5937, 78.9629),
+                      zoom: 9,
+                    ),
+                    zoomControlsEnabled: false,
+                    myLocationEnabled: true,
+                    markers: (!_isHeatmapOn && _showPins) ? _markers : {},
+                    mapType: _selectedTabIndex == 0
+                        ? _currentMapType
+                        : _currentMapType1,
+                    onMapCreated: (GoogleMapController controller) {
+                      mapController = controller;
+                      _mapReady = true;
+                      clusterManager.setMapId(controller.mapId);
+                      clusterManager.setItems(_filteredLocations);
+                      clusterManager.updateMap();
+                      Future.delayed(const Duration(seconds: 1), () {
+                        debugPrint(" Locations: ${_filteredLocations.length}");
+                        if (!mounted) return;
+                        if (_locationsLoaded && _filteredLocations.isNotEmpty) {
+                          clusterManager.setItems(_filteredLocations);
+                          if (!_firstAttachDone) {
+                            _moveCameraToLatLng(
+                                _filteredLocations.first.location);
+                            setState(() => _firstAttachDone = true);
+                          }
+                        }
+                      });
+                    },
+                    // onMapCreated: (GoogleMapController controller) {
+                    //   mapController = controller;
+                    //   _mapReady = true;
+                    //   clusterManager.setMapId(controller.mapId);
+                    //   mapController.setMapStyle(_mapStyle);
+                    //   _tryAttachMarkers();
+                    // },
+                    tileOverlays: _selectedTabIndex == 0
+                        ? {}
+                        : (_selectedHazard != null &&
+                                _tileProviders.containsKey(_selectedHazard) &&
+                                _mainHazardTileProvider != null &&
+                                selectedHazardId != null &&
+                                selectedVendor != null)
+                            ? {
+                                TileOverlay(
+                                  tileOverlayId:
+                                      TileOverlayId(selectedHazardId!),
+                                  tileProvider: _mainHazardTileProvider!,
+                                ),
+                                TileOverlay(
+                                  tileOverlayId:
+                                      TileOverlayId(_selectedHazard!),
+                                  tileProvider:
+                                      _tileProviders[_selectedHazard!]!,
+                                ),
+                              }
+                            : (_mainHazardTileProvider != null &&
+                                    selectedHazardId != null &&
+                                    selectedVendor != null)
+                                ? {
+                                    TileOverlay(
+                                      tileOverlayId:
+                                          TileOverlayId(selectedHazardId!),
+                                      tileProvider: _mainHazardTileProvider!,
+                                    ),
+                                  }
+                                : {},
+                    onCameraMove: (position) {
+                      _currentCenter = position.target;
+                      clusterManager.onCameraMove(position);
+                    },
+
+                    onCameraIdle: () {
+                      clusterManager.updateMap();
+                    },
+                    // onCameraIdle: clusterManager.updateMap,
                   ),
-                  Tab(
-                    text: LanguageService.getTranslated(
-                        context, "hazard_score"),
+
+                  // 2D/3D toggle
+                  Positioned(
+                    bottom: 70,
+                    right: 8,
+                    child: InkWell(
+                      onTap: _toggle2D3DView,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3))
+                          ],
+                        ),
+                        child: Text(
+                          is3DView ? "3D" : "2D",
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Layer / hazard controls
+                  _selectedTabIndex == 1
+                      ? _buildHazardControls()
+                      : Positioned(
+                          bottom: 20,
+                          left: 10,
+                          child: Container(
+                            margin: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.brightness ==
+                                      Brightness.light
+                                  ? AppColors.paperElevation2Light
+                                  : AppColors.paperElevation2,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 5))
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                FloatingActionButton.small(
+                                  elevation: 0,
+                                  backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .brightness ==
+                                          Brightness.light
+                                      ? AppColors.paperElevation2Light
+                                      : AppColors.paperElevation2,
+                                  onPressed: () {
+                                    setState(() {
+                                      List<MapType> mapTypes = [
+                                        MapType.normal,
+                                        MapType.satellite,
+                                        MapType.terrain,
+                                        MapType.hybrid
+                                      ];
+                                      int currentIndex =
+                                          mapTypes.indexOf(_currentMapType);
+                                      _currentMapType = mapTypes[
+                                          (currentIndex + 1) % mapTypes.length];
+                                    });
+                                  },
+                                  child: Icon(Icons.layers,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface),
+                                  tooltip: 'Change Map Type',
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                  // Heatmap toggle (tab 1)
+                  Positioned(
+                    top: 16,
+                    right: 10,
+                    child: _selectedTabIndex == 1
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.light
+                                  ? AppColors.paperElavation25Light
+                                  : AppColors.paperElavation25,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: MenuAnchor(
+                              builder: (context, controller, child) {
+                                return InkWell(
+                                  onTap: () async {
+                                    setState(() => _isLoading = true);
+                                    Future.delayed(const Duration(seconds: 5),
+                                        () {
+                                      if (mounted)
+                                        setState(() => _isLoading = false);
+                                    });
+                                  },
+                                  child: Container(
+                                    height: 31,
+                                    width: 34,
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: _isHeatmapOn
+                                          ? Colors.grey.withOpacity(0.8)
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .surface,
+                                    ),
+                                    child: _isLoading
+                                        ? const Center(
+                                            child: SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(Colors.orange),
+                                              ),
+                                            ),
+                                          )
+                                        : SvgPicture.asset(
+                                            'assets/images/heatmap_icon.svg',
+                                            color: _isHeatmapOn
+                                                ? Colors.white
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface,
+                                          ),
+                                  ),
+                                );
+                              },
+                              menuChildren: !_isLoading &&
+                                      !Provider.of<MyLocationListProvider>(
+                                              context,
+                                              listen: false)
+                                          .isHeatMapGeneratingLive
+                                  ? [
+                                      MenuItemButton(
+                                        child: Text("Update Heatmap",
+                                            style: typography.InputLabel),
+                                        onPressed: () async =>
+                                            await _fetchHazardLayers(
+                                                regenerate: true),
+                                      ),
+                                      const Divider(height: 1, thickness: 1),
+                                      if (_isHeatmapOn)
+                                        MenuItemButton(
+                                          child: Text("Switch off Heatmap",
+                                              style: typography.InputLabel),
+                                          onPressed: _toggleHeatmap,
+                                        ),
+                                      if (_isHeatmapOn)
+                                        const Divider(height: 1, thickness: 1),
+                                      ..._reducers.map((reducer) {
+                                        return MenuItemButton(
+                                          child: Text(reducer,
+                                              style: typography.InputLabel),
+                                          onPressed: () {
+                                            if (!_isHeatmapOn) _toggleHeatmap();
+                                            _onReducerChanged(reducer);
+                                          },
+                                        );
+                                      }).toList(),
+                                    ]
+                                  : [],
+                            ),
+                          )
+                        : const SizedBox(),
                   ),
                 ],
               ),
             ),
+          ),
 
-            // MAP CONTAINER
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(20.5937, 78.9629),
-                        zoom: 9,
-                      ),
-                      zoomControlsEnabled: false,
-                      myLocationEnabled: true,
-                      markers: (!_isHeatmapOn && _showPins) ? _markers : {},
-                      mapType: _selectedTabIndex == 0
-                          ? _currentMapType
-                          : _currentMapType1,
-                      onMapCreated: (GoogleMapController controller) {
-                        mapController = controller;
-                        _mapReady = true; // ⭐ REQUIRED FIX
-                        clusterManager.setMapId(controller.mapId);
-                        mapController.setMapStyle(_mapStyle);
+        const SizedBox(height: 8),
 
-                        _tryAttachMarkers(); // ⭐ Attach markers once map is ready
-                      },
-                      tileOverlays: _selectedTabIndex == 0
-                          ? {} // No tile overlay when selectedTabIndex is 0
-                          : (_selectedHazard != null &&
-                                  _tileProviders.containsKey(_selectedHazard) &&
-                                  _mainHazardTileProvider != null &&
-                                  selectedHazardId != null &&
-                                  selectedVendor != null)
-                              ? {
-                                  TileOverlay(
-                                    tileOverlayId:
-                                        TileOverlayId(selectedHazardId!),
-                                    tileProvider: _mainHazardTileProvider!,
-                                  ),
-                                  TileOverlay(
-                                    tileOverlayId:
-                                        TileOverlayId(_selectedHazard!),
-                                    tileProvider:
-                                        _tileProviders[_selectedHazard!]!,
-                                  ),
-                                }
-                              : (_mainHazardTileProvider != null &&
-                                      selectedHazardId != null &&
-                                      selectedVendor != null)
-                                  ? {
-                                      TileOverlay(
-                                        tileOverlayId:
-                                            TileOverlayId(selectedHazardId!),
-                                        tileProvider: _mainHazardTileProvider!,
-                                      ),
-                                    }
-                                  : {},
-                      // onCameraMove: clusterManager.onCameraMove,
-                      onCameraMove: (position) {
-                        _currentCenter = position
-                            .target; // ⭐ KEEP TRACK OF CURRENT MAP LOCATION
-                        clusterManager.onCameraMove(position);
-                      },
-                      // Update clusters on camera move
-                      onCameraIdle: clusterManager
-                          .updateMap, // Update clusters when camera stops
-                    ),
-                    Positioned(
-                      bottom: 70,
-                      right: 8,
-                      child: InkWell(
-                        onTap: _toggle2D3DView,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 6,
-                                offset: Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                          is3DView ? "3D " : "2D "
-,
-        style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      )
-
-                    ),
-                    _selectedTabIndex == 1
-                        ? _buildHazardControls()
-                        : Positioned(
-                            bottom: 20,
-                            left: 10,
-                            child: Container(
-                              margin: EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color:
-                                    Theme.of(context).colorScheme.brightness ==
-                                            Brightness.light
-                                        ? AppColors.paperElevation2Light
-                                        : AppColors.paperElevation2,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  FloatingActionButton.small(
-                                    elevation: 0,
-                                    backgroundColor: Theme.of(context)
-                                                .colorScheme
-                                                .brightness ==
-                                            Brightness.light
-                                        ? AppColors.paperElevation2Light
-                                        : AppColors.paperElevation2,
-                                    onPressed: () {
-                                      setState(() {
-                                        // List of map types to cycle through
-                                        List<MapType> mapTypes = [
-                                          MapType.normal,
-                                          MapType.satellite,
-                                          MapType.terrain,
-                                          MapType.hybrid
-                                        ];
-
-                                        // Get the next index in the list
-                                        int currentIndex =
-                                            mapTypes.indexOf(_currentMapType);
-                                        int nextIndex = (currentIndex + 1) %
-                                            mapTypes.length;
-
-                                        // Update the map type
-                                        _currentMapType = mapTypes[nextIndex];
-                                      });
-                                    },
-
-                                    // onPressed: () {
-                                    //   setState(() {
-                                    //     _currentMapType =
-                                    //     _currentMapType == MapType.normal
-                                    //         ? MapType.satellite
-                                    //         : MapType.terrain
-                                    //   });
-                                    // },
-                                    child: Icon(Icons.layers,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface),
-                                    tooltip: 'Change Map Type',
-                                  ),
-                                  SizedBox(width: 8),
-                                ],
-                              ),
-                            ),
-                          ),
-                    // Positioned widget for the heatmap toggle and reducer selection
-                    Positioned(
-                        top: 16,
-                        right: 10,
-                        child: _selectedTabIndex == 1
-                            ? Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.light
-                                      ? AppColors.paperElavation25Light
-                                      : AppColors.paperElavation25,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        _selectedTabIndex == 1
-                                            ? Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 0, vertical: 0),
-                                                // decoration: BoxDecoration(
-                                                //   color: Theme.of(context).brightness ==
-                                                //           Brightness.light
-                                                //       ? AppColors.paperElavation25Light
-                                                //       : AppColors.paperElavation25,
-                                                //   borderRadius: BorderRadius.circular(16),
-                                                // ),
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        // Container(
-                                                        //   height: 24,
-                                                        //   width: 48,
-                                                        //   child: Switch(
-                                                        //     value: _showPins,
-                                                        //     // onChanged: (value) {
-                                                        //     onChanged: _isHeatmapMenuOpen
-                                                        //         ? null
-                                                        //         : (value) {
-                                                        //             print(value);
-                                                        //             // if (_isHeatmapOn) {
-                                                        //             print("object");
-                                                        //             _togglePinVisibility();
-                                                        //             // }
-                                                        //           },
-                                                        //     activeColor: Theme.of(context)
-                                                        //         .colorScheme
-                                                        //         .primary,
-                                                        //     activeTrackColor: Theme.of(context)
-                                                        //         .colorScheme
-                                                        //         .primary
-                                                        //         .withOpacity(0.5),
-                                                        //     inactiveThumbColor: Theme.of(context)
-                                                        //         .colorScheme
-                                                        //         .surface,
-                                                        //     inactiveTrackColor: Theme.of(context)
-                                                        //         .colorScheme
-                                                        //         .surface
-                                                        //         .withOpacity(0.5),
-                                                        //   ),
-                                                        // ),
-
-                                                        _selectedTabIndex == 1
-                                                            ? MenuAnchor(
-                                                                builder: (context,
-                                                                    controller,
-                                                                    child) {
-                                                                  return InkWell(
-                                                                    onTap:
-                                                                        () async {
-                                                                      // var userProfileProvider =
-                                                                      // Provider.of<UserProfileProvider>(context, listen: false);
-                                                                      // final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-                                                                      // final trialSubdestinations =
-                                                                      //     userProfileProvider.trialInfo['subDestinations'] ?? 0;
-
-                                                                      // if (trialStatus != '') {
-                                                                      //   showDialog(
-                                                                      //     context: context,
-                                                                      //     barrierColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-                                                                      //     builder: (BuildContext context) {
-                                                                      //       return Column(
-                                                                      //         mainAxisAlignment: MainAxisAlignment.center,
-                                                                      //         children: [
-                                                                      //           Row(
-                                                                      //             mainAxisAlignment: MainAxisAlignment.end,
-                                                                      //             children: [
-                                                                      //               IconButton(
-                                                                      //                 icon: const Icon(Icons.close),
-                                                                      //                 onPressed: () {
-                                                                      //                   Navigator.of(context).pop();
-                                                                      //                 },
-                                                                      //               ),
-                                                                      //             ],
-                                                                      //           ),
-                                                                      //           MessageCard(
-                                                                      //             isUpgrade: true,
-                                                                      //             messageTextSpans: [
-                                                                      //               TextSpan(
-                                                                      //                 text: 'Upgrade your account to generate heat map!',
-                                                                      //                 style: CustomTypography(context).Body1,
-                                                                      //               ),
-                                                                      //             ],
-                                                                      //           ),
-                                                                      //         ],
-                                                                      //       );
-                                                                      //     },
-                                                                      //   );
-                                                                      //   return;
-                                                                      // }
-                                                                      //
-                                                                      // if (_isLoading ||
-                                                                      //     Provider.of<MyLocationListProvider>(context, listen: false)
-                                                                      //         .isHeatMapGeneratingLive) {
-                                                                      //   // Prevent double-tap or when generation is already in progress
-                                                                      //   return;
-                                                                      // }
-
-                                                                      // 🟡 Start loader
-                                                                      setState(
-                                                                          () {
-                                                                        _isLoading =
-                                                                            true;
-                                                                      });
-
-                                                                      // 🕒 Stop loader automatically after 10 seconds
-                                                                      Future.delayed(
-                                                                          const Duration(
-                                                                              seconds: 5),
-                                                                          () {
-                                                                        if (mounted) {
-                                                                          setState(
-                                                                              () {
-                                                                            _isLoading =
-                                                                                false;
-                                                                          });
-                                                                        }
-                                                                      });
-
-                                                                      // 🔥 Continue your existing logic
-                                                                      // if (_reducers.isEmpty) {
-                                                                      //   _toggleHeatmap();
-                                                                      // } else {
-                                                                      //   if (controller.isOpen) {
-                                                                      //     controller.close();
-                                                                      //   } else {
-                                                                      //     controller.open();
-                                                                      //   }
-                                                                      // }
-                                                                    },
-                                                                    child:
-                                                                        Container(
-                                                                      height:
-                                                                          31,
-                                                                      width: 34,
-                                                                      padding:
-                                                                          const EdgeInsets
-                                                                              .all(
-                                                                              2),
-                                                                      decoration:
-                                                                          BoxDecoration(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(8),
-                                                                        shape: BoxShape
-                                                                            .rectangle,
-                                                                        color: _isHeatmapOn
-                                                                            ? Colors.grey.withOpacity(0.8)
-                                                                            : Theme.of(context).colorScheme.surface,
-                                                                      ),
-                                                                      child: _isLoading
-                                                                          ? const Center(
-                                                                              child: SizedBox(
-                                                                                height: 20,
-                                                                                width: 20,
-                                                                                child: CircularProgressIndicator(
-                                                                                  strokeWidth: 2,
-                                                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                                                                                ),
-                                                                              ),
-                                                                            )
-                                                                          : SvgPicture.asset(
-                                                                              'assets/images/heatmap_icon.svg',
-                                                                              color: _isHeatmapOn ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                                                                            ),
-                                                                    ),
-                                                                  );
-                                                                },
-                                                                menuChildren:
-                                                                    !_isLoading &&
-                                                                            !Provider.of<MyLocationListProvider>(context, listen: false).isHeatMapGeneratingLive
-                                                                        ? [
-                                                                            // Update Heatmap Button
-                                                                            MenuItemButton(
-                                                                              child: Text(
-                                                                                "Update Heatmap",
-                                                                                style: typography.InputLabel,
-                                                                              ),
-                                                                              onPressed: () async {
-                                                                                print("Updating heatmap...");
-                                                                                await _fetchHazardLayers(regenerate: true);
-                                                                              },
-                                                                            ),
-                                                                            Divider(
-                                                                                height: 1,
-                                                                                thickness: 1),
-                                                                            // "Switch off Heatmap" option when heatmap is on
-                                                                            if (_isHeatmapOn)
-                                                                              MenuItemButton(
-                                                                                child: Text("Switch off Heatmap", style: typography.InputLabel),
-                                                                                onPressed: () {
-                                                                                  _toggleHeatmap(); // Turn off the heatmap
-                                                                                },
-                                                                              ),
-                                                                            if (_isHeatmapOn)
-                                                                              Divider(height: 1, thickness: 1),
-                                                                            // List of reducers
-                                                                            ..._reducers.map((reducer) {
-                                                                              return MenuItemButton(
-                                                                                child: Text(reducer, style: typography.InputLabel),
-                                                                                onPressed: () {
-                                                                                  if (!_isHeatmapOn) {
-                                                                                    // Automatically turn on the heatmap if it's off
-                                                                                    _toggleHeatmap();
-                                                                                  }
-                                                                                  _onReducerChanged(reducer); // Set the selected reducer
-                                                                                },
-                                                                              );
-                                                                            }).toList(),
-                                                                          ]
-                                                                        : [],
-                                                              )
-                                                            : SizedBox(),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                            : Container(),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Container()),
-                  ],
-                ),
-              ),
-            ),
-            // SizedBox(height: 8),
-
-            if (currentLocation != null)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      "(${_currentLocationIndex + 1}/$providerListLength)",
-                      textAlign: TextAlign.center,
-                      style: typography.Subtitle2.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.white30,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Container(
-                      alignment: Alignment.topLeft,
-                      // width: MediaQuery.of(context).size.width/1.3,
-                      child: Text(
-                        currentLocation!.finalAddress?.address ??
-                            "Unknown location",
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        style: typography.Subtitle2.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                  ],
-                ),
-              )
-            else
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Text(
-                  "",
-                  textAlign: TextAlign.center,
-                  style: typography.Subtitle2,
-                ),
-              ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
+        // ── Current location info ─────────────────
+        if (currentLocation != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              color: _currentLocationIndex > 0
-                                  ? AppColors.primaryMain
-                                  : Colors.grey,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          backgroundColor: _currentLocationIndex > 0
-                              ? Colors.black
-                              : Colors.grey[300],
-                        ),
-                        onPressed: _currentLocationIndex > 0 && !_isAnimating
-                            ? () async {
-                                setState(() => _isAnimating = true);
-                                await _zoomToLocation(
-                                    _currentLocationIndex - 1);
-                                setState(() => _isAnimating = false);
-                              }
-                            : null,
-                        child: _isAnimating && _currentLocationIndex > 0
-                            ?  SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                ),
-                              )
-                            : Text(LanguageService.getTranslated(
-                              context,
-                              "previous"),
-                                style: typography.ButtonLarge.copyWith(
-                                  color: _currentLocationIndex > 0
-                                      ? AppColors.primaryMain
-                                      : Colors.grey,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            side: const BorderSide(
-                              color: AppColors.primaryMain,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 22),
-                          backgroundColor: _currentLocationIndex <
-                                  myLocationProvider.fullLocationList.length - 1
-                              ? AppColors.primaryMain
-                              : Colors.grey[300],
-                        ),
-                        onPressed: _currentLocationIndex <
-                                    myLocationProvider.fullLocationList.length -
-                                        1 &&
-                                !_isAnimating
-                            ? () async {
-                                setState(() => _isAnimating = true);
-                                await _zoomToLocation(
-                                    _currentLocationIndex + 1);
-                                setState(() => _isAnimating = false);
-                              }
-                            : null,
-                        child: _isAnimating &&
-                                _currentLocationIndex <
-                                    myLocationProvider.fullLocationList.length -
-                                        1
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                ),
-                              )
-                            : Text(
-                          LanguageService.getTranslated(
-                              context,
-                              "next"),
-                                style: typography.ButtonLarge.copyWith(
-                                  color: _currentLocationIndex <
-                                          myLocationProvider
-                                                  .fullLocationList.length -
-                                              1
-                                      ? AppColors.black
-                                      : Colors.grey,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                  ],
+                Text(
+                  "(${_currentLocationIndex + 1}/${_filteredLocations.length})",
+                  style: typography.Subtitle2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.white30,
+                  ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  currentLocation.finalAddress?.address ?? "Unknown location",
+                  maxLines: 2,
+                  style: typography.Subtitle2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 6),
               ],
             ),
+          ),
 
-            SizedBox(height: 16),
-          ],
-        );
-      },
-    );
-  }
-
-  // small helpers for widget pieces to reduce build bloat
-  Widget _buildLayerButton() {
-    return Positioned(
-      bottom: 20,
-      left: 3,
-      child: Container(
-        margin: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.brightness == Brightness.light
-              ? AppColors.paperElevation2Light
-              : AppColors.paperElevation2,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            FloatingActionButton.small(
-              elevation: 0,
-              backgroundColor:
-                  Theme.of(context).colorScheme.brightness == Brightness.light
-                      ? AppColors.paperElevation2Light
-                      : AppColors.paperElevation2,
-              onPressed: () {
-                setState(() {
-                  List<MapType> mapTypes = [
-                    MapType.normal,
-                    MapType.satellite,
-                    MapType.terrain
-                  ];
-                  int currentIndex = mapTypes.indexOf(_currentMapType);
-                  int nextIndex = (currentIndex + 1) % mapTypes.length;
-                  _currentMapType = mapTypes[nextIndex];
-                });
-              },
-              child: Icon(Icons.layers,
-                  color: Theme.of(context).colorScheme.onSurface),
-              tooltip: 'Change Map Type',
-            ),
-            SizedBox(width: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeatmapControl(CustomTypography typography) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.light
-            ? AppColors.paperElavation25Light
-            : AppColors.paperElavation25,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        // ── Prev / Next buttons ───────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
             children: [
-              Text(
-                'Locations',
-                style: typography.InputLabel.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(
+                        color: _currentLocationIndex > 0
+                            ? AppColors.primaryMain
+                            : Colors.grey,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: _currentLocationIndex > 0
+                        ? Colors.black
+                        : Colors.grey[300],
+                  ),
+                  onPressed: _currentLocationIndex > 0 && !_isAnimating
+                      ? () async {
+                          setState(() => _isAnimating = true);
+                          await _zoomToLocation(_currentLocationIndex - 1);
+                          setState(() => _isAnimating = false);
+                        }
+                      : null,
+                  child: _isAnimating && _currentLocationIndex > 0
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          LanguageService.getTranslated(context, "previous"),
+                          style: typography.ButtonLarge.copyWith(
+                            color: _currentLocationIndex > 0
+                                ? AppColors.primaryMain
+                                : Colors.grey,
+                          ),
+                        ),
                 ),
               ),
-              SizedBox(width: 8),
-              MenuAnchor(
-                builder: (context, controller, child) {
-                  return InkWell(
-                    onTap: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      Future.delayed(const Duration(seconds: 5), () {
-                        if (mounted) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        }
-                      });
-                    },
-                    child: Container(
-                      height: 34,
-                      width: 34,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        shape: BoxShape.rectangle,
-                        color: _isHeatmapOn
-                            ? Colors.grey.withOpacity(0.8)
-                            : Theme.of(context).colorScheme.surface,
-                      ),
-                      child: _isLoading
-                          ? const Center(
-                              child: SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.orange),
-                                ),
-                              ),
-                            )
-                          : SvgPicture.asset(
-                              'assets/images/heatmap_icon.svg',
-                              color: _isHeatmapOn
-                                  ? Colors.white
-                                  : Theme.of(context).colorScheme.onSurface,
-                            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(color: AppColors.primaryMain),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  );
-                },
-                menuChildren: !_isLoading &&
-                        !Provider.of<MyLocationListProvider>(context,
-                                listen: false)
-                            .isHeatMapGeneratingLive
-                    ? [
-                        MenuItemButton(
-                          child: Text("Update Heatmap",
-                              style: typography.InputLabel),
-                          onPressed: () async {
-                            await _fetchHazardLayers(regenerate: true);
-                          },
-                        ),
-                        Divider(height: 1, thickness: 1),
-                        if (_isHeatmapOn)
-                          MenuItemButton(
-                            child: Text("Switch off Heatmap",
-                                style: typography.InputLabel),
-                            onPressed: _toggleHeatmap,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 22),
+                    backgroundColor:
+                        _currentLocationIndex < _filteredLocations.length - 1
+                            ? AppColors.primaryMain
+                            : Colors.grey[300],
+                  ),
+                  onPressed:
+                      _currentLocationIndex < _filteredLocations.length - 1 &&
+                              !_isAnimating
+                          ? () async {
+                              setState(() => _isAnimating = true);
+                              await _zoomToLocation(_currentLocationIndex + 1);
+                              setState(() => _isAnimating = false);
+                            }
+                          : null,
+                  child: _isAnimating &&
+                          _currentLocationIndex < _filteredLocations.length - 1
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
-                        if (_isHeatmapOn) Divider(height: 1, thickness: 1),
-                        ..._reducers.map((reducer) {
-                          return MenuItemButton(
-                            child: Text(reducer, style: typography.InputLabel),
-                            onPressed: () {
-                              if (!_isHeatmapOn) _toggleHeatmap();
-                              _onReducerChanged(reducer);
-                            },
-                          );
-                        }).toList(),
-                      ]
-                    : [],
+                        )
+                      : Text(
+                          LanguageService.getTranslated(context, "next"),
+                          style: typography.ButtonLarge.copyWith(
+                            color: _currentLocationIndex <
+                                    _filteredLocations.length - 1
+                                ? AppColors.black
+                                : Colors.grey,
+                          ),
+                        ),
+                ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+      ],
     );
   }
 
-  // Build hazard controls (kept from original)
   Widget _buildHazardControls() {
     var typography = CustomTypography(context);
 
-    // Show loading spinner if the main hazards are loading
     if (isLoadingMainHazards) {
       return Positioned(
         bottom: 2,
@@ -1632,33 +1368,23 @@ class _LocationListMapViewState extends State<LocationListMapView>
         child: Container(
           width: 45,
           height: 45,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.light
                 ? AppColors.paperElavation25Light
                 : AppColors.paperElavation25,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
+          child: const Center(child: CircularProgressIndicator()),
         ),
       );
     }
 
-    // If heatmap is off, use the existing menu with mainHazards and vendors
     if (!_isHeatmapOn || _isLoading) {
-      // if (!(_selectedTabIndex ==0  || _selectedTabIndex == 1) || mainHazards.isEmpty) {
-      // if (!(_selectedTabIndex == 2 || _selectedTabIndex == 1) ||
-      //     mainHazards.isEmpty) {
-      //   return SizedBox();
-      // }
-
       return Positioned(
         bottom: 16,
         left: 16,
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.light
                 ? AppColors.paperElavation25Light
@@ -1671,20 +1397,11 @@ class _LocationListMapViewState extends State<LocationListMapView>
                 onPressed: () {
                   if (controller.isOpen) {
                     controller.close();
-                    setState(() {
-                      _isHeatmapMenuOpen = false;
-                    });
+                    setState(() => _isHeatmapMenuOpen = false);
                   } else {
                     controller.open();
-                    setState(() {
-                      _isHeatmapMenuOpen = true;
-                    });
+                    setState(() => _isHeatmapMenuOpen = true);
                   }
-                  // if (controller.isOpen) {
-                  //   controller.close();
-                  // } else {
-                  //   controller.open();
-                  // }
                 },
                 icon: SvgPicture.asset(
                   'assets/images/hazardLayerIcon.svg',
@@ -1694,8 +1411,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
             },
             menuChildren: [
               ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 200),
-                // Limit height of the menu
+                constraints: const BoxConstraints(maxHeight: 200),
                 child: SingleChildScrollView(
                   child: Column(
                     children: mainHazards.map((hazard) {
@@ -1706,7 +1422,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
                             child:
                                 Text(vendor.name, style: typography.InputLabel),
                             onPressed: () {
-                              // Change hazard and vendor selection
                               _changeHazardLayer(hazard.id!);
                               _changeVendor(vendor.name);
                             },
@@ -1723,12 +1438,10 @@ class _LocationListMapViewState extends State<LocationListMapView>
       );
     }
 
-    // If heatmap is on and not loading, generate the menu using tileProviders
     return Positioned(
       bottom: 16,
       left: 16,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.light
               ? AppColors.paperElavation25Light
@@ -1753,20 +1466,13 @@ class _LocationListMapViewState extends State<LocationListMapView>
           },
           menuChildren: [
             ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: 200),
-              // Limit height of the menu
+              constraints: const BoxConstraints(maxHeight: 200),
               child: SingleChildScrollView(
                 child: Column(
                   children: _tileProviders.keys.map((hazard) {
                     return MenuItemButton(
                       child: Text(hazard, style: typography.InputLabel),
-                      onPressed: () {
-                        // Update the selected hazard
-                        setState(() {
-                          _selectedHazard = hazard;
-                          print("Selected Hazard changed to: $_selectedHazard");
-                        });
-                      },
+                      onPressed: () => setState(() => _selectedHazard = hazard),
                     );
                   }).toList(),
                 ),
@@ -1778,35 +1484,83 @@ class _LocationListMapViewState extends State<LocationListMapView>
     );
   }
 
-  // Show popup
-  void showLocationDetailsPopup(BuildContext context, MyLocation location) {
+  void showLocationDetailsPopup(
+    BuildContext context,
+    Map<String, dynamic> location,
+  ) {
+    final finalAddress =
+        location["final_address"] as Map<String, dynamic>? ?? {};
+
+    final hazard = location["hazard"] as Map<String, dynamic>? ?? {};
+
+    final overallHazard = hazard["Overall"] as Map<String, dynamic>? ?? {};
+
+    final List<String> occupancy = (finalAddress["place_types"] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        ["--"];
+
+    final List<String> geocodedAt = [
+      finalAddress["location_type"]?.toString() ?? "--"
+    ];
+
+    final String? sovIdValue = (() {
+      final sovId = finalAddress["sov_id"];
+
+      if (sovId is List && sovId.isNotEmpty) {
+        return sovId.first.toString();
+      }
+
+      if (sovId != null) {
+        return sovId.toString();
+      }
+
+      return null;
+    })();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final sovIdValue = (location.finalAddress?.sovId is List &&
-                location.finalAddress!.sovId!.isNotEmpty)
-            ? location.finalAddress!.sovId![0].toString()
-            : null;
         return LocationDetailsPopup(
-          address: location.finalAddress?.address ?? 'Unknown Address',
-          locationId: location.id ?? 'Unknown ID',
-          geocodingScore: location.finalAddress?.score ?? 0,
-          riskScore: location.hazard?['Overall']?.rating ?? 0,
-          dataCompleteness: location.dataCompleteness?.toString() ?? '1',
-          hazards: location.hazard ?? {},
-          geocodedAt: [location.finalAddress?.locationType ?? ""],
-          occupancy: location.finalAddress?.placeTypes ?? ["--"],
-          campus: location.finalAddress?.campusId,
-          accountId: location.finalAddress?.accountId,
-          accountName: location.finalAddress?.accountName,
-          subAccountId: location.finalAddress?.subAccountId,
-          subAccountName: location.finalAddress?.subAccountName,
+          lat: finalAddress["latitude"]?.toString(),
+          long: finalAddress["longitude"]?.toString(),
+          imageUrl: finalAddress["image_url"]?.toString(),
+          address: finalAddress["address"]?.toString() ?? "Unknown Address",
+          locationId: finalAddress["location_id"]?.toString() ?? "Unknown ID",
+          geocodingScore: finalAddress["score"] ?? 0,
+          riskScore: overallHazard["rating"] ?? 0,
+          dataCompleteness: location["dataCompleteness"] ?? 1,
+          hazards: _parseHazards(hazard),
+          geocodedAt: geocodedAt,
+          occupancy: occupancy,
+          campus: finalAddress["campus_id"]?.toString(),
+          accountId: finalAddress["account_id"]?.toString(),
+          accountName: finalAddress["account_name"]?.toString(),
+          subAccountId: finalAddress["sub_account_id"]?.toString(),
+          subAccountName: finalAddress["sub_account_name"]?.toString(),
           sovId: sovIdValue,
-          sovName: location.finalAddress?.sovName,
-          rented: location.finalAddress?.rented ?? false,
+          sovName: finalAddress["sov_name"]?.toString(),
+          rented: finalAddress["rented"] ?? false,
         );
       },
     );
+  }
+
+  Map<String, HazardDetails> _parseHazards(
+    Map<String, dynamic> hazardJson,
+  ) {
+    final Map<String, HazardDetails> hazards = {};
+
+    hazardJson.forEach((key, value) {
+      if (value != null && value is Map<String, dynamic>) {
+        hazards[key] = HazardDetails.fromJson(value);
+      }
+    });
+
+    debugPrint("Hazards Count : ${hazards.length}");
+    debugPrint("Hazards : ${hazards.keys.toList()}");
+
+    return hazards;
   }
 
   @override
@@ -1816,11 +1570,14 @@ class _LocationListMapViewState extends State<LocationListMapView>
   }
 }
 
+
 int scoreToStar(int? score) {
-  if (score == null) return 0;
+  if (score == null) return 1;
+
   if (score >= 80) return 5;
   if (score >= 60) return 4;
   if (score >= 40) return 3;
   if (score >= 20) return 2;
-  return 0;
+
+  return 1;
 }

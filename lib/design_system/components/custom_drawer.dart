@@ -449,28 +449,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         icon: Icons.ballot,
                         isExpanded: !sovExpanded,
                         onTap: () {
-                          provider.setSelectedItem("sov_list"); // FIX 🔥
+                          provider.setSelectedItem("sov_list");
                           setState(() {
                             sovExpanded = !sovExpanded;
                           });
                         },
                       ),
-
                       if (sovExpanded) ...[
-                        buildSubMenuItem(
-                          title: 'Monitoring SOVs',
-                          isSelected:
-                              provider.selectedItem == "monitoring_sovs",
-                          onTap: () {
-                            provider.setSelectedItem("monitoring_sovs");
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => MontoringSovList(
-                                        status: "Monitoring SOV",
-                                        monitoringSovId: mononitoringsovId)));
-                          },
-                        ),
                         buildSubMenuItem(
                           title: LanguageService.getTranslated(
                               context, 'drawer_menu_mysovs'),
@@ -511,6 +496,22 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           },
                         ),
                       ],
+                      _buildDrawerItem(
+                        context,
+                        provider,
+                        title: 'Event Monitoring',
+                        icon: Icons.airplay_rounded,
+                        onTap: () {
+                          provider.setSelectedItem("monitoring_sovs");
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => MontoringSovList(
+                                      status: "Monitoring SOV",
+                                      monitoringSovId: mononitoringsovId)));
+                        },
+                        isSelected: provider.selectedItem == "monitoring_sovs",
+                      ),
                       isSuperAdmin.toString() == "true" &&
                               userProfileProvider.userData.isIndividual
                                       .toString() !=
@@ -532,7 +533,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                   provider.selectedItem == "credit_usage",
                             )
                           : Container(),
-
                       if (showUserOnboardingStats) ...[
                         buildDrawerCategory(
                           context: context,
@@ -665,84 +665,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                               provider.selectedItem == "payment_history",
                         ),
                       ],
-//below code feature reference
-                      // Text(isIndivudual.toString()),
-                      // Text(isPgAdmin.toString()),
-                      // Text(isSuperAdmin.toString()),
-                      // Text(
-                      //     userProfileProvider.userData.isIndividual.toString()),
-                      // isPgAdmin.toString() == "true" ||
-                      //         (isPgAdmin.toString() == "false" &&
-                      //             isIndivudual.toString() == "false" &&
-                      //             isSuperAdmin.toString() == "false")
-                      //     ? Container()
-                      //     :
-                      // (userProfileProvider.userData.role != null &&
-                      //         userProfileProvider.userData.role!.isNotEmpty &&
-                      //         userProfileProvider.userData.role![0].name
-                      //                 .toString() ==
-                      //             "Admin" &&
-                      // if (Platform.isAndroid)
-
-//                if(!isSuperAdmin && !isPgAdmin && !isAdmin && !userProfileProvider.userData.isIndividual!) ...[
-//                  Consumer<UserProfileProvider>(
-//                    builder: (context, userProfileProvider, child) {
-//                      if (isSuperAdmin ||
-//                          isPgAdmin ||
-//                          isAdmin ||
-//                          userProfileProvider.userData.isIndividual ==
-//                              true) {
-//                        return _buildDrawerItem(
-//                          context,
-//                          provider,
-//                          title: "Purchase License",
-//                          icon: Icons.description,
-//                          onTap: () {
-//                            provider.setSelectedItem("purchase_license");
-//                            Navigator.of(context).push(
-//                              MaterialPageRoute(
-//                                builder: (_) => PurchaseLicensePage(),
-//                              ),
-//                            );
-//                          },
-//                          isSelected:
-//                          provider.selectedItem == "purchase_license",
-//                        );
-//                      } else {
-//                        return Container();
-//                      }
-//                    },
-//                  ),
-//                  Consumer<UserProfileProvider>(
-//                    builder: (context, userProfileProvider, child) {
-//                      if (isSuperAdmin ||
-//                          isPgAdmin ||
-//                          isAdmin ||
-//                          userProfileProvider.userData.isIndividual ==
-//                              true) {
-//                        return _buildDrawerItem(
-//                          context,
-//                          provider,
-//                          title: "Payment History",
-//                          icon: Icons.payments_sharp,
-//                          onTap: () {
-//                            provider.setSelectedItem("payment_history");
-//                            Navigator.of(context).push(
-//                              MaterialPageRoute(
-//                                builder: (_) => PaymentTransactionsPage(),
-//                              ),
-//                            );
-//                          },
-//                          isSelected:
-//                          provider.selectedItem == "Payment History",
-//                        );
-//                      } else {
-//                        return Container();
-//                      }
-//                    },
-//                  ),
-//                ]
-// ,
                       if (showUserOnboardingStats) ...[
                         _buildDrawerItem(
                           context,

@@ -1,18 +1,19 @@
 import '../../utils/global_imports.dart';
-import '../../providers/payment_provider.dart';
 
 class PricingSummary extends StatefulWidget {
   final List<String>? title;
   final Map<String, dynamic> summary;
   final String? hazardName;
   final String? vendorName;
+  final String? statusflag;
 
   PricingSummary(
       {super.key,
       this.title,
       required this.summary,
       this.hazardName,
-      this.vendorName});
+      this.vendorName,
+      this.statusflag});
 
   @override
   State<PricingSummary> createState() => _PricingSummaryState();
@@ -88,6 +89,8 @@ class _PricingSummaryState extends State<PricingSummary> {
                               hazardName: widget.hazardName,
                               vendorName: widget.vendorName,
                             );
+                            print(widget.summary['vendors']);
+                            print(widget.summary['eventTypes']);
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF99CCFF),
@@ -122,11 +125,43 @@ class _PricingSummaryState extends State<PricingSummary> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-                onPressed: () {
-                  Navigator.pop(context, false);
-                },
-                icon: Icon(Icons.arrow_back_ios, size: 20)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 1, 8, 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Subscription Summary",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (widget.statusflag?.toLowerCase() == "basic")
+                          const Text(
+                            "Basic Package Bundle",
+                            style: TextStyle(
+                              color: Color(0xFF99CCFF),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context, true);
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: Card(
                 elevation: 2,
@@ -166,104 +201,135 @@ class _PricingSummaryState extends State<PricingSummary> {
                                   ),
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () {
-                                  debugPrint(item.toString());
-                                  print(item);
-                                  setState(() {
-                                    // Mark item as cancelled
-                                    if (item['cancelled'] == null) {
-                                      item['cancelled'] = List.filled(
-                                          item['titles'].length, false);
-                                    }
-                                    item['cancelled'] = List.filled(
-                                        item['titles'].length, false,
-                                        growable: true);
-                                    //hfdshakhfsdkfajvjh Remove license price from total
-                                    var total = item['total'].toString();
-                                    var licensePrice = "0";
-                                    if (item['licenseprice'] != null &&
-                                        item['licenseprice'].length > index) {
-                                      licensePrice =
-                                          item['licenseprice'][index];
-                                    }
-                                    item['total'] = (double.parse(total) -
-                                        double.parse(licensePrice));
-                                    // Remove only the selected item from all lists
-                                    final keysToRemove = [
-                                      'planId',
-                                      'titles',
-                                      'licenseprice',
-                                      'planType',
-                                      'priceperuser',
-                                      'usercount',
-                                      'selectedPlanType',
-                                      'cancelled'
-                                    ];
-                                    for (final key in keysToRemove) {
-                                      if (item[key] != null &&
-                                          item[key] is List &&
-                                          item[key].length > index) {
-                                        item[key].removeAt(index);
-                                      }
-                                    }
-                                  });
+                              if (widget.statusflag!.toLowerCase() != "basic")
+                                GestureDetector(
+                                  onTap: () {
+                                    debugPrint(item.toString());
 
-                                  double updatedTotal = double.tryParse(
-                                          item['total'].toString()) ??
-                                      0.0;
-                                  if (item['total'].toString().isEmpty ||
-                                      updatedTotal == 0.0 ||
-                                      (item['titles'] != null &&
-                                          item['titles'].isEmpty)) {
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.red[50],
-                                    borderRadius: const BorderRadius.all(
-                                        Radius.circular(20)),
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                    size: 25,
+                                    setState(() {
+                                      var total = item['total'].toString();
+                                      var licensePrice = "0";
+
+                                      if (item['licenseprice'] != null &&
+                                          item['licenseprice'].length > index) {
+                                        licensePrice =
+                                            item['licenseprice'][index];
+                                      }
+
+                                      item['total'] = (double.parse(total) -
+                                          double.parse(licensePrice));
+
+                                      final keysToRemove = [
+                                        'planId',
+                                        'titles',
+                                        'displayTitles',
+                                        'licenseprice',
+                                        'planType',
+                                        'priceperuser',
+                                        'usercount',
+                                        'selectedPlanType',
+                                        'vendors',
+                                        'eventTypes',
+                                        'cancelled'
+                                      ];
+
+                                      for (final key in keysToRemove) {
+                                        if (item[key] != null &&
+                                            item[key] is List &&
+                                            item[key].length > index) {
+                                          item[key].removeAt(index);
+                                        }
+                                      }
+                                    });
+
+                                    double updatedTotal = double.tryParse(
+                                            item['total'].toString()) ??
+                                        0.0;
+
+                                    if (updatedTotal == 0.0 ||
+                                        item['titles'].isEmpty) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[50],
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(20)),
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.red,
+                                      size: 25,
+                                    ),
                                   ),
                                 ),
-                              )
                             ],
                           ),
+                          // Text(item['titles'][index].toString()),
                           const SizedBox(height: 8),
-                          // if (item['usercount'] != null &&
-                          //         item['titles'][index].toString() !=
-                          //             "Event Count Cost" &&
-                          //     item['usercount'].length > index)
-                         if(item['titles'][index].toString() !=
-                                          "Event Count Cost" )...[
-                            _buildRow("Count", item['usercount'][index])],
-                          _buildRow("Billing", item['selectedPlanType'][index]),
+                          if (item['titles'][index].toString() ==
+                              "Event Count Cost") ...[
+                            _buildRow(
+                              "Vendor",
+                              item['vendors'] != null &&
+                                      item['vendors'].length > index
+                                  ? item['vendors'][index]
+                                  : "-",
+                            ),
+                            _buildRow(
+                              "Event Type",
+                              item['eventTypes'] != null &&
+                                      item['eventTypes'].length > index
+                                  ? item['eventTypes'][index]
+                                  : "-",
+                            ),
+                            _buildRow(
+                              "Location Range",
+                              item['usercount'][index],
+                            ),
+                          ] else ...[
+                            _buildRow(
+                              "Count",
+                              item['usercount'][index],
+                            ),
+                          ],
+                          //     if (item['vendors'] != null &&
+                          //     item['vendors'].length > index &&
+                          // item['vendors'][index].toString().isNotEmpty) ...[
+                          // _buildRow(
+                          // "Vendor",
+                          // item['vendors'][index],
+                          // ),
+                          // _buildRow(
+                          // "Event Type",
+                          // item['eventTypes'] != null &&
+                          // item['eventTypes'].length > index
+                          // ? item['eventTypes'][index]
+                          //     : "-",
+                          // ),
+                          // _buildRow(
+                          // "Location Range",
+                          // item['usercount'][index],
+                          // ),
+                          // ] else ...[
+                          // _buildRow(
+                          // "Count",
+                          // item['usercount'][index],
+                          // ),
+                          // ] ,
+
+                          _buildRow(
+                            "Billing",
+                            item['selectedPlanType'][index],
+                          ),
+
                           if (item['licenseprice'] != null)
                             _buildRow(
                               "License pricing",
                               "\$${item['priceperuser'][index]} "
-                                  "${item['titles'][index].toString() == "User License" ?
-                              "/ user"
-                           :   item['titles'][index].toString() ==
-                                  "Event Count Cost" ? '/ event'
-
-                                  : "/ location"
-
-
-
-                              }",
+                                  "${item['planType'][index] == "event_cost" ? "/ event" : item['titles'][index].toString() == "User License" ? "/ user" : "/ location"}",
                             ),
-
-
-
-
-
-
                           // const SizedBox(height: 3),
                           // if (item['titles'][index].toString() ==
                           //         "Event Count Cost" &&

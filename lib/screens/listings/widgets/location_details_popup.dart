@@ -210,7 +210,6 @@ class LocationDetailsPopup extends StatelessWidget {
     );
   }
 
-  // Close Button for Hide Navigation = true
   Widget _buildCloseButton(BuildContext context, CustomTypography typography) {
     return Center(
       child: OutlinedButton(

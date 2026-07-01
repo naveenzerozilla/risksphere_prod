@@ -1,4 +1,4 @@
-// impact_data_card.dart
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -78,20 +78,12 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
           final hasItems = r.linkVendor?.hazardHub?.items?.isNotEmpty ?? false;
           if (hasTag && hasItems) {
             _hazardHubExpandLevel[widget.expandElementName!] = 1;
-            // expandedElementName = widget.expandElementName!;
+
           }
-          // if (hasTag && hasItems) {
-          //   _hazardHubExpandLevel[widget.expandElementName!] = 1;
-          // }
+
         }
       });
 
-      // now call scroll after layout
-      // if (widget.onExpanded != null) {
-      //   WidgetsBinding.instance.addPostFrameCallback((_) {
-      //     widget.onExpanded!();
-      //   });
-      // }
     }
   }
 
@@ -134,23 +126,11 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
             final isExpanded = hazardHubExpandFlow
                 ? expandLevel == 2
                 : expandedElementName == element.name;
-            // final isExpanded = hazardHubExpandFlow
-            //     ? true
-            //     : expandedElementName == element.name;
+
 
             final showManualValueFields =
                 hazardHubExpandFlow && expandLevel == 2;
-            // final isExpanded = hazardHubExpandFlow
-            //     ? expandLevel >= 1
-            //     : expandedElementName == element.name;
-            //
-            // final showManualValueFields =
-            //     hazardHubExpandFlow && expandLevel == 2;
-            // final isExpanded = hazardHubExpandFlow
-            //     ? expandLevel > 0
-            //     : expandedElementName == element.name;
-            // final showManualValueFields =
-            //     hazardHubExpandFlow && expandLevel >= 2;
+
             final references = element.parameterValue?.reference;
             final rawValue = element.parameterValue?.value;
 
@@ -197,64 +177,6 @@ class _ImpactDataCardState extends State<ImpactDataCard> {
                             });
                           }
                         },
-                        // onTap: () {
-                        //   setState(() {
-                        //     if (hazardHubExpandFlow) {
-                        //       // Default state = sync card visible
-                        //       final level =
-                        //           _hazardHubExpandLevel[element.name] ?? 1;
-                        //
-                        //       if (level == 1) {
-                        //         // Show value fields
-                        //         _hazardHubExpandLevel[element.name] = 2;
-                        //         expandedElementName = element.name;
-                        //       } else {
-                        //         // Back to sync-only card
-                        //         _hazardHubExpandLevel[element.name] = 1;
-                        //         expandedElementName = element.name;
-                        //       }
-                        //     } else {
-                        //       // Normal expand/collapse
-                        //       expandedElementName =
-                        //           isExpanded ? null : element.name;
-                        //
-                        //       _hazardHubExpandLevel.remove(element.name);
-                        //     }
-                        //   });
-                        //
-                        //   if (!isExpanded && widget.onExpanded != null) {
-                        //     WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //       widget.onExpanded!();
-                        //     });
-                        //   }
-                        // },
-                        // onTap: () {
-                        //   setState(() {
-                        //     if (hazardHubExpandFlow) {
-                        //       final level =
-                        //           _hazardHubExpandLevel[element.name] ?? 0;
-                        //       if (level == 0) {
-                        //         _hazardHubExpandLevel[element.name] = 1;
-                        //         expandedElementName = element.name;
-                        //       } else if (level == 1) {
-                        //         _hazardHubExpandLevel[element.name] = 2;
-                        //       } else {
-                        //         _hazardHubExpandLevel[element.name] = 0;
-                        //         expandedElementName = null;
-                        //       }
-                        //     } else {
-                        //       expandedElementName =
-                        //           isExpanded ? null : element.name;
-                        //       _hazardHubExpandLevel.remove(element.name);
-                        //     }
-                        //   });
-                        //
-                        //   if (!isExpanded && widget.onExpanded != null) {
-                        //     WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //       widget.onExpanded!();
-                        //     });
-                        //   }
-                        // },
 
                         child: Container(
                           padding: const EdgeInsets.symmetric(

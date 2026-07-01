@@ -352,31 +352,144 @@ class _MySovListState extends State<MontoringSovList>
               controller: _scrollController1,
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Consumer<SOVListProvider>(
-                    builder: (context, sovListProvider, _) {
-                      return Row(
-                        children: [
-                          InfoCard(
-                            title: "Total Events",
-                            count: safeParseInt(
-                                sovListProvider.totalEvent.toString()),
-                            icon: Icons.gas_meter_outlined,
-                          ),
-                          const SizedBox(width: 12),
-                          InfoCard(
-                            title: "Impacted \nLocations of Total",
-                            count: safeParseInt(
-                                sovListProvider.totalImpactLocation),
-                            icon: Icons.flash_on,
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                      );
-                    },
-                  ),
+                Consumer<SOVListProvider>(
+                  builder: (context, sovListProvider, _) {
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMobile = constraints.maxWidth < 600;
+
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            SizedBox(
+                              width: isMobile
+                                  ? (constraints.maxWidth / 2) - 18
+                                  : 220,
+                              child: InfoCard(
+                                title: "Total Events",
+                                count: safeParseInt(
+                                  sovListProvider.totalEvent.toString(),
+                                ),
+                                icon: Icons.gas_meter_outlined,
+                              ),
+                            ),
+                            SizedBox(
+                              width: isMobile
+                                  ? (constraints.maxWidth / 2) - 18
+                                  : 220,
+                              child: InfoCard(
+                                title: "Impacted Locations of Total",
+                                count: safeParseInt(
+                                  sovListProvider.totalImpactLocation,
+                                ),
+                                icon: Icons.flash_on,
+                              ),
+                            ),
+                            SizedBox(
+                              width: isMobile
+                                  ? (constraints.maxWidth / 2) - 18
+                                  : 220,
+                              child: InfoCard(
+                                title: "Hurricane Monitoring Locations",
+                                count: safeParseInt(
+                                  sovListProvider.hurricaneMonitoringLocations,
+                                ),
+                                icon: Icons.gas_meter_outlined,
+                              ),
+                            ),
+                            SizedBox(
+                              width: isMobile
+                                  ? (constraints.maxWidth / 2) - 18
+                                  : 220,
+                              child: InfoCard(
+                                title: "Earthquake Monitoring Locations",
+                                count: safeParseInt(
+                                  sovListProvider.earthquakeMonitoringLocations,
+                                ),
+                                icon: Icons.crisis_alert,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
+                // SingleChildScrollView(
+                //   scrollDirection: Axis.horizontal,
+                //   child: Consumer<SOVListProvider>(
+                //     builder: (context, sovListProvider, _) {
+                //       return LayoutBuilder(
+                //         builder: (context, constraints) {
+                //           final isMobile = constraints.maxWidth < 600;
+                //
+                //           return Wrap(
+                //             spacing: 12,
+                //             runSpacing: 12,
+                //             children: [
+                //               SizedBox(
+                //                 width: isMobile
+                //                     ? (constraints.maxWidth - 12) / 2
+                //                     : 220,
+                //                 child: InfoCard(
+                //                   title: "Total Events",
+                //                   count: safeParseInt(
+                //                     sovListProvider.totalEvent.toString(),
+                //                   ),
+                //                   icon: Icons.gas_meter_outlined,
+                //                 ),
+                //               ),
+                //
+                //               SizedBox(
+                //                 width: isMobile
+                //                     ? (constraints.maxWidth - 12) / 2
+                //                     : 220,
+                //                 child: InfoCard(
+                //                   title: "Impacted\nLocations of Total",
+                //                   count: safeParseInt(
+                //                     sovListProvider.totalImpactLocation,
+                //                   ),
+                //                   icon: Icons.flash_on,
+                //                 ),
+                //               ),
+                //
+                //               SizedBox(
+                //                 width: isMobile
+                //                     ? (constraints.maxWidth - 12) / 2
+                //                     : 220,
+                //                 child: InfoCard(
+                //                   title:
+                //                   "Hurricane Monitoring Locations",
+                //                   count: safeParseInt(
+                //                     sovListProvider
+                //                         .hurricaneMonitoringLocations,
+                //                   ),
+                //                   icon: Icons.gas_meter_outlined,
+                //                 ),
+                //               ),
+                //
+                //               SizedBox(
+                //                 width: isMobile
+                //                     ? (constraints.maxWidth - 12) / 2
+                //                     : 220,
+                //                 child: InfoCard(
+                //                   title:
+                //                   "Earthquake Monitoring Locations",
+                //                   count: safeParseInt(
+                //                     sovListProvider
+                //                         .earthquakeMonitoringLocations,
+                //                   ),
+                //                   icon: Icons.crisis_alert,
+                //                 ),
+                //               ),
+                //             ],
+                //           );
+                //         },
+                //       );
+                //     },
+                //   )
+                // ),
                 monitoringLimitCard(),
                 SizedBox(height: CustomSpacing.two),
                 Consumer<SOVListProvider>(
@@ -429,10 +542,10 @@ class _MySovListState extends State<MontoringSovList>
                                                 1000),
                                     'eventId': sov.id,
                                     'lat': sov.locationCoordinates?.latitude ??
-                                        20.5937, // ✅ Fixed
+                                        20.5937,
                                     'long':
                                         sov.locationCoordinates?.longitude ??
-                                            78.9629, // ✅ Fixed
+                                            78.9629,
                                   }),
                                 ),
                               );
@@ -724,14 +837,14 @@ class InfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
                       color: Colors.white38,
-                      borderRadius:
-                          BorderRadius.circular(15), // adjust radius as needed
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     child: Icon(
                       icon,
@@ -740,22 +853,17 @@ class InfoCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: CustomSpacing.two),
-                  Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 3,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      overflow:
-                          TextOverflow.ellipsis, // Ensures overflow is handled
-                    ),
-                    textAlign: TextAlign.left,
-                    textWidthBasis: TextWidthBasis.parent,
-                    textHeightBehavior: TextHeightBehavior(
-                      applyHeightToFirstAscent: false,
-                      applyHeightToLastDescent: false,
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 1.2,
+                      ),
                     ),
                   ),
                 ],

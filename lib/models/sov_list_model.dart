@@ -38,7 +38,7 @@ class SovListModel {
         json['filters'] != null ? Filters.fromJson(json['filters']) : null;
     cards = json['cards'] != null ? Cards.fromJson(json['cards']) : null;
 
-    // ✅ Safe 'result' parsing
+    //Safe 'result' parsing
     if (json['result'] is List) {
       result = (json['result'] as List)
           .whereType<Map<String, dynamic>>()
@@ -48,7 +48,7 @@ class SovListModel {
       result = [];
     }
 
-    // ✅ Safe 'results' parsing
+    //  Safe 'results' parsing
     if (json['results'] is List) {
       results = <Results>[];
       (json['results'] as List).forEach((v) {
@@ -58,12 +58,12 @@ class SovListModel {
       });
     }
 
-    // ✅ Safe 'settings' parsing
+    //  Safe 'settings' parsing
     settings = (json['settings'] is Map<String, dynamic>)
         ? Settings.fromJson(json['settings'])
         : null;
 
-    // ✅ Safe 'role' parsing
+    // Safe 'role' parsing
     role = [];
     final roleData = json['role'];
     if (roleData != null && roleData is! bool) {
@@ -82,12 +82,12 @@ class SovListModel {
       }
     }
 
-    // ✅ Safe 'total_count_header' parsing
+    // Safe 'total_count_header' parsing
     totalCountHeader = (json['total_count_header'] is Map<String, dynamic>)
         ? TotalCountHeader.fromJson(json['total_count_header'])
         : null;
 
-    // ✅ Safe 'events' parsing (ADD THIS)
+    // Safe 'events' parsing (ADD THIS)
     if (json['events'] is List) {
       events = <SovItem>[];
       (json['events'] as List).forEach((v) {
@@ -99,7 +99,7 @@ class SovListModel {
       events = [];
     }
 
-    // ✅ Safe 'aggregation_counts' parsing (FIXED)
+    // Safe 'aggregation_counts' parsing (FIXED)
     aggregationCounts = (json['aggregation_counts'] is Map<String, dynamic>)
         ? AggregationCounts.fromJson(json['aggregation_counts'])
         : null;
@@ -146,29 +146,43 @@ class SovListModel {
   }
 }
 
-// ✅ AggregationCounts class (ADD THIS if it doesn't exist)
+//  AggregationCounts class (ADD THIS if it doesn't exist)
 class AggregationCounts {
   dynamic totalNoOfEvents;
   dynamic totalImpactedLocations;
+  dynamic hurricaneMonitoringLocations;
+  dynamic earthquakeMonitoringLocations;
 
   AggregationCounts({
     this.totalNoOfEvents,
     this.totalImpactedLocations,
+    this.hurricaneMonitoringLocations,
+    this.earthquakeMonitoringLocations,
   });
 
-  factory AggregationCounts.fromJson(Map<String, dynamic> json) {
+  factory AggregationCounts.fromJson(
+      Map<String, dynamic> json) {
     return AggregationCounts(
-      // ✅ Use snake_case from API response
       totalNoOfEvents: json['total_no_of_events'],
-      totalImpactedLocations: json['total_impacted_locations'],
+      totalImpactedLocations:
+      json['total_impacted_locations'],
+      hurricaneMonitoringLocations:
+      json['hurricane_monitoring_locations'],
+      earthquakeMonitoringLocations:
+      json['earthquake_monitoring_locations'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = {};
-    data['total_no_of_events'] = totalNoOfEvents;
-    data['total_impacted_locations'] = totalImpactedLocations;
-    return data;
+    return {
+      'total_no_of_events': totalNoOfEvents,
+      'total_impacted_locations':
+      totalImpactedLocations,
+      'hurricane_monitoring_locations':
+      hurricaneMonitoringLocations,
+      'earthquake_monitoring_locations':
+      earthquakeMonitoringLocations,
+    };
   }
 }
 
@@ -772,7 +786,7 @@ class Result {
 
     locationCount = json['location_count'];
 
-    // ✅ Handle all possible 'role' cases safely
+    // Handle all possible 'role' cases safely
     if (json['role'] != null && json['role'] is! bool) {
       if (json['role'] is List) {
         role = (json['role'] as List).map((v) => Roles.fromJson(v)).toList();
@@ -1185,7 +1199,7 @@ class SharingStatus {
 //     return SharingStatus(users: map);
 //   }
 //
-//   /// ✅ Total count
+//   ///  Total count
 //   int get count => users.length;
 // }
 

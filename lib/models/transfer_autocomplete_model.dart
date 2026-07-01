@@ -38,7 +38,7 @@ class TransferAutocompleteModel {
   factory TransferAutocompleteModel.fromJson(Map<String, dynamic> json) {
     List<Roles> parsedRoles = [];
 
-    // 🔥 Case 1: roles field exists
+    //  Case 1: roles field exists
     if (json['roles'] != null) {
       if (json['roles'] is List) {
         parsedRoles =
@@ -48,7 +48,7 @@ class TransferAutocompleteModel {
       }
     }
 
-    // 🔥 Case 2: only role string exists (fallback)
+    //  Case 2: only role string exists (fallback)
     else if (json['role'] != null && json['role'] is String) {
       parsedRoles = [
         Roles(

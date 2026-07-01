@@ -8,9 +8,6 @@ import 'package:RiskSphere/screens/processMonitoringScreen/process_monitoring_sy
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
-import 'package:provider/provider.dart';
-
-import '../screens/listings/account_list.dart';
 import '../screens/listings/widgets/location_data.dart';
 
 class UploadSovProvider extends ChangeNotifier {
@@ -20,7 +17,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -45,7 +42,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   set isSubmitLoading(bool value) {
     _isSubmitLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -103,7 +100,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   set sovUploadModel(SovUploadModel? value) {
     _sovUploadModel = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -116,7 +113,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   set duplicateLocations(List<Map<String, dynamic>> value) {
     _duplicateLocations = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -127,7 +124,7 @@ class UploadSovProvider extends ChangeNotifier {
 
   set conflictLocations(List<Map<String, dynamic>> value) {
     _conflictLocations = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -634,7 +631,7 @@ class UploadSovProvider extends ChangeNotifier {
       var response = await apiService.get(url);
       log(response.toString());
       List<dynamic> data = response['result'] ?? [];
-      print("TSPL-1");
+
       duplicateLocations = data.map((item) {
         return {
           'address': item['address'] ?? '',
@@ -1081,7 +1078,6 @@ class UploadSovProvider extends ChangeNotifier {
         return;
       }
 
-      // 🔥 CASE 2: Upload finished (duplication_check → processed)
       String processId =
           await SharedPreferenceService.getSovUploadProcessId() ?? "";
 
@@ -1098,14 +1094,11 @@ class UploadSovProvider extends ChangeNotifier {
           ),
         ),
       );
-
-      // 🔥 CLEAR UPLOAD STATE AFTER PROCESSING
         await SharedPreferenceService.clearSovUploadState();
       await SharedPreferenceService.clearSovUploadTempId();
       await SharedPreferenceService.clearSovAccountId();
       await SharedPreferenceService.clearSovSubAccountId();
 
-      // 🔥 Notify UI so the button switches to "Import Locations"
       if (onProcessCompleted != null) {
         onProcessCompleted();
       }
@@ -1125,86 +1118,7 @@ class UploadSovProvider extends ChangeNotifier {
   }
 
 
-//import logic update
-  // Future<void> fetchSovUploadData(
-  //     BuildContext context,
-  //     String accountId,
-  //     String accountName,
-  //     String subAccountName,
-  //     String subAccountId,
-  //     String tempProcessId,
-  //     String state) async {
-  //   try {
-  //     if (state.toLowerCase() == 'upload') {
-  //       print(subAccountName);
-  //       print("subAccountName");
-  //       Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(
-  //               builder: (_) => MappingScreen(
-  //                   tempId: tempProcessId,
-  //                   accountId: accountId,
-  //                   subAccountId: subAccountId,
-  //                   accountName: accountName,
-  //                   subAccountName: subAccountName)));
-  //     } else {
-  //       String processId =
-  //           await SharedPreferenceService.getSovUploadProcessId() ?? "";
-  //       print("Process ID: $processId");
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(
-  //           builder: (_) => LocationDataScreen(
-  //             processId: processId,
-  //             tempId: tempProcessId,
-  //             accountId: accountId,
-  //             subAccountId: subAccountId,
-  //             accountName: accountName,
-  //             subAccountName: subAccountName,
-  //           ),
-  //         ),
-  //       );
-  //     }
-  //   } on BackendException catch (e, stackTrace) {
-  //     print(e);
-  //     print(stackTrace);
-  //     isLoading = false;
-  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //       content: Text(e.message),
-  //     ));
-  //   } catch (e, stackTrace) {
-  //     print(stackTrace);
-  //     print(e);
-  //     isLoading = false;
-  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //       content: Text(e.toString()),
-  //     ));
-  //   }
-  // }
 
-  // List<Map<String, dynamic>> _getSelectedLocations() {
-  //   //if nothing is checked then return all locations else return only checked locations
-  //   if (geocodingList.every((element) => element['isChecked'] == false)) {
-  //     // geocoding + duplicate + conflict
-  //     return geocodingList + duplicateLocations + conflictLocations;
-  //   } else {
-  //     return geocodingList
-  //         .where((element) => element['isChecked'] == true)
-  //         .toList();
-  //   }
-  // }
-
-  List<Map<String, dynamic>> _getSelectedDuplications() {
-    // If nothing is checked, return all duplicate locations
-    if (duplicateLocations.every((element) => element['isChecked'] == false)) {
-      return duplicateLocations;
-    } else {
-      // Return only the checked duplicate locations
-      return duplicateLocations
-          .where((element) => element['isChecked'] == true)
-          .toList();
-    }
-  }
 
   List<Map<String, dynamic>> _getSelectedGeocodingLocations() {
     if (geocodingList.every((element) => element['isChecked'] == false)) {
@@ -1216,42 +1130,10 @@ class UploadSovProvider extends ChangeNotifier {
     }
   }
 
-  // List<Map<String, dynamic>> _getSelectedDuplications() {
-  //   if (duplicateLocations.every((element) => element['isChecked'] == false)) {
-  //     return duplicateLocations;
-  //   } else {
-  //     return duplicateLocations.where((element) => element['isChecked'] == true).toList();
-  //   }
-  // }
 
-  List<Map<String, dynamic>> _getSelectedConflictLocations() {
-    if (conflictLocations.every((element) => element['isChecked'] == false)) {
-      return conflictLocations;
-    } else {
-      return conflictLocations
-          .where((element) => element['isChecked'] == true)
-          .toList();
-    }
-  }
 
   Future<void> commitSelectedLocations(BuildContext context, String accountId,
       String accountName, String tempId, String subAccountId) async {
-    List<Map<String, dynamic>> selectedLocations =
-        _getSelectedGeocodingLocations();
-    // print(selectedLocations.length.toString());
-    // print(duplicateLocations.length.toString());
-    // print("selectedLocations.length.toString()");
-    // print(conflictLocations.length.toString());
-    // print(conflictLocations.length.toString());
-    //
-    // /* if (selectedLocations.isEmpty) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(LanguageService.getTranslated(context, "app_no_locations_selected")),
-    //     ),
-    //   );
-    //   return;
-    // }*/
 
     await _submitLocations(context, geocodingList, duplicateLocations,
         "use_sov_data", tempId, accountId, accountName, subAccountId);

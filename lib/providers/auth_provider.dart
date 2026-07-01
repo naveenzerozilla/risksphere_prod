@@ -44,18 +44,6 @@ class AuthNotifier extends ChangeNotifier {
 
   bool get isSubmittingSupport => _isSubmittingSupport;
 
-  // ✅ AadOAuth configuration
-  // final AadOAuth oauth = AadOAuth(
-  //   Config(
-  //     tenant: "common",
-  //     clientId: "eb81a783-765c-482d-8fcb-6440ab1d1201",
-  //     scope: "openid profile offline_access email User.Read",
-  //     redirectUri: "msauth.com.risksphere.green://auth",
-  //     navigatorKey: navigatorKey,
-  //   ),
-  // );
-  // static const String _clientId = 'eb81a783-765c-482d-8fcb-6440ab1d1201';
-  // static const String _tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
   static const String _redirectUrl = 'com.risksphere.green://oauth2redirect';
 
   // final String _discoveryUrl =
@@ -253,7 +241,6 @@ class AuthNotifier extends ChangeNotifier {
     var typography = CustomTypography(context);
 
     try {
-      // ✅ START LOADER
       _isSubmittingSupport = true;
       notifyListeners();
 
@@ -297,116 +284,11 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-//   Future<void> fetchIndividualRoles() async {
-//     try {
-//       final response = await http.get(
-//         Uri.parse("${AppConstant.baseURL}/send_default_data_v2"),
-//         headers: {'Accept': 'application/json'},
-//       );
-//
-//       if (response.statusCode != 200) return _clearRoles();
-//
-//       final decoded = jsonDecode(response.body);
-//
-//       final data = decoded["data"];
-//       if (data == null) return _clearRoles();
-//
-//       final roleList = data["role"] as List?;
-//       if (roleList == null || roleList.isEmpty) return _clearRoles();
-//
-//       Map<String, dynamic>? individual;
-//       for (final item in roleList) {
-//         if (item["accountType"] == "individual") {
-//           individual = item;
-//           break;
-//         }
-//       }
-//       print("data['company_type'].length.toString()");
-//       print(data['company_type'].length.toString());
-//       if (individual == null) return _clearRoles();
-//
-//       final categories = individual["categories"] as List?;
-//       final corpCompany = data['company_type'] as List?;
-//
-//
-//       if (categories == null || categories.isEmpty) return _clearRoles();
-//
-//       roles = categories.map((e) => Roles.fromJson(e)).toList();
-//
-// // Parse company types safely
-//       if (corpCompany == null || corpCompany.isEmpty) {
-//         companyType = [];
-//       } else {
-//         companyType = corpCompany.map((e) => CompanyType.fromJson(e)).toList();
-//       }
-//       print("Total roles fetched for individual: ${roles.length}");
-//       print("Role names: ${roles.map((e) => e.name).toList()}");
-//     } catch (e) {
-//       print("Error parsing: $e");
-//       return _clearRoles();
-//     }
-//
-//     notifyListeners();
-//   }
-
-  // 🔽 Put this INSIDE AuthNotifier
   void _clearRoles() {
     roles = [];
     notifyListeners();
   }
 
-  // Future<void> fetchIndividualRoles() async {
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse("${AppConstant.baseURL}/send_default_data_v2"),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json'
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final body = json.decode(response.body);
-  //
-  //       /// safety check
-  //       if (body is! Map ||
-  //           body["data"] == null ||
-  //           body["data"]["role"] == null) {
-  //         roles = [];
-  //         notifyListeners();
-  //         return;
-  //       }
-  //
-  //       final roleList = body["data"]["role"] as List;
-  //
-  //       /// Pick ONLY individual account type
-  //       final individualRoleSection = roleList.firstWhere(
-  //             (item) => item["accountType"] == "individual",
-  //         orElse: () => null,
-  //       );
-  //
-  //       if (individualRoleSection == null) {
-  //         roles = [];
-  //         notifyListeners();
-  //         return;
-  //       }
-  //
-  //       final categories = individualRoleSection["categories"] as List;
-  //
-  //       /// Map categories into RoleModel list
-  //       roles = categories.map((e) => Roles.fromJson(e)).toList();
-  //
-  //       print("INDIVIDUAL ROLES MAPPED: ${roles.map((e) => e.name).toList()}");
-  //     } else {
-  //       roles = [];
-  //     }
-  //   } catch (e) {
-  //     print("Error mapping individual roles: $e");
-  //     roles = [];
-  //   }
-  //
-  //   notifyListeners();
-  // }
   Future<void> fetchCompanies(String name) async {
     print("Fetching: $name");
 
@@ -429,7 +311,6 @@ class AuthNotifier extends ChangeNotifier {
           final List result = data["result"];
 
           companyOptions = result.map<Companies>((item) {
-            // 🔐 FIX: handle stringified map
             if (item is String) {
               final decoded = jsonDecode(item);
               return Companies.fromJson(Map<String, dynamic>.from(decoded));
@@ -456,96 +337,6 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> fetchCompanies(String name) async {
-  //   print("Fetching: $name");
-  //
-  //   // if (name.trim().isEmpty) {
-  //   //   companyOptions = [];
-  //   //   notifyListeners();
-  //   //   return;
-  //   // }
-  //   print("Fetching: $name");
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse(
-  //           "${AppConstant.baseURL}/send_default_data_v2?name=${Uri.encodeComponent(name)}"),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json'
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       print(data);
-  //       if (data is Map &&
-  //           data.containsKey("result") &&
-  //           data["result"] is List) {
-  //         final List<dynamic> companyList = data["result"];
-  //         companyOptions =
-  //             companyList.map((json) => Companies.fromJson(json)).toList();
-  //         print(companyOptions);
-  //         print("companyOptions");
-  //       } else {
-  //         companyOptions = [];
-  //       }
-  //     } else {
-  //       companyOptions = [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     companyOptions = [];
-  //   }
-  //
-  //   notifyListeners();
-  // }
-
-  // Future<void> fetchCompanies(String name) async {
-  //   print("Fetching: $name");
-  //
-  //   if (name.trim().isEmpty) {
-  //     companyOptions = [];
-  //     filteredCompanyOptions = []; // clear filtered list as well
-  //     notifyListeners();
-  //     return;
-  //   }
-  //
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse(
-  //           "${AppConstant.baseURL}/send_default_data_v2?name=${Uri.encodeComponent(name)}"),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json'
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //
-  //       if (data is Map &&
-  //           data.containsKey("result") &&
-  //           data["result"] is List) {
-  //         final List<dynamic> companyList = data["result"];
-  //         companyOptions =
-  //             companyList.map((json) => Companies.fromJson(json)).toList();
-  //       } else {
-  //         companyOptions = [];
-  //       }
-  //     } else {
-  //       companyOptions = [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     companyOptions = [];
-  //   }
-  //
-  //   // After fetching, filter based on the current input name
-  //   filterCompanies(name);
-  //
-  //   notifyListeners();
-  // }
-
   void filterCompanies(String query) {
     final input = query.trim().toLowerCase();
     if (input.isEmpty) {
@@ -558,51 +349,6 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> fetchCompanies(String name) async {
-  //   print("Fetching: $name");
-  //
-  //   // if (name.isEmpty) {
-  //   //   companyOptionsNotifier.value = [];
-  //   //   return;
-  //   // }
-  //
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse(
-  //           "${AppConstant.baseURL}send_default_data_v2?name=${Uri.encodeComponent(name)}"),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Accept': 'application/json'
-  //       },
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       print("object");
-  //       final data = json.decode(response.body);
-  //
-  //       if (data is Map &&
-  //           data.containsKey("result") &&
-  //           data["result"] is List) {
-  //         print("data");
-  //         final List<dynamic> companyList = data["result"];
-  //         print(companyList);
-  //         companyOptionsNotifier.value =
-  //             companyList.map((json) => Companies.fromJson(json)).toList();
-  //       } else {
-  //         companyOptionsNotifier.value = [];
-  //       }
-  //     } else {
-  //       companyOptionsNotifier.value = [];
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching companies: $e");
-  //     companyOptionsNotifier.value = [];
-  //   }
-  //   companyOptionsNotifier.notifyListeners();
-  // }
-
-  /// Login
-
   Future<void> signInWithEmailAndPassword(
       String email, String password, BuildContext context1) async {
     try {
@@ -612,16 +358,15 @@ class AuthNotifier extends ChangeNotifier {
       });
 
       final UserCredential userCredential =
-      await _auth.signInWithEmailAndPassword(
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       _user = userCredential.user;
 
-      // 🔥 CHECK EMAIL VERIFICATION FIRST - BEFORE ANYTHING ELSE
       if (!(_user?.emailVerified ?? false)) {
         _isSigningIn = false;
-        await _auth.signOut(); // Sign out immediately if email not verified
+        await _auth.signOut();
 
         var typography = CustomTypography(context1);
         ScaffoldMessenger.of(context1).showSnackBar(
@@ -641,20 +386,36 @@ class AuthNotifier extends ChangeNotifier {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
-        return; // 🔥 RETURN HERE - DO NOT CONTINUE
+        return;
       }
-
-      // ✅ EMAIL IS VERIFIED - NOW GET CLAIMS
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims ?? {};
 
       String isAdminVerified = await getAllClaims();
-      print("is admin verified" + isAdminVerified.length.toString());
-      print(isAdminVerified.toLowerCase());
+      // print("is admin verified" + isAdminVerified.length.toString());
+      // print(isAdminVerified.toLowerCase());
+      if (isAdminVerified == "server_error") {
+        _isSigningIn = false;
 
-      // 🔥 CHECK IF ADMIN IS VERIFIED
-      if (isAdminVerified.toLowerCase() == "false" ||
-          isAdminVerified.isEmpty) {
+        ScaffoldMessenger.of(context1).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "We're experiencing a server issue. Please try again later.",
+            ),
+          ),
+        );
+
+        await _auth.signOut();
+
+        final googleSignIn = GoogleSignIn();
+        if (await googleSignIn.isSignedIn()) {
+          await googleSignIn.disconnect();
+        }
+
+        notifyListeners();
+        return;
+      }
+      if (isAdminVerified.toLowerCase() == "false" || isAdminVerified.isEmpty) {
         _isSigningIn = false;
         // Show dialog with reminder to verify email for admin
         // ignore: use_build_context_synchronously
@@ -710,27 +471,27 @@ class AuthNotifier extends ChangeNotifier {
 
                                   final _googleSignIn = GoogleSignIn();
                                   var isSignedIn =
-                                  await _googleSignIn.isSignedIn();
+                                      await _googleSignIn.isSignedIn();
 
                                   if (isSignedIn)
                                     await _googleSignIn.disconnect();
                                   await _auth.signOut();
 
                                   Future.delayed(Duration(milliseconds: 500),
-                                          () {
-                                        if (Navigator.canPop(context)) {
-                                          Navigator.pop(context);
-                                        }
-                                      });
+                                      () {
+                                    if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    }
+                                  });
                                 },
                                 child: isRemindLoading
                                     ? Center(
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white))
+                                        child: CircularProgressIndicator(
+                                            color: Colors.white))
                                     : Text(
-                                  LanguageService.getTranslated(context,
-                                      "login_admin_not_verified_remind_button"),
-                                ),
+                                        LanguageService.getTranslated(context,
+                                            "login_admin_not_verified_remind_button"),
+                                      ),
                               ),
                             ),
                           ],
@@ -744,7 +505,7 @@ class AuthNotifier extends ChangeNotifier {
                                   onPressed: () async {
                                     final _googleSignIn = GoogleSignIn();
                                     var isSignedIn =
-                                    await _googleSignIn.isSignedIn();
+                                        await _googleSignIn.isSignedIn();
                                     if (isSignedIn)
                                       await _googleSignIn.disconnect();
                                     await _auth.signOut();
@@ -757,7 +518,7 @@ class AuthNotifier extends ChangeNotifier {
                                         MaterialPageRoute(
                                             builder: (context) =>
                                                 SplashScreen()),
-                                            (route) => false);
+                                        (route) => false);
                                   },
                                   child: Text(
                                     LanguageService.getTranslated(context,
@@ -787,7 +548,6 @@ class AuthNotifier extends ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
-
     } catch (e) {
       _isSigningIn = false;
       var typography = CustomTypography(context1);
@@ -805,205 +565,6 @@ class AuthNotifier extends ChangeNotifier {
       print("Error signing in: $e");
     }
   }
-  // Future<void> signInWithEmailAndPassword(
-  //     String email, String password, BuildContext context1) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //
-  //     final UserCredential userCredential =
-  //         await _auth.signInWithEmailAndPassword(
-  //       email: email,
-  //       password: password,
-  //     );
-  //     _user = userCredential.user;
-  //
-  //     IdTokenResult token = await userCredential.user!.getIdTokenResult();
-  //     Map<String, dynamic>? claims = token.claims ?? {};
-  //
-  //     String isAdminVerified = await getAllClaims();
-  //     print("is admin verified" + isAdminVerified.length.toString());
-  //     print(isAdminVerified.toLowerCase());
-  //
-  //     if (!(_user?.emailVerified ?? false)) {
-  //       _isSigningIn = false;
-  //       var typography = CustomTypography(context1);
-  //       ScaffoldMessenger.of(context1).showSnackBar(
-  //         SnackBar(
-  //           content: Text(
-  //             LanguageService.getTranslated(
-  //                 context1, "login_email_not_verified_error"),
-  //           ),
-  //         ),
-  //       );
-  //
-  //       await _auth.signOut();
-  //       final _googleSignIn = GoogleSignIn();
-  //       var isSignedIn = await _googleSignIn.isSignedIn();
-  //       if (isSignedIn) await _googleSignIn.disconnect();
-  //       WidgetsBinding.instance.addPostFrameCallback((_) {
-  //         notifyListeners();
-  //       });
-  //       return;
-  //     } else if (isAdminVerified.toLowerCase() == "false" ||
-  //         isAdminVerified.isEmpty) {
-  //       _isSigningIn = false;
-  //       // Show dialog with reminder to verify email for admin
-  //       // ignore: use_build_context_synchronously
-  //       await showDialog(
-  //         context: context1,
-  //         barrierDismissible: false,
-  //         builder: (BuildContext context) {
-  //           var typography = CustomTypography(context);
-  //           return StatefulBuilder(
-  //             // Use StatefulBuilder to update UI inside AlertDialog
-  //             builder: (context, setState) {
-  //               return AlertDialog(
-  //                 title: Text(
-  //                   LanguageService.getTranslated(
-  //                       context, "login_admin_not_verified_dialog_title"),
-  //                   style: typography.H6.copyWith(color: Colors.white),
-  //                 ),
-  //                 content: Text(
-  //                   LanguageService.getTranslated(
-  //                       context, "login_admin_not_verified_dialog_description"),
-  //                   style: typography.Body1.copyWith(color: Colors.white),
-  //                 ),
-  //                 actions: [
-  //                   Column(
-  //                     children: [
-  //                       Row(
-  //                         children: [
-  //                           Expanded(
-  //                             child: CustomButton(
-  //                               type: ButtonType.elevated,
-  //                               onPressed: () async {
-  //                                 // Start showing loader
-  //                                 setState(() {
-  //                                   isRemindLoading = true;
-  //                                 });
-  //
-  //                                 bool result = await remindUser();
-  //
-  //                                 // Stop showing loader
-  //                                 setState(() {
-  //                                   isRemindLoading = false;
-  //                                 });
-  //
-  //                                 if (result) {
-  //                                   ScaffoldMessenger.of(context).showSnackBar(
-  //                                     SnackBar(
-  //                                       content: Text(
-  //                                         LanguageService.getTranslated(context,
-  //                                             "login_admin_not_verified_remind_success"),
-  //                                         style: typography.H6
-  //                                             .copyWith(color: Colors.black),
-  //                                       ),
-  //                                     ),
-  //                                   );
-  //                                 }
-  //
-  //                                 final _googleSignIn = GoogleSignIn();
-  //                                 var isSignedIn =
-  //                                     await _googleSignIn.isSignedIn();
-  //
-  //                                 if (isSignedIn)
-  //                                   await _googleSignIn.disconnect();
-  //                                 await _auth.signOut();
-  //
-  //                                 // Ensure UI updates before closing dialog
-  //                                 Future.delayed(Duration(milliseconds: 500),
-  //                                     () {
-  //                                   if (Navigator.canPop(context)) {
-  //                                     Navigator.pop(context);
-  //                                   }
-  //                                 });
-  //                               },
-  //                               child: isRemindLoading
-  //                                   ? Center(
-  //                                       child: CircularProgressIndicator(
-  //                                           color: Colors
-  //                                               .white)) // Ensure visibility
-  //                                   : Text(
-  //                                       LanguageService.getTranslated(context,
-  //                                           "login_admin_not_verified_remind_button"),
-  //                                     ),
-  //                             ),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                       SizedBox(height: CustomSpacing.four),
-  //                       Row(
-  //                         children: [
-  //                           Expanded(
-  //                             child: CustomButton(
-  //                                 type: ButtonType.text,
-  //                                 onPressed: () async {
-  //                                   final _googleSignIn = GoogleSignIn();
-  //                                   var isSignedIn =
-  //                                       await _googleSignIn.isSignedIn();
-  //                                   if (isSignedIn)
-  //                                     await _googleSignIn.disconnect();
-  //                                   await _auth.signOut();
-  //
-  //                                   if (Navigator.canPop(context)) {
-  //                                     Navigator.pop(context);
-  //                                   }
-  //                                   Navigator.pushAndRemoveUntil(
-  //                                       context,
-  //                                       MaterialPageRoute(
-  //                                           builder: (context) =>
-  //                                               SplashScreen()),
-  //                                       (route) => false);
-  //                                 },
-  //                                 child: Text(
-  //                                   LanguageService.getTranslated(context,
-  //                                       "login_admin_not_verified_cancel_button"),
-  //                                   style: typography.H6
-  //                                       .copyWith(color: Colors.white),
-  //                                 )),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ],
-  //               );
-  //             },
-  //           );
-  //         },
-  //       );
-  //
-  //       return;
-  //     }
-  //
-  //     await SharedPreferenceService.setClaims(claims);
-  //     await SharedPreferenceService.getAllClaims();
-  //     unawaited(initFCM(_user!.uid));
-  //     _isSigningIn = false;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //   } catch (e) {
-  //     _isSigningIn = false;
-  //     var typography = CustomTypography(context1);
-  //     ScaffoldMessenger.of(context1).showSnackBar(
-  //       SnackBar(
-  //         content: Text(
-  //           LanguageService.getTranslated(
-  //               context1, "login_invaild_email_password_error"),
-  //         ),
-  //       ),
-  //     );
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //     // Handle error
-  //     print("Error signing in: $e");
-  //   }
-  // }
 
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
@@ -1152,121 +713,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Future<void> signInWithMicrosoft({required BuildContext context}) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     notifyListeners();
-  //
-  //     final provider = MicrosoftAuthProvider()
-  //       ..addScope('email')
-  //       ..addScope('openid')
-  //       ..addScope('profile');
-  //
-  //     final userCredential =
-  //         await FirebaseAuth.instance.signInWithProvider(provider);
-  //
-  //     final token = await userCredential.user!.getIdTokenResult();
-  //     final claims = token.claims ?? {};
-  //
-  //     await SharedPreferenceService.setClaims(claims);
-  //
-  //     _user = userCredential.user;
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //
-  //     if (claims['isIndividual'] == null) {
-  //       await Navigator.push(
-  //         context,
-  //         MaterialPageRoute(
-  //           builder: (_) => CreateAccountScreen(
-  //             userCredential: userCredential,
-  //           ),
-  //         ),
-  //       );
-  //     } else {
-  //       await Navigator.pushAndRemoveUntil(
-  //         context,
-  //         MaterialPageRoute(builder: (_) => DashboardScreen()),
-  //         (_) => false,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //     debugPrint("Microsoft Sign-In failed: $e");
-  //   }
-  // }
-
-  // Future<void> signInWithMicrosoft({BuildContext? context}) async {
-  //   try {
-  //     _isSigningIn = true;
-  //     notifyListeners();
-  //
-  //     final microsoftProvider = MicrosoftAuthProvider();
-  //
-  //     microsoftProvider.addScope('email');
-  //     microsoftProvider.addScope('openid');
-  //     microsoftProvider.addScope('profile');
-  //     microsoftProvider.addScope('User.Read');
-  //
-  //     UserCredential userCredential;
-  //     if (kIsWeb) {
-  //       userCredential =
-  //       await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
-  //     } else {
-  //       userCredential =
-  //       await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
-  //     }
-  //
-  //     // Handle user data or token claims if necessary
-  //     // Example:
-  //     IdTokenResult token = await userCredential.user!.getIdTokenResult();
-  //     Map<String, dynamic>? claims = token.claims ?? {};
-  //     log("Claims: $claims");
-  //
-  //     await SharedPreferenceService.setClaims(claims);
-  //     await SharedPreferenceService.getAllClaims();
-  //
-  //     print('Is Individual? ${claims['isIndividual']}');
-  //
-  //     print('Current User: ${userCredential.user!.email}');
-  //     print('Current firebase user: ${_auth.currentUser!.email}');
-  //     _user = userCredential.user;
-  //     if (claims['isIndividual'] == null) {
-  //       isNewUser = true;
-  //       Navigator.push(
-  //         context!,
-  //         MaterialPageRoute(
-  //           builder: (context) => CreateAccountScreen(
-  //             userCredential: userCredential,
-  //           ),
-  //         ),
-  //       );
-  //     } else {
-  //       isNewUser = false;
-  //       await Navigator.pushAndRemoveUntil(
-  //         context!,
-  //         MaterialPageRoute(builder: (context) => DashboardScreen()),
-  //             (route) => false,
-  //       );
-  //     }
-  //
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //   } on FirebaseAuthException catch (e) {
-  //     _isSigningIn = false;
-  //     notifyListeners();
-  //     print("Error signing in with Microsoft: $e");
-  //     if (context != null) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text(e.message ?? 'An error occurred'),
-  //         ),
-  //       );
-  //     }
-  //   }
-  // }
-
   Future<void> signOut() async {
     try {
       _isSigningOut = true;
@@ -1304,12 +750,8 @@ class AuthNotifier extends ChangeNotifier {
       bool isUserRegistered = await userExists(email.trim());
 
       if (isUserRegistered) {
-        // ✅ Step 1 — Call backend API first
         final response = await http.post(
-          Uri.parse(
-              '${AppConstant.baseURL}/auth_handler/user-check'),
-              // "https://us-central1-project-green-r5-1-qa.cloudfunctions.net"
-
+          Uri.parse('${AppConstant.baseURL}/auth_handler/user-check'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"email": email.trim()}),
         );
@@ -1454,8 +896,8 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
+      final HttpsCallable callable = FirebaseFunctions.instance
+          .httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1484,19 +926,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // signUpIndividualWithApple(
-  // emailController.text,
-  // passwordController.text,
-  // nameController.text,
-  // displayNameController.text,
-  // mobileController.value?.nsn ?? "",
-  // mobileController.value?.countryCode ??
-  // "",
-  // _selectedRoles,
-  //
-  // _selectedRoles,
-  // context,
-  // );
   Future<String> signUpIndividualWithApple(
       String? email,
       String? password,
@@ -1528,8 +957,8 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
+      final HttpsCallable callable = FirebaseFunctions.instance
+          .httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1588,8 +1017,8 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
+      final HttpsCallable callable = FirebaseFunctions.instance
+          .httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1659,8 +1088,8 @@ class AuthNotifier extends ChangeNotifier {
       log("body: ${jsonEncode(body)}");
 
       // Call the Firebase Cloud Function
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('add_role_at_user_create_v2');
+      final HttpsCallable callable = FirebaseFunctions.instance
+          .httpsCallable('add_role_at_user_create_v2');
       final result = await callable.call(body);
 
       print('Cloud Function result: ${result.data}');
@@ -1833,7 +1262,6 @@ class AuthNotifier extends ChangeNotifier {
       _isSigningUp = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
 
-      /// 1️⃣ CREATE FIREBASE USER
       final UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: adminEmail,
@@ -1847,7 +1275,6 @@ class AuthNotifier extends ChangeNotifier {
             "name": "Admin",
           };
 
-      /// 2️⃣ BUILD PAYLOAD
       final Map<String, dynamic> payload = {
         "accountType": "corporate",
         "isIndividual": false,
@@ -1867,11 +1294,9 @@ class AuthNotifier extends ChangeNotifier {
         "country_code": adminCountryCode,
         "country": "India",
 
-        /// roles (🔥 BOTH REQUIRED)
         "roles": rolePayload,
         "corporateRoles": rolePayload,
 
-        /// flags
         "disableCompanyTypeField": false,
         "disableCountryField": false,
         "is_email_password": true,
@@ -2562,11 +1987,13 @@ class AuthNotifier extends ChangeNotifier {
     try {
       if (isAssignClaimsLoading) return "";
       isAssignClaimsLoading = true;
-
       if (_auth.currentUser == null) {
-        print("User is not authenticated.");
-        return "";
+        return "server_error";
       }
+      // if (_auth.currentUser == null) {
+      //   print("User is not authenticated.");
+      //   return "";
+      // }
 
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
@@ -2605,6 +2032,17 @@ class AuthNotifier extends ChangeNotifier {
                     ? data['has_hazard_license_count']['left_credits']
                     : 0)
                 .toString()),
+        SharedPreferenceService.setHurricane(
+            (data['hurricane_kineticast'] != null &&
+                        data['hurricane_kineticast'] is Map
+                    ? data['hurricane_kineticast']['left_credits']
+                    : 0)
+                .toString()),
+        SharedPreferenceService.setEarthquake(
+            (data['earthquake_usgs'] != null && data['earthquake_usgs'] is Map
+                    ? data['earthquake_usgs']['left_credits']
+                    : 0)
+                .toString()),
         SharedPreferenceService.setHasImpromentLicenseCount(
             (data['has_improvement_license_count'] != null &&
                         data['has_improvement_license_count'] is Map
@@ -2617,6 +2055,15 @@ class AuthNotifier extends ChangeNotifier {
                     ? data['has_hazard_hub_license']['left_credits']
                     : 0)
                 .toString()),
+
+        // "total_trial_days": 7,
+        // "hurricane_kineticast": {
+        //   "left_credits": 30
+        // },
+        // "earthquake_usgs": {
+        //   "left_credits": 20
+        // },
+
         SharedPreferenceService.setTrialUser(
             data['total_trial_users'].toString()),
         SharedPreferenceService.setTrailLocation(
@@ -2631,14 +2078,18 @@ class AuthNotifier extends ChangeNotifier {
         SharedPreferenceService.saveHasNewUser(data['is_new_account']),
         SharedPreferenceService.setDefaultAccountID(
             data['default_account_id'] ?? ""),
+
         SharedPreferenceService.setDefaultSUBAccountID(
             data['default_sub_account_id'] ?? ""),
+        SharedPreferenceService.setDefaultMonitoringSov(
+            data['default_monitoring_sov'] ?? ""),
         SharedPreferenceService.setDefaultAccountName(
             data['default_account_name'] ?? ""),
         SharedPreferenceService.setDefaultSUBAccountName(
             data['default_sub_account_name'] ?? ""),
         SharedPreferenceService.setSovUploadTempId(
             data['last_process_temp_id'] ?? ""),
+        SharedPreferenceService.setDefaultDatasetID(data['dataset_id'] ?? ""),
         SharedPreferenceService.setSovUploadProcessId(
             data['last_process_id'] ?? ""),
         SharedPreferenceService.setSovUploadState(
@@ -2677,200 +2128,10 @@ class AuthNotifier extends ChangeNotifier {
       return data["is_user_exists"].toString();
     } catch (e, stack) {
       print('Error getting all claims: $e');
-      return "";
+      print('Stack trace: $stack');
+      return "server_error";
     } finally {
       isAssignClaimsLoading = false;
-    }
-  }
-
-//before shared preference call
-  // Future<String> getAllClaims() async {
-  //   try {
-  //     if (isAssignClaimsLoading) return "";
-  //     isAssignClaimsLoading = true;
-  //
-  //     if (_auth.currentUser == null) {
-  //       print("User is not authenticated.");
-  //       return "";
-  //     }
-  //
-  //     final HttpsCallable callable =
-  //         FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
-  //
-  //     String? token = await _auth.currentUser!.getIdToken(true);
-  //     log("Old Token: $token");
-  //
-  //     HttpsCallableResult response = await callable.call(<String, dynamic>{
-  //       'Authorization': 'Bearer ${token ?? ""}',
-  //     });
-  //
-  //     print("Raw Firebase Response: $response"); // Log full response
-  //
-  //     if (!response.data.containsKey('is_user_exists')) {
-  //       print("Response missing expected field");
-  //       return "";
-  //       // throw Exception("Response missing expected field: is_user_exists");
-  //     }
-  //     if (response.data == null) {
-  //       throw Exception("Response data is null");
-  //     }
-  //     if (response.data is! Map) {
-  //       throw Exception("Response data is not a Map: ${response.data}");
-  //     }
-  //
-  //     // print("is_user_exists: ${response.data["is_user_exists"]}");
-  //     // print("is_user_exists: ${response.data['schedule_inprogress']}");
-  //     // print("is_user_exists: ${response.data['last_account']}");
-  //     // print("is_user_exists: ${response.data['last_sub_account']}");
-  //     SharedPreferenceService.setScheduleInProgress(
-  //         response.data['schedule_inprogress'].toString());
-  //     // SharedPreferenceService.setScheduleInProgress(
-  //     //     response.data['schedule_inprogress']);
-  //     SharedPreferenceService.setSovUploadTempId(
-  //         response.data['last_process_temp_id'] ?? "");
-  //     SharedPreferenceService.setSovUploadProcessId(
-  //         response.data['last_process_id'] ?? "");
-  //     SharedPreferenceService.setSovUploadState(
-  //         response.data['last_process_state'] ?? "");
-  //     SharedPreferenceService.setSovAccountId(
-  //         response.data['last_account'] ?? "");
-  //     SharedPreferenceService.setSovSubAccountId(
-  //         response.data['last_sub_account'] ?? "");
-  //     SharedPreferenceService.setSovAccountName(
-  //         response.data['last_account_name'] ?? "");
-  //     SharedPreferenceService.setSovSubAccountName(
-  //         response.data['last_sub_account_name'] ?? "");
-  //     if (response.data.containsKey('remaining_trial_days')) {
-  //       int? trialDays = response.data['remaining_trial_days'];
-  //       bool isTrialApplicable =
-  //           response.data['is_applicable_for_trial'] ?? false;
-  //       int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
-  //       int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
-  //       int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
-  //       int? trialLocations = response.data['trial_locations'] ?? 0;
-  //       int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
-  //       int? trialTotalUsersVerified =
-  //           response.data['total_users_verified'] ?? 0;
-  //
-  //       // Store trial info in shared preferences
-  //       await SharedPreferenceService.saveTrialInfo(
-  //           trialDays ?? 0,
-  //           isTrialApplicable,
-  //           trialSubdestinations ?? 0,
-  //           trialEditLocations ?? 0,
-  //           trialMaxLocations ?? 0,
-  //           trialLocations ?? 0,
-  //           trailTotalUsers ?? 0,
-  //           trialTotalUsersVerified ?? 0);
-  //
-  //       print(
-  //           "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
-  //     } else {
-  //       print("No trial info found in claims response.");
-  //       //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
-  //     }
-  //     return response.data["is_user_exists"].toString();
-  //   } catch (e, stack) {
-  //     print(stack);
-  //     print('Error getting all claims: $e');
-  //     return "";
-  //   } finally {
-  //     isAssignClaimsLoading = false;
-  //   }
-  // }
-
-  // Future<String> getAllClaims() async {
-  //   try {
-  //     if (isAssignClaimsLoading) return "";
-  //     isAssignClaimsLoading = true;
-  //     final HttpsCallable callable =
-  //         FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
-  //     String? token = await _auth.currentUser!.getIdToken(true);
-  //     log("Old: $token");
-  //
-  //     HttpsCallableResult response = await callable.call(<String, dynamic>{
-  //       'Authorization': 'Bearer ${token ?? ""}',
-  //     });
-  //     print("is_user_exists: ${response.data["is_user_exists"]}");
-  //     print("update claims response:");
-  //    print(response.data['schedule_inprogress']);
-  //
-  //     print("update claims response: ${response.data}");
-  //     SharedPreferenceService.setScheduleInProgress(
-  //         response.data['schedule_inprogress']);
-  //     SharedPreferenceService.setSovUploadTempId(
-  //         response.data['last_process_temp_id'] ?? "");
-  //     SharedPreferenceService.setSovUploadProcessId(
-  //         response.data['last_process_id'] ?? "");
-  //     SharedPreferenceService.setSovUploadState(
-  //         response.data['last_process_state'] ?? "");
-  //
-  //     SharedPreferenceService.setSovAccountId(
-  //         response.data['last_account'] ?? "");
-  //     print(response.data['last_account']);
-  //     SharedPreferenceService.setSovSubAccountId(
-  //         response.data['last_sub_account'] ?? "");
-  //     print(response.data['last_sub_account']);
-  //
-  //     SharedPreferenceService.setSovAccountName(
-  //         response.data['last_account_name'] ?? "");
-  //     SharedPreferenceService.setSovSubAccountName(
-  //         response.data['last_sub_account_name'] ?? "");
-  //
-  //     // Save trial information from the response
-  //     if (response.data.containsKey('remaining_trial_days')) {
-  //       int? trialDays = response.data['remaining_trial_days'];
-  //       bool isTrialApplicable =
-  //           response.data['is_applicable_for_trial'] ?? false;
-  //       int? trialSubdestinations = response.data['trial_subdestinations'] ?? 0;
-  //       int? trialEditLocations = response.data['trial_max_updates'] ?? 0;
-  //       int? trialMaxLocations = response.data['trial_max_locations'] ?? 0;
-  //       int? trialLocations = response.data['trial_locations'] ?? 0;
-  //       int? trailTotalUsers = response.data['total_trial_users'] ?? 0;
-  //       int? trialTotalUsersVerified =
-  //           response.data['total_users_verified'] ?? 0;
-  //
-  //       // Store trial info in shared preferences
-  //       await SharedPreferenceService.saveTrialInfo(
-  //           trialDays ?? 0,
-  //           isTrialApplicable,
-  //           trialSubdestinations ?? 0,
-  //           trialEditLocations ?? 0,
-  //           trialMaxLocations ?? 0,
-  //           trialLocations ?? 0,
-  //           trailTotalUsers ?? 0,
-  //           trialTotalUsersVerified ?? 0);
-  //
-  //       print(
-  //           "Trial info saved: $trialDays days, Applicable: $isTrialApplicable");
-  //     } else {
-  //       print("No trial info found in claims response.");
-  //       //await SharedPreferenceService.saveTrialInfo(16, true, 1735977542);
-  //     }
-  //
-  //     String? newToken = await _auth.currentUser!
-  //         .getIdTokenResult(true)
-  //         .then((value) => value.token);
-  //     log("New: $newToken");
-  //     print('response: ${response.data}');
-  //     print("is_user_exists: ${response.data["is_user_exists"]}");
-  //     return response.data["is_user_exists"].toString();
-  //   } catch (e, stack) {
-  //     print(stack);
-  //     print('Error getting all claims: $e');
-  //     return "";
-  //   } finally {
-  //     isAssignClaimsLoading = false;
-  //   }
-  // }
-
-  int _parseFirestoreTimestamp(Map<String, dynamic> timestamp) {
-    try {
-      int seconds = timestamp['_seconds'] ?? 0;
-      return seconds; // Return as UNIX timestamp (seconds)
-    } catch (e) {
-      print("Error parsing Firestore timestamp: $e");
-      return 0; // Default to 0 if parsing fails
     }
   }
 

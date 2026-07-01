@@ -5969,19 +5969,15 @@ Widget _changePasswordBottomSheet(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title
         Text(
-          "Add Password",
+          "Update Password",
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
-
         const SizedBox(height: 8),
-
-        // Subtitle
         Text(
           "A password reset email will be sent to:",
           style: TextStyle(
@@ -5992,7 +5988,6 @@ Widget _changePasswordBottomSheet(
 
         const SizedBox(height: 12),
 
-        // Email box
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),

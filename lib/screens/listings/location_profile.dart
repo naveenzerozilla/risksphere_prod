@@ -1368,7 +1368,8 @@ class _LocationProfileState extends State<LocationProfile>
                               Padding(
                                 padding: EdgeInsets.only(left: 16, right: 24),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     tabIndex == 0 || tabIndex == 1
@@ -1599,15 +1600,15 @@ class _LocationProfileState extends State<LocationProfile>
                                         onTap: () {
                                           bottomsheetopened != true
                                               ? showDialog(
-                                            context: context,
-                                            builder: (context) => GeocodingDialog(
-                                                title: tabIndex == 0
-                                                    ? "Geocoding Score Info"
-                                                    : tabIndex == 1
-                                                    ? "Hazard Score Info"
-                                                    : "Data Completeness Info",
-                                                status: true),
-                                          )
+                                                  context: context,
+                                                  builder: (context) => GeocodingDialog(
+                                                      title: tabIndex == 0
+                                                          ? "Geocoding Score Info"
+                                                          : tabIndex == 1
+                                                              ? "Hazard Score Info"
+                                                              : "Data Completeness Info",
+                                                      status: true),
+                                                )
                                               : null;
                                         },
                                         child: Icon(Icons.info,
@@ -6538,14 +6539,16 @@ class _ChatbotContentState extends State<_ChatbotContent> {
   bool _showLocationsButton = true;
   List<Map<String, dynamic>> messages = [];
 
+  bool get _showSuggestions =>
+      messages.where((m) => m["isBot"] == false).isEmpty;
+
   @override
   void initState() {
     super.initState();
     _sessionId = const Uuid().v4();
     messages.add({
       "isBot": true,
-      "text":
-          "Hi, I'm RiskBuddy your personalized Assistant.\n\nI can help you understand risk data, eligibility, and guide you through premium features like HazardHub.",
+      "text": "Hi, I'm RiskBuddy your personalized Assistant.",
     });
     _controller.addListener(() {
       final hasText = _controller.text.trim().isNotEmpty;
@@ -6588,12 +6591,23 @@ class _ChatbotContentState extends State<_ChatbotContent> {
         Provider.of<MyLocationListProvider>(context, listen: false);
 
     try {
-      final reply = await provider.sendChatMessage(
+      final reply = await provider.sendChatMessageProfile(
         context: context,
         message: userMessage,
-        locationId: widget.locationId ?? "",
-        sessionId: _sessionId!,
+        locationId: widget.locationId,
+        accountName: provider.locationProfile?.finalAddress?.accountName,
+        isLocationProfile: true,
       );
+      // final reply = await provider.sendChatMessage(
+      //   context: context,
+      //   message: userMessage,
+      //   locationId: widget.locationId ?? "",
+      //   sessionId: _sessionId!,
+      //   locationName: provider.selectedLocation?.locationName ?? "",
+      //   accountName: provider.selectedLocation?.accountName ?? "",
+      // );
+
+      debugPrint("BOT REPLY => $reply");
       setState(() {
         _isTyping = false;
         messages.add({"isBot": true, "text": reply ?? "No response"});
@@ -6757,62 +6771,7 @@ class _ChatbotContentState extends State<_ChatbotContent> {
             },
           ),
         ),
-
-        /// ── Quick Actions ──
-        // if (_showEligibilityButton || _showLocationsButton)
-        //   Padding(
-        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        //     child: Row(
-        //       children: [
-        //         if (_showEligibilityButton)
-        //           Expanded(
-        //             child: Container(
-        //               height: 38,
-        //               decoration: BoxDecoration(
-        //                 color: const Color(0xFF2A2A2A),
-        //                 borderRadius: BorderRadius.circular(22),
-        //               ),
-        //               child: TextButton(
-        //                 onPressed: () {
-        //                   setState(() => _showEligibilityButton = false);
-        //                   _controller.text = "Check HazardHub Eligibility";
-        //                   _sendMessage();
-        //                 },
-        //                 child: const Text(
-        //                   "Check Eligibility",
-        //                   style: TextStyle(color: Colors.white, fontSize: 11),
-        //                   overflow: TextOverflow.ellipsis,
-        //                 ),
-        //               ),
-        //             ),
-        //           ),
-        //         if (_showEligibilityButton && _showLocationsButton)
-        //           const SizedBox(width: 8),
-        //         if (_showLocationsButton)
-        //           Expanded(
-        //             child: Container(
-        //               height: 38,
-        //               decoration: BoxDecoration(
-        //                 color: const Color(0xFF2A2A2A),
-        //                 borderRadius: BorderRadius.circular(22),
-        //               ),
-        //               child: TextButton(
-        //                 onPressed: () {
-        //                   setState(() => _showLocationsButton = false);
-        //                   _controller.text = "Show Eligible Locations";
-        //                   _sendMessage();
-        //                 },
-        //                 child: const Text(
-        //                   "Eligible Locations",
-        //                   style: TextStyle(color: Colors.white, fontSize: 11),
-        //                   overflow: TextOverflow.ellipsis,
-        //                 ),
-        //               ),
-        //             ),
-        //           ),
-        //       ],
-        //     ),
-        //   ),
+        if (_showSuggestions) _buildSuggestionContainer(),
 
         /// ── Input Bar ──
         Container(
@@ -6859,6 +6818,56 @@ class _ChatbotContentState extends State<_ChatbotContent> {
       ],
     );
   }
+
+  Widget _buildSuggestionContainer() {
+    final suggestions = [
+      "Tell me about my locations",
+      "What are the top risks for this location?",
+      "Summarize this location",
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: suggestions.map((text) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                _controller.text = text;
+                _sendMessage();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111111),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primaryMain,
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.primaryMain,
+                    fontSize: 13,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
 Widget _buildFormattedText(BuildContext context, String rawText) {
@@ -6878,7 +6887,6 @@ Widget _buildFormattedText(BuildContext context, String rawText) {
     }
 
     if (trimmed.endsWith(':') && !trimmed.startsWith('*')) {
-      // 🔵 BLUE — header label ending with ':'
       elements.add(Padding(
         padding: EdgeInsets.only(top: i > 0 ? 8.0 : 0, bottom: 4),
         child: Text(
@@ -6957,7 +6965,6 @@ class _ChatbotBottomSheetState extends State<_ChatbotBottomSheet> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Padding(
-      // ✅ This is the KEY fix - automatically pushes content above keyboard
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
         height: _isFullScreen ? screenHeight : screenHeight * 0.62,
@@ -6967,7 +6974,6 @@ class _ChatbotBottomSheetState extends State<_ChatbotBottomSheet> {
         ),
         child: Column(
           children: [
-            /// ── Drag Handle + Expand/Collapse ──
             GestureDetector(
               onTap: () => setState(() => _isFullScreen = !_isFullScreen),
               child: Container(
@@ -6995,7 +7001,6 @@ class _ChatbotBottomSheetState extends State<_ChatbotBottomSheet> {
                 ),
               ),
             ),
-
             Expanded(
               child: _ChatbotContent(locationId: widget.locationId),
             ),

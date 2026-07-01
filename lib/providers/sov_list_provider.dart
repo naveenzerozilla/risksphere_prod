@@ -5,11 +5,9 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/models/account_list_model.dart';
 import 'package:RiskSphere/models/sov_list_model.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
@@ -84,7 +82,7 @@ class SOVListProvider extends ChangeNotifier {
         sovMeta[sovId] = null;
       }
 
-      notifyListeners(); // 🔥 triggers UI update for that row
+      notifyListeners();
     });
 
     _sovListeners[sovId] = sub;
@@ -94,8 +92,6 @@ class SOVListProvider extends ChangeNotifier {
     sovList.clear();
     notifyListeners();
   }
-
-  // checkbox toggle
   bool _showCheckbox = false;
 
   bool get showCheckbox => _showCheckbox;
@@ -162,8 +158,8 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
-  List<UserResult> allUserList = []; // Master list (all users)
-  List<UserResult> filteredUserList = []; // Filtered list (shown in UI)
+  List<UserResult> allUserList = [];
+  List<UserResult> filteredUserList = [];
 
   String selectedUserType = "All";
   String selectedRole = "All";
@@ -206,7 +202,6 @@ class SOVListProvider extends ChangeNotifier {
         }
       }
 
-      // Filter by role
       if (selectedRole != "All") {
         final hasRole = user.roles?.any(
               (role) => role.toLowerCase() == selectedRole.toLowerCase(),
@@ -217,7 +212,6 @@ class SOVListProvider extends ChangeNotifier {
         }
       }
 
-      // Filter by verification status
       if (selectedStatus != "All") {
         final shouldBeVerified = selectedStatus == "Verified";
         if (user.isVerified != shouldBeVerified) {
@@ -298,7 +292,6 @@ class SOVListProvider extends ChangeNotifier {
     });
   }
 
-  // Pagination
   int _page = 0;
 
   int get page => _page;
@@ -339,6 +332,28 @@ class SOVListProvider extends ChangeNotifier {
   set totalImpactLocation(int value) {
     _totalImpactLocation = value;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _hurricaneMonitoringLocations = 0;
+
+  int get hurricaneMonitoringLocations => _hurricaneMonitoringLocations;
+
+  set hurricaneMonitoringLocations(int value) {
+    _hurricaneMonitoringLocations = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  int _earthquakeMonitoringLocations = 0;
+
+  int get earthquakeMonitoringLocations => _earthquakeMonitoringLocations;
+
+  set earthquakeMonitoringLocations(int value) {
+    _earthquakeMonitoringLocations = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -526,7 +541,7 @@ class SOVListProvider extends ChangeNotifier {
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ fetchSovList error: $e');
+      debugPrint(' fetchSovList error: $e');
       debugPrint('$stack');
     } finally {
       isLoading = false;
@@ -540,14 +555,13 @@ class SOVListProvider extends ChangeNotifier {
   List<UserResult> filteredAutoCompleteList12 = [];
 
   Future<void> fetchMonitoringSovList(
-      BuildContext context,
-      String searchQuery,
-      int page,
-      int pageSize,
-      String? type,
-      String? monitoringID,
-      ) async {
-
+    BuildContext context,
+    String searchQuery,
+    int page,
+    int pageSize,
+    String? type,
+    String? monitoringID,
+  ) async {
     if (isLoading || isNextPageLoading) return;
 
     try {
@@ -569,36 +583,38 @@ class SOVListProvider extends ChangeNotifier {
 
       final response = await apiService.get(url);
 
-      /// 🔥 DEBUG
       debugPrint("RAW RESPONSE: $response");
 
-      /// ✅ PARSE RESPONSE
       final SovListModel model = SovListModel.fromJson(response);
 
       final List<SovItem> newList = model.events ?? [];
 
       debugPrint("PARSED EVENTS COUNT: ${newList.length}");
-
-      /// ✅ SAFE AGGREGATION COUNTS PARSING
+      /// SAFE AGGREGATION COUNTS PARSING
       if (model.aggregationCounts != null) {
         // Convert to int safely
         totalEvent = _safeIntParse(model.aggregationCounts!.totalNoOfEvents);
-        totalImpactLocation = _safeIntParse(model.aggregationCounts!.totalImpactedLocations);
+        totalImpactLocation =
+            _safeIntParse(model.aggregationCounts!.totalImpactedLocations);
+        hurricaneMonitoringLocations = _safeIntParse(
+            model.aggregationCounts!.hurricaneMonitoringLocations);
+        earthquakeMonitoringLocations = _safeIntParse(
+            model.aggregationCounts!.earthquakeMonitoringLocations);
 
-        debugPrint("✅ Total Events: $totalEvent | Total Impact Locations: $totalImpactLocation");
+        debugPrint(
+            "Total Events: $totalEvent | Total Impact Locations: $totalImpactLocation");
       } else {
-        debugPrint("⚠️ aggregationCounts is null - setting defaults");
+        debugPrint("⚠ aggregationCounts is null - setting defaults");
         totalEvent = 0;
         totalImpactLocation = 0;
       }
 
-      /// ✅ ASSIGN DATA
       if (page == 1) {
         monitoringSovList = newList;
       } else {
         final existingIds = monitoringSovList.map((e) => e.id).toSet();
         final uniqueList =
-        newList.where((e) => !existingIds.contains(e.id)).toList();
+            newList.where((e) => !existingIds.contains(e.id)).toList();
         monitoringSovList.addAll(uniqueList);
       }
 
@@ -631,7 +647,6 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// ✅ HELPER METHOD - Safe int parsing
   int _safeIntParse(dynamic value) {
     if (value == null) return 0;
 
@@ -681,10 +696,8 @@ class SOVListProvider extends ChangeNotifier {
 
       final List<Result> results = sovListModel.result ?? [];
 
-      /// 🔥 MASTER LIST (never filtered)
       allVendorList.addAll(results);
 
-      /// 🔥 UI LIST (filtered view)
       filteredAutoCompleteList1 = sovListModel.results ?? [];
       // filteredAutoCompleteList1 = results;
       // filteredAutoCompleteList2 = List.from(allVendorList);
@@ -713,12 +726,10 @@ class SOVListProvider extends ChangeNotifier {
     BuildContext context,
     String companyId,
   ) async {
-    // ✅ Prevent multiple calls
     if (isCreditsLoading) return;
 
-    // ✅ Guard
     if (companyId.isEmpty) {
-      debugPrint("❌ companyId is empty");
+      debugPrint(" companyId is empty");
       return;
     }
 
@@ -726,7 +737,6 @@ class SOVListProvider extends ChangeNotifier {
       isCreditsLoading = true;
       notifyListeners();
 
-      // ✅ API Service
       final apiService = ApiService("${AppConstant.GET_COMPANY_ID}$companyId");
 
       final response = await apiService.get("");
@@ -750,7 +760,7 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  bool hasMoreData = true; // ✅ ADD THIS
+  bool hasMoreData = true;
 
   Future<void> fetchUserList(
     BuildContext context,
@@ -759,7 +769,6 @@ class SOVListProvider extends ChangeNotifier {
     int pageSize,
     String? type,
   ) async {
-    // ✅ Prevent extra calls
     if (isLoading || isNextPageLoading || !hasMoreData) return;
 
     try {
@@ -843,17 +852,16 @@ class SOVListProvider extends ChangeNotifier {
       isRenameLoading = true;
 
       ApiService apiService = ApiService(AppConstant.RENAME_SUB_ACCOUNT +
-          "/$accountId/subaccount/$subAccountId/sov"); // Updated URL
+          "/$accountId/subaccount/$subAccountId/sov");
       var response = await apiService.patch({
         'data': {
-          'sov_id': sovId, // Updated field
+          'sov_id': sovId,
           "rename_sov": true,
-          'name': newName, // Updated field
+          'name': newName,
         }
       });
       log(response.toString());
 
-      // Update account name in the list
       int index = sovList.indexWhere((element) => element.sovId == sovId);
       if (index != -1) {
         sovList[index].name = newName;
@@ -902,11 +910,9 @@ class SOVListProvider extends ChangeNotifier {
 
       log(response.toString());
 
-      /// Parse response
       final Result duplicatedSovAccount =
           Result.fromJson(response['updated_record']);
 
-      /// Prepend duplicated SOV
       sovList = [duplicatedSovAccount, ...sovList];
 
       isDuplicateLoading = false;
@@ -935,7 +941,6 @@ class SOVListProvider extends ChangeNotifier {
     }
   }
 
-  /// Change column visibility
   Future<bool> changeColumnVisibility(
       BuildContext context, String accountId, String subAccountId,
       {required bool showLocationCount,
@@ -996,7 +1001,7 @@ class SOVListProvider extends ChangeNotifier {
 
       print("Fetching autocomplete list for query: $searchQuery");
       ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
-      String url = '?sub_account_name=$searchQuery'; // Updated field
+      String url = '?sub_account_name=$searchQuery';
       var response = await apiService.get(url);
       log(response.toString());
 
@@ -1031,7 +1036,7 @@ class SOVListProvider extends ChangeNotifier {
     String searchQuery = "",
   }) async {
     var typography = CustomTypography(context);
-    print("autosearch");
+
 
     try {
       isAutoCompleteLoading = true;
@@ -1039,7 +1044,6 @@ class SOVListProvider extends ChangeNotifier {
 
       ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
 
-      // Build URL with optional search query
       String url =
           '?account_id=$accountId&sub_account_id=$subAccountId&show_full_list=true';
 
@@ -1080,7 +1084,6 @@ class SOVListProvider extends ChangeNotifier {
         );
       }
     } finally {
-
       isAutoCompleteLoading = false;
       notifyListeners();
     }
@@ -1103,60 +1106,6 @@ class SOVListProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-// Add this method to clear the filtered list when selection is made
-//       void clearAutoCompleteList() {
-//         filteredAutoCompleteList = [];
-//         notifyListeners();
-//       }
-  /// Fetch autocomplete sov list
-  // Future<void> fetchAutoCompleteSovListLocations(
-  //     BuildContext context, String accountId, String subAccountId) async {
-  //   var typography = CustomTypography(context);
-  //   print("aytosearcg");
-  //   try {
-  //     isAutoCompleteLoading = true;
-  //     WidgetsBinding.instance!.addPostFrameCallback((_) {
-  //       notifyListeners();
-  //     });
-  //
-  //     ApiService apiService = ApiService(AppConstant.GET_AUTOCOMPLETE_SOV_LIST);
-  //     String url =
-  //         '?account_id=$accountId&sub_account_id=$subAccountId&show_full_list=true'; // Updated field
-  //     var response = await apiService.get(url);
-  //     log(response.toString());
-  //
-  //     SovListModel accountListModel = SovListModel.fromJson(response);
-  //     autoCompleteSovList = accountListModel.result ?? [];
-  //     filteredAutoCompleteList =
-  //         autoCompleteSovList; // Initialize with the full list
-  //     log(autoCompleteSovList.toString());
-  //     print("Updated autoCompleteAccountList: $autoCompleteSovList");
-  //   } on BackendException catch (e) {
-  //     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //     //   content: Text(e.message, style: typography.Body1),
-  //     // ));
-  //   } catch (e) {
-  //     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //     //   content: Text(e.toString(), style: typography.Body1),
-  //     // ));
-  //   } finally {
-  //     isAutoCompleteLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-  //
-  // void updateFilteredList(String query) {
-  //   if (query.isEmpty) {
-  //     filteredAutoCompleteList = autoCompleteSovList;
-  //   } else {
-  //     filteredAutoCompleteList = autoCompleteSovList
-  //         .where((sov) =>
-  //             sov.name?.toLowerCase().contains(query.toLowerCase()) ?? false)
-  //         .toList();
-  //   }
-  //   notifyListeners();
-  // }
 
   /// Add sov
   Future<void> addSubAccount(BuildContext context, String accountId,
@@ -1236,7 +1185,6 @@ class SOVListProvider extends ChangeNotifier {
       String subAccountId,
       List<Map<String, dynamic>> exportData,
       List<String> sovIds) async {
-    // Changed to accept list of SOV IDs
     try {
       _isExportLoading = true;
       notifyListeners();
@@ -1261,7 +1209,6 @@ class SOVListProvider extends ChangeNotifier {
         return handler.next(e);
       }));
 
-      // CORRECTED: Prepare the proper payload according to API requirements
       final payload = {
         "fileType": "profile", // or "table" based on your needs
         "format": "excel", // matches your format dropdown
@@ -1426,23 +1373,18 @@ class SOVListProvider extends ChangeNotifier {
         }
       }
 
-      print('Filename extracted: $filename');
 
       final bytes = response.data;
-      print('Bytes received: ${bytes.length}');
 
       final tempDir = await getTemporaryDirectory();
-      print('Temporary directory path: ${tempDir.path}');
 
       final filePath = path.join(tempDir.path, filename);
-      print('File path: $filePath');
+
 
       final file = File(filePath);
       await file.writeAsBytes(bytes);
-      print('File written to disk.');
 
       await OpenFile.open(filePath);
-      print('File opened.');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1453,8 +1395,7 @@ class SOVListProvider extends ChangeNotifier {
       if (e is DioException) {
         print('Dio error!');
         print('STATUS: ${e.response?.statusCode}');
-        print('DATA: ${e.response?.data}');
-        print('HEADERS: ${e.response?.headers}');
+
       } else {
         print('Error: $e');
       }
@@ -1622,7 +1563,7 @@ class SOVListProvider extends ChangeNotifier {
       print(" API CALL STARTED FOR USER: $userId");
 
       ApiService apiService = ApiService(
-        "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/user_management",
+        AppConstant.sendConnectionRequest,
       );
 
       final response = await apiService.post({

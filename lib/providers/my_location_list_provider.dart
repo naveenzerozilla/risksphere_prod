@@ -2,10 +2,11 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/models/account_list_model.dart';
 import 'package:RiskSphere/models/location_list_model.dart';
 import 'package:RiskSphere/models/location_profile_model.dart';
 import 'package:RiskSphere/models/my_location_list_model.dart';
@@ -20,22 +21,11 @@ import 'package:uuid/uuid.dart';
 import '../constants/enums.dart';
 import '../design_system/components/custom_button.dart';
 import '../design_system/components/custom_toast.dart';
-
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/models/location_list_model.dart';
-import 'package:RiskSphere/service/api_service.dart';
-import 'package:RiskSphere/utils/api_constants.dart';
-
-import '../models/locationDocument.dart';
-import '../screens/listings/widgets/auto_complete_options.dart';
 import '../service/firestore_service.dart';
-import '../service/language_service.dart';
 
 MyLocationModel parseLocationModel(Map<String, dynamic> json) {
   return MyLocationModel.fromJson(json);
@@ -131,15 +121,6 @@ class MyLocationListProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // void removeIdFromSelection(String locationId) {
-  //   selectedLocationIds.remove(locationId);
-  //
-  //   // if nothing selected → exit selection mode
-  //   if (selectedLocationIds.isEmpty) {
-  //     isGlobalSelectAll = false;
-  //   }
-  //   notifyListeners();
-  // }
   bool isDocumentsLoading = false;
   bool isDocumentsLoaded = false;
   List<Documents> documents = [];
@@ -197,6 +178,50 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
+  StreamSubscription? _locationSubscription;
+  List<MyLocation> mapLocations = [];
+
+  Future<void> listenLocationsFromFirestore(
+    String accountId,
+    String subAccountId,
+  ) async {
+    print(" listenLocationsFromFirestore called");
+    print(" Account ID: $accountId");
+    print(" Sub Account ID: $subAccountId");
+    print(" Firebase Project ID: ${Firebase.app().options.projectId}");
+    print(" Firebase Project ID: ${Firebase.app().options.projectId}");
+
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      await _locationSubscription?.cancel();
+      _locationSubscription = FirebaseFirestore.instance
+          .collection('locations')
+          .limit(1)
+          .snapshots()
+          .listen(
+        (snapshot) {
+          print("SUCCESS => ${snapshot.docs.length}");
+
+          if (snapshot.docs.isNotEmpty) {
+            print(snapshot.docs.first.data());
+          }
+        },
+        onError: (e) {
+          print("FIRESTORE ERROR => $e");
+        },
+      );
+    } catch (e, stackTrace) {
+      print(" listenLocationsFromFirestore Exception");
+      print(e);
+      print(stackTrace);
+
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchDocuments({
     required BuildContext context,
     required String locationId,
@@ -246,46 +271,61 @@ class MyLocationListProvider with ChangeNotifier {
 
   Future<bool> addToSovMonitoring({
     required BuildContext context,
-    required List<String> locationIds,
+    required List<String> hurricaneIds,
+    required List<String> earthquakeIds,
     required String sovId,
   }) async {
     try {
       isMonitorLoading = true;
+      notifyListeners();
 
       final headers = await CommonHeaders.createHeaders();
 
+      final payload = {
+        "hurricane_kineticast": hurricaneIds,
+        "earthquake_usgs": earthquakeIds,
+        "sov_id": sovId,
+      };
+
+      debugPrint(
+        "Monitoring Payload => ${jsonEncode(payload)}",
+      );
+
       final response = await http.post(
-        Uri.parse(
-          'https://us-central1-project-green-r5-1-qa.cloudfunctions.net/locations_v2/add_to_sov_monitoring',
-        ),
+        Uri.parse("${AppConstant.ADD_TO_MONITORING}"),
         headers: {
           ...headers,
           'Content-Type': 'application/json',
         },
-        body: json.encode({
-          'location_id': locationIds,
-          'sov_id': sovId,
-        }),
+        body: jsonEncode(payload),
       );
 
       if (response.statusCode == 200) {
         clearSelection();
+
         CustomToast.success(
           context,
-          json.decode(response.body)['message'] ?? 'Added to SOV monitoring',
+          jsonDecode(response.body)['message'] ?? 'Added to monitoring',
         );
+
         return true;
-      } else {
-        final msg = json.decode(response.body)['message'] ?? 'Failed';
-        CustomToast.error(context, msg);
-        return false;
       }
+
+      final msg = jsonDecode(response.body)['message'] ?? 'Failed';
+
+      CustomToast.error(context, msg);
+
+      return false;
     } catch (e) {
-      debugPrint('Monitor Error: $e');
-      CustomToast.error(context, 'Something went wrong');
+      debugPrint("Monitor Error => $e");
+      CustomToast.error(
+        context,
+        "Something went wrong",
+      );
       return false;
     } finally {
       isMonitorLoading = false;
+      notifyListeners();
     }
   }
 
@@ -309,7 +349,7 @@ class MyLocationListProvider with ChangeNotifier {
 
       request.files.add(
         await http.MultipartFile.fromPath(
-          'file', // 🔥 make sure backend expects this key
+          'file',
           file.path,
           filename: fileName,
         ),
@@ -1107,9 +1147,6 @@ class MyLocationListProvider with ChangeNotifier {
         _rating.isNotEmpty;
   }
 
-  /// Selection mode
-
-  // Selected Locations Set
   final Set<MyLocation> _selectedLocations = {};
 
   // Getter for selected locations
@@ -1131,7 +1168,6 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
-  // Toggle selection
   void toggleSelection(String id) {
     if (selectedLocationIds.contains(id)) {
       selectedLocationIds.remove(id);
@@ -1139,25 +1175,10 @@ class MyLocationListProvider with ChangeNotifier {
       selectedLocationIds.add(id);
     }
 
-    // 🔥 VERY IMPORTANT
     isGlobalSelectAll = false;
     notifyListeners();
   }
 
-  // void toggleSelection(MyLocation loc) {
-  //   loc.isSelected = !(loc.isSelected ?? false);
-  //
-  //   if (loc.isSelected!) {
-  //     if (!selectedLocations.contains(loc)) {
-  //       selectedLocations.add(loc);
-  //     }
-  //   } else {
-  //     selectedLocations.remove(loc);
-  //   }
-  //
-  //   notifyListeners();
-  // }
-  // 🔹 TOGGLE ITEM
   void toggleItem(String id) {
     if (isGlobalSelectAll) {
       if (excludedLocationIds.contains(id)) {
@@ -1175,44 +1196,6 @@ class MyLocationListProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // void selectAllGlobal({
-  //   required bool isCertified,
-  //   required int totalCount,
-  // }) {
-  //   isGlobalSelectAll = true;
-  //   selectedLocationIds.clear();
-  //
-  //   final sourceList = isCertified ? certifiedLocationList : myLocationList;
-  //
-  //   for (final loc in sourceList) {
-  //     if (loc.id != null) {
-  //       selectedLocationIds.add(loc.id!);
-  //       loc.isSelected = true; // visible items tick
-  //     }
-  //   }
-  //
-  //   totalLocationCount = totalCount;
-  //
-  //   notifyListeners();
-  // }
-
-  // void selectAllLocations(bool isCertified) {
-  //   selectedLocations.clear();
-  //
-  //   if (isCertified) {
-  //     for (var loc in certifiedLocationList) {
-  //       loc.isSelected = true;
-  //       selectedLocations.add(loc);
-  //     }
-  //   } else {
-  //     for (var loc in myLocationList) {
-  //       loc.isSelected = true;
-  //       selectedLocations.add(loc);
-  //     }
-  //   }
-  //
-  //   notifyListeners();
-  // }
   void selectAll(List<String> allIds) {
     selectedLocationIds
       ..clear()
@@ -1402,9 +1385,6 @@ class MyLocationListProvider with ChangeNotifier {
     TabController? masterTabController,
     List<String> locationIds,
   ) async {
-    // Implement your add to SOV logic here
-    // Show pop up with account name an sub account name prefilled an non editable.. and user will select the sov name from autocomplete dropdown and enter comma separated location tags (optional)
-    // On submit, call the addLocationToSOV method with the selected sov id and location ids
     await showAddToSOVDialog1(context, accountID, subAccountID, accountName,
         subAccountName, masterTabController, locationIds);
     clearSelection();
@@ -1440,21 +1420,6 @@ class MyLocationListProvider with ChangeNotifier {
 
     clearSelection();
   }
-
-  // Future<void> addTagsToSelectedLocations(
-  //     BuildContext context, String accountId, String subAccountId,
-  //     [String? locationId]) async {
-  //   // get the list of ids
-  //   await showAddTagDialog(
-  //       context,
-  //       accountId,
-  //       subAccountId,
-  //       locationId == null
-  //           ? _selectedLocations.map((location) => location.id ?? "").toList()
-  //           : [locationId]);
-  //
-  //   clearSelection();
-  // }
 
   Future<void> addLocationToSOV(
       BuildContext context, Map<String, dynamic> body) async {
@@ -1515,31 +1480,6 @@ class MyLocationListProvider with ChangeNotifier {
       isAddTagsLoading = false;
     }
   }
-
-  // Future<void> addCommentsLocation(
-  //     BuildContext context, String locationId, String comment) async {
-  //   try {
-  //     isAddTagsLoading = true;
-  //     ApiService apiService = ApiService(AppConstant.ADD_COMMENT);
-  //     var body = {
-  //       "location_id": locationId,
-  //       "comment": comment,
-  //     };
-  //     var response = await apiService.post(body);
-  //     log(response.toString());
-  //     CustomToast.success(context, response['message']);
-  //   } on BackendException catch (e, stackTrace) {
-  //     log("Error adding tags to location: ${e.message}");
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, e.message);
-  //   } catch (e, stackTrace) {
-  //     log("Error adding tags to location: $e");
-  //     log(e.toString());
-  //     log(stackTrace.toString());
-  //   } finally {
-  //     isAddTagsLoading = false;
-  //   }
-  // }
 
   // Add Tags to location
   Future<void> addTagsToLocation(
@@ -1607,80 +1547,6 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> addTagsToLocation(
-  //   BuildContext context,
-  //   String accountId,
-  //   String subAccountId,
-  //   List<String> locationId,
-  //   List<String> tags, {
-  //   required bool isGlobal,
-  // }) async {
-  //   try {
-  //     isAddTagsLoading = true;
-  //     notifyListeners();
-  //
-  //     ApiService apiService = ApiService("${AppConstant.MY_LOCATION}/tags");
-  //
-  //     final Map<String, dynamic> body = {
-  //       "data": {
-  //         "account_id": accountId,
-  //         "sub_account_id": subAccountId,
-  //         "tags": tags,
-  //         if (isGlobal) "select_all": true,
-  //         if (!isGlobal) "location_list": locationId,
-  //       }
-  //     };
-  //
-  //     final response = await apiService.post(body);
-  //     log(response.toString());
-  //
-  //     CustomToast.success(context, response['message']);
-  //   } on BackendException catch (e, stackTrace) {
-  //     log("Error adding tags to location: ${e.message}");
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, e.message);
-  //   } catch (e, stackTrace) {
-  //     log("Error adding tags to location: $e");
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, "Something went wrong");
-  //   } finally {
-  //     isAddTagsLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> addTagsToLocation(BuildContext context, String accountId,
-  //     String subAccountId, List<String> locationId, List<String> tags) async {
-  //   try {
-  //     isAddTagsLoading = true;
-  //     ApiService apiService = ApiService(AppConstant.MY_LOCATION + "/tags");
-  //     var body = {
-  //       "data": {
-  //         "account_id": accountId,
-  //         "sub_account_id": subAccountId,
-  //         "location_list": locationId,
-  //         "tags": tags
-  //       }
-  //     };
-  //     var response = await apiService.post(body);
-  //     log(response.toString());
-  //     CustomToast.success(context, response['message']);
-  //     Navigator.pop(context);
-  //   } on BackendException catch (e, stackTrace) {
-  //     log("Error adding tags to location: ${e.message}");
-  //     log(stackTrace.toString());
-  //     CustomToast.error(context, e.message);
-  //   } catch (e, stackTrace) {
-  //     log("Error adding tags to location: $e");
-  //     log(e.toString());
-  //     log(stackTrace.toString());
-  //     // CustomToast.error(context, e.toString());
-  //   } finally {
-  //     isAddTagsLoading = false;
-  //   }
-  // }
-
-  // Delete Tags from location
   Future<void> deleteTagFromLocation(BuildContext context, String accountId,
       String subAccountId, String locationId, String tag) async {
     // {{locations_base_url}}/tags/OGUlME8NFKzmesfo3j1S/garden
@@ -1787,7 +1653,6 @@ class MyLocationListProvider with ChangeNotifier {
   Future<void> fetchAllLocationList(
       BuildContext context, String? accountID, String? subAccountID,
       {String? processId, String? subProcessId}) async {
-    print("Sovlist called");
     var typography = CustomTypography(context);
     try {
       isAllLocationLoading = true;
@@ -1804,11 +1669,11 @@ class MyLocationListProvider with ChangeNotifier {
             "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID&process_id=$processId";
       } else {
         url = AppConstant.MY_LOCATION +
-            "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
+            "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID";
       }
 
       url = AppConstant.MY_LOCATION +
-          "?show_full_list=true&account_id=$accountID&sub_account_id=$subAccountID";
+          "?show_full_list=false&account_id=$accountID&sub_account_id=$subAccountID";
 
       print(url);
       var uri = Uri.parse(url);
@@ -1863,9 +1728,6 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
-  // ADD THIS AT TOP OF PROVIDER CLASS
-  // int page = 1;
-  // int totalPages = 0;
   int totalRecords = 0;
 
   //
@@ -1921,7 +1783,7 @@ class MyLocationListProvider with ChangeNotifier {
 
       String url =
           "${AppConstant.MY_LOCATION}?page=$requestedPage&pageSize=$pageSize"
-          "&account_id=$accountID&sub_account_id=$subAccountID&show_full_list=true";
+          "&account_id=$accountID&sub_account_id=$subAccountID&show_full_list=false";
 
       if (sovID != null && sovID.isNotEmpty) {
         url += "&sov_id=$sovID";
@@ -1965,79 +1827,6 @@ class MyLocationListProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // Future<void> fetchLocationListMapSov(
-  //   BuildContext context,
-  //   String searchQuery,
-  //   int requestedPage,
-  //   int pageSize,
-  //   String? accountID,
-  //   String? subAccountID,
-  //   String? processId,
-  //   String? subProcessId,
-  //   String? sovID,
-  // ) async {
-  //   if (_isFetching) return;
-  //   _isFetching = true;
-  //
-  //   try {
-  //     // If first page → clear list
-  //     if (requestedPage == 1) {
-  //       fullLocationList = [];
-  //       page = 1;
-  //       isLoading = true;
-  //       notifyListeners();
-  //     } else {
-  //       isNextPageLoading = true;
-  //       notifyListeners();
-  //     }
-  //
-  //     // Build URL
-  //     var headers = await CommonHeaders.createHeaders();
-  //     var url =
-  //         "${AppConstant.MY_LOCATION}?page=$requestedPage&pageSize=$pageSize"
-  //         "&account_id=$accountID&sub_account_id=$subAccountID &show_full_list=true";
-  //
-  //     if (sovID != null && sovID.isNotEmpty) {
-  //       url += "&sov_id=$sovID";
-  //     }
-  //
-  //     var response = await http.get(Uri.parse(url), headers: headers);
-  //
-  //     if (response.statusCode == 200) {
-  //       var jsonResponse = json.decode(response.body);
-  //
-  //       final locationListModel =
-  //           await compute<Map<String, dynamic>, MyLocationModel>(
-  //               MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
-  //
-  //       // READ TOTAL COUNT
-  //       totalRecords = locationListModel.totalRecords ?? 0;
-  //
-  //       // CALCULATE TOTAL PAGES
-  //       totalPages = (totalRecords / pageSize).ceil();
-  //
-  //       // SAVE CURRENT PAGE
-  //       page = requestedPage;
-  //
-  //       // APPEND RESULTS
-  //       if (requestedPage == 1) {
-  //         fullLocationList = locationListModel.results ?? [];
-  //       } else {
-  //         fullLocationList.addAll(locationListModel.results ?? []);
-  //       }
-  //
-  //       notifyListeners();
-  //     }
-  //   } catch (e) {
-  //     print("Error fetching locations: $e");
-  //   } finally {
-  //     _isFetching = false;
-  //     isLoading = false;
-  //     isNextPageLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
 
   Future<void> fetchLocationListSov(
     BuildContext context,
@@ -2224,7 +2013,6 @@ class MyLocationListProvider with ChangeNotifier {
     _isFetching = true;
 
     try {
-      // If requested page is beyond total pages, return early
       if (page > totalPages && totalPages != 0) return;
 
       if (page == 1) {
@@ -2308,7 +2096,7 @@ class MyLocationListProvider with ChangeNotifier {
       String? processId,
       String? subProcessId,
       [String? sovID]) async {
-    if (_isFetching) return; // Prevent multiple concurrent calls
+    if (_isFetching) return;
     _isFetching = true;
 
     var typography = CustomTypography(context);
@@ -2398,11 +2186,12 @@ class MyLocationListProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> sendChatMessage({
+  Future<String?> sendChatMessageProfile({
     required BuildContext context,
     required String message,
-    required String locationId,
-    required String sessionId,
+    String? locationId,
+    String? accountName,
+    bool isLocationProfile = false,
   }) async {
     try {
       var headers = await CommonHeaders.createHeaders();
@@ -2411,14 +2200,21 @@ class MyLocationListProvider with ChangeNotifier {
         "Content-Type": "application/json",
       });
 
-      var url = Uri.parse(
-          "https://us-central1-project-green-r5-1-qa.cloudfunctions.net/handle_chatbot");
+      var url = Uri.parse("${AppConstant.Fetch_purchase}");
+
+      final Map<String, dynamic> contextData = isLocationProfile
+          ? {
+              "account_name": accountName,
+              "location_id": locationId,
+            }
+          : {
+              "account_id": "accountId",
+              "sub_account_id": "subAccountId",
+            };
 
       var body = jsonEncode({
-        "session_id": sessionId,
-        "text": message,
-        "language_code": "en",
-        "location_id": locationId,
+        "message": message,
+        "context": contextData,
       });
 
       var response = await http.post(
@@ -2429,22 +2225,174 @@ class MyLocationListProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        return jsonResponse["reply_text"];
-      } else {
-        throw Exception("Failed to load chatbot response");
+
+        return jsonResponse["text"] ??
+            jsonResponse["fullData"]?["text"] ??
+            jsonResponse["fullData"]?["diagnosticInfo"]?["messages"]
+                ?.last?["chunks"]?[0]?["text"] ??
+            "No response";
       }
+
+      return "Failed to get response";
     } catch (e) {
-      print("Chatbot Error: $e");
-      return null;
+      debugPrint("Chatbot Error: $e");
+      return "Something went wrong";
+    }
+  }
+
+  Future<String?> sendChatMessage({
+    required BuildContext context,
+    required String message,
+    String? locationId,
+    String? locationName,
+    String? accountId,
+    String? subAccountId,
+    String? accountName,
+    String? subAccountName,
+    bool isLocationProfile = false,
+  }) async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
+
+      headers.addAll({
+        "Content-Type": "application/json",
+      });
+
+      var url = Uri.parse("${AppConstant.Fetch_purchase}/sub_account");
+
+      final Map<String, dynamic> contextData = isLocationProfile
+          ? {
+              "location_id": locationId,
+              "location_name": locationName,
+              "sub_account_name": subAccountName,
+            }
+          : {
+              "account_id": accountId,
+              "sub_account_id": subAccountId,
+            };
+
+      var body = jsonEncode({
+        "message": message,
+        "context": contextData,
+      });
+
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        return jsonResponse["text"] ??
+            jsonResponse["fullData"]?["text"] ??
+            jsonResponse["fullData"]?["diagnosticInfo"]?["messages"]
+                ?.last?["chunks"]?[0]?["text"] ??
+            "No response";
+      }
+
+      return "Failed to get response";
+    } catch (e) {
+      debugPrint("Chatbot Error: $e");
+      return "Something went wrong";
+    }
+  }
+  Future<String?> sendChatDashboardMessage({
+    required BuildContext context,
+    required String message,
+    required String page,
+
+  }) async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
+
+      headers.addAll({
+        "Content-Type": "application/json",
+      });
+
+      var url = Uri.parse("${AppConstant.Fetch_purchase_chatbot}");
+
+      final Map<String, dynamic> contextData = {"page": "dashboard"};
+
+      var body = jsonEncode({
+        "message": message,
+        "context": contextData,
+      });
+
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        return jsonResponse["text"] ??
+            jsonResponse["fullData"]?["text"] ??
+            jsonResponse["fullData"]?["diagnosticInfo"]?["messages"]
+                ?.last?["chunks"]?[0]?["text"] ??
+            "No response";
+      }
+
+      return "Failed to get response";
+    } catch (e) {
+      debugPrint("Chatbot Error: $e");
+      return "Something went wrong";
+    }
+  }
+  Future<String?> sendChatPurchaseMessage({
+    required BuildContext context,
+    required String message,
+
+    // Location Profile
+    String? locationId,
+    String? locationName,
+  }) async {
+    try {
+      var headers = await CommonHeaders.createHeaders();
+
+      headers.addAll({
+        "Content-Type": "application/json",
+      });
+
+      var url = Uri.parse("${AppConstant.Fetch_purchase_chatbot}");
+
+      final Map<String, dynamic> contextData = {"page": "purchase"};
+
+      var body = jsonEncode({
+        "message": message,
+        "context": contextData,
+      });
+
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+
+        return jsonResponse["text"] ??
+            jsonResponse["fullData"]?["text"] ??
+            jsonResponse["fullData"]?["diagnosticInfo"]?["messages"]
+                ?.last?["chunks"]?[0]?["text"] ??
+            "No response";
+      }
+
+      return "Failed to get response";
+    } catch (e) {
+      debugPrint("Chatbot Error: $e");
+      return "Something went wrong";
     }
   }
 
   UserManagementResponse? userManagement;
 
   Future<void> fetchUserManagement() async {
-    final url = Uri.parse("${AppConstant.Fetch_user_managements}"
-        // "https://us-central1-project-green-prod.cloudfunctions.net/user_management?current_role=true&current_user=true",
-        );
+    final url = Uri.parse("${AppConstant.Fetch_user_managements}");
 
     try {
       final headers = await CommonHeaders.createHeaders();
@@ -2544,134 +2492,6 @@ class MyLocationListProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // Future<void> fetchCertifiedLocationList(
-  //     BuildContext context,
-  //     String searchQuery,
-  //     int page,
-  //     int pageSize,
-  //     String? accountID,
-  //     String? subAccountID,
-  //     String? processId,
-  //     String? subProcessId,
-  //     [String? sovID]) async {
-  //   var typography = CustomTypography(context);
-  //   try {
-  //     print("Condition: Certified fetch with rating 5");
-  //     print("Rating: 5");
-  //     print(sovID.toString());
-  //
-  //     if (page - 1 > certifiedTotalPages) return;
-  //     if (page == 1) {
-  //       isCertifiedLoading = true;
-  //     } else {
-  //       isNextPageCertifiedLoading = true;
-  //     }
-  //
-  //     var headers = await CommonHeaders.createHeaders();
-  //     log(headers.toString());
-  //
-  //     // Construct the URL with default rating=5
-  //     var url;
-  //     if (sovID != null) {
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID&sov_id=$sovID";
-  //     } else {
-  //       url = AppConstant.MY_LOCATION +
-  //           "?page=$page&pageSize=$pageSize&score=5&account_id=$accountID&sub_account_id=$subAccountID";
-  //     }
-  //
-  //     if (countries.isNotEmpty) {
-  //       url += "&country=${countries.join(",")}";
-  //     }
-  //     if (zipcode.isNotEmpty) {
-  //       url += "&zip=$state";
-  //     }
-  //     print("Certifications: $certifications");
-  //
-  //     if (certifications.isNotEmpty) {
-  //       for (var cert in certifications) {
-  //         if (cert == "Manual Certified") {
-  //           url += "&manual_certified=true";
-  //         } else if (cert == "Auto Certified") {
-  //           url += "&auto_certified=true";
-  //         }
-  //       }
-  //     }
-  //     print("Hazard Ratings: $hazardRatings");
-  //     if (hazardRatings.isNotEmpty) {
-  //       for (var hazard in hazardRatings.keys) {
-  //         url += "&hazard=${jsonEncode(hazardRatings[hazard])}";
-  //       }
-  //     }
-  //
-  //     if (_selectedCampusIds.isNotEmpty) {
-  //       url += "&campus_id=${_selectedCampusIds.join(",")}";
-  //     }
-  //
-  //     if (processId != null) {
-  //       url += "&process_id=$processId";
-  //     }
-  //
-  //     if (subProcessId != null) {
-  //       url += "&sub_process_id=$subProcessId";
-  //     }
-  //
-  //     print(url);
-  //     var uri = Uri.parse(url);
-  //
-  //     var response = await http.get(uri, headers: headers);
-  //     print(response.body);
-  //     print(response.statusCode);
-  //
-  //     if (response.statusCode == 200) {
-  //       var jsonResponse = json.decode(response.body);
-  //       // MyLocationModel locationListModel =
-  //       //     MyLocationModel.fromJson(jsonResponse);
-  //       final locationListModel =
-  //           await compute<Map<String, dynamic>, MyLocationModel>(
-  //               MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
-  //       certifiedLocationHits = locationListModel.totalCertified ?? 0;
-  //       totalPages = locationListModel.totalRecords ?? 1;
-  //
-  //       print(totalPages.toString());
-  //       //summaryList = locationListModel.summaryList ?? [];
-  //       if (page == 1) {
-  //         certifiedLocationList = locationListModel.results ?? [];
-  //       } else {
-  //         addToCertifiedLocationList(locationListModel.results ?? []);
-  //       }
-  //       log(certifiedLocationList.toString());
-  //
-  //     } else {
-  //       print(json.decode(response.body)["error"]);
-  //       throw Exception('Failed to load data');
-  //     }
-  //     isCertifiedLoading = false;
-  //     isNextPageCertifiedLoading = false;
-  //   } on BackendException catch (e, stackTrace) {
-  //     isCertifiedLoading = false;
-  //     isNextPageCertifiedLoading = false;
-  //     print(stackTrace);
-  //     print(e.message);
-  //     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //     //   content: Text(
-  //     //     e.message,
-  //     //     style: typography.Body1,
-  //     //   ),
-  //     // ));
-  //   } catch (e, stackTrace) {
-  //     isCertifiedLoading = false;
-  //     isNextPageCertifiedLoading = false;
-  //     print(stackTrace);
-  //     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  //     //   content: Text(
-  //     //     e.toString(),
-  //     //     style: typography.Body1,
-  //     //   ),
-  //     // ));
-  //   }
-  // }
 
   // Add this method for deleting locations
   Future<void> deleteLocations(BuildContext context, String accountId,
@@ -2918,13 +2738,13 @@ class MyLocationListProvider with ChangeNotifier {
     } on BackendException catch (e, stack) {
       log("BackendException in heatmap generation: ${e.message}");
       print(stack);
-      return null; // Return null in case of BackendException
+      return null;
     } catch (e, stack) {
       log("Exception in heatmap generation: $e");
       print(stack);
-      return null; // Return null in case of other errors
+      return null;
     } finally {
-      isHeatMapGenerating = false; // Ensuring state is reset
+      isHeatMapGenerating = false;
     }
   }
 
@@ -2939,8 +2759,7 @@ class MyLocationListProvider with ChangeNotifier {
     var typography = CustomTypography(context);
     TextEditingController sovController = TextEditingController();
     TextEditingController tagsController = TextEditingController();
-    String selectedSovId =
-        ""; // To hold the SoV ID when user selects from autocomplete
+    String selectedSovId = "";
 
     await showDialog(
       context: context,
@@ -3075,23 +2894,18 @@ class MyLocationListProvider with ChangeNotifier {
                                           };
 
                                           print(body);
-                                          print("body12");
-                                          // 🔹 Perform async operation
                                           await addLocationToSOV(context, body);
 
-                                          // 🔹 After success, navigate or perform next action
                                           setState(() {
                                             masterTabController?.animateTo(0);
                                           });
                                         } catch (e) {
-                                          // 🔹 Handle errors
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
                                             SnackBar(
                                                 content: Text("Error: $e")),
                                           );
                                         } finally {
-                                          // 🔹 Always hide loader
                                           setState(() {
                                             isAddToSOVLoading = false;
                                           });
@@ -3272,61 +3086,6 @@ class MyLocationListProvider with ChangeNotifier {
                                       );
                               },
                             ),
-
-                            // Expanded(
-                            //   child: isAddToSOVLoading
-                            //       ? Center(child: CircularProgressIndicator())
-                            //       : CustomButton(
-                            //           onPressed: () async {
-                            //             if (sovController.text.isEmpty) {
-                            //               ScaffoldMessenger.of(context)
-                            //                   .showSnackBar(
-                            //                 SnackBar(
-                            //                   content: Text(
-                            //                     "Please select or enter an SoV name.",
-                            //                     style: typography.Body1,
-                            //                   ),
-                            //                 ),
-                            //               );
-                            //               return;
-                            //             }
-                            //
-                            //             setState(
-                            //                 () => isAddToSOVLoading = true);
-                            //
-                            //             try {
-                            //               // FIXED ✔ Always use locationIds list
-                            //               Map<String, dynamic> body = {
-                            //                 "location_list": locationIds,
-                            //                 "account_id": accountID,
-                            //                 "sub_account_id": subAccountID,
-                            //                 "sov": {
-                            //                   "sov_id": selectedSovId,
-                            //                   "sov_name": sovController.text,
-                            //                 }
-                            //               };
-                            //
-                            //               await addLocationToSOV(context, body);
-                            //
-                            //               masterTabController?.animateTo(0);
-                            //             } catch (e) {
-                            //               ScaffoldMessenger.of(context)
-                            //                   .showSnackBar(
-                            //                 SnackBar(
-                            //                     content: Text("Error: $e")),
-                            //               );
-                            //             } finally {
-                            //               setState(
-                            //                   () => isAddToSOVLoading = false);
-                            //             }
-                            //           },
-                            //           child: Text(
-                            //             "Add",
-                            //             style: typography.ButtonLargeBlack,
-                            //           ),
-                            //           type: ButtonType.elevated,
-                            //         ),
-                            // ),
                           ],
                         ),
                         SizedBox(height: 8),
@@ -3557,352 +3316,11 @@ class MyLocationListProvider with ChangeNotifier {
       return;
     }
 
-    /// 🔥 INSERT AT TOP (MOST RECENT FIRST)
     currentTags.insert(0, text);
 
     tagsNotifier.value = currentTags;
     controller.clear();
   }
-
-  // Future<void> showAddTagDialog(
-  //   BuildContext context,
-  //   String accountId,
-  //   String subAccountId,
-  //   List<String> locationId, {
-  //   required bool isGlobal,
-  // }) async {
-  //   var typography = CustomTypography(context);
-  //   TextEditingController tagsController = TextEditingController();
-  //
-  //   await showDialog(
-  //     context: context,
-  //     builder: (dialogContext) {
-  //       return AlertDialog(
-  //         content: SizedBox(
-  //           width: MediaQuery.of(context).size.width * 0.85,
-  //           child: SingleChildScrollView(
-  //             child: Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               crossAxisAlignment: CrossAxisAlignment.stretch,
-  //               children: [
-  //                 /// TITLE
-  //                 Text(
-  //                   "Add Tags",
-  //                   textAlign: TextAlign.center,
-  //                   style: typography.H5_Regular.copyWith(height: 1.5),
-  //                 ),
-  //
-  //                 const SizedBox(height: 16),
-  //
-  //                 /// INPUT
-  //                 TextField(
-  //                   controller: tagsController,
-  //                   decoration: const InputDecoration(
-  //                     labelText: "Enter comma-separated tags",
-  //                     border: OutlineInputBorder(),
-  //                   ),
-  //                 ),
-  //
-  //                 const SizedBox(height: 20),
-  //
-  //                 /// ACTIONS
-  //                 Consumer<MyLocationListProvider>(
-  //                   builder: (_, provider, __) {
-  //                     return Row(
-  //                       children: [
-  //                         /// CANCEL
-  //                         Expanded(
-  //                           child: CustomButton(
-  //                             onPressed: () {
-  //                               Navigator.pop(context);
-  //                             },
-  //                             type: ButtonType.text,
-  //                             child: Text(
-  //                               "Cancel",
-  //                               style: typography.ButtonLarge,
-  //                             ),
-  //                           ),
-  //                         ),
-  //
-  //                         const SizedBox(width: 12),
-  //
-  //                         /// ADD / LOADER
-  //                         Expanded(
-  //                           child: provider.isAddTagsLoading
-  //                               ? const Center(
-  //                                   child: SizedBox(
-  //                                     height: 24,
-  //                                     width: 24,
-  //                                     child: CircularProgressIndicator(
-  //                                         strokeWidth: 2),
-  //                                   ),
-  //                                 )
-  //                               : CustomButton(
-  //                                   type: ButtonType.elevated,
-  //                                   onPressed: () async {
-  //                                     if (tagsController.text.trim().isEmpty) {
-  //                                       ScaffoldMessenger.of(context)
-  //                                           .showSnackBar(
-  //                                         const SnackBar(
-  //                                           content: Text("Please enter tags."),
-  //                                         ),
-  //                                       );
-  //                                       return;
-  //                                     }
-  //
-  //                                     final tags = tagsController.text
-  //                                         .split(',')
-  //                                         .map((e) => e.trim())
-  //                                         .where((e) => e.isNotEmpty)
-  //                                         .toList();
-  //
-  //                                     await addTagsToLocation(
-  //                                       context,
-  //                                       accountId,
-  //                                       subAccountId,
-  //                                       isGlobal ? [] : locationId,
-  //                                       tags,
-  //                                       isGlobal: isGlobal,
-  //                                     );
-  //
-  //                                     if (!isGlobal) {
-  //                                       for (final id in locationId) {
-  //                                         final loc = getLocationById(id);
-  //                                         loc?.tags ??= [];
-  //                                         loc?.tags!.addAll(tags);
-  //                                       }
-  //                                     }
-  //
-  //                                     Navigator.pop(context);
-  //                                   },
-  //                                   child: const Text("Add"),
-  //                                 ),
-  //                         ),
-  //                       ],
-  //                     );
-  //                   },
-  //                 ),
-  //
-  //                 const SizedBox(height: 12),
-  //               ],
-  //             ),
-  //
-  //             // Column(
-  //             //   mainAxisSize: MainAxisSize.min,
-  //             //   children: [
-  //             //     Text("Add Tags",
-  //             //         style: typography.H5_Regular.copyWith(height: 1.5)),
-  //             //     const SizedBox(height: 16),
-  //             //     TextField(
-  //             //       controller: tagsController,
-  //             //       decoration: const InputDecoration(
-  //             //         labelText: "Enter comma-separated tags",
-  //             //         border: OutlineInputBorder(),
-  //             //       ),
-  //             //     ),
-  //             //     const SizedBox(height: 16),
-  //             //     Consumer<MyLocationListProvider>(
-  //             //       builder: (_, provider, __) {
-  //             //         return
-  //             //           Expanded(
-  //             //                                           child:
-  //             //           provider.isAddTagsLoading
-  //             //             ? const CircularProgressIndicator()
-  //             //             : CustomButton(
-  //             //                 onPressed: () async {
-  //             //                   if (tagsController.text.isEmpty) {
-  //             //                     ScaffoldMessenger.of(context).showSnackBar(
-  //             //                       const SnackBar(
-  //             //                         content: Text("Please enter tags."),
-  //             //                       ),
-  //             //                     );
-  //             //                     return;
-  //             //                   }
-  //             //
-  //             //                   final tags = tagsController.text.split(",");
-  //             //
-  //             //                   await addTagsToLocation(
-  //             //                     context,
-  //             //                     accountId,
-  //             //                     subAccountId,
-  //             //                     isGlobal ? [] : locationId,
-  //             //                     tags,
-  //             //                     isGlobal: isGlobal,
-  //             //                   );
-  //             //
-  //             //                   if (!isGlobal) {
-  //             //                     for (final id in locationId) {
-  //             //                       final loc = getLocationById(id);
-  //             //                       loc?.tags ??= [];
-  //             //                       loc?.tags!.addAll(tags);
-  //             //                     }
-  //             //                   }
-  //             //
-  //             //                   Navigator.pop(context);
-  //             //                 },
-  //             //                 child: const Text("Add"),
-  //             //                 type: ButtonType.elevated,
-  //             //               ));
-  //             //       },
-  //             //     ),
-  //             //                             CustomButton(
-  //             //                               onPressed: () {
-  //             //                                 Navigator.pop(context);
-  //             //                               },
-  //             //                               child: Text(
-  //             //                                 "Cancel",
-  //             //                                 style: typography.ButtonLarge,
-  //             //                               ),
-  //             //                               type: ButtonType.text,
-  //             //                             ),
-  //             //   ],
-  //             // ),
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  //
-  //   tagsController.clear();
-  // }
-
-  // Future<void> showAddTagDialog(BuildContext context, String accountId,
-  //     String subAccountId, List<String> locationId) async {
-  //   var typography = CustomTypography(context);
-  //   TextEditingController tagsController = TextEditingController();
-  //
-  //   await showDialog(
-  //     context: context,
-  //     builder: (BuildContext dialogContext) {
-  //       return StatefulBuilder(
-  //         builder: (BuildContext context, StateSetter setState) {
-  //           return AlertDialog(
-  //             content: SingleChildScrollView(
-  //               child: Column(
-  //                 mainAxisSize: MainAxisSize.min,
-  //                 children: [
-  //                   Text(
-  //                     "Add Tags",
-  //                     style: typography.H5_Regular.copyWith(height: 1.5),
-  //                   ),
-  //                   SizedBox(height: 16.0),
-  //                   // Comma-separated Tags (Optional)
-  //                   TextField(
-  //                     controller: tagsController,
-  //                     decoration: InputDecoration(
-  //                       labelText: "Enter comma-separated tags",
-  //                       border: const OutlineInputBorder(),
-  //                     ),
-  //                   ),
-  //                   SizedBox(height: 16.0),
-  //                   // Add/Cancel Buttons
-  //                   Consumer<MyLocationListProvider>(
-  //                       builder: (context, myLocationListProvider, child) {
-  //                     return Column(
-  //                       children: [
-  //                         Row(
-  //                           mainAxisAlignment: MainAxisAlignment.center,
-  //                           children: [
-  //                             Expanded(
-  //                               child: myLocationListProvider.isAddTagsLoading
-  //                                   ? Center(
-  //                                       child: CircularProgressIndicator(),
-  //                                     )
-  //                                   : CustomButton(
-  //                                       onPressed: () async {
-  //                                         if (tagsController.text.isEmpty) {
-  //                                           ScaffoldMessenger.of(context)
-  //                                               .showSnackBar(SnackBar(
-  //                                             content: Text(
-  //                                               "Please enter tags.",
-  //                                               style: typography.Body1,
-  //                                             ),
-  //                                           ));
-  //                                           return;
-  //                                         }
-  //
-  //                                         // Call your method to add the location to the SoV
-  //                                         await addTagsToLocation(
-  //                                             context,
-  //                                             accountId,
-  //                                             subAccountId,
-  //                                             locationId,
-  //                                             tagsController.text.split(","));
-  //                                         //Locally update the tags
-  //                                         locationId.forEach((element) {
-  //                                           final MyLocation? location =
-  //                                               getLocationById(element);
-  //
-  //                                           if (location == null)
-  //                                             return; // 🔒 very important
-  //
-  //                                           location.tags ??= [];
-  //                                           location.tags!.addAll(
-  //                                               tagsController.text.split(","));
-  //                                         });
-  //
-  //                                         locationId.forEach((element) {
-  //                                           MyLocation location =
-  //                                               getCertifiedLocationById(
-  //                                                   element);
-  //                                           if (location.tags == null) {
-  //                                             location.tags = tagsController
-  //                                                 .text
-  //                                                 .split(",");
-  //                                           } else {
-  //                                             location.tags?.addAll(
-  //                                                 tagsController.text
-  //                                                     .split(","));
-  //                                           }
-  //                                         });
-  //                                         fullLocationList.forEach((element) {
-  //                                           MyLocation location = element;
-  //                                           if (location.tags == null) {
-  //                                             location.tags = tagsController
-  //                                                 .text
-  //                                                 .split(",");
-  //                                           } else {
-  //                                             location.tags?.addAll(
-  //                                                 tagsController.text
-  //                                                     .split(","));
-  //                                           }
-  //                                         });
-  //                                       },
-  //                                       child: Text(
-  //                                         "Add",
-  //                                         style: typography.ButtonLargeBlack,
-  //                                       ),
-  //                                       type: ButtonType.elevated,
-  //                                     ),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                         SizedBox(width: 8.0),
-  //                         CustomButton(
-  //                           onPressed: () {
-  //                             Navigator.pop(context);
-  //                           },
-  //                           child: Text(
-  //                             "Cancel",
-  //                             style: typography.ButtonLarge,
-  //                           ),
-  //                           type: ButtonType.text,
-  //                         ),
-  //                       ],
-  //                     );
-  //                   }),
-  //                 ],
-  //               ),
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   ).then((_) {
-  //     // Clear the input fields after dialog is closed
-  //     tagsController.clear();
-  //   });
-  // }
 
   Future<List<String>> fetchAllLocationIds({
     required String accountId,
@@ -5008,7 +4426,7 @@ class MyLocationListProvider with ChangeNotifier {
       return false;
     } catch (e, stackTrace) {
       isLoading = false;
-      print(e);
+
       print(stackTrace);
       // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       //   content: Text(e.toString(), style: typography.Body1),

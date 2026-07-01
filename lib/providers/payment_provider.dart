@@ -171,11 +171,21 @@ class PaymentProvider extends ChangeNotifier {
               "plan_name": summary['titles']?[i] ?? "",
               "price": summary['licenseprice']?[i] ?? "",
             };
-
             if (planTypeId == "event_cost") {
-              plan["vendor"] = vendorName ?? "";
-              plan["event_type"] = hazardName ?? "";
+              plan["vendor"] =
+                  summary['vendors'] != null && summary['vendors'].length > i
+                      ? summary['vendors'][i]
+                      : "";
+
+              plan["event_type"] = summary['eventTypes'] != null &&
+                      summary['eventTypes'].length > i
+                  ? summary['eventTypes'][i]
+                  : "";
             }
+            // if (planTypeId == "event_cost") {
+            //   plan["vendor"] = vendorName ?? "";
+            //   plan["event_type"] = hazardName ?? "";
+            // }
 
             return plan;
           },

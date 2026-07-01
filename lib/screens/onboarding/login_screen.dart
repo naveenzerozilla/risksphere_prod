@@ -1,29 +1,14 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:RiskSphere/main.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
-
-import 'package:RiskSphere/design_system/primitives/app_colors.dart';
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
-import 'package:RiskSphere/service/language_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:provider/provider.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
 import '../../appleauth.dart';
 import '../../design_system/components/social_media_button.dart';
-import '../../design_system/primitives/utilities/custom_spacing.dart';
-
-import '../../providers/auth_provider.dart';
-import '../../providers/user_profile_provider.dart';
 import '../../service/storage_service.dart';
 import '../../utils/global_imports.dart';
 import '../../utils/utils.dart';
@@ -98,29 +83,20 @@ class _LoginScreenState extends State<LoginScreen> {
           promptValues: ['login'],
         ),
       );
-      print(result);
-      print("result");
 
       if (result != null) {
         print('Success! Token: ${result.accessToken}');
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    DashboardScreen())); // or your target route
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => DashboardScreen()));
       } else {
-        // User cancelled - webview also closed
         print('Authentication cancelled');
       }
 
-      // If authentication is successful, navigate to the desired screen
       if (result != null && result.accessToken != null) {
-        Navigator.of(context)
-            .pushReplacementNamed('/home'); // or your target route
+        Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (e) {
       print('Error during Microsoft sign-in: $e');
-      // Handle error, maybe show a snackbar or dialog
     }
   }
 
@@ -160,7 +136,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 if (Platform.isIOS) SizedBox(height: CustomSpacing.eight),
-                // SizedBox(height: CustomSpacing.two),
                 CountryPickerDropdown(
                   initialValue: _getInitialCountry(),
                   itemBuilder: (Country country) {
@@ -239,14 +214,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             SizedBox(height: CustomSpacing.eight),
-            // AppleSignInButton(),
-            // Social Media Buttons
-            // if (Platform.isIOS) ...[
+
             AppleSignInButton(),
-            // ],
+
             SizedBox(height: CustomSpacing.two),
-            // Social Media Buttons
-            // if (Platform.isAndroid) ...[
+
             Consumer<AuthNotifier>(
               builder: (context, authNotifier, _) {
                 return SocialMediaButton(
@@ -260,44 +232,23 @@ class _LoginScreenState extends State<LoginScreen> {
               },
             ),
 
-
             SizedBox(height: CustomSpacing.three),
 
-            // if (Platform.isAndroid)
-              Consumer<AuthNotifier>(
-                builder: (context, authNotifier, child) {
-                  return SocialMediaButton(
-                    onPressed: () async {
-                      await authNotifier.signInWithMicrosoft(context: context);
-                      print(authNotifier.user.toString());
-                      print(authNotifier.userProfile.toString());
-                      print(authNotifier.isNewUser.toString());
-                    },
-                    buttonText: LanguageService.getTranslated(
-                        context, "login_microsoft_button"),
-                    iconPath: 'assets/images/microsoftLogo.svg',
-                  );
-                },
-              ),
-            // Consumer<AuthNotifier>(
-            //   builder: (context, authNotifier, _) {
-            //     return AppleSignInButton(
-            //       key: const ValueKey('apple_sign_in_button'),
-            //       onSuccess: () async {
-            //         // ✅ Apple + Firebase login success
-            //         await authNotifier.handleAppleLogin(context);
-            //       },
-            //       onError: (error) {
-            //         ScaffoldMessenger.of(context).showSnackBar(
-            //           SnackBar(
-            //             content: Text(error.toString()),
-            //             backgroundColor: Colors.red,
-            //           ),
-            //         );
-            //       },
-            //     );
-            //   },
-            // ),
+            Consumer<AuthNotifier>(
+              builder: (context, authNotifier, child) {
+                return SocialMediaButton(
+                  onPressed: () async {
+                    await authNotifier.signInWithMicrosoft(context: context);
+                    print(authNotifier.user.toString());
+                    print(authNotifier.userProfile.toString());
+                    print(authNotifier.isNewUser.toString());
+                  },
+                  buttonText: LanguageService.getTranslated(
+                      context, "login_microsoft_button"),
+                  iconPath: 'assets/images/microsoftLogo.svg',
+                );
+              },
+            ),
 
             SizedBox(height: CustomSpacing.four),
             Row(
@@ -329,8 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
             SizedBox(height: CustomSpacing.six),
-            // ],
-            // Email
+
             TextFormField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: TextInputType.emailAddress,
@@ -376,13 +326,26 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               obscureText: !_showPassword,
               validator: (value) {
-                if (value == null || value.isEmpty || value.length < 8) {
+                if (value == null || value.trim().isEmpty) {
+                  return LanguageService.getTranslated(
+                      context, 'Password is required');
+                }
+
+                if (value.length < 8) {
                   return LanguageService.getTranslated(
                       context, 'login_password_length_error');
                 }
-                // You can add more specific password validation here if needed
+
                 return null;
               },
+              // validator: (value) {
+              //   if (value == null || value.isEmpty || value.length < 8) {
+              //     return LanguageService.getTranslated(
+              //         context, 'login_password_length_error');
+              //   }
+              //   // You can add more specific password validation here if needed
+              //   return null;
+              // },
               controller: passwordController,
               autofillHints: [AutofillHints.password],
             ),
@@ -445,7 +408,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 }),
               ],
             ),
-            // SizedBox(height: CustomSpacing.four),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -484,34 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             const SizedBox(height: 16),
-            /*SizedBox(height: CustomSpacing.four),
 
-            Center(
-              child: RecaptchaV2(
-                apiKey: "6LfXp1UpAAAAAEku9BSeBt6JJxXrlvtYjh--X4D7",
-                apiSecret: "6LfXp1UpAAAAAIFVynIPkooVWZi5qN8u16SYJTVt",
-                controller: recaptchaV2Controller,
-                onVerifiedError: (err) {
-                  print(err);
-                  isCaptchaVerified = false;
-                },
-                onVerifiedSuccessfully: (success) {
-                  setState(() {
-                    if (success) {
-                      verifyResult = "You've been verified successfully.";
-                      isCaptchaVerified = true;
-                      Future.delayed(Duration(minutes: 1), () {
-                        isCaptchaVerified = false;
-                      });
-                    } else {
-                      verifyResult = "Failed to verify.";
-                      isCaptchaVerified = false;
-                    }
-                    print(verifyResult);
-                  });
-                },
-              ),
-            ),*/
             SizedBox(height: CustomSpacing.eight),
 
             Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
@@ -536,106 +472,52 @@ class _LoginScreenState extends State<LoginScreen> {
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 8),
                               ),
+                              onPressed: () async {
+                                saveLoginData();
+                                if (rememberMe) {
+                                  await StorageService.saveLogin(
+                                      emailController.text,
+                                      passwordController.text);
+                                } else {
+                                  await StorageService.clearLogin();
+                                }
 
-                        onPressed: () async {
-                          saveLoginData();
-                          if (rememberMe) {
-                            await StorageService.saveLogin(
-                                emailController.text,
-                                passwordController.text);
-                          } else {
-                            await StorageService.clearLogin();
-                          }
+                                if (_formKey.currentState!.validate()) {
+                                  final String email =
+                                      emailController.text.trim();
+                                  final String password =
+                                      passwordController.text.trim();
 
-                          if (_formKey.currentState!.validate()) {
-                            final String email = emailController.text.trim();
-                            final String password = passwordController.text.trim();
+                                  await authNotifier.signInWithEmailAndPassword(
+                                      email, password, context);
 
-                            // 🔥 Call sign in
-                            await authNotifier.signInWithEmailAndPassword(
-                                email, password, context);
+                                  final user = authNotifier.user;
+                                  if (user != null) {
+                                    await user.reload();
+                                    final isVerified = user.emailVerified;
 
-                            // 🔥 ONLY NAVIGATE IF SIGN-IN WAS SUCCESSFUL AND USER IS NOT NULL
-                            final user = authNotifier.user;
-                            if (user != null) {
-                              // ✅ Check if email is verified before proceeding
-                              await user.reload();
-                              final isVerified = user.emailVerified;
+                                    if (isVerified) {
+                                      initFCM(user.uid).catchError((e) {
+                                        debugPrint('FCM init error: $e');
+                                      });
 
-                              if (isVerified) {
-                                initFCM(user.uid).catchError((e) {
-                                  debugPrint('FCM init error: $e');
-                                });
-
-                                TextInput.finishAutofillContext();
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => DashboardScreen()),
-                                );
-                              }
-                              // 🔥 If email is not verified, the authNotifier already handled
-                              // showing the error message and signing out the user
-                              // so we don't navigate
-                            } else {
-                              // ✅ Sign-in failed - show error
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        'Login failed. Please check your email and password.')),
-                              );
-                            }
-                          }
-                        },
-                              // onPressed: () async {
-                              //   saveLoginData();
-                              //   if (rememberMe) {
-                              //     await StorageService.saveLogin(
-                              //         emailController.text,
-                              //         passwordController.text);
-                              //   } else {
-                              //     await StorageService.clearLogin();
-                              //   }
-                              //   if (_formKey.currentState!.validate()) {
-                              //     final String email =
-                              //         emailController.text.trim();
-                              //     final String password =
-                              //         passwordController.text.trim();
-                              //
-                              //     /* if(isCaptchaVerified == false) {
-                              //       ScaffoldMessenger.of(context).showSnackBar(
-                              //         SnackBar(
-                              //           content: Text(
-                              //               'Please verify that you are not a robot.'),
-                              //         ),
-                              //       );
-                              //       return;
-                              //     }*/
-                              //     await authNotifier.signInWithEmailAndPassword(
-                              //         email, password, context);
-                              //
-                              //     final user = authNotifier.user;
-                              //     if (user != null) {
-                              //       initFCM(user.uid).catchError((e) {
-                              //         debugPrint('FCM init error: $e');
-                              //       });
-                              //
-                              //       TextInput.finishAutofillContext();
-                              //       Navigator.pushReplacement(
-                              //         context,
-                              //         MaterialPageRoute(
-                              //             builder: (context) =>
-                              //                 DashboardScreen()),
-                              //       );
-                              //     } else {
-                              //       ScaffoldMessenger.of(context).showSnackBar(
-                              //         SnackBar(
-                              //             content: Text(
-                              //                 'Login failed. Please try again.')),
-                              //       );
-                              //     }
-                              //   }
-                              // },
+                                      TextInput.finishAutofillContext();
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                DashboardScreen()),
+                                      );
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Login failed. Please check your email and password.')),
+                                    );
+                                  }
+                                }
+                              },
                               child: Text(
                                 LanguageService.getTranslated(
                                     context, 'login_submit_button'),
@@ -649,42 +531,6 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }),
 
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.start,
-            //   crossAxisAlignment: CrossAxisAlignment.center,
-            //   children: [
-            //     SizedBox(
-            //       height: CustomSpacing.onePointFive,
-            //     ),
-            //     Text(
-            //         LanguageService.getTranslated(
-            //             context, 'login_dont_hv_account'),
-            //         style: typography.Body1.copyWith(
-            //             color: Theme.of(context).colorScheme.onSurface)),
-            //     Text(
-            //       ' ',
-            //       style: typography.Body1.copyWith(
-            //           color: Theme.of(context).colorScheme.onSurface),
-            //     ),
-            //     InkWell(
-            //       onTap: () {
-            //         print("object");
-            //         Navigator.push(
-            //             context,
-            //             MaterialPageRoute(
-            //                 builder: (context) => CreateAccountScreen()));
-            //       },
-            //       child: Flexible(
-            //         child: Text(
-            //             LanguageService.getTranslated(
-            //                 context, 'login_register_now'),
-            //             style: typography.Subtitle1.copyWith(
-            //                 color: AppColors.primaryMain)),
-            //       ),
-            //     ),
-            //   ],
-            // ),
-
             SizedBox(height: CustomSpacing.eight),
           ],
         ),
@@ -692,28 +538,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void handleBrightnessChange(bool useLightMode) {}
-
-  void handleMaterialVersionChange() {}
-
-  void handleColorSelect(int value) {}
-
-  void handleImageSelect(int value) {}
-
   bool validateEmail(String text) {
     return regextest(text);
-  }
-
-  Map<String, dynamic>? parseJwt(String token) {
-    final parts = token.split('.');
-    if (parts.length != 3) {
-      return null;
-    }
-
-    final payload = parts[1];
-    final String normalized = base64Url.normalize(payload);
-    final String decoded = utf8.decode(base64Url.decode(normalized));
-    return json.decode(decoded);
   }
 
   String _getInitialCountry() {

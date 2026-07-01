@@ -1,7 +1,14 @@
+import 'dart:collection';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import '../utils/global_imports.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 
 class CustomTileProvider implements TileProvider {
   final Map<String, Map<String, Map<int, String>>> tileUrls;
@@ -51,146 +58,218 @@ class CustomTileProvider implements TileProvider {
     }
   }
 }
+
 class CustomTileProvider1 implements TileProvider {
   final String baseUrl;
+  late final String cleanBaseUrl;
 
-  static final Map<String, Tile> _tileCache = {};
-  static final Set<String> _loadingTiles = {};
+  // static final LinkedHashMap<String, Tile> _tileCache =
+  // LinkedHashMap<String, Tile>();
 
-  static int _lastRequestedZoom = -1;
-  static final Set<String> _processedCoordinates = {};
+  // static final Map<String, Completer<Tile>> _pendingTiles = {};
 
   static int _activeRequests = 0;
-  static const int _maxConcurrent = 8;
 
-  static final Map<String, DateTime> _recentlyRequested = {};
-  static const Duration _deduplicateWindow = Duration(milliseconds: 500);
+  static int get _maxConcurrent => Platform.isIOS ? 20 : 24;
 
-  CustomTileProvider1({required this.baseUrl});
+  static final Queue<_TileRequest> _waitingQueue = Queue<_TileRequest>();
+  static final Map<String, Tile> _tileCache = {};
+  static final Map<String, Completer<Tile>> _pendingTiles = {};
+
+  // Reduce concurrency on iOS — too many parallel SSL handshakes kills performance
+  // static int _activeRequests = 0;
+  //
+  // static int get _maxConcurrent => Platform.isIOS ? 6 : 24;
+  //
+  // // Queue for tiles waiting for a slot
+  // static final List<_TileRequest> _waitingQueue = [];
+
+  static final http.Client _httpClient = _buildHttpClient();
+
+
+  static http.Client _buildHttpClient() {
+    if (Platform.isIOS) {
+      final ioClient = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 10)
+        ..idleTimeout = const Duration(seconds: 30)
+        ..maxConnectionsPerHost = 20;
+      return IOClient(ioClient);
+    }
+    return http.Client();
+  }
+
+  CustomTileProvider1({required this.baseUrl}) {
+    cleanBaseUrl = baseUrl.replaceAll(RegExp(r'/\d+/\d+/\d+$'), '');
+  }
 
   String getCleanBaseUrl() {
     return baseUrl.replaceAll(RegExp(r'/\d+/\d+/\d+$'), '');
   }
+  Duration get _requestTimeout => const Duration(seconds: 8);
 
+  int get _maxRetries => 1;
   @override
   Future<Tile> getTile(int x, int y, int? zoom) async {
     if (zoom == null) return _emptyTile();
 
-    final cleanUrl = getCleanBaseUrl();
-    final url = "$cleanUrl/$zoom/$x/$y";
-    final coordinateKey = "$zoom-$x-$y";
+    final url = "$cleanBaseUrl/$zoom/$x/$y";
 
-    if (_tileCache.containsKey(url)) {
-      return _tileCache[url]!;
+    final cachedTile = _tileCache[url];
+    if (cachedTile != null) {
+      return cachedTile;
     }
 
-    if (_isDuplicateRequest(coordinateKey)) {
-      // Return fallback while the original request completes
-      return _getFallbackTile(x, y, zoom) ?? _emptyTile();
+    final pending = _pendingTiles[url];
+    if (pending != null) {
+      return pending.future;
     }
 
-    if (_shouldSkipTileLoad(zoom, coordinateKey)) {
-      final fallback = _getFallbackTile(x, y, zoom);
-      if (fallback != null) {
-        return fallback;
-      }
-    }
+    final completer = Completer<Tile>();
+    _pendingTiles[url] = completer;
 
-    if (_loadingTiles.contains(url)) {
-      return _getFallbackTile(x, y, zoom) ?? _emptyTile();
-    }
-
-    if (_activeRequests >= _maxConcurrent) {
-      return _getFallbackTile(x, y, zoom) ?? _emptyTile();
-    }
-
-    _loadingTiles.add(url);
-    _recentlyRequested[coordinateKey] = DateTime.now();
-    _activeRequests++;
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'FlutterApp',
-        },
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => http.Response('Timeout', 408),
+    if (_activeRequests < _maxConcurrent) {
+      _executeFetch(url, x, y, zoom, completer);
+    } else {
+      _waitingQueue.addLast(
+        _TileRequest(
+          url: url,
+          x: x,
+          y: y,
+          zoom: zoom,
+          completer: completer,
+        ),
       );
-
-      if (response.statusCode == 200 &&
-          response.bodyBytes.isNotEmpty &&
-          _isImage(response.bodyBytes)) {
-
-        final tile = Tile(256, 256, response.bodyBytes);
-        _tileCache[url] = tile;
-        _processedCoordinates.add(coordinateKey);
-
-        return tile;
-      } else if (response.statusCode == 408 || response.statusCode == 504) {
-        // Timeout or gateway error - return fallback
-        return _getFallbackTile(x, y, zoom) ?? _emptyTile();
-      }
-    } catch (e) {
-      print(" Tile Error [$zoom/$x/$y]: $e");
-      // Don't log every error, just return fallback
-    } finally {
-      _loadingTiles.remove(url);
-      _activeRequests--;
     }
 
-    return _getFallbackTile(x, y, zoom) ?? _emptyTile();
+    return completer.future;
   }
 
-  bool _isDuplicateRequest(String coordinateKey) {
-    if (_recentlyRequested.containsKey(coordinateKey)) {
-      final lastTime = _recentlyRequested[coordinateKey];
-      if (lastTime != null) {
-        final timeDiff = DateTime.now().difference(lastTime);
-        if (timeDiff.inMilliseconds < _deduplicateWindow.inMilliseconds) {
-          return true; // This is a duplicate request
+  void _executeFetch(
+    String url,
+    int x,
+    int y,
+    int zoom,
+    Completer<Tile> completer,
+  ) {
+    _activeRequests++;
+
+    _fetchWithRetry(url, x, y, zoom).then((tile) {
+      if (!completer.isCompleted) completer.complete(tile);
+    }).catchError((e) {
+      debugPrint("Tile Fatal [$zoom/$x/$y] => $e");
+      if (!completer.isCompleted) completer.complete(_emptyTile());
+    }).whenComplete(() {
+      _pendingTiles.remove(url);
+      _activeRequests--;
+      _processQueue(); // process next waiting tile
+    });
+  }
+
+  void _processQueue() {
+    debugPrint(
+      "Queue=${_waitingQueue.length}, Active=$_activeRequests",
+    );
+    while (_waitingQueue.isNotEmpty && _activeRequests < _maxConcurrent) {
+      final request = _waitingQueue.removeFirst();
+
+      final cachedTile = _tileCache[request.url];
+      if (cachedTile != null) {
+        if (!request.completer.isCompleted) {
+          request.completer.complete(cachedTile);
+        }
+
+        _pendingTiles.remove(request.url);
+        continue;
+      }
+
+      if (request.completer.isCompleted) {
+        _pendingTiles.remove(request.url);
+        continue;
+      }
+
+      _executeFetch(
+        request.url,
+        request.x,
+        request.y,
+        request.zoom,
+        request.completer,
+      );
+    }
+  }
+
+  Future<Tile> _fetchWithRetry(
+    String url,
+    int x,
+    int y,
+    int zoom,
+  ) async {
+    int attempt = 0;
+
+    while (attempt < _maxRetries) {
+      attempt++;
+
+      try {
+        final stopwatch = Stopwatch()..start();
+
+        final response = await _httpClient.get(
+          Uri.parse(url),
+          headers: {
+            'User-Agent': 'FlutterApp',
+            'Accept': 'image/webp,image/png,image/*',
+          },
+        ).timeout(_requestTimeout);
+
+        stopwatch.stop();
+        debugPrint(
+          "Tile [$zoom/$x/$y] "
+              "${stopwatch.elapsedMilliseconds}ms "
+              "Status=${response.statusCode} "
+              "Size=${response.bodyBytes.length ~/ 1024}KB",
+        );
+        debugPrint(
+          "Headers => ${response.headers['content-type']}",
+        );
+        if (response.statusCode == 200 &&
+            response.bodyBytes.isNotEmpty) {
+          final tile = Tile(
+            256,
+            256,
+            response.bodyBytes,
+          );
+
+          _addToCache(url, tile);
+
+          return tile;
+        }
+      } on TimeoutException {
+        if (attempt < _maxRetries) {
+          await Future.delayed(
+            Duration(milliseconds: 300 * attempt),
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          "Tile error [$zoom/$x/$y] => $e",
+        );
+
+        if (attempt < _maxRetries) {
+          await Future.delayed(
+            Duration(milliseconds: 300 * attempt),
+          );
         }
       }
     }
-    return false;
-  }
-  bool _shouldSkipTileLoad(int currentZoom, String coordinateKey) {
-    // If we already processed this coordinate at this zoom level, skip reload
-    if (_processedCoordinates.contains(coordinateKey)) {
-      return true;
-    }
 
-    // If zooming in/out but the tile is already cached, don't reload
-    if (_lastRequestedZoom != -1 &&
-        (currentZoom - _lastRequestedZoom).abs() <= 1) {
-      // Zoom level change is minimal, try to use cached version
-      return _tileCache.containsKey(coordinateKey);
-    }
-
-    _lastRequestedZoom = currentZoom;
-    return false;
+    return _emptyTile();
   }
 
-  Tile? _getFallbackTile(int x, int y, int zoom) {
-    if (zoom <= 0) return null;
+  void _addToCache(String url, Tile tile) {
+    _tileCache[url] = tile;
 
-    // Try parent tiles (zoom out) instead of blank tiles
-    for (int z = zoom - 1; z >= zoom - 2; z--) {
-      if (z < 0) break;
-
-      final parentX = x ~/ (1 << (zoom - z));
-      final parentY = y ~/ (1 << (zoom - z));
-      final fallbackUrl = "${getCleanBaseUrl()}/$z/$parentX/$parentY";
-
-      if (_tileCache.containsKey(fallbackUrl)) {
-        return _tileCache[fallbackUrl];
-      }
+    if (_tileCache.length > 20000) {
+      _tileCache.remove(_tileCache.keys.first);
     }
-
-    return null;
   }
-
   Tile _emptyTile() {
     return Tile(256, 256, Uint8List(0));
   }
@@ -198,16 +277,16 @@ class CustomTileProvider1 implements TileProvider {
   bool _isImage(Uint8List bytes) {
     if (bytes.length < 4) return false;
 
-    // PNG signature
+    // PNG
     if (bytes[0] == 0x89 &&
         bytes[1] == 0x50 &&
         bytes[2] == 0x4E &&
         bytes[3] == 0x47) return true;
 
-    // JPEG signature
+    // JPEG
     if (bytes[0] == 0xFF && bytes[1] == 0xD8) return true;
 
-    // WebP signature
+    // WebP
     if (bytes.length >= 12 &&
         bytes[0] == 0x52 &&
         bytes[1] == 0x49 &&
@@ -221,37 +300,51 @@ class CustomTileProvider1 implements TileProvider {
     return false;
   }
 
-  /// 🔹 CLEAR CACHE (call when navigating away)
   static void clearCache() {
+    for (final completer in _pendingTiles.values) {
+      if (!completer.isCompleted) {
+        completer.complete(Tile(256, 256, Uint8List(0)));
+      }
+    }
+    _waitingQueue.clear();
     _tileCache.clear();
-    _loadingTiles.clear();
-    _recentlyRequested.clear();
-    _processedCoordinates.clear();
-    _lastRequestedZoom = -1;
+    _pendingTiles.clear();
     _activeRequests = 0;
-    print("Tile cache cleared");
+    debugPrint("Tile cache cleared");
   }
 
-  ///  PARTIAL CACHE CLEAR (for memory optimization)
-  static void clearOldCache({int maxItems = 500}) {
+  static void clearOldCache({int maxItems = 3000}) {
     if (_tileCache.length > maxItems) {
-      final keysToRemove = _tileCache.keys.toList().sublist(0, _tileCache.length - maxItems);
-      for (var key in keysToRemove) {
-        _tileCache.remove(key);
+      final keys = _tileCache.keys.toList();
+      for (int i = 0; i < keys.length - maxItems; i++) {
+        _tileCache.remove(keys[i]);
       }
-      print("🗑 Cleared old tiles, cache size: ${_tileCache.length}");
     }
   }
 
-  ///  GET CACHE STATS (for debugging)
   static Map<String, dynamic> getCacheStats() {
     return {
       'cachedTiles': _tileCache.length,
-      'loadingTiles': _loadingTiles.length,
+      'pendingTiles': _pendingTiles.length,
       'activeRequests': _activeRequests,
-      'recentRequests': _recentlyRequested.length,
+      'queuedTiles': _waitingQueue.length,
     };
   }
 }
 
+// Helper class to hold queued tile requests
+class _TileRequest {
+  final String url;
+  final int x;
+  final int y;
+  final int zoom;
+  final Completer<Tile> completer;
 
+  _TileRequest({
+    required this.url,
+    required this.x,
+    required this.y,
+    required this.zoom,
+    required this.completer,
+  });
+}

@@ -63,7 +63,6 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
     });
   }
 
-
   Future<void> _setClaims() async {
     isHasAnyPlan = await SharedPreferenceService.getHasAnyPlan();
   }
@@ -148,7 +147,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
-                    indicatorColor:  AppColors.primaryMain,
+                    indicatorColor: AppColors.primaryMain,
                     indicatorWeight: 1,
                     tabs: [
                       Tab(
@@ -173,14 +172,14 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                               padding:
                                   const EdgeInsets.only(right: 3, left: 10),
                               decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: AppColors.primaryMain, width: 1.0),
+                                border: Border.all(
+                                    color: AppColors.primaryMain, width: 1.0),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: DropdownButton2<String>(
                                 value: _selectedValue,
                                 buttonStyleData: ButtonStyleData(
-                                   padding: const EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       horizontal: 10),
                                 ),
                                 dropdownStyleData: DropdownStyleData(
@@ -241,8 +240,8 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                               width: 130,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                border:
-                                    Border.all(color: AppColors.primaryMain, width: 1.0),
+                                border: Border.all(
+                                    color: AppColors.primaryMain, width: 1.0),
                               ),
                               child: TextButton(
                                 onPressed: () => _selectDateRange(context),
@@ -359,7 +358,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: Container(
-                                    height: 180,
+                                    // height: 200,
                                     width: double.infinity,
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF1E1E1E),
@@ -396,7 +395,7 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                                   // );
                                                 },
                                                 child: Text(
-                                                    "Inv# ${invoice.invoiceId ?? 'N/A'}",
+                                                    "${invoice.invoiceId ?? 'N/A'}",
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -429,35 +428,113 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          invoice.plans != null &&
-                                                  invoice.plans!.isNotEmpty
-                                              ? invoice.plans!
-                                                  .map((e) =>
-                                                      _capitalizeFirstLetter(
-                                                          e.planType ?? "N/A"))
-                                                  .join(", ")
-                                              : "No plans",
+                                          invoice.plans != null && invoice.plans!.isNotEmpty
+                                              ? invoice.plans!.every(
+                                                  (e) => (e.planType ?? '').toLowerCase() == 'yearly')
+                                              ? 'Yearly'
+                                              : invoice.plans!
+                                              .map(
+                                                (e) => _capitalizeFirstLetter(
+                                              e.planType ?? 'N/A',
+                                            ),
+                                          )
+                                              .join(', ')
+                                              : 'No plans',
                                           style: const TextStyle(
                                             color: Colors.grey,
                                             fontSize: 13,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          invoice.plans != null &&
-                                                  invoice.plans!.isNotEmpty
-                                              ? invoice.plans!
-                                                  .map((e) =>
-                                                      e.planName ??
-                                                      "License Info")
-                                                  .join(", ")
-                                              : "License Info",
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                          ),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: invoice.plans != null
+                                              ? invoice.plans!.map((e) {
+                                                  return Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .grey.shade800,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                        ),
+                                                        child: Text(
+                                                          e.planName ??
+                                                              "License Info",
+                                                          style:
+                                                              const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 2,
+                                                        ),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.white
+                                                              .withOpacity(0.2),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                        ),
+                                                        child: Text(
+                                                          e.price.toString() ??
+                                                              "0",
+                                                          style:
+                                                              const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                }).toList()
+                                              : [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(8),
+                                                    child: const Text(
+                                                        "License Info"),
+                                                  ),
+                                                ],
                                         ),
+                                        // Text(
+                                        //   invoice.plans != null &&
+                                        //           invoice.plans!.isNotEmpty
+                                        //       ? invoice.plans!
+                                        //           .map((e) =>
+                                        //               e.planName ??
+                                        //               "License Info")
+                                        //           .join(", ")
+                                        //       : "License Info",
+                                        //   maxLines: 2,
+                                        //   style: const TextStyle(
+                                        //     color: Colors.white,
+                                        //     fontSize: 14,
+                                        //   ),
+                                        // ),
                                         const SizedBox(height: 14),
                                         Row(
                                           mainAxisAlignment:

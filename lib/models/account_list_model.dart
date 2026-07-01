@@ -33,7 +33,6 @@ class AccountListModel {
     sovId = json['sov_id'];
     fromCache = json['from_cache'];
 
-    /// ✅ HANDLE BOTH `results` AND `result`
     final list = json['results'] ?? json['result'];
     if (list != null && list is List) {
       results = list.map((v) => Accounts.fromJson(v)).toList();

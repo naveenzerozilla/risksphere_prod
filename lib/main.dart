@@ -1,4 +1,3 @@
-
 import 'package:RiskSphere/providers/data_list_parameters.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/utils/http_client.dart';
@@ -15,7 +14,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 late PerformanceHttpClient httpClient;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -46,7 +45,7 @@ void main() async {
   try {
     await FirebaseAppCheck.instance.activate(
       androidProvider:
-      kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
       appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
     );
     debugPrint(' AppCheck activated');
@@ -58,7 +57,7 @@ void main() async {
     await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
     httpClient = PerformanceHttpClient();
     bool isEnabled =
-    await FirebasePerformance.instance.isPerformanceCollectionEnabled();
+        await FirebasePerformance.instance.isPerformanceCollectionEnabled();
     debugPrint(' Firebase Performance isEnabled: $isEnabled');
   } catch (e) {
     debugPrint(' Performance error: $e');
@@ -92,6 +91,7 @@ void main() async {
     ),
   );
 }
+
 class AppLifecycleManager extends StatefulWidget {
   @override
   State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
@@ -162,7 +162,7 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 
       if (lat == null) {
         final match =
-        RegExp(r'/@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolvedUrl);
+            RegExp(r'/@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolvedUrl);
         if (match != null) {
           lat = double.tryParse(match.group(1) ?? '');
           lng = double.tryParse(match.group(2) ?? '');
@@ -202,18 +202,18 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
                 ? accountName
                 : 'Default Account',
             subAccountName:
-            (subAccountName != null && subAccountName.isNotEmpty)
-                ? subAccountName
-                : 'Default Subaccount',
+                (subAccountName != null && subAccountName.isNotEmpty)
+                    ? subAccountName
+                    : 'Default Subaccount',
           ),
         ),
-            (route) => false,
+        (route) => false,
       );
     } else {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
+        (route) => false,
       );
     }
   }
@@ -253,13 +253,13 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
             sovId: '',
           ),
         ),
-            (route) => false,
+        (route) => false,
       );
     } else {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
+        (route) => false,
       );
     }
   }
@@ -298,7 +298,7 @@ class MyApp extends StatelessWidget {
   // static final GlobalKey<NavigatorState> navigatorKey =
   //     GlobalKey<NavigatorState>();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-  GlobalKey<ScaffoldMessengerState>();
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -367,10 +367,10 @@ class MyApp extends StatelessWidget {
 
 Future<void> initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final DarwinInitializationSettings initializationSettingsIOS =
-  DarwinInitializationSettings();
+      DarwinInitializationSettings();
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -477,8 +477,7 @@ Future<void> initFCM(String userId) async {
       return;
     }
 
-    debugPrint(
-        ' Token null check: ${token == null ? "NULL " : "HAS VALUE "}');
+    debugPrint(' Token null check: ${token == null ? "NULL " : "HAS VALUE "}');
 
     if (token != null) {
       SharedPreferenceService.saveFcmToken(token);
@@ -518,7 +517,7 @@ Future<void> initFCM(String userId) async {
 
 void checkForInitialMessage() async {
   RemoteMessage? initialMessage =
-  await FirebaseMessaging.instance.getInitialMessage();
+      await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage?.data.isNotEmpty ?? false) {
     handleNotificationNavigation(initialMessage!.data);
   }

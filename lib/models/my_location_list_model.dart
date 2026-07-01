@@ -141,7 +141,6 @@ class MyLocation with ClusterItem {
   bool? usFlag;
   bool? hasSov;
 
-
   MyLocation(
       {this.accountId,
       this.accountName,
@@ -172,10 +171,9 @@ class MyLocation with ClusterItem {
       this.isHazardProcess,
       this.dataCompleteness,
       this.hasVendorData,
-        this.hasSov,
-        this.usFlag
-
-      });
+      this.hasSov,
+      this.usFlag,
+      required LatLng location});
 
   MyLocation.fromJson(Map<String, dynamic> json) {
     accountId = json['account_id'];
@@ -333,9 +331,9 @@ class MyLocation with ClusterItem {
 
   @override
   LatLng get location => LatLng(
-        finalAddress?.latitude ?? 0.0,
-        finalAddress?.longitude ?? 0.0,
-      );
+    latitude ?? finalAddress?.latitude ?? 0.0,
+    longitude ?? finalAddress?.longitude ?? 0.0,
+  );
 }
 
 class AllActivityLogs {
