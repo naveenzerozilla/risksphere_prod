@@ -249,7 +249,6 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
     });
   }
 
-  //
   void _routeFromDeepLink(Uri uri) async {
     final user = FirebaseAuth.instance.currentUser;
     final context = navigatorKey.currentContext;
