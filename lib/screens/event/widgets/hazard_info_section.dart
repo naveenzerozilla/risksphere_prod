@@ -16,18 +16,18 @@ class HazardInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(8.0),
-      padding: EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Colors.grey.shade800),
-      ),
+      margin: EdgeInsets.all(12.0),
+      // padding: EdgeInsets.all(16.0),
+      // decoration: BoxDecoration(
+      //   color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      //   borderRadius: BorderRadius.circular(16.0),
+      //   border: Border.all(color: Colors.grey.shade800),
+      // ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            hazardName,
+            "Tropical Storm Florida",
             style: TextStyle(
               fontSize: 16.0,
               fontWeight: FontWeight.bold,
@@ -45,33 +45,42 @@ class HazardInfoSection extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 10.0),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.0),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                border: Border.all(color: Colors.grey.shade800),
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: DropdownButton<String>(
-                padding: EdgeInsets.zero,
-                value: selectedDate,
-                dropdownColor: Colors.grey.shade900,
-                underline: SizedBox.shrink(),
-                onChanged: onDateChanged,
-                icon: SizedBox.shrink(),
-                items: availableDates.map((String date) {
-                  return DropdownMenuItem<String>(
-                    value: date,
-                    child: Text(
-                      date,
-                      style: TextStyle(color: Colors.white, fontSize: 14.0),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            // Container(
+            //   padding: EdgeInsets.symmetric(horizontal: 8.0),
+            //   decoration: BoxDecoration(
+            //     color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            //     border: Border.all(color: Colors.grey.shade800),
+            //     borderRadius: BorderRadius.circular(8.0),
+            //   ),
+            //   child: DropdownButton<String>(
+            //     padding: EdgeInsets.zero,
+            //     value: "selectedDate",
+            //     dropdownColor: Colors.grey.shade900,
+            //     underline: SizedBox.shrink(),
+            //     onChanged: onDateChanged,
+            //     icon: SizedBox.shrink(),
+            //     items: availableDates.map((String date) {
+            //       return DropdownMenuItem<String>(
+            //         value: date,
+            //         child: Text(
+            //           date,
+            //           style: TextStyle(color: Colors.white, fontSize: 14.0),
+            //         ),
+            //       );
+            //     }).toList(),
+            //   ),
+            // ),
             ],
           ),
+          Text(
+            "Last Updated: Oct 9, 2024 10:30 AM EDT",
+            style: TextStyle(
+              fontSize: 12.0,
+
+              color: Colors.grey.shade400,
+            ),
+          ),
+          SizedBox(height: 2.0),
         ],
       ),
     );

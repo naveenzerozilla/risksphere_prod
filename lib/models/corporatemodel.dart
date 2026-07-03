@@ -229,9 +229,9 @@ class SovOperations {
 }
 
 class SelectedCompany {
-  Null? accountId;
-  Null? accountIdField;
-  Null? accountName;
+  Null accountId;
+  Null accountIdField;
+  Null accountName;
   String? companyDisplayName;
   String? companyName;
   String? companyType;
@@ -244,7 +244,7 @@ class SelectedCompany {
   String? source;
   bool? status;
   String? updatedAt;
-  Null? verificationStatus;
+  Null verificationStatus;
 
   SelectedCompany(
       {this.accountId,
@@ -306,16 +306,16 @@ class SelectedCompany {
 }
 
 class AuthData {
-  Null? displayName;
+  Null displayName;
   String? email;
   bool? isEmailVerified;
   bool? isAnonymous;
   Metadata? metadata;
-  Null? phoneNumber;
-  Null? photoURL;
+  Null phoneNumber;
+  Null photoURL;
   List<ProviderData>? providerData;
   String? refreshToken;
-  Null? tenantId;
+  Null tenantId;
   String? uId;
 
   AuthData(
@@ -395,10 +395,10 @@ class Metadata {
 class ProviderData {
   String? providerId;
   String? uid;
-  Null? displayName;
+  Null displayName;
   String? email;
-  Null? phoneNumber;
-  Null? photoURL;
+  Null phoneNumber;
+  Null photoURL;
 
   ProviderData(
       {this.providerId,

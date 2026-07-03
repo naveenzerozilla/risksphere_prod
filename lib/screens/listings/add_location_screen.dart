@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
@@ -256,12 +255,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     _locationNameController.text = (widget.is_conflict!
         ? widget.locationName
         : provider.locationProfile?.finalAddress?.locationName ??
-        widget.searchQuery!)!;
+        widget.searchQuery)!;
 
     _locationAddressController.text = (widget.is_conflict!
         ? widget.locationName
         : provider.locationProfile?.finalAddress?.locationName ??
-        widget.searchQuery!)!;
+        widget.searchQuery)!;
 
     _selectedCountry = provider.locationProfile?.finalAddress?.country ?? "";
     _locationZipCodeController.text =
@@ -456,7 +455,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
             return Scaffold(
               resizeToAvoidBottomInset: true,
               key: _scaffoldKey,
-              backgroundColor: themeProvider.getTheme.colorScheme.background,
+              backgroundColor: themeProvider.getTheme.colorScheme.surface,
               appBar: CustomAppBar(
                 margin: 8,
                 isExpanded: _isExpanded,
@@ -2910,26 +2909,24 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         if (city != null) _locationCityController.text = city;
         if (state != null) _locationStateController.text = state;
         if (postalCode != null) _locationZipCodeController.text = postalCode;
-        _selectedLatLng = LatLng(geometry!['lat'], geometry!['lng']);
+        _selectedLatLng = LatLng(geometry!['lat'], geometry['lng']);
       });
 
       if (country != null) _updateSelectedCountry(country);
 
-      if (geometry != null) {
-        try {
-          if (!mounted) return;
-          if (!_mapController.isCompleted) return; // ✅ ADD THIS
+      try {
+        if (!mounted) return;
+        if (!_mapController.isCompleted) return; // ✅ ADD THIS
 
-          final GoogleMapController controller = await _mapController.future;
-          controller.animateCamera(CameraUpdate.newLatLng(
-            LatLng(geometry!['lat'], geometry!['lng']),
-          ));
-        } catch (e) {
-          // Map was disposed (keyboard open hid the map) — safe to ignore
-          debugPrint('Map camera update skipped: $e');
-        }
+        final GoogleMapController controller = await _mapController.future;
+        controller.animateCamera(CameraUpdate.newLatLng(
+          LatLng(geometry['lat'], geometry['lng']),
+        ));
+      } catch (e) {
+        // Map was disposed (keyboard open hid the map) — safe to ignore
+        debugPrint('Map camera update skipped: $e');
       }
-      // if (geometry != null) {
+          // if (geometry != null) {
       //   final GoogleMapController controller = await _mapController.future;
       //   controller.animateCamera(CameraUpdate.newLatLng(
       //     LatLng(geometry!['lat'], geometry!['lng']),

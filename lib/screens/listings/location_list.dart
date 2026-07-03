@@ -1,29 +1,23 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:RiskSphere/design_system/components/rating_half_stars.dart';
 import 'package:RiskSphere/design_system/components/rating_slider.dart';
-import 'package:RiskSphere/providers/connections_provider.dart';
 import 'package:RiskSphere/providers/location_list_provider.dart';
-import 'package:RiskSphere/providers/location_profile_provider.dart';
 import 'package:RiskSphere/screens/listings/add_location_screen.dart';
 import 'package:RiskSphere/screens/listings/location_profile.dart';
 import 'package:RiskSphere/screens/listings/widgets/animated_progress_indicatiors.dart';
 import 'package:RiskSphere/screens/listings/widgets/listings_filter_screen.dart';
 import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:screenshot/screenshot.dart';
 
 import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_button.dart';
 import '../../design_system/components/custom_drawer.dart';
-import '../../design_system/components/rating_bar.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
@@ -32,7 +26,6 @@ import '../../models/location_list_model.dart';
 import '../../providers/configuration_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphere/models/role_model.dart' as roleModel hide Roles;
 import '../../providers/upload_sov_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../service/language_service.dart';
@@ -329,7 +322,7 @@ class _LocationListState extends State<LocationList>
         builder: (buildContext, themeProvider, child) {
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            backgroundColor: themeProvider.getTheme.colorScheme.surface,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
               showNotificationDot: _showNotificationDot,

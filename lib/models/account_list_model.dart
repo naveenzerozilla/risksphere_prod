@@ -157,7 +157,7 @@ class Accounts {
   ParameterValue? parameterValue;
   bool? isList;
   String? belongsToCompany;
-  Null? date;
+  Null date;
   String? tooltip;
 
   // List<String>? parents;
@@ -167,8 +167,8 @@ class Accounts {
   List<Null>? valueList;
 
   // List<String>? tags;
-  Null? endDate;
-  Null? startDate;
+  Null endDate;
+  Null startDate;
   bool? isMultiFiles;
   String? dataGroupRef;
   String? categoryType;

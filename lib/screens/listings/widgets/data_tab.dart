@@ -1,7 +1,4 @@
-import 'dart:collection';
 import 'dart:convert';
-import 'dart:ui' as BorderType;
-import 'package:RiskSphere/models/view_employee_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:dotted_border/dotted_border.dart';
@@ -31,7 +28,6 @@ import '../../../service/language_service.dart';
 import '../../../utils/ImpactDataCard.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart' hide Reference;
 import 'package:http/http.dart' as http;
 import '../processing_summary.dart';
 import '../sync_parameter.dart';
@@ -223,7 +219,7 @@ class _DataTabState extends State<DataTab> {
       return Consumer<MyLocationListProvider>(
           builder: (context, locationProfileProvider, child) {
         return Scaffold(
-          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          backgroundColor: themeProvider.getTheme.colorScheme.surface,
           appBar: widget.showAppBar
               ? CustomAppBar(
                   isExpanded: _isExpanded,
@@ -3568,12 +3564,8 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
 
       /// ---------- BOOLEAN ----------
       else if (parameterType == 'boolean') {
-        if (selectedBooleanValue == null) {
-          value = "{}";
-        } else {
-          value = selectedBooleanValue;
-        }
-      }
+        value = selectedBooleanValue;
+            }
 
       /// ---------- DEFAULT ----------
       else {
@@ -3614,7 +3606,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
         campusId: widget.campusId,
         parameterId: widget.result.dataCategoryId!,
         updatedFields: updatedFields,
-        selectedParameterList: widget.selectedParameterList!,
+        selectedParameterList: widget.selectedParameterList,
       );
 
       setState(() {

@@ -51,7 +51,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -109,7 +109,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -120,7 +120,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isRenameLoading(bool value) {
     _isRenameLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -131,7 +131,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isDuplicateLoading(bool value) {
     _isDuplicateLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -142,7 +142,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set showLocationCountLoading(bool value) {
     _showLocationCountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -153,7 +153,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set showOverallScoreLoading(bool value) {
     _showOverallScoreLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -231,7 +231,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isAddAccountLoading(bool value) {
     _isAddAccountLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -242,7 +242,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isAutoCompleteLoading(bool value) {
     _isAutoCompleteLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -253,7 +253,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isExportLoading(bool value) {
     _isExportLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -264,7 +264,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set isTransferLoading(bool value) {
     _isTransferLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -276,7 +276,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set showLocationCount(bool value) {
     _showLocationCount = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -287,7 +287,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set showOverallScore(bool value) {
     _showOverallScore = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -298,7 +298,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set page(int value) {
     _page = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -309,7 +309,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set totalPages(int value) {
     _totalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -320,7 +320,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set totalEvent(int value) {
     _totalEvent = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -331,7 +331,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set totalImpactLocation(int value) {
     _totalImpactLocation = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -364,7 +364,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set sovList(List<Result> value) {
     _sovList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -375,14 +375,14 @@ class SOVListProvider extends ChangeNotifier {
 
   set sovCounterList(TotalCountHeader value) {
     _sovCounterList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
   void addToSovList(List<Result> newAccounts) {
     _sovList.addAll(newAccounts);
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -393,7 +393,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set autoCompleteSovList(List<Result> value) {
     _autoCompleteSovList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -404,7 +404,7 @@ class SOVListProvider extends ChangeNotifier {
 
   set autoCompleteSovList1(List<Results> value) {
     _autoCompleteSovList1 = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1203,7 +1203,7 @@ class SOVListProvider extends ChangeNotifier {
         print(
             'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
         return handler.next(response);
-      }, onError: (DioError e, handler) {
+      }, onError: (DioException e, handler) {
         print(
             'ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
         return handler.next(e);
@@ -1328,7 +1328,7 @@ class SOVListProvider extends ChangeNotifier {
         print(
             'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
         return handler.next(response);
-      }, onError: (DioError e, handler) {
+      }, onError: (DioException e, handler) {
         print(
             'ERROR[${e.response?.statusCode}] => PATH: ${e.requestOptions.path}');
         return handler.next(e);
@@ -1504,13 +1504,13 @@ class SOVListProvider extends ChangeNotifier {
 
       isTransferLoading = false;
       return true;
-    } on BackendException catch (e, stack) {
+    } on BackendException catch (e) {
       isTransferLoading = false;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message),
       ));
       return false;
-    } catch (e, stack) {
+    } catch (e) {
       isTransferLoading = false;
       print(e);
       return false;

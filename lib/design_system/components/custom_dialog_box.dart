@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/components/custom_button.dart';

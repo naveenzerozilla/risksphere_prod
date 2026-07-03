@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/models/maintainance_model.dart';
@@ -266,11 +265,9 @@ class JobMonitoringProvider extends ChangeNotifier {
           ApiService('${AppConstant.GET_JOB_MONITORING_SUMMARY}/$id');
       final response = await apiService.get();
 
-      if (response != null) {
-        print('Summary Data: $response');
-        return response;
-      }
-      return null; // Handle null response
+      print('Summary Data: $response');
+      return response;
+          return null; // Handle null response
     } catch (error) {
       print('Error fetching summary: $error');
       return null;
@@ -303,12 +300,10 @@ class JobMonitoringProvider extends ChangeNotifier {
 
       final response = await apiService.get();
 
-      if (response != null) {
-        print('Summary Data: $response');
-        print('Summary Data: ${response.length}');
-        return response;
-      }
-      return null; // Handle null response
+      print('Summary Data: $response');
+      print('Summary Data: ${response.length}');
+      return response;
+          return null; // Handle null response
     } catch (error) {
       print('Error fetching summary: $error');
       return null;
@@ -356,10 +351,6 @@ class JobMonitoringProvider extends ChangeNotifier {
       final ApiService apiService = ApiService(AppConstant.GET_JOB_MONITORING);
       final response = await apiService.get('?monitoring_processes=true');
 
-      if (response == null) {
-        throw Exception('API response is null');
-      }
-
       // Check if the user is a super admin
       _isSuperAdmin = response['is_super_admin'] ?? false;
 
@@ -369,12 +360,8 @@ class JobMonitoringProvider extends ChangeNotifier {
         // Fetch company IDs for non-super-admins
         final companyResponse = await apiServiceNew.get();
 
-        if (companyResponse != null) {
-          _docIds = [companyResponse['company_id']]; // Assign as company ID
-        } else {
-          throw Exception('Failed to fetch company ID');
-        }
-      } else {
+        _docIds = [companyResponse['company_id']]; // Assign as company ID
+            } else {
         _docIds = []; // Clear docIds for super admins
       }
 

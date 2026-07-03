@@ -9,7 +9,6 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/location_list_provider.dart';
 import '../../../providers/my_location_list_provider.dart';
 import 'multi_select_dropdown.dart';
-import 'vertical_bar_indicator.dart';
 
 class DataParameterFilterScreen extends StatefulWidget {
   final String accountId;
@@ -355,7 +354,7 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          value: selectedPeril,
+                          initialValue: selectedPeril,
                           items: perilsList.map((String peril) {
                             return DropdownMenuItem<String>(
                               value: peril,
@@ -388,7 +387,7 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
                             children: [
                               Text(
                                 'General',
-                                style: typography.Body1?.copyWith(
+                                style: typography.Body1.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.blueAccent,
                                 ),
@@ -402,7 +401,7 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
                                 ),
                                 child: Text(
                                   'Building seventeen',
-                                  style: typography.Body1?.copyWith(
+                                  style: typography.Body1.copyWith(
                                       color: Colors.white),
                                 ),
                               ),
@@ -485,7 +484,7 @@ class _DataParameterFilterScreenState extends State<DataParameterFilterScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            value: selectedCountry,
+            initialValue: selectedCountry,
             onChanged: (value) {
               setState(() {
                 selectedCountry = value;

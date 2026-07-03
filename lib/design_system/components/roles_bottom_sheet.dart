@@ -1,15 +1,9 @@
-import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
 
 import '../../models/initial_data_model.dart';
-import '../../providers/auth_provider.dart';
 import '../primitives/app_colors.dart';
 import '../primitives/custom_typography.dart';
-import '../primitives/utilities/custom_spacing.dart';
 import '../repo/constants.dart';
 
 class RolesBottomSheet extends StatefulWidget {

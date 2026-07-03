@@ -1,9 +1,7 @@
 import '../../utils/global_imports.dart';
-import 'package:RiskSphere/providers/connections_provider.dart';
 import '../../design_system/components/rating_bar.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
-import '../../providers/role_provider.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
 
 class ConnectionsScreen extends StatefulWidget {

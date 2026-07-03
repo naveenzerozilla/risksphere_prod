@@ -703,7 +703,7 @@ class Result {
   SharingStatus? sharingStatus;
   int? locationCount;
   dynamic role;
-  dynamic? status;
+  dynamic status;
   int? geocodeAvg;
   int? overallAvg;
   SovGraphData? sovGraphData;
@@ -1067,8 +1067,8 @@ class GlobalPerilCounts {
 }
 
 class Roles {
-  Null? isApplicableForTrial;
-  Null? id;
+  Null isApplicableForTrial;
+  Null id;
   dynamic role;
   String? name;
   dynamic isMultipleRoleEnabled;

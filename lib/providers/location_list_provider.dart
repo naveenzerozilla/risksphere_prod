@@ -4,9 +4,7 @@ import 'package:RiskSphere/screens/listings/my_location_list.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/models/account_list_model.dart';
 import 'package:RiskSphere/models/location_list_model.dart';
-import 'package:RiskSphere/models/sov_list_model.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
 import 'package:RiskSphere/utils/common_headers.dart';
@@ -14,16 +12,8 @@ import '../design_system/components/custom_toast.dart';
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
-import 'package:RiskSphere/models/location_list_model.dart';
-import 'package:RiskSphere/service/api_service.dart';
-import 'package:RiskSphere/utils/api_constants.dart';
 
-import '../screens/listings/widgets/location_data.dart';
 import '../service/language_service.dart';
 
 class LocationListProvider extends ChangeNotifier {
@@ -33,7 +23,7 @@ class LocationListProvider extends ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -44,7 +34,7 @@ class LocationListProvider extends ChangeNotifier {
 
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -156,7 +146,7 @@ class LocationListProvider extends ChangeNotifier {
 
   set page(int value) {
     _page = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -167,7 +157,7 @@ class LocationListProvider extends ChangeNotifier {
 
   set totalPages(int value) {
     _totalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -199,7 +189,7 @@ class LocationListProvider extends ChangeNotifier {
   // Method to add to the certified location list
   void addToCertifiedLocationList(List<Location> newLocations) {
     _certifiedLocationList.addAll(newLocations);
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -210,14 +200,14 @@ class LocationListProvider extends ChangeNotifier {
 
   set summaryList(List<String> value) {
     _summaryList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
   void addToLocationList(List<Location> newLocations) {
     _locationList.addAll(newLocations);
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }

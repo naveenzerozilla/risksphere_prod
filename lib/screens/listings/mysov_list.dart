@@ -1,6 +1,5 @@
 import 'package:RiskSphere/screens/listings/widgets/score_card_layout.dart';
 import 'package:RiskSphere/screens/listings/widgets/vertical_bar_indicator.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/my_location_list_model.dart';
@@ -8,8 +7,8 @@ import '../../utils/enum.dart';
 import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
+import '../chatbot/chatbot.dart';
 import '../payments/purchase_license.dart';
-import 'package:http/http.dart' as http;
 
 class MySovList extends StatefulWidget {
   final String? status;
@@ -246,8 +245,13 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
         },
         child: Consumer<UserProfileProvider>(
           builder: (context, userProfileProvider, child) {
-            return Consumer<ThemeProvider>(
-              builder: (buildContext, themeProvider, child) {
+            return Consumer2<ThemeProvider, MyLocationListProvider>(
+              builder: (
+                context,
+                themeProvider,
+                locationProfileProvider,
+                child,
+              ) {
                 return Scaffold(
                   key: _scaffoldKey,
                   backgroundColor:
@@ -266,6 +270,56 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                         _isExpanded = !_isExpanded;
                       });
                     },
+                  ),
+                  floatingActionButton: Padding(
+                    padding: const EdgeInsets.only(bottom: 50),
+                    child: SafeArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => ChatbotBottomSheet(
+                              locationId: locationProfileProvider
+                                  .locationProfile?.finalAddress?.locationId
+                                  .toString(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(25),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Need Help?",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              SizedBox(width: 8),
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: AppColors.primaryMain,
+                                child: Icon(Icons.smart_toy,
+                                    color: Colors.white, size: 18),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   drawer: CustomDrawer(),
                   body: Stack(
@@ -364,7 +418,7 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
   Widget sovBody(CustomTypography typography) {
     return Consumer2<SOVListProvider, UserProfileProvider>(
         builder: (context, sovListProvider, user, _) {
-      final String trialStatus = user.trialInfo?['status'] ?? '';
+      final String trialStatus = user.trialInfo['status'] ?? '';
 
       return (trialStatus.contains('Expired') && isHasAnyPlan == false)
           ? Container(
@@ -562,7 +616,6 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                     return ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-
                       itemCount: sovListProvider.isNextPageLoading
                           ? sovListProvider.sovList.length + 1
                           : sovListProvider.sovList.length,
@@ -1969,9 +2022,8 @@ class _MySovListState extends State<MySovList> with TickerProviderStateMixin {
                                                 backgroundColor:
                                                     Colors.grey[800],
                                                 child: Text(
-                                                  (user.name != null &&
-                                                          user.name!.isNotEmpty)
-                                                      ? user.name!
+                                                  (user.name.isNotEmpty)
+                                                      ? user.name
                                                           .substring(0, 2)
                                                           .toUpperCase()
                                                       : "?",

@@ -792,7 +792,7 @@ class _LocationProfileState extends State<LocationProfile>
         return Consumer<MyLocationListProvider>(
             builder: (context, locationProfileProvider, child) {
           return Scaffold(
-            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            backgroundColor: themeProvider.getTheme.colorScheme.surface,
             appBar: CustomAppBar(
               isExpanded: _isExpanded,
               showNotificationDot: _showNotificationDot,
@@ -1007,9 +1007,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                               .center,
                                                       children: [
                                                         // ---------- SOV FLOW ----------
-                                                        if (widget.sovId !=
-                                                                null &&
-                                                            widget.sovId!
+                                                        if (widget.sovId
                                                                 .isNotEmpty) ...[
                                                           InkWell(
                                                             onTap: () {
@@ -1947,7 +1945,7 @@ class _LocationProfileState extends State<LocationProfile>
         marker?.infoWindow.title?.contains("Subdestination") ?? false;
     var isAdded = marker?.infoWindow.snippet?.contains("Added") ?? false;
     String occupancy =
-        marker?.infoWindow.snippet?.split("Occupancy: ")?.last ?? "";
+        marker?.infoWindow.snippet?.split("Occupancy: ").last ?? "";
 
     return Positioned(
       left: 50,
@@ -1996,9 +1994,9 @@ class _LocationProfileState extends State<LocationProfile>
                           provider.locationProfile?.finalAddress?.campusId ==
                               '') {
                         _showAddToSOVDialog(
-                            marker?.markerId?.value ?? "", occupancy);
+                            marker?.markerId.value ?? "", occupancy);
                       } else {
-                        _addToSOV(marker?.markerId?.value ?? "",
+                        _addToSOV(marker?.markerId.value ?? "",
                             occupancy: occupancy,
                             campusName: provider
                                     .locationProfile?.finalAddress?.campusId ??
@@ -2393,7 +2391,7 @@ class _LocationProfileState extends State<LocationProfile>
                                             // status= value ? "added" : "not added";
                                           });
                                         },
-                                        activeColor: Colors.blue,
+                                        activeThumbColor: Colors.blue,
                                         inactiveThumbColor: Colors.grey,
                                         inactiveTrackColor: Colors.grey[300],
                                       ),
@@ -2463,7 +2461,7 @@ class _LocationProfileState extends State<LocationProfile>
                                           filteredSubdestinations[index];
                                       final id = subdestination.id ?? '';
                                       final status =
-                                          (subdestination?.status ?? '')
+                                          (subdestination.status ?? '')
                                               .toLowerCase();
                                       final isSelected =
                                           selectedIds.contains(id);
@@ -2562,7 +2560,7 @@ class _LocationProfileState extends State<LocationProfile>
                                           child: Builder(
                                             builder: (context) {
                                               String occupancy =
-                                                  (subdestination?.rented ??
+                                                  (subdestination.rented ??
                                                           false)
                                                       ? 'Rented/Leased'
                                                       : 'Owned';
@@ -2628,13 +2626,13 @@ class _LocationProfileState extends State<LocationProfile>
                                                           )
                                                         : null,
                                                     title: Text(
-                                                      '${index + 1}. ${subdestination?.name ?? ''}',
+                                                      '${index + 1}. ${subdestination.name ?? ''}',
                                                       maxLines: 1,
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
                                                     subtitle: Text(
-                                                      subdestination?.address ??
+                                                      subdestination.address ??
                                                           '',
                                                       maxLines: 2,
                                                       overflow:
@@ -2660,7 +2658,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                     12),
                                                             label: Text(
                                                               subdestination
-                                                                      ?.status ??
+                                                                      .status ??
                                                                   "Not Added",
                                                               style: typography
                                                                   .Body1,
@@ -2687,7 +2685,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                     occupancy =
                                                                         value;
                                                                     subdestination
-                                                                            ?.rented =
+                                                                            .rented =
                                                                         false;
                                                                     isLoading =
                                                                         true;
@@ -2705,7 +2703,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                           .changeOccupancy(
                                                                     context,
                                                                     subdestination
-                                                                            ?.locationId ??
+                                                                            .locationId ??
                                                                         "",
                                                                     false,
                                                                     provider
@@ -2733,7 +2731,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                       occupancy =
                                                                           "Rented/Leased";
                                                                       subdestination
-                                                                              ?.rented =
+                                                                              .rented =
                                                                           true;
                                                                     });
                                                                   }
@@ -2766,7 +2764,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                     occupancy =
                                                                         value;
                                                                     subdestination
-                                                                            ?.rented =
+                                                                            .rented =
                                                                         true;
                                                                     isLoading =
                                                                         true;
@@ -2784,7 +2782,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                           .changeOccupancy(
                                                                     context,
                                                                     subdestination
-                                                                            ?.locationId ??
+                                                                            .locationId ??
                                                                         "",
                                                                     true,
                                                                     provider
@@ -2812,7 +2810,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                                       occupancy =
                                                                           "Owned";
                                                                       subdestination
-                                                                              ?.rented =
+                                                                              .rented =
                                                                           false;
                                                                     });
                                                                   }
@@ -4315,9 +4313,9 @@ class _LocationProfileState extends State<LocationProfile>
                 child: ScrollbarTheme(
                   data: ScrollbarThemeData(
                     thumbColor:
-                        MaterialStateProperty.all(Colors.lightBlueAccent),
-                    trackColor: MaterialStateProperty.all(Colors.black26),
-                    thickness: MaterialStateProperty.all(3),
+                        WidgetStateProperty.all(Colors.lightBlueAccent),
+                    trackColor: WidgetStateProperty.all(Colors.black26),
+                    thickness: WidgetStateProperty.all(3),
                     // move thickness here
                     radius: const Radius.circular(8),
                   ),
@@ -4912,7 +4910,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                     "",
                                             locationIdForRef:
                                                 locationProfileProvider
-                                                        ?.locationProfile
+                                                        .locationProfile
                                                         ?.finalAddress
                                                         ?.locationIdForRef ??
                                                     "",
@@ -5140,7 +5138,7 @@ class _LocationProfileState extends State<LocationProfile>
                                       .locationProfile?.subdestinations ??
                                   [])[index];
                               String occupancy =
-                                  (subdestination?.rented ?? false) == true
+                                  (subdestination.rented ?? false) == true
                                       ? 'Rented/Leased'
                                       : 'Owned';
                               return GestureDetector(
@@ -5376,10 +5374,10 @@ class _LocationProfileState extends State<LocationProfile>
       final dynamicTop = screenHeight * 0.17;
       final dynamicLeft = screenWidth * 0.37;
       double latitude =
-          locationProfileProvider.locationProfile?.location?.latitude ?? 0.0;
+          locationProfileProvider.locationProfile?.location.latitude ?? 0.0;
 
       double longitude =
-          locationProfileProvider.locationProfile?.location?.longitude ?? 0.0;
+          locationProfileProvider.locationProfile?.location.longitude ?? 0.0;
 
       List<Subdestination> filteredSubdestinations =
           (locationProfileProvider.locationProfile?.subdestinations ?? [])

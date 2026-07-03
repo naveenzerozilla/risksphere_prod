@@ -15,13 +15,9 @@ class ApiService {
     var headers = await CommonHeaders.createHeaders();
     final fullUrl = '$url${additionalParams ?? ''}';
 
-    log("URL: $fullUrl");
-
-    // Create a custom trace
     final trace = FirebasePerformance.instance.newTrace("get_api_call");
     await trace.start();
 
-    // Start HTTP metric
     final metric =
         FirebasePerformance.instance.newHttpMetric(fullUrl, HttpMethod.Get);
     await metric.start();
@@ -29,12 +25,10 @@ class ApiService {
     try {
       final response = await http.get(Uri.parse(fullUrl), headers: headers);
 
-      // Set metric details
       metric.httpResponseCode = response.statusCode;
       metric.requestPayloadSize = 0;
       metric.responsePayloadSize = response.bodyBytes.length;
 
-      // Add a custom attribute to the trace
       trace.putAttribute("url", fullUrl);
       trace.setMetric("response_size", response.bodyBytes.length);
 
@@ -48,7 +42,7 @@ class ApiService {
       rethrow;
     } finally {
       await metric.stop();
-      await trace.stop(); // Stop trace after HTTP metric
+      await trace.stop();
     }
   }
 
@@ -102,10 +96,6 @@ class ApiService {
     final headers = await CommonHeaders.createHeaders1();
 
     final encodedBody = jsonEncode(body);
-
-    log(" DELETE URL: $url");
-    log(" DELETE Headers: $headers");
-    log(" DELETE Body Sending: $encodedBody");
 
     final request = http.Request("DELETE", uri);
 
@@ -161,15 +151,12 @@ class ApiService {
 
   Future<Map<String, dynamic>> patch(Map<String, dynamic> body) async {
     var headers = await CommonHeaders.createHeaders();
-    log("Headers: $headers");
-    log("URL: $url");
-    log("Body: $body");
+
     final response = await http.patch(
       Uri.parse('$url'),
       body: json.encode(body),
       headers: headers,
     );
-    log("Response: ${response.body}");
     return _handleResponse(response);
   }
 
@@ -210,12 +197,10 @@ class ApiService {
         'POST', Uri.parse(AppConstant.UPLOAD_SOV_ACCOUNT + '/upload'));
     request.fields.addAll(
         {'sov_name': name, 'account_id': accountId, 'device': 'mobile'});
-    print("Request Fields: ${request.fields}");
-    print("Request Files path: ${filePath.path}");
+
     request.files.add(await http.MultipartFile.fromPath('file', filePath.path));
-    print("Request Files: ${request.files}");
+
     request.headers.addAll(headers);
-    log("Request headers: ${request.headers}");
 
     http.StreamedResponse streamedResponse = await request.send();
 
@@ -322,8 +307,6 @@ class ApiService {
 
     http.StreamedResponse streamedResponse = await request.send();
 
-    print("Response Code: ${streamedResponse.statusCode}");
-    print("Response Reason: ${streamedResponse.reasonPhrase}");
 
     if (streamedResponse.statusCode == 200) {
       String responseData = await streamedResponse.stream.bytesToString();
@@ -366,13 +349,10 @@ class ApiService {
     request.fields.addAll({
       'location_id': locationId,
     });
-    print("Request Fields: ${request.fields}");
-    print("Request Files path: ${filePath.path}");
     request.files.add(await http.MultipartFile.fromPath(
         'file_${DateTime.now().millisecondsSinceEpoch}', filePath.path));
-    print("Request Files: ${request.files}");
+
     request.headers.addAll(headers);
-    log("Request headers: ${request.headers}");
 
     http.StreamedResponse streamedResponse = await request.send();
 
@@ -403,8 +383,6 @@ class ApiService {
       [bool? isList]) async {
     final statusCode = response.statusCode;
     final body = response.body;
-    log("Status Code: $statusCode");
-    // log("Response Body: $body");
     await AuthNotifier().getAllClaims();
 
     if (statusCode >= 200 && statusCode < 300) {

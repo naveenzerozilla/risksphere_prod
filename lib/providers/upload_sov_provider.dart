@@ -466,10 +466,6 @@ class UploadSovProvider extends ChangeNotifier {
 
       print(response);
 
-      if (response == null) {
-        throw Exception("Response is NULL → Server not reachable");
-      }
-
       if (response['message'] == null) {
         throw Exception("Server returned error → Missing 'message' key");
       }
@@ -774,7 +770,7 @@ class UploadSovProvider extends ChangeNotifier {
       } else {
         throw Exception('Failed to mark as not duplicate');
       }
-    } catch (error, stackTrace) {
+    } catch (error) {
       log('Error: $error');
       // log('StackTrace: $stackTrace');
       // ScaffoldMessenger.of(context).showSnackBar(

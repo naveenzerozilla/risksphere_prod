@@ -196,9 +196,9 @@ class _UploadPreviewButtonsState extends State<UploadPreviewButtons> {
   void _showCommitDialog(BuildContext context) {
     var provider = Provider.of<UploadSovProvider>(context, listen: false);
 
-    int geocodingCount = provider.geocodingList?.length ?? 0;
-    int duplicateCount = provider.duplicateLocations?.length ?? 0;
-    int conflictCount = provider.conflictLocations?.length ?? 0;
+    int geocodingCount = provider.geocodingList.length ?? 0;
+    int duplicateCount = provider.duplicateLocations.length ?? 0;
+    int conflictCount = provider.conflictLocations.length ?? 0;
     showDialog(
       context: context,
       builder: (context) {

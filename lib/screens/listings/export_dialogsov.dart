@@ -47,7 +47,7 @@ class _ExportDialogSovState extends State<ExportDialogSov> {
             children: [
               SizedBox(height: CustomSpacing.six),
               DropdownButtonFormField<String>(
-                value: _format,
+                initialValue: _format,
                 items: [
                   DropdownMenuItem(
                     value: 'excel',

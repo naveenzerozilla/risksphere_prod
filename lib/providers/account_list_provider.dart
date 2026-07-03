@@ -5,8 +5,6 @@ import 'dart:io';
 
 import 'package:RiskSphere/models/PricingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -18,7 +16,6 @@ import 'package:RiskSphere/utils/api_constants.dart';
 import '../design_system/components/custom_toast.dart';
 import '../main.dart' hide CustomToast;
 import '../service/firestore_service.dart';
-import '../utils/toast.dart';
 
 class AccountListProvider extends ChangeNotifier {
 
@@ -469,7 +466,7 @@ class AccountListProvider extends ChangeNotifier {
 
   void addToAccountList(List<Accounts> newAccounts) {
     _accountList.addAll(newAccounts);
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -480,7 +477,7 @@ class AccountListProvider extends ChangeNotifier {
 
   set autoCompleteAccountList(List<Accounts> value) {
     _autoCompleteAccountList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -539,7 +536,7 @@ class AccountListProvider extends ChangeNotifier {
           ),
         ),
       );
-    } catch (e, stackTrace) {
+    } catch (e) {
       // print(stackTrace);
 
       isLoading = false;

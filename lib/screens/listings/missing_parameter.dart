@@ -1,11 +1,8 @@
 import 'package:RiskSphere/screens/listings/udpate_parameter.dart';
-import 'package:RiskSphere/screens/listings/widgets/auto_complete_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:tuple/tuple.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../utils/global_imports.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
 
 import '../payments/purchase_license.dart';
@@ -189,10 +186,10 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<AccountListProvider>(context, listen: false);
 
-      if (widget.sovId != null && widget.sovId!.isNotEmpty) {
-        provider.listenToLocationRecommendations(widget.sovId!);
+      if (widget.sovId.isNotEmpty) {
+        provider.listenToLocationRecommendations(widget.sovId);
 
-        _getData(widget.sovId!);
+        _getData(widget.sovId);
       }
     });
   }
@@ -327,7 +324,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                         .read<AccountListProvider>()
                                         .fetchMissingParameterList(
                                           context,
-                                          widget.sovId!,
+                                          widget.sovId,
                                           isRefresh: true,
                                         );
 
@@ -561,7 +558,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                                               AccountListProvider>()
                                                           .fetchMissingParameterList(
                                                             context,
-                                                            widget.sovId!,
+                                                            widget.sovId,
                                                             isRefresh: true,
                                                           );
 
@@ -694,7 +691,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                                   .read<AccountListProvider>()
                                   .fetchMissingParameterList(
                                     context,
-                                    widget.sovId!,
+                                    widget.sovId,
                                     isRefresh: true,
                                   );
 
@@ -1151,7 +1148,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                         .read<AccountListProvider>()
                         .fetchMissingParameterList(
                           context,
-                          widget.sovId!,
+                          widget.sovId,
                           isRefresh: true,
                         );
 

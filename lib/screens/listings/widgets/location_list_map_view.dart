@@ -9,6 +9,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
+import '../../../constants/configuration.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../models/hazard_data.dart';
 import '../../../models/my_location_list_model.dart';
@@ -208,7 +209,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
   }
 
   Future<void> loadDatasetLocations() async {
-    const projectId = "project-green-r5-1-qa";
+    final projectId = Configuration.projectId;
 
     final googleAccessToken = await getGoogleAccessToken();
 
@@ -242,7 +243,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
       final features = geoJson['features'] as List? ?? [];
 
-      debugPrint("📍 Features in dataset: ${features.length}");
+      debugPrint(" Features in dataset: ${features.length}");
 
       final List<MyLocation> allLocations = [];
 
@@ -260,7 +261,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
         final lat = (coords[1] as num).toDouble();
 
         if (lat == 0.0 || lng == 0.0) {
-          debugPrint("⚠️ Skipping invalid location");
+          debugPrint("️ Skipping invalid location");
           continue;
         }
 
@@ -440,11 +441,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
     return Marker(
       markerId: MarkerId(location.id ?? ''),
       position: location.location,
-
       icon: BitmapDescriptor.defaultMarkerWithHue(
         isCurrent ? BitmapDescriptor.hueRed : hue,
       ),
-
       onTap: () async {
         setState(() {
           _focusedLocation = location.location;
@@ -502,64 +501,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
       );
     }
   }
-
-  // Future<void> _showLocationPopup(
-  //   BuildContext context,
-  //   String locationId,
-  // ) async {
-  //   try {
-  //     showDialog(
-  //       context: context,
-  //       barrierDismissible: false,
-  //       builder: (_) => const Center(
-  //         child: CircularProgressIndicator(),
-  //       ),
-  //     );
-  //
-  //     final response = await getLocationDetails(locationId);
-  //
-  //     if (response != null) {
-  //       showLocationDetailsPopup(
-  //         context,
-  //         response["result"],
-  //       );
-  //     }
-  //     Navigator.pop(context);
-  //     final result = response!["result"];
-  //     final finalAddress = result["final_address"];
-  //
-  //     showDialog(
-  //       context: context,
-  //       builder: (_) => LocationDetailsPopup(
-  //         lat: finalAddress["latitude"].toString(),
-  //         long: finalAddress["longitude"].toString(),
-  //         imageUrl: "",
-  //         address: finalAddress["address"] ?? "",
-  //         locationId: finalAddress["location_id"] ?? "",
-  //         geocodingScore: finalAddress["score"] ?? 0,
-  //         riskScore: result["hazard"]["Overall"]["rating"] ?? 0,
-  //         dataCompleteness: 100,
-  //         hazards: {},
-  //         // next step
-  //         geocodedAt: [finalAddress["location_type"] ?? ""],
-  //         occupancy: List<String>.from(
-  //           finalAddress["place_types"] ?? [],
-  //         ),
-  //         accountId: finalAddress["account_id"],
-  //         accountName: finalAddress["account_name"],
-  //         subAccountId: finalAddress["sub_account_id"],
-  //         subAccountName: finalAddress["sub_account_name"],
-  //         rented: finalAddress["rented"],
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     Navigator.pop(context);
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(e.toString())),
-  //     );
-  //   }
-  // }
 
   Future<Map<String, dynamic>?> getLocationDetails(
     String locationId,
@@ -854,7 +795,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     });
   }
 
-
   void _togglePinVisibility() {
     setState(() => _showPins = !_showPins);
     clusterManager.setItems(
@@ -864,6 +804,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           .toList(),
     );
   }
+
   void _filterPins() {
     List<MyLocation> filteredLocations;
 
@@ -893,9 +834,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     setState(() => is3DView = !is3DView);
   }
 
-  // ─────────────────────────────────────────────
-  //  BUILD
-  // ─────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -914,8 +852,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     return Column(
       children: [
         const SizedBox(height: 8),
-
-        // ── Tab bar ──────────────────────────────
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -951,9 +887,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
               child: Stack(
                 children: [
                   GoogleMap(
-                    // cloudMapId: Platform.isAndroid
-                    //     ? "d00bf4d659df058f3cd32c75"
-                    //     : "d00bf4d659df058f45c4338c",
+                    cloudMapId: Platform.isAndroid
+                        ? "f1fd26ce85e093cea861303b"
+                        : "f1fd26ce85e093ceb59d481f",
                     initialCameraPosition: const CameraPosition(
                       target: LatLng(20.5937, 78.9629),
                       zoom: 9,
@@ -1226,7 +1162,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
         const SizedBox(height: 8),
 
-        // ── Current location info ─────────────────
         if (currentLocation != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -1255,7 +1190,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
             ),
           ),
 
-        // ── Prev / Next buttons ───────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
@@ -1422,7 +1356,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
                             child:
                                 Text(vendor.name, style: typography.InputLabel),
                             onPressed: () {
-                              _changeHazardLayer(hazard.id!);
+                              _changeHazardLayer(hazard.id);
                               _changeVendor(vendor.name);
                             },
                           );
@@ -1569,7 +1503,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     super.dispose();
   }
 }
-
 
 int scoreToStar(int? score) {
   if (score == null) return 1;

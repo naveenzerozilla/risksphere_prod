@@ -531,14 +531,10 @@ class _MyLocationListState extends State<MyLocationList>
     _timer?.cancel();
     _mainTabController?.dispose();
     _masterTabController?.dispose();
-    _tabController?.dispose();
+    _tabController.dispose();
     _hasActiveTimer = false;
     _debounce?.cancel();
-    // deBouncer?.cancel();
-
-    // Safely use the cached reference
     _myLocationProvider?.clearAllFilters();
-    // _myLocationProvider?.clearSelection();
     Provider.of<MyLocationListProvider>(
       context,
       listen: false,
@@ -552,8 +548,7 @@ class _MyLocationListState extends State<MyLocationList>
     super.dispose();
   }
 
-  String? _activeAccountKey; // track which account/subaccount timer belongs to
-
+  String? _activeAccountKey;
   Future<void> getdata(String accountId, String subAccountId) async {
     if (!mounted) return;
     isPgAdmin = await SharedPreferenceService.getClaimForSubfeature(
@@ -591,9 +586,6 @@ class _MyLocationListState extends State<MyLocationList>
       eathquakeLicenseCount = hurricancelicense.toString();
       hurricaneLicensecount = eathquakeLicense.toString();
     });
-    print("geoCodingStatus => $geoCodingStatus");
-    print("userLicenseStatus => $userLicenseStatus");
-    print("hazardLicenseStatus => $hazardLicenseStatus");
     final locationListProvider =
     Provider.of<MyLocationListProvider>(context, listen: false);
 
@@ -1393,8 +1385,8 @@ class _MyLocationListState extends State<MyLocationList>
                                           .toString(),
                                       accountId: widget.accountID!,
                                       subAccountId: widget.subAccountID!,
-                                      accountName: widget.accountName!,
-                                      subAccountName: widget.subAccountName!,
+                                      accountName: widget.accountName,
+                                      subAccountName: widget.subAccountName,
                                     ),
                               );
                             },
@@ -2940,7 +2932,7 @@ class _MyLocationListState extends State<MyLocationList>
               child: Text(
                 "${(currentIndex.clamp(0, totalProcessesCount - 1) +
                     1)}/${totalProcessesCount}",
-                style: typography.Caption?.copyWith(
+                style: typography.Caption.copyWith(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
@@ -4221,7 +4213,7 @@ class _MyLocationListState extends State<MyLocationList>
                                   1,
                               isAutoCertified: true,
                               tags: (locationListProvider
-                                  .myLocationList[index]?.tags ??
+                                  .myLocationList[index].tags ??
                                   []),
                               onDelete: (locationId) {
                                 // Show delete confirmation dialog
@@ -4464,7 +4456,7 @@ class _MyLocationListState extends State<MyLocationList>
 
                       isAutoCertified: true,
                       tags: (locationListProvider
-                          .myLocationList[index]?.tags ??
+                          .myLocationList[index].tags ??
                           []),
                       onDelete: (locationId) {
                         // Show delete confirmation dialog
@@ -4988,7 +4980,7 @@ class _MyLocationListState extends State<MyLocationList>
           ?.toString() ??
           '1',
       isAutoCertified: true,
-      tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
+      tags: (locationListProvider.certifiedLocationList[index].tags ?? []),
       onDelete: (locationId) {
         // Show delete confirmation dialog
         showDeleteConfirmationDialog(
@@ -5542,9 +5534,9 @@ class _MyLocationListState extends State<MyLocationList>
                                                   (s) => s.name == selection);
 
                                           setState(() {
-                                            selectedSovId = sov?.sovId ?? "";
+                                            selectedSovId = sov.sovId ?? "";
                                             _sovNameController.text =
-                                                sov?.name ?? "";
+                                                sov.name ?? "";
                                             isSovSelected = true;
 
                                             _sovError = null; // ✅ ADD THIS
@@ -6420,9 +6412,8 @@ class _MyLocationListState extends State<MyLocationList>
                                                 backgroundColor: Colors
                                                     .grey[800],
                                                 child: Text(
-                                                  (user.name != null &&
-                                                      user.name!.isNotEmpty)
-                                                      ? user.name!
+                                                  (user.name.isNotEmpty)
+                                                      ? user.name
                                                       .substring(0, 2)
                                                       .toUpperCase()
                                                       : "?",

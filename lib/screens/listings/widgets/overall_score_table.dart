@@ -1,10 +1,7 @@
 import 'package:RiskSphere/utils/global_imports.dart';
-import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../models/my_location_list_model.dart';
-import '../../../providers/my_location_list_provider.dart';
 
 class LocationTable extends StatefulWidget {
   final String? accountID;
@@ -152,7 +149,7 @@ class _LocationTableState extends State<LocationTable> {
       'WinterWeather': 18,
     };
 
-    final sortedHazardColumns = hazardColumns!
+    final sortedHazardColumns = hazardColumns
         .where((hazard) => hazard != 'Overall')
         .toList()
       ..sort(
@@ -277,7 +274,7 @@ class _LocationTableState extends State<LocationTable> {
                                                     .Body2),
                                             onTap: () {
                                               setState(() {
-                                                hazardColumns!
+                                                hazardColumns
                                                     .forEach((hazard) {
                                                   columnVisibility[hazard] =
                                                       true;
@@ -296,7 +293,7 @@ class _LocationTableState extends State<LocationTable> {
                                                     .Body2),
                                             onTap: () {
                                               setState(() {
-                                                hazardColumns!
+                                                hazardColumns
                                                     .forEach((hazard) {
                                                   columnVisibility[hazard] =
                                                       false;

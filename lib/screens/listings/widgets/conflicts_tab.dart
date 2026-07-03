@@ -4,10 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
-import '../../../providers/my_location_list_provider.dart';
 import '../../../providers/upload_sov_provider.dart';
 import '../add_location_screen.dart';
-import 'message_card.dart';
 
 class ConflictsTab extends StatefulWidget {
   final String? subAccountName;
@@ -514,96 +512,95 @@ class ConflictsTabState extends State<ConflictsTab> {
                             // Address and edit icon
                             if (currentItem != null)
                               // Address and edit icon
-                              if (currentItem != null)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "${currentIndex + 1} -",
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16),
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${currentIndex + 1} -",
+                                      style: typography.H4.copyWith(
+                                        color: Colors.lightBlueAccent,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    SizedBox(
+                                      width:
+                                          MediaQuery.of(context).size.width /
+                                              1.5,
+                                      child: Text(
+                                        currentItem is MyLocation
+                                            ? currentItem.geocodedAddress ??
+                                                ''
+                                            : currentItem is Conflicts
+                                                ? currentItem.address ??
+                                                    widget.geocodingAddress ??
+                                                    ''
+                                                : widget.geocodingAddress ??
+                                                    '',
+                                        maxLines: 3,
                                         style: typography.H4.copyWith(
                                           color: Colors.lightBlueAccent,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                      const SizedBox(width: 5),
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                1.5,
-                                        child: Text(
-                                          currentItem is MyLocation
-                                              ? currentItem.geocodedAddress ??
-                                                  ''
-                                              : currentItem is Conflicts
-                                                  ? currentItem.address ??
-                                                      widget.geocodingAddress ??
-                                                      ''
-                                                  : widget.geocodingAddress ??
-                                                      '',
-                                          maxLines: 3,
-                                          style: typography.H4.copyWith(
-                                            color: Colors.lightBlueAccent,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                                    ),
+                                    InkWell(
+                                      onTap: () {
+                                        final locationId = currentItem
+                                                is MyLocation
+                                            ? currentItem.id ?? ''
+                                            : currentItem is Conflicts
+                                                ? currentItem.locationId ?? ''
+                                                : '';
+
+                                        final address =
+                                            currentItem is MyLocation
+                                                ? currentItem.geocodedAddress
+                                                : widget.geocodingAddress;
+
+                                        Navigator.of(context)
+                                            .push(MaterialPageRoute(
+                                          builder: (_) => AddLocationScreen(
+                                            accountId: widget.accountId,
+                                            subAccountId: widget.subAccountId,
+                                            sovId: "null",
+                                            accountName: widget.accountName,
+                                            subAccountName:
+                                                widget.subAccountName!,
+                                            sovName: "widget.sovName!",
+                                            locationId: locationId,
+                                            locationName: address,
+                                            locationIdForRef: locationId,
+                                            searchQuery: address!,
+                                            is_conflict: true,
                                           ),
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () {
-                                          final locationId = currentItem
-                                                  is MyLocation
-                                              ? currentItem.id ?? ''
-                                              : currentItem is Conflicts
-                                                  ? currentItem.locationId ?? ''
-                                                  : '';
-
-                                          final address =
-                                              currentItem is MyLocation
-                                                  ? currentItem.geocodedAddress
-                                                  : widget.geocodingAddress;
-
-                                          Navigator.of(context)
-                                              .push(MaterialPageRoute(
-                                            builder: (_) => AddLocationScreen(
-                                              accountId: widget.accountId,
-                                              subAccountId: widget.subAccountId,
-                                              sovId: "null",
-                                              accountName: widget.accountName,
-                                              subAccountName:
-                                                  widget.subAccountName!,
-                                              sovName: "widget.sovName!",
-                                              locationId: locationId,
-                                              locationName: address,
-                                              locationIdForRef: locationId,
-                                              searchQuery: address!,
-                                              is_conflict: true,
-                                            ),
-                                          ))
-                                              .then((_) {
-                                            setState(() {
-                                              widget.location!
-                                                  .removeAt(currentIndex);
-                                              selectedOption = 'none';
-                                              selectedValue = null;
-                                              selectedIndex = null;
-                                            });
+                                        ))
+                                            .then((_) {
+                                          setState(() {
+                                            widget.location!
+                                                .removeAt(currentIndex);
+                                            selectedOption = 'none';
+                                            selectedValue = null;
+                                            selectedIndex = null;
                                           });
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(5),
-                                          child: Icon(Icons.edit,
-                                              size: 25,
-                                              color: Colors.lightBlueAccent),
-                                        ),
-                                      )
-                                    ],
-                                  ),
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(5),
+                                        child: Icon(Icons.edit,
+                                            size: 25,
+                                            color: Colors.lightBlueAccent),
+                                      ),
+                                    )
+                                  ],
                                 ),
+                              ),
 
                             const SizedBox(height: 10),
 

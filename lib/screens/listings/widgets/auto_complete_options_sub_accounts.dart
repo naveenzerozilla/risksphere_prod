@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:RiskSphere/models/sub_account_list_model.dart';
 import '../../../design_system/primitives/custom_typography.dart';
-import '../../../models/account_list_model.dart';
 
 class AutocompleteOptionsSubAccount extends StatelessWidget {
   final List<SubAccounts> options;

@@ -138,7 +138,7 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
                       itemCount: processes.length,
                       itemBuilder: (context, index) {
                         var processData =
-                            processes[index].data() as Map<String, dynamic>;
+                            processes[index].data();
 
                         String processId =
                             processData['process_id'] ?? 'Unknown ID';

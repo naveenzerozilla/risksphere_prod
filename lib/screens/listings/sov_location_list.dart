@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:RiskSphere/screens/listings/processing_summary.dart';
 import 'package:RiskSphere/screens/listings/widgets/location_list_map_view.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
@@ -6,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:RiskSphere/models/my_location_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../../utils/global_imports.dart';
+import '../chatbot/chatbot.dart';
 import 'missing_parameter.dart';
 
 class SovLocationList extends StatefulWidget {
@@ -276,7 +276,6 @@ class _SovLocationListState extends State<SovLocationList>
 
   void _initializeData() {
     _setClaims();
-
   }
 
   Future<void> _setClaims() async {
@@ -429,8 +428,13 @@ class _SovLocationListState extends State<SovLocationList>
   @override
   Widget build(BuildContext context1) {
     return SafeArea(
-      child: Consumer<ThemeProvider>(
-        builder: (buildContext, themeProvider, child) {
+      child: Consumer2<ThemeProvider, MyLocationListProvider>(
+        builder: (
+          context,
+          themeProvider,
+          locationProfileProvider,
+          child,
+        ) {
           return Scaffold(
             key: _scaffoldKey,
             backgroundColor: themeProvider.getTheme.colorScheme.surface,
@@ -448,6 +452,56 @@ class _SovLocationListState extends State<SovLocationList>
                 });
               },
             ),
+            floatingActionButton: Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ChatbotBottomSheet(
+                        locationId: locationProfileProvider
+                            .locationProfile?.finalAddress?.locationId
+                            .toString(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Need Help?",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppColors.primaryMain,
+                          child: Icon(Icons.smart_toy,
+                              color: Colors.white, size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             drawer: CustomDrawer(),
             body: Stack(
               children: [
@@ -462,7 +516,6 @@ class _SovLocationListState extends State<SovLocationList>
                   final isSelectionMode =
                       myLocationListProvider.selectedLocationIds.isNotEmpty ||
                           myLocationListProvider.isGlobalSelectAll;
-
 
                   var typography = CustomTypography(context);
                   return Column(
@@ -697,7 +750,6 @@ class _SovLocationListState extends State<SovLocationList>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               if (isSelectionMode) ...[
-
                                 SizedBox(width: CustomSpacing.two),
                                 Container(
                                   padding: EdgeInsets.symmetric(
@@ -725,10 +777,8 @@ class _SovLocationListState extends State<SovLocationList>
                                             listen: false);
 
                                     if (provider.isGlobalSelectAll) {
-
                                       provider.clearSelection();
                                     } else {
-
                                       provider.selectAllGlobal(
                                         totalCount: _selectedScreen ==
                                                 Screens.certifiedLocationList
@@ -1055,7 +1105,6 @@ class _SovLocationListState extends State<SovLocationList>
                                             context, "sov_locations"),
                                         style: typography.Body1,
                                       ),
-
                                       Spacer(),
                                       SizedBox(width: CustomSpacing.two),
                                       selectedMainTab == 0
@@ -1080,7 +1129,7 @@ class _SovLocationListState extends State<SovLocationList>
                                     ],
                                   ),
                                 ),
-                               PopupMenuButton(
+                                PopupMenuButton(
                                   icon: Icon(Icons.more_vert),
                                   itemBuilder: (context) => [
                                     PopupMenuItem(
@@ -1178,8 +1227,9 @@ class _SovLocationListState extends State<SovLocationList>
                                     dividerColor: Colors.transparent,
                                     isScrollable: false,
                                     tabAlignment: TabAlignment.fill,
-                                    indicatorPadding: const EdgeInsets.symmetric(
-                                        vertical: 8.0, horizontal: 4.0),
+                                    indicatorPadding:
+                                        const EdgeInsets.symmetric(
+                                            vertical: 8.0, horizontal: 4.0),
                                     labelPadding: EdgeInsets.zero,
                                     indicator: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
@@ -1399,7 +1449,6 @@ class _SovLocationListState extends State<SovLocationList>
                               initialProcessId: widget.initialProcessId,
                               initialSubProcessId: widget.initialSubProcessId,
                             ),
-
                             LocationListMapView(
                               accountId: widget.accountID!,
                               subAccountId: widget.subAccountID!,
@@ -3865,7 +3914,7 @@ class _SovLocationListState extends State<SovLocationList>
           locationListProvider.certifiedLocationList[index].dataCompleteness ??
               1,
       isAutoCertified: true,
-      tags: (locationListProvider.certifiedLocationList[index]?.tags ?? []),
+      tags: (locationListProvider.certifiedLocationList[index].tags ?? []),
       onDelete: (locationId) {
         // Show delete confirmation dialog
         showDeleteConfirmationDialog(
@@ -3987,7 +4036,7 @@ class _SovLocationListState extends State<SovLocationList>
       dataCompletenessScore:
           locationListProvider.myLocationList[index].dataCompleteness ?? 0,
       isAutoCertified: false,
-      tags: (locationListProvider.myLocationList[index]?.tags ?? []),
+      tags: (locationListProvider.myLocationList[index].tags ?? []),
       onDelete: (locationId) {
         showDeleteConfirmationDialog(
           context,

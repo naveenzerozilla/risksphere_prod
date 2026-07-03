@@ -1,20 +1,13 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gcaptcha_v3/constants.dart';
 import 'package:RiskSphere/models/corporate_verification_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart';
 import 'package:RiskSphere/models/user_verification_list_model.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert'; // Import for JSON encoding/decoding
-import 'dart:developer'; // Import for logging
+// Import for JSON encoding/decoding
+// Import for logging
 
 import '../design_system/components/custom_toast.dart';
-import '../models/company_model.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';
 
@@ -196,12 +189,8 @@ class VerificationProvider with ChangeNotifier {
       // Show a generic error message to the user
       isUserLoading = false;
       if (!context.mounted) return [];
-      if(e.message != null) {
-        CustomToast.error(context, e.message);
-      } else {
-        CustomToast.error(context, 'Error fetching requests. Please try again later.');
-      }
-      CustomToast.error(
+      CustomToast.error(context, e.message);
+          CustomToast.error(
           context, 'Error fetching requests. Please try again later.');
       return []; // Return an empty list in case of error
     }

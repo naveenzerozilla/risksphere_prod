@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../design_system/components/custom_toast.dart';
 import '../models/corporate_user_model.dart';
 import '../models/initial_data_model.dart';
-import '../models/role_model.dart' hide Roles;
 import '../models/user_corporate_model.dart';
 import '../service/api_service.dart';
 import '../utils/api_constants.dart';

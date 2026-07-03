@@ -1,6 +1,4 @@
-import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/global_imports.dart';
 
@@ -290,7 +288,7 @@ class SharedPreferenceService {
           }
           break;
         default:
-          print('Ignoring unknown claim: $key');
+          // print('Ignoring unknown claim: $key');
           break;
       }
     });
@@ -357,10 +355,8 @@ class SharedPreferenceService {
     ];
     for (String key in staticStrings) {
       bool value = prefs.getBool(key) ?? false;
-      if (value != null) {
-        claims[key] = value;
-        //print('Retrieved claim $key with value $value');
-      }
+      claims[key] = value;
+      //print('Retrieved claim $key with value $value');
     }
     return claims;
   }
@@ -395,13 +391,13 @@ class SharedPreferenceService {
   static Future<void> setUpcomingScheduleEndTime(String? value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('upcoming_schedule_endtime', value ?? '');
-    print('Upcoming schedule end time set to $value');
+    // print('Upcoming schedule end time set to $value');
   }
 
   static Future<String?> getUpcomingScheduleEndTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString('upcoming_schedule_endtime');
-    print('Upcoming schedule end time: $value');
+    // print('Upcoming schedule end time: $value');
     return value == '' ? null : value;
   }
 
@@ -416,14 +412,14 @@ class SharedPreferenceService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('trial_period_start_date', formattedDate);
 
-    print('Trial period start date set to $formattedDate');
+    // print('Trial period start date set to $formattedDate');
   }
 
   static Future<String?> getTrialPeriodStartDate() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString('trial_period_start_date');
 
-    print('Trial period start date: $value');
+    // print('Trial period start date: $value');
 
     return value == '' ? null : value;
   }
@@ -443,7 +439,6 @@ class SharedPreferenceService {
       }
     }
 
-    // ✅ Fallback to already-formatted string
     final formatted = prefs.getString('trial_period_start_date');
     return formatted == '' ? null : formatted;
   }
@@ -464,26 +459,26 @@ class SharedPreferenceService {
   static Future<void> setScheduleInProgress(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SCHEDULE_INPROGRESS, value);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
   }
 
   static Future<String?> getScheduleInProgress() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SCHEDULE_INPROGRESS);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
     return value;
   }
 
   static Future<void> setUpcomingScheduleStartTime(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SCHEDULE_STARTTIME, value);
-    print('Schedule STARTTIME progress $value');
+    // print('Schedule STARTTIME progress $value');
   }
 
   static Future<String?> getUpcomingScheduleStartTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SCHEDULE_STARTTIME);
-    print('Schedule STARTTIME progress $value');
+    // print('Schedule STARTTIME progress $value');
     return value;
   }
 
@@ -550,33 +545,33 @@ class SharedPreferenceService {
   static Future<void> setTrialUser(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(TRAIL_USER, value);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
   }
 
   static Future<String?> getTrialUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(TRAIL_USER);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
     return value;
   }
 
   static Future<void> setTrailLocation(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(TRAIL_LOCATION_COUNT, value);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
   }
 
   static Future<String?> getTrailLocation() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(TRAIL_LOCATION_COUNT);
-    print('Schedule in progress $value');
+    // print('Schedule in progress $value');
     return value;
   }
 
   static Future<void> setUserLicense(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(USER_LICENSE, value);
-    print('Set user license to $value');
+    // print('Set user license to $value');
   }
 
   static Future<String?> getUserLicense() async {
@@ -590,7 +585,7 @@ class SharedPreferenceService {
   static Future<void> saveHasAnyPlan(bool hasanyplan) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasanyplan', hasanyplan);
-    print('Notification Subscription saved: $hasanyplan');
+    // print('Notification Subscription saved: $hasanyplan');
   }
 
 // Get Notification Subscription Status
@@ -603,7 +598,7 @@ class SharedPreferenceService {
   static Future<void> saveHasNewUser(bool hasnewuser) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isnewaccount', hasnewuser);
-    print('Notification Subscription saved: $hasnewuser');
+    // print('Notification Subscription saved: $hasnewuser');
   }
 
 // Get Notification Subscription Status
@@ -615,7 +610,7 @@ class SharedPreferenceService {
   static Future<void> setGeocodingLicense(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('geocoding_license', value);
-    print('Set geocoding license to $value');
+    // print('Set geocoding license to $value');
   }
 
   static Future<String?> getGeocodingLicense() async {
@@ -628,7 +623,7 @@ class SharedPreferenceService {
   static Future<void> setHazardLicense(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('hazard_license', value);
-    print('Set hazard license to $value');
+    // print('Set hazard license to $value');
   }
 
   static Future<String?> getHazardLicense() async {
@@ -641,7 +636,7 @@ class SharedPreferenceService {
   static Future<void> setHazardHubLicense(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('hazard_hub_license', value);
-    print('Set hazard hub license to $value');
+    // print('Set hazard hub license to $value');
   }
 
   static Future<String?> getHazardHubLicense() async {
@@ -654,7 +649,7 @@ class SharedPreferenceService {
   static Future<void> setHurricane(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('hurricane_kineticast', value);
-    print('Set hazard hub license to $value');
+    // print('Set hazard hub license to $value');
   }
 
   static Future<String?> getHurricane() async {
@@ -667,7 +662,7 @@ class SharedPreferenceService {
   static Future<void> setEarthquake(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('earthquake_usgs', value);
-    print('Set hazard hub license to $value');
+    // print('Set hazard hub license to $value');
   }
 
   static Future<String?> getEathquake() async {
@@ -676,8 +671,6 @@ class SharedPreferenceService {
     //print('Retrieved hazard license with value $value');
     return value;
   }
-
-
 
   // static Future<void> setScheduleInProgress(bool value) async {
   //   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -721,13 +714,13 @@ class SharedPreferenceService {
   static Future<void> setSovUploadState(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(SOV_UPLOAD_STATE, value);
-    print('Set SOV upload state to $value');
+    // print('Set SOV upload state to $value');
   }
 
   static Future<String?> getSovUploadState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? value = prefs.getString(SOV_UPLOAD_STATE);
-    print('Retrieved SOV upload state with value $value');
+    // print('Retrieved SOV upload state with value $value');
     return value;
   }
 
@@ -793,14 +786,14 @@ class SharedPreferenceService {
     await prefs.remove(SOV_ACCOUNT_NAME);
     await prefs.remove(SOV_SUB_ACCOUNT_ID);
     await prefs.remove(SOV_SUB_ACCOUNT_NAME);
-    print('Cleared all SOV related shared preferences');
+    // print('Cleared all SOV related shared preferences');
   }
 
   // Save Notification Subscription Status
   static Future<void> saveNotificationSubscription(bool isSubscribed) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notificationSubscribed', isSubscribed);
-    print('Notification Subscription saved: $isSubscribed');
+    // print('Notification Subscription saved: $isSubscribed');
   }
 
 // Get Notification Subscription Status
@@ -867,7 +860,7 @@ class SharedPreferenceService {
   static Future<void> setHasImpromentLicenseCount(String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('improvement_license', value);
-    print('Set hazard license to $value');
+    // print('Set hazard license to $value');
   }
 
   static Future<String?> getHasImpromentLicenseCount() async {

@@ -12,7 +12,6 @@ import 'package:provider/provider.dart';
 
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../providers/account_list_provider.dart';
-import '../../../providers/location_list_provider.dart';
 import '../../../service/language_service.dart';
 import '../../payments/purchase_license.dart';
 import '../location_profile.dart'; // For SVG rendering.

@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/global_imports.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
-
 import '../payments/purchase_license.dart';
 
 class AccountListScreen extends StatefulWidget {
@@ -38,14 +37,9 @@ class _AccountListScreenState extends State<AccountListScreen>
   String? _uploadedFileName;
   late final typography = CustomTypography(context);
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   bool showCheckbox = false;
-
   Timer? deBouncer;
-
   TextEditingController _accountEditNameController = TextEditingController();
-
-  int _selectedAccountIndex = 0;
   Timer? _debounce;
   String _accountQuery = "";
   bool _accountAlreadyExists = false;
@@ -54,18 +48,14 @@ class _AccountListScreenState extends State<AccountListScreen>
   bool isPgAdmin = false;
   bool isAdmin = false;
   bool isSuperAdmin = false;
-
-  // bool isIndivudual = false;
-
   ScrollController _scrollController = ScrollController();
-
   Timer? autoCompleteDeBouncer;
 
   late File files;
 
   void _scrollLeft() {
     _scrollController.animateTo(
-      _scrollController.offset - 100, // Scroll left by 100 pixels
+      _scrollController.offset - 100,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -73,16 +63,16 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   void _scrollRight() {
     _scrollController.animateTo(
-      _scrollController.offset + 100, // Scroll right by 100 pixels
+      _scrollController.offset + 100,
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
 
   void debounce(
-      VoidCallback callback, {
-        Duration duration = const Duration(milliseconds: 300),
-      }) {
+    VoidCallback callback, {
+    Duration duration = const Duration(milliseconds: 300),
+  }) {
     if (deBouncer != null) {
       deBouncer!.cancel();
     }
@@ -101,9 +91,9 @@ class _AccountListScreenState extends State<AccountListScreen>
   }
 
   void autoCompleteDebounce(
-      VoidCallback callback, {
-        Duration duration = const Duration(milliseconds: 300),
-      }) {
+    VoidCallback callback, {
+    Duration duration = const Duration(milliseconds: 300),
+  }) {
     if (autoCompleteDeBouncer != null) {
       autoCompleteDeBouncer!.cancel();
     }
@@ -143,9 +133,6 @@ class _AccountListScreenState extends State<AccountListScreen>
       _checkFirstTime();
     });
 
-    var userProfileProvider =
-    Provider.of<UserProfileProvider>(context, listen: false);
-
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -181,8 +168,7 @@ class _AccountListScreenState extends State<AccountListScreen>
 
   Future<void> _closeOverlay() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'isFirstTime', false);
+    await prefs.setBool('isFirstTime', false);
     setState(() => _showOverlay = false);
   }
 
@@ -194,15 +180,8 @@ class _AccountListScreenState extends State<AccountListScreen>
   }
 
   _getData() async {
-    // final prefs = await SharedPreferences.getInstance();
-
-    // isPgAdmin = prefs.getBool(SharedPreferenceService.IS_PG_ADMIN) ?? false;
-    // isAdmin = prefs.getBool(SharedPreferenceService.IS_ADMIN) ?? false;
-    // isSuperAdmin =
-    //     prefs.getBool(SharedPreferenceService.IS_SUPER_ADMIN) ?? false;
-
     final accountListProvider =
-    Provider.of<AccountListProvider>(context, listen: false);
+        Provider.of<AccountListProvider>(context, listen: false);
 
     accountListProvider.fetchAccountList(context, "", 1, 5);
 
@@ -215,375 +194,313 @@ class _AccountListScreenState extends State<AccountListScreen>
     return SafeArea(
       child: Consumer<ThemeProvider>(
           builder: (buildContext, themeProvider, child) {
-            return PopScope(
-              onPopInvokedWithResult: (canPop, result) {
-                Provider.of<DrawerSelectionProvider>(context, listen: false)
-                    .setSelectedItem("dashboard");
+        return PopScope(
+          onPopInvokedWithResult: (canPop, result) {
+            Provider.of<DrawerSelectionProvider>(context, listen: false)
+                .setSelectedItem("dashboard");
+          },
+          child: Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: themeProvider.getTheme.colorScheme.background,
+            appBar: CustomAppBar(
+              isExpanded: _isExpanded,
+              showNotificationDot: _showNotificationDot,
+              onExpandPressed: (isExpanded) {
+                setState(() {
+                  _isExpanded = isExpanded;
+                });
               },
-              child: Scaffold(
-                key: _scaffoldKey,
-                backgroundColor: themeProvider.getTheme.colorScheme.background,
-                appBar: CustomAppBar(
-                  isExpanded: _isExpanded,
-                  showNotificationDot: _showNotificationDot,
-                  onExpandPressed: (isExpanded) {
-                    setState(() {
-                      _isExpanded = isExpanded;
-                    });
-                  },
-                  onSearchPressed: () {
-                    setState(() {
-                      _isExpanded = !_isExpanded;
-                    });
-                  },
-                ),
-                drawer: CustomDrawer(),
-                floatingActionButton: _selectedScreen == Screens.accountList
-                    ? showCheckbox
+              onSearchPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+            ),
+            drawer: CustomDrawer(),
+            floatingActionButton: _selectedScreen == Screens.accountList
+                ? showCheckbox
                     ? Builder(builder: (contextLocal) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FloatingActionButton(
-                        onPressed: () {
-                          // On export button click
-                        },
-                        child: Icon(CupertinoIcons.tray_arrow_down),
-                      ),
-                      SizedBox(
-                        height: CustomSpacing.two,
-                      ),
-                      FloatingActionButton(
-                        onPressed: () {
-                          _tabController?.animateTo(1);
-                          _selectedScreen = Screens.networkList;
-                        },
-                        child: Icon(Icons.add),
-                      ),
-                    ],
-                  );
-                })
-                    : _tabController?.index != 0
-                    ? SizedBox()
-                    : Container(
-                  key: keyFeature1,
-                  margin: EdgeInsets.only(bottom: 42.0),
-                  child: FloatingActionButton(
-                    backgroundColor: AppColors.primaryMain,
-                    onPressed: () {
-                      _closeOverlay();
-                      _showAddAccountDialog(context);
-                    },
-                    child: Icon(
-                      Icons.add,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
-                )
-                    : SizedBox(),
-                body: Consumer<UserProfileProvider>(
-                    builder: (context, userProfileProvider, child) {
-                      final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
-
-                      return (trialStatus.contains('Expired') && isHasAnyPlan == false)
-                          ? Container(
-                        padding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.95),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(height: 10),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: MessageCard(
-                                messageTextSpans: [
-                                  TextSpan(
-                                    text:
-                                    'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
-                                    style: typography.Body1,
-                                  ),
-                                  // tappable
-                                  TextSpan(
-                                    text: ' Upgrade Now!',
-                                    style: typography.Body1.copyWith(
-                                      color: AppColors.primaryMain,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    PurchaseLicensePage()));
-                                      },
-                                  ),
-                                ],
-                                isError: true,
-                              ),
+                            FloatingActionButton(
+                              onPressed: () {
+                                // On export button click
+                              },
+                              child: Icon(CupertinoIcons.tray_arrow_down),
+                            ),
+                            SizedBox(
+                              height: CustomSpacing.two,
+                            ),
+                            FloatingActionButton(
+                              onPressed: () {
+                                _tabController?.animateTo(1);
+                                _selectedScreen = Screens.networkList;
+                              },
+                              child: Icon(Icons.add),
                             ),
                           ],
-                        ),
-                      )
-                          : PopScope(
-                        canPop: /*_selectedScreen == Screens.connectionList ||
-                          _selectedScreen == Screens.corporateConnectionList,*/
-                        true,
-                        onPopInvoked: (canPop) {},
-                        child: Stack(
-                          children: [
-                            // Background image
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: 0.3,
-                                child: Image.asset(
-                                  'assets/images/mesh.png',
-                                  fit: BoxFit.cover,
-                                ),
+                        );
+                      })
+                    : _tabController?.index != 0
+                        ? SizedBox()
+                        : Container(
+                            key: keyFeature1,
+                            margin: EdgeInsets.only(bottom: 42.0),
+                            child: FloatingActionButton(
+                              backgroundColor: AppColors.primaryMain,
+                              onPressed: () {
+                                _closeOverlay();
+                                _showAddAccountDialog(context);
+                              },
+                              child: Icon(
+                                Icons.add,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             ),
-                            Column(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: [
-                                        //
-                                        SizedBox(height: CustomSpacing.two),
+                          )
+                : SizedBox(),
+            body: Consumer<UserProfileProvider>(
+                builder: (context, userProfileProvider, child) {
+              final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
 
-                                        Container(
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHigh,
-                                            borderRadius: BorderRadius.circular(
-                                                16), // Rounded edges
-                                          ),
-                                          margin: EdgeInsets.symmetric(
-                                              horizontal: 0, vertical: 0),
-                                          child: DefaultTabController(
-                                            length: _tabController!.length,
-                                            child: Column(
-                                              children: <Widget>[
-                                                // Container for the TabBar with arrows
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                    BorderRadius.circular(16),
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .surfaceContainerHigh,
-                                                  ),
-                                                  height: 50,
-                                                  child: Row(
-                                                    children: <Widget>[
-                                                      // Left arrow button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons.arrow_left,
-                                                            color: Colors.grey),
-                                                        onPressed: _scrollLeft,
-                                                      ),
-                                                      // Scrollable TabBar
-                                                      Consumer<
-                                                          AccountListProvider>(
-                                                          builder: (context,
-                                                              accountListProvider,
-                                                              _) {
-                                                            return Expanded(
-                                                              child:
-                                                              SingleChildScrollView(
-                                                                controller:
-                                                                _scrollController,
-                                                                scrollDirection:
-                                                                Axis.horizontal,
-                                                                child: TabBar(
-                                                                  onTap: (index) {
-                                                                    debugPrint(
-                                                                        'Tab clicked: $index');
+              return (trialStatus.contains('Expired') && isHasAnyPlan == false)
+                  ? Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withOpacity(0.95),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: MessageCard(
+                              messageTextSpans: [
+                                TextSpan(
+                                  text:
+                                      'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
+                                  style: typography.Body1,
+                                ),
+                                // tappable
+                                TextSpan(
+                                  text: ' Upgrade Now!',
+                                  style: typography.Body1.copyWith(
+                                    color: AppColors.primaryMain,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PurchaseLicensePage()));
+                                    },
+                                ),
+                              ],
+                              isError: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : PopScope(
+                      canPop: /*_selectedScreen == Screens.connectionList ||
+                          _selectedScreen == Screens.corporateConnectionList,*/
+                          true,
+                      onPopInvoked: (canPop) {},
+                      child: Stack(
+                        children: [
+                          // Background image
+                          Positioned.fill(
+                            child: Image.asset(
+                              'assets/images/mesh.png',
+                              fit: BoxFit.cover,
+                              color: Colors.white.withOpacity(0.3),
+                              colorBlendMode: BlendMode.modulate,
+                            ),
+                          ),
+                          Column(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      //
+                                      SizedBox(height: CustomSpacing.two),
 
-                                                                    if (index == 0) {
-                                                                      _getData();
-                                                                    }
-                                                                  },
-                                                                  controller:
-                                                                  _tabController,
-                                                                  tabAlignment:
-                                                                  TabAlignment
-                                                                      .start,
-                                                                  labelStyle:
-                                                                  typography
-                                                                      .Subtitle2,
-                                                                  isScrollable: true,
-                                                                  indicatorColor: Colors
-                                                                      .lightBlueAccent,
-                                                                  labelColor: Colors
-                                                                      .lightBlueAccent,
-                                                                  unselectedLabelColor:
-                                                                  Colors.white,
-                                                                  tabs: [
-                                                                    Tab(
-                                                                      child: Row(
+                                      Container(
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHigh,
+                                          borderRadius: BorderRadius.circular(
+                                              16), // Rounded edges
+                                        ),
+                                        margin: EdgeInsets.symmetric(
+                                            horizontal: 0, vertical: 0),
+                                        child: DefaultTabController(
+                                          length: _tabController!.length,
+                                          child: Column(
+                                            children: <Widget>[
+                                              // Container for the TabBar with arrows
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHigh,
+                                                ),
+                                                height: 50,
+                                                child: Row(
+                                                  children: <Widget>[
+                                                    // Left arrow button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.arrow_left,
+                                                          color: Colors.grey),
+                                                      onPressed: _scrollLeft,
+                                                    ),
+                                                    // Scrollable TabBar
+                                                    Expanded(
+                                                      child:
+                                                          SingleChildScrollView(
+                                                        controller:
+                                                            _scrollController,
+                                                        scrollDirection:
+                                                            Axis.horizontal,
+                                                        child: TabBar(
+                                                          onTap: (index) {
+                                                            debugPrint(
+                                                                'Tab clicked: $index');
+
+                                                            if (index == 0) {
+                                                              _getData();
+                                                            }
+                                                          },
+                                                          controller:
+                                                              _tabController,
+                                                          tabAlignment:
+                                                              TabAlignment
+                                                                  .start,
+                                                          labelStyle:
+                                                              typography
+                                                                  .Subtitle2,
+                                                          isScrollable: true,
+                                                          indicatorColor: Colors
+                                                              .lightBlueAccent,
+                                                          labelColor: Colors
+                                                              .lightBlueAccent,
+                                                          unselectedLabelColor:
+                                                              Colors.white,
+                                                          tabs: [
+                                                            Tab(
+                                                              child: Row(
+                                                                children: [
+                                                                  Text(
+                                                                    LanguageService.getTranslated(
+                                                                        context,
+                                                                        'my_accounts'),
+                                                                  ),
+                                                                  Consumer<AccountListProvider>(
+                                                                    builder: (context, provider, _) {
+                                                                      if (provider.isLoading || provider.accountHits == 0) {
+                                                                        return const SizedBox();
+                                                                      }
+                                                                      return Row(
+                                                                        mainAxisSize: MainAxisSize.min,
                                                                         children: [
-                                                                          Text(
-                                                                            LanguageService.getTranslated(
-                                                                                context,
-                                                                                'my_accounts'),
-                                                                            // 'My Accounts',
-                                                                          ),
-                                                                          accountListProvider.isLoading ||
-                                                                              accountListProvider.accountHits ==
-                                                                                  0
-                                                                              ? SizedBox()
-                                                                              : SizedBox(
+                                                                          SizedBox(
                                                                             width:
-                                                                            CustomSpacing.two,
+                                                                                CustomSpacing.two,
                                                                           ),
-                                                                          accountListProvider.isLoading ||
-                                                                              accountListProvider.accountHits ==
-                                                                                  0
-                                                                              ? SizedBox()
-                                                                              : SizedBox(
+                                                                          SizedBox(
                                                                             height:
-                                                                            25,
+                                                                                25,
                                                                             child:
-                                                                            Chip(
-                                                                              labelPadding: EdgeInsets.all(0),
+                                                                                Chip(
+                                                                              labelPadding: const EdgeInsets.all(0),
                                                                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                                                               label: Text(
-                                                                                accountListProvider.accountHits.toString(),
+                                                                                provider.accountHits.toString(),
                                                                                 style: typography.BottomNavigationActiveLabel.copyWith(height: -0.6),
                                                                               ),
                                                                             ),
                                                                           ),
                                                                         ],
-                                                                      ),
-                                                                    ),
-                                                                    // Tab(text: 'Shared'),
-
-                                                                    Tab(
-                                                                      text: LanguageService
-                                                                          .getTranslated(
-                                                                          context,
-                                                                          'configuration'),
-                                                                    ),
-                                                                    // Tab(
-                                                                    //     text:
-                                                                    //         'Access Requested'),
-                                                                  ],
-                                                                ),
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ],
                                                               ),
-                                                            );
-                                                          }),
-                                                      // Right arrow button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons.arrow_right,
-                                                            color: Colors.grey),
-                                                        onPressed: _scrollRight,
+                                                            ),
+                                                            Tab(
+                                                              text: LanguageService
+                                                                  .getTranslated(
+                                                                      context,
+                                                                      'configuration'),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
-                                                    ],
-                                                  ),
+                                                    ),
+                                                    // Right arrow button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.arrow_right,
+                                                          color: Colors.grey),
+                                                      onPressed: _scrollRight,
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        // TabBarView for the tab content
-                                        Expanded(
-                                          child: TabBarView(
-                                            controller: _tabController,
-                                            children: [
-                                              _getAccountUI(),
-
-                                              // ✅ Only listen to required field
-                                              Selector<AccountListProvider,
-                                                  String>(
-                                                selector: (_, provider) =>
-                                                provider.showAccountName,
-                                                builder: (_, accountName, __) {
-                                                  return ConfigurationTab(
-                                                    accountName: accountName,
-                                                  );
-                                                },
                                               ),
                                             ],
                                           ),
                                         ),
-                                        // Expanded(
-                                        //   child: Consumer<AccountListProvider>(
-                                        //     builder: (context,
-                                        //         accountListProvider, _) {
-                                        //       return TabBarView(
-                                        //         controller: _tabController,
-                                        //         children: [
-                                        //           _getAccountUI(),
-                                        //           ConfigurationTab(
-                                        //             accountName:
-                                        //                 accountListProvider
-                                        //                     .showAccountName,
-                                        //           ),
-                                        //         ],
-                                        //       );
-                                        //     },
-                                        //   ),
-                                        // ),
-
-                                        // Expanded(
-                                        //   child: TabBarView(
-                                        //     controller: _tabController,
-                                        //     children: [
-                                        //       _getAccountUI(),
-                                        //       // _getComingSoonUI("shared"),
-                                        //       if (isSuperAdmin || isPgAdmin) ...[
-                                        //         ConfigurationTab(),
-                                        //       ],
-                                        //       // _getComingSoonUI("request"),
-                                        //       // Consumer<AccountListProvider>(
-                                        //       //   builder: (context, accountListProvider, _) {
-                                        //       //     final accountId = accountListProvider.accountList.isNotEmpty
-                                        //       //         ? accountListProvider.accountList[0].accountId ?? ""
-                                        //       //         : "";
-                                        //       //     return DataTab(
-                                        //       //       accountName: accountListProvider.accountList[0].accountName ?? "",
-                                        //       //       accountId: accountId,
-                                        //       //       subaccountId: accountId,
-                                        //       //     );
-                                        //       //   },
-                                        //       // ),
-                                        //       // DataTab(
-                                        //       //   accountId:"",
-                                        //       //   // userProfileProvider.accountList.isNotEmpty
-                                        //       //   //     ? userProfileProvider.accountList[0].accountId ?? ""
-                                        //       //   //     : "",
-                                        //       //   subaccountId: null,
-                                        //       // ),
-                                        //     ],
-                                        //   ),
-                                        // ),
-                                      ],
-                                    ),
+                                      ),
+                                      // TabBarView for the tab content
+                                      Expanded(
+                                        child: TabBarView(
+                                          controller: _tabController,
+                                          children: [
+                                            _getAccountUI(),
+                                            Selector<AccountListProvider,
+                                                String>(
+                                              selector: (_, provider) =>
+                                                  provider.showAccountName,
+                                              builder: (_, accountName, __) {
+                                                return ConfigurationTab(
+                                                  accountName: accountName,
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            if (_showOverlay) _buildOverlay(),
-                          ],
-                        ),
-                      );
-                    }),
-              ),
-            );
-          }),
+                              ),
+                            ],
+                          ),
+                          if (_showOverlay) _buildOverlay(),
+                        ],
+                      ),
+                    );
+            }),
+          ),
+        );
+      }),
     );
   }
 
@@ -641,7 +558,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 Row(
                   children: [
                     Container(
@@ -655,7 +571,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                         ),
                         onPressed: _closeOverlay,
                         child:
-                        const Text("Skip", style: TextStyle(fontSize: 14)),
+                            const Text("Skip", style: TextStyle(fontSize: 14)),
                       ),
                     ),
                     const Spacer(),
@@ -676,30 +592,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                     ),
                   ],
                 ),
-                // const SizedBox(height: 16),
-                // const Text(
-                //   "New Account",
-                //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                // ),
-                // const SizedBox(height: 8),
-                // const Text(
-                //   "Create a primary account to organize your sub accounts and locations.",
-                //   // textAlign: TextAlign.center,
-                // ),
-                // const SizedBox(height: 20),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //   children: [
-                //     TextButton(
-                //       onPressed: _closeOverlay,
-                //       child: const Text("Skip"),
-                //     ),
-                //     ElevatedButton(
-                //       onPressed: _closeOverlay,
-                //       child: const Text("Add Account"),
-                //     ),
-                //   ],
-                // ),
               ],
             ),
           ),
@@ -732,37 +624,37 @@ class _AccountListScreenState extends State<AccountListScreen>
         onTap: isDisabled
             ? null
             : () {
-          // On tap of card
+                // On tap of card
 
-          if (showCheckbox) {
-            setState(() {
-              accountListProvider.accountList[index].isChecked =
-              !(accountListProvider.accountList[index].isChecked ??
-                  false);
-            });
-          }
-          // if all are unselected then hide checkbox
-          if (accountListProvider.accountList
-              .every((element) => element.isChecked == false)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                showCheckbox = false;
-              });
-            });
-          }
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return /* LocationProfile(
+                if (showCheckbox) {
+                  setState(() {
+                    accountListProvider.accountList[index].isChecked =
+                        !(accountListProvider.accountList[index].isChecked ??
+                            false);
+                  });
+                }
+                // if all are unselected then hide checkbox
+                if (accountListProvider.accountList
+                    .every((element) => element.isChecked == false)) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    setState(() {
+                      showCheckbox = false;
+                    });
+                  });
+                }
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return /* LocationProfile(
               account: accountListProvider.accountList[index],
             );*/
-              SubAccountListScreen(
-                accountId:
-                accountListProvider.accountList[index].accountId ?? "",
-                accountName:
-                accountListProvider.accountList[index].accountName ??
-                    "",
-              );
-          }));
-        },
+                      SubAccountListScreen(
+                    accountId:
+                        accountListProvider.accountList[index].accountId ?? "",
+                    accountName:
+                        accountListProvider.accountList[index].accountName ??
+                            "",
+                  );
+                }));
+              },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -821,20 +713,20 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             Flexible(
                                               child: Text(
                                                 (accountListProvider
-                                                    .accountList[
-                                                index]
-                                                    .accountName ??
-                                                    "")
-                                                    .isNotEmpty
+                                                                .accountList[
+                                                                    index]
+                                                                .accountName ??
+                                                            "")
+                                                        .isNotEmpty
                                                     ? accountListProvider
-                                                    .accountList[index]
-                                                    .accountName!
+                                                        .accountList[index]
+                                                        .accountName!
                                                     : "",
                                                 style:
-                                                typography.Body2.copyWith(
+                                                    typography.Body2.copyWith(
                                                   color: Theme.of(context)
-                                                      .brightness ==
-                                                      Brightness.dark
+                                                              .brightness ==
+                                                          Brightness.dark
                                                       ? AppColors.white
                                                       : AppColors.black,
                                                 ),
@@ -847,22 +739,22 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                 onTap: () {
                                                   _accountEditNameController
                                                       .text = (accountListProvider
-                                                      .accountList[
-                                                  index]
-                                                      .accountName ??
-                                                      "")
-                                                      .isNotEmpty
+                                                                  .accountList[
+                                                                      index]
+                                                                  .accountName ??
+                                                              "")
+                                                          .isNotEmpty
                                                       ? accountListProvider
-                                                      .accountList[
-                                                  index]
-                                                      .accountName!
-                                                      .substring(0, 1)
-                                                      .toUpperCase() +
-                                                      accountListProvider
-                                                          .accountList[
-                                                      index]
-                                                          .accountName!
-                                                          .substring(1)
+                                                              .accountList[
+                                                                  index]
+                                                              .accountName!
+                                                              .substring(0, 1)
+                                                              .toUpperCase() +
+                                                          accountListProvider
+                                                              .accountList[
+                                                                  index]
+                                                              .accountName!
+                                                              .substring(1)
                                                       : "";
                                                   showDialog(
                                                     barrierDismissible: false,
@@ -872,45 +764,45 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                         title: Text(
                                                           LanguageService
                                                               .getTranslated(
-                                                              context,
-                                                              "edit_account"),
+                                                                  context,
+                                                                  "edit_account"),
                                                           style: typography
                                                               .H5_Regular,
                                                         ),
                                                         content: Column(
                                                           mainAxisSize:
-                                                          MainAxisSize.min,
+                                                              MainAxisSize.min,
                                                           children: [
                                                             TextField(
                                                               controller:
-                                                              _accountEditNameController,
+                                                                  _accountEditNameController,
                                                               decoration:
-                                                              InputDecoration(
+                                                                  InputDecoration(
                                                                 border:
-                                                                OutlineInputBorder(),
+                                                                    OutlineInputBorder(),
                                                                 labelText: LanguageService
                                                                     .getTranslated(
-                                                                    context,
-                                                                    "account_name"),
+                                                                        context,
+                                                                        "account_name"),
                                                                 labelStyle:
-                                                                typography
-                                                                    .Body1,
+                                                                    typography
+                                                                        .Body1,
                                                                 hintText:
-                                                                'Enter Account Name',
+                                                                    'Enter Account Name',
                                                                 hintStyle:
-                                                                typography
-                                                                    .Body1,
+                                                                    typography
+                                                                        .Body1,
                                                               ),
                                                             ),
                                                             SizedBox(
                                                                 height:
-                                                                CustomSpacing
-                                                                    .two),
+                                                                    CustomSpacing
+                                                                        .two),
                                                             Row(
                                                               children: [
                                                                 Expanded(
                                                                   child:
-                                                                  CustomButton(
+                                                                      CustomButton(
                                                                     onPressed:
                                                                         () {
                                                                       Navigator.pop(
@@ -928,50 +820,50 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                                   ),
                                                                 ),
                                                                 Consumer<
-                                                                    AccountListProvider>(
+                                                                        AccountListProvider>(
                                                                     builder:
                                                                         (context,
-                                                                        accountListProvider,
-                                                                        _) {
-                                                                      return accountListProvider
+                                                                            accountListProvider,
+                                                                            _) {
+                                                                  return accountListProvider
                                                                           .isRenameLoading
-                                                                          ? const Expanded(
-                                                                        child:
-                                                                        Row(
-                                                                          mainAxisAlignment:
-                                                                          MainAxisAlignment.center,
-                                                                          children: [
-                                                                            SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
-                                                                          ],
-                                                                        ),
-                                                                      )
-                                                                          : Expanded(
-                                                                        child:
-                                                                        CustomButton(
-                                                                          onPressed:
-                                                                              () async {
-                                                                            if (_accountEditNameController.text.isEmpty) {
-                                                                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                                                                content: Text(
-                                                                                  LanguageService.getTranslated(context, "account_list_app_rename_account_empty_text_error"),
-                                                                                  style: typography.Body1,
-                                                                                ),
-                                                                              ));
-                                                                              return;
-                                                                            }
-                                                                            await accountListProvider.renameAccount(context, accountListProvider.accountList[index].accountId!, _accountEditNameController.text);
-                                                                            Navigator.pop(context);
-                                                                          },
+                                                                      ? const Expanded(
                                                                           child:
-                                                                          Text(
-                                                                            LanguageService.getTranslated(context, "submit"),
-                                                                            style: typography.ButtonLargeBlack,
+                                                                              Row(
+                                                                            mainAxisAlignment:
+                                                                                MainAxisAlignment.center,
+                                                                            children: [
+                                                                              SizedBox(width: 25, height: 25, child: CircularProgressIndicator()),
+                                                                            ],
                                                                           ),
-                                                                          type:
-                                                                          ButtonType.elevated,
-                                                                        ),
-                                                                      );
-                                                                    }),
+                                                                        )
+                                                                      : Expanded(
+                                                                          child:
+                                                                              CustomButton(
+                                                                            onPressed:
+                                                                                () async {
+                                                                              if (_accountEditNameController.text.isEmpty) {
+                                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                                                  content: Text(
+                                                                                    LanguageService.getTranslated(context, "account_list_app_rename_account_empty_text_error"),
+                                                                                    style: typography.Body1,
+                                                                                  ),
+                                                                                ));
+                                                                                return;
+                                                                              }
+                                                                              await accountListProvider.renameAccount(context, accountListProvider.accountList[index].accountId!, _accountEditNameController.text);
+                                                                              Navigator.pop(context);
+                                                                            },
+                                                                            child:
+                                                                                Text(
+                                                                              LanguageService.getTranslated(context, "submit"),
+                                                                              style: typography.ButtonLargeBlack,
+                                                                            ),
+                                                                            type:
+                                                                                ButtonType.elevated,
+                                                                          ),
+                                                                        );
+                                                                }),
                                                               ],
                                                             ),
                                                           ],
@@ -986,7 +878,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                                   child: Icon(
                                                     Icons.edit,
                                                     color:
-                                                    AppColors.primaryMain,
+                                                        AppColors.primaryMain,
                                                     size: 16,
                                                   ),
                                                 ),
@@ -997,13 +889,13 @@ class _AccountListScreenState extends State<AccountListScreen>
                                       Spacer(),
                                       Selector<AccountListProvider, bool>(
                                         selector: (_, p) =>
-                                        p.accountList[index].isDefault ??
+                                            p.accountList[index].isDefault ??
                                             false,
                                         builder: (_, isDefault, __) {
                                           final provider =
-                                          Provider.of<AccountListProvider>(
-                                              context,
-                                              listen: false);
+                                              Provider.of<AccountListProvider>(
+                                                  context,
+                                                  listen: false);
 
                                           return IconButton(
                                             icon: Icon(
@@ -1015,7 +907,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                             ),
                                             onPressed: () async {
                                               final account =
-                                              provider.accountList[index];
+                                                  provider.accountList[index];
 
                                               if (isDefault) {
                                                 _showRemoveFavoriteBottomSheet(
@@ -1041,44 +933,44 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   !accountListProvider.showSubAccountCount
                                       ? SizedBox()
                                       : Row(
-                                    children: [
-                                      Text(
-                                          accountListProvider
-                                              .accountList[
-                                          index]
-                                              .subAccountCount !=
-                                              null &&
-                                              accountListProvider
-                                                  .accountList[
-                                              index]
-                                                  .subAccountCount ==
-                                                  1
-                                              ? LanguageService
-                                              .getTranslated(context,
-                                              "sub_account")
-                                              : accountListProvider
-                                              .accountList[
-                                          index]
-                                              .subAccountCount ==
-                                              null
-                                              ? ""
-                                              : LanguageService
-                                              .getTranslated(
-                                              context,
-                                              "sub_account"),
-                                          style: typography.Caption),
-                                      SizedBox(
-                                        width: CustomSpacing.two,
-                                      ),
-                                      Text(
-                                          accountListProvider
-                                              .accountList[index]
-                                              .subAccountCount
-                                              ?.toString() ??
-                                              "",
-                                          style: typography.Caption),
-                                    ],
-                                  ),
+                                          children: [
+                                            Text(
+                                                accountListProvider
+                                                                .accountList[
+                                                                    index]
+                                                                .subAccountCount !=
+                                                            null &&
+                                                        accountListProvider
+                                                                .accountList[
+                                                                    index]
+                                                                .subAccountCount ==
+                                                            1
+                                                    ? LanguageService
+                                                        .getTranslated(context,
+                                                            "sub_account")
+                                                    : accountListProvider
+                                                                .accountList[
+                                                                    index]
+                                                                .subAccountCount ==
+                                                            null
+                                                        ? ""
+                                                        : LanguageService
+                                                            .getTranslated(
+                                                                context,
+                                                                "sub_account"),
+                                                style: typography.Caption),
+                                            SizedBox(
+                                              width: CustomSpacing.two,
+                                            ),
+                                            Text(
+                                                accountListProvider
+                                                        .accountList[index]
+                                                        .subAccountCount
+                                                        ?.toString() ??
+                                                    "",
+                                                style: typography.Caption),
+                                          ],
+                                        ),
                                   // !accountListProvider.showSOVCount
                                   //     ? SizedBox()
                                   //     : Row(
@@ -1123,35 +1015,35 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   !accountListProvider.showOwner
                                       ? SizedBox()
                                       : Row(
-                                    children: [
-                                      Text(
-                                          LanguageService.getTranslated(
-                                              context, "owner"),
-                                          style: typography.Caption),
-                                      SizedBox(
-                                        width: CustomSpacing.two,
-                                      ),
-                                      Container(
-                                        width: MediaQuery.of(context)
-                                            .size
-                                            .width /
-                                            1.5,
-                                        child: Text(
-                                          /*accountListProvider.accountList[index].locationCount?.toString() ??
+                                          children: [
+                                            Text(
+                                                LanguageService.getTranslated(
+                                                    context, "owner"),
+                                                style: typography.Caption),
+                                            SizedBox(
+                                              width: CustomSpacing.two,
+                                            ),
+                                            Container(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width /
+                                                  1.5,
+                                              child: Text(
+                                                  /*accountListProvider.accountList[index].locationCount?.toString() ??
                                                 ""*/
-                                            accountListProvider
-                                                .accountList[index]
-                                                .owner
-                                                ?.name
-                                                .toString() ??
-                                                "",
-                                            maxLines: 1,
-                                            overflow:
-                                            TextOverflow.ellipsis,
-                                            style: typography.Caption),
-                                      ),
-                                    ],
-                                  ),
+                                                  accountListProvider
+                                                          .accountList[index]
+                                                          .owner
+                                                          ?.name
+                                                          .toString() ??
+                                                      "",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: typography.Caption),
+                                            ),
+                                          ],
+                                        ),
                                 ],
                               ),
                             ),
@@ -1159,26 +1051,26 @@ class _AccountListScreenState extends State<AccountListScreen>
                             true
                                 ? SizedBox()
                                 : Padding(
-                              padding:
-                              EdgeInsets.only(top: CustomSpacing.one),
-                              child: CustomGradientCircularProgressBar(
-                                radius: 23,
-                                value: double.parse(accountListProvider
-                                    .accountList[index].overallScore
-                                    ?.toString() ??
-                                    "0"),
-                                strokeWidth: 6,
-                                showText: true,
-                                textColor: Theme.of(context).brightness ==
-                                    Brightness.dark
-                                    ? AppColors.white
-                                    : AppColors.black,
-                                text: accountListProvider
-                                    .accountList[index].overallScore
-                                    ?.toString() ??
-                                    "0",
-                              ),
-                            ),
+                                    padding:
+                                        EdgeInsets.only(top: CustomSpacing.one),
+                                    child: CustomGradientCircularProgressBar(
+                                      radius: 23,
+                                      value: double.parse(accountListProvider
+                                              .accountList[index].overallScore
+                                              ?.toString() ??
+                                          "0"),
+                                      strokeWidth: 6,
+                                      showText: true,
+                                      textColor: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.white
+                                          : AppColors.black,
+                                      text: accountListProvider
+                                              .accountList[index].overallScore
+                                              ?.toString() ??
+                                          "0",
+                                    ),
+                                  ),
                             SizedBox(
                               width: CustomSpacing.four,
                             ),
@@ -1193,35 +1085,35 @@ class _AccountListScreenState extends State<AccountListScreen>
                   isDisabled
                       ? SizedBox()
                       : Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                      // bottom left and right corners curved
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(8),
-                        bottomRight: Radius.circular(8),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Icon with text
-                        // TextButton.icon(
-                        //   onPressed: () {
-                        //     // Transfer account
-                        //     _showTransferDialog(context,
-                        //         accountListProvider.accountList[index]);
-                        //   },
-                        //   icon: const Icon(Symbols.share_windows),
-                        //   label: Text('Transfer',
-                        //       style: typography.Caption.copyWith(
-                        //           color: Theme.of(context).brightness ==
-                        //                   Brightness.dark
-                        //               ? AppColors.white
-                        //               : AppColors.black)),
-                        // ),
-                        //SizedBox(),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            // bottom left and right corners curved
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(8),
+                              bottomRight: Radius.circular(8),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // Icon with text
+                              // TextButton.icon(
+                              //   onPressed: () {
+                              //     // Transfer account
+                              //     _showTransferDialog(context,
+                              //         accountListProvider.accountList[index]);
+                              //   },
+                              //   icon: const Icon(Symbols.share_windows),
+                              //   label: Text('Transfer',
+                              //       style: typography.Caption.copyWith(
+                              //           color: Theme.of(context).brightness ==
+                              //                   Brightness.dark
+                              //               ? AppColors.white
+                              //               : AppColors.black)),
+                              // ),
+                              //SizedBox(),
 
-                        const Spacer(),
-                        /*IconButton(
+                              const Spacer(),
+                              /*IconButton(
                                 icon: const Icon(Icons.upload_rounded),
                                 color: AppColors.primaryMain,
                                 onPressed: () async {
@@ -1236,334 +1128,334 @@ class _AccountListScreenState extends State<AccountListScreen>
                                 tooltip: LanguageService.getTranslated(context,
                                     "account_list_app_export_tooltip_text"),
                               ),*/
-                        IconButton(
-                          icon: const Icon(Icons.file_copy_rounded),
-                          color: AppColors.primaryMain,
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text(
-                                    LanguageService.getTranslated(
-                                        context, "duplicate_account"),
-                                    style: typography.H5_Regular,
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        LanguageService.getTranslated(
-                                            context,
-                                            "confirm_duplicate_account"),
-                                        style: typography.Body1,
-                                      ),
-                                      SizedBox(height: CustomSpacing.two),
-
-                                      /// BUTTON ROW
-                                      Row(
-                                        children: [
-                                          // CANCEL BUTTON
-                                          Expanded(
-                                            child: CustomButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context),
-                                              child: Text(
-                                                LanguageService
-                                                    .getTranslated(
-                                                    context,
-                                                    "cancel"),
-                                                style: typography
-                                                    .ButtonLarge,
-                                              ),
-                                              type: ButtonType.text,
+                              IconButton(
+                                icon: const Icon(Icons.file_copy_rounded),
+                                color: AppColors.primaryMain,
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text(
+                                          LanguageService.getTranslated(
+                                              context, "duplicate_account"),
+                                          style: typography.H5_Regular,
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              LanguageService.getTranslated(
+                                                  context,
+                                                  "confirm_duplicate_account"),
+                                              style: typography.Body1,
                                             ),
-                                          ),
+                                            SizedBox(height: CustomSpacing.two),
 
-                                          SizedBox(width: 12),
-
-                                          Expanded(
-                                              child: Selector<
-                                                  AccountListProvider,
-                                                  bool>(
-                                                selector: (_, p) =>
-                                                p.isDuplicateLoading,
-                                                builder: (_, isLoading, __) {
-                                                  final provider = Provider
-                                                      .of<AccountListProvider>(
-                                                      context,
-                                                      listen: false);
-
-                                                  return isLoading
-                                                      ? const Center(
-                                                    child: SizedBox(
-                                                      height: 28,
-                                                      width: 28,
-                                                      child:
-                                                      CircularProgressIndicator(
-                                                          strokeWidth:
-                                                          2),
-                                                    ),
-                                                  )
-                                                      : CustomButton(
-                                                    onPressed:
-                                                        () async {
-                                                      provider.isDuplicateLoading =
-                                                      true;
-                                                      provider
-                                                          .notifyListeners();
-
-                                                      try {
-                                                        await provider
-                                                            .duplicateAccount(
-                                                          context,
-                                                          provider
-                                                              .accountList[
-                                                          index]
-                                                              .accountId!,
-                                                        );
-
-                                                        provider.forceReload =
-                                                        true;
-
-                                                        provider
-                                                            .fetchAccountList(
-                                                          context,
-                                                          _accountQuery,
-                                                          1,
-                                                          5,
-                                                        );
-                                                      } finally {
-                                                        provider.isDuplicateLoading =
-                                                        false;
-                                                        provider
-                                                            .notifyListeners();
-                                                      }
-
-                                                      Navigator.pop(
-                                                          context);
-                                                    },
+                                            /// BUTTON ROW
+                                            Row(
+                                              children: [
+                                                // CANCEL BUTTON
+                                                Expanded(
+                                                  child: CustomButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
                                                     child: Text(
-                                                        "Duplicate"),
-                                                    type: ButtonType
-                                                        .elevated,
-                                                  );
-                                                },
-                                              )),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                          tooltip: LanguageService.getTranslated(
-                              context, "duplicate"),
-                        ),
-                        // Selector<AccountListProvider, bool>(
-                        //   selector: (_, p) => p.isDeleteLocationLoading,
-                        //   builder: (_, isLoading, __) {
-                        //     final provider =
-                        //         Provider.of<AccountListProvider>(context,
-                        //             listen: false);
-                        //
-                        //     return IconButton(
-                        //       icon: const Icon(Icons.delete),
-                        //       color: AppColors.primaryMain,
-                        //       onPressed: () {
-                        //         showDialog(
-                        //           barrierDismissible: false,
-                        //           context: context,
-                        //           builder: (context) {
-                        //             return AlertDialog(
-                        //               content: isLoading
-                        //                   ? const Center(
-                        //                       child:
-                        //                           CircularProgressIndicator())
-                        //                   : CustomButton(
-                        //                       onPressed: () async {
-                        //                         provider.isDeleteLocationLoading =
-                        //                             true;
-                        //                         provider
-                        //                             .notifyListeners();
-                        //
-                        //                         try {
-                        //                           await provider
-                        //                               .deleteAccount(
-                        //                             context,
-                        //                             provider
-                        //                                 .accountList[
-                        //                                     index]
-                        //                                 .accountId!,
-                        //                           );
-                        //
-                        //                           provider.forceReload =
-                        //                               true;
-                        //                           provider
-                        //                               .fetchAccountList(
-                        //                             context,
-                        //                             _accountQuery,
-                        //                             1,
-                        //                             5,
-                        //                           );
-                        //                         } finally {
-                        //                           provider.isDeleteLocationLoading =
-                        //                               false;
-                        //                           provider
-                        //                               .notifyListeners();
-                        //                         }
-                        //
-                        //                         Navigator.pop(context);
-                        //                       },
-                        //                       child: Text("Delete"),
-                        //                       type: ButtonType.elevated,
-                        //                     ),
-                        //             );
-                        //           },
-                        //         );
-                        //       },
-                        //     );
-                        //   },
-                        // )
-                        Consumer<AccountListProvider>(
-                          builder: (context, accountListProvider, _) {
-                            return IconButton(
-                              icon: const Icon(Icons.delete),
-                              color: AppColors.primaryMain,
-                              onPressed: () {
-                                showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text(
-                                        LanguageService.getTranslated(
-                                            context, "delete_account"),
-                                        style: typography.H5_Regular,
-                                      ),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            LanguageService.getTranslated(
-                                                context,
-                                                "confirm_delete_account"),
-                                            style: typography.Body1,
-                                          ),
-                                          SizedBox(
-                                            height: CustomSpacing.two,
-                                          ),
-                                          Row(
-                                            children: [
-                                              Expanded(child: Consumer<
-                                                  AccountListProvider>(
-                                                  builder: (context,
-                                                      accountListProvider,
-                                                      child) {
-                                                    return CustomButton(
-                                                        onPressed: () {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                        child: Text(
-                                                          LanguageService
-                                                              .getTranslated(
+                                                      LanguageService
+                                                          .getTranslated(
                                                               context,
                                                               "cancel"),
-                                                          style: typography
-                                                              .ButtonLarge,
-                                                        ),
-                                                        type:
-                                                        ButtonType.text);
-                                                  })),
-                                              Expanded(
-                                                child: Consumer<
-                                                    AccountListProvider>(
-                                                  builder: (context,
-                                                      provider, child) {
-                                                    return provider
-                                                        .isDeleteLocationLoading
-                                                        ? Center(
-                                                      child:
-                                                      SizedBox(
-                                                        height: 28,
-                                                        width: 28,
-                                                        child: CircularProgressIndicator(
-                                                            strokeWidth:
-                                                            2),
-                                                      ),
-                                                    )
-                                                        : CustomButton(
-                                                      onPressed:
-                                                          () async {
-                                                        provider.isDeleteLocationLoading =
-                                                        true;
-                                                        provider
-                                                            .notifyListeners();
+                                                      style: typography
+                                                          .ButtonLarge,
+                                                    ),
+                                                    type: ButtonType.text,
+                                                  ),
+                                                ),
 
-                                                        bool
-                                                        isSuccess =
-                                                        false;
+                                                SizedBox(width: 12),
 
-                                                        try {
-                                                          isSuccess =
-                                                          await provider
-                                                              .deleteAccount(
+                                                Expanded(
+                                                    child: Selector<
+                                                        AccountListProvider,
+                                                        bool>(
+                                                  selector: (_, p) =>
+                                                      p.isDuplicateLoading,
+                                                  builder: (_, isLoading, __) {
+                                                    final provider = Provider
+                                                        .of<AccountListProvider>(
                                                             context,
-                                                            provider
-                                                                .accountList[index]
-                                                                .accountId!,
-                                                          );
-                                                          if (isSuccess) {
-                                                            provider.forceReload =
-                                                            true;
-                                                            await provider
-                                                                .fetchAccountList(
-                                                              context,
-                                                              _accountQuery,
-                                                              1,
-                                                              5,
-                                                            );
+                                                            listen: false);
 
+                                                    return isLoading
+                                                        ? const Center(
+                                                            child: SizedBox(
+                                                              height: 28,
+                                                              width: 28,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          2),
+                                                            ),
+                                                          )
+                                                        : CustomButton(
+                                                            onPressed:
+                                                                () async {
+                                                              provider.isDuplicateLoading =
+                                                                  true;
+                                                              provider
+                                                                  .notifyListeners();
+
+                                                              try {
+                                                                await provider
+                                                                    .duplicateAccount(
+                                                                  context,
+                                                                  provider
+                                                                      .accountList[
+                                                                          index]
+                                                                      .accountId!,
+                                                                );
+
+                                                                provider.forceReload =
+                                                                    true;
+
+                                                                provider
+                                                                    .fetchAccountList(
+                                                                  context,
+                                                                  _accountQuery,
+                                                                  1,
+                                                                  5,
+                                                                );
+                                                              } finally {
+                                                                provider.isDuplicateLoading =
+                                                                    false;
+                                                                provider
+                                                                    .notifyListeners();
+                                                              }
+
+                                                              Navigator.pop(
+                                                                  context);
+                                                            },
+                                                            child: Text(
+                                                                "Duplicate"),
+                                                            type: ButtonType
+                                                                .elevated,
+                                                          );
+                                                  },
+                                                )),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                                tooltip: LanguageService.getTranslated(
+                                    context, "duplicate"),
+                              ),
+                              // Selector<AccountListProvider, bool>(
+                              //   selector: (_, p) => p.isDeleteLocationLoading,
+                              //   builder: (_, isLoading, __) {
+                              //     final provider =
+                              //         Provider.of<AccountListProvider>(context,
+                              //             listen: false);
+                              //
+                              //     return IconButton(
+                              //       icon: const Icon(Icons.delete),
+                              //       color: AppColors.primaryMain,
+                              //       onPressed: () {
+                              //         showDialog(
+                              //           barrierDismissible: false,
+                              //           context: context,
+                              //           builder: (context) {
+                              //             return AlertDialog(
+                              //               content: isLoading
+                              //                   ? const Center(
+                              //                       child:
+                              //                           CircularProgressIndicator())
+                              //                   : CustomButton(
+                              //                       onPressed: () async {
+                              //                         provider.isDeleteLocationLoading =
+                              //                             true;
+                              //                         provider
+                              //                             .notifyListeners();
+                              //
+                              //                         try {
+                              //                           await provider
+                              //                               .deleteAccount(
+                              //                             context,
+                              //                             provider
+                              //                                 .accountList[
+                              //                                     index]
+                              //                                 .accountId!,
+                              //                           );
+                              //
+                              //                           provider.forceReload =
+                              //                               true;
+                              //                           provider
+                              //                               .fetchAccountList(
+                              //                             context,
+                              //                             _accountQuery,
+                              //                             1,
+                              //                             5,
+                              //                           );
+                              //                         } finally {
+                              //                           provider.isDeleteLocationLoading =
+                              //                               false;
+                              //                           provider
+                              //                               .notifyListeners();
+                              //                         }
+                              //
+                              //                         Navigator.pop(context);
+                              //                       },
+                              //                       child: Text("Delete"),
+                              //                       type: ButtonType.elevated,
+                              //                     ),
+                              //             );
+                              //           },
+                              //         );
+                              //       },
+                              //     );
+                              //   },
+                              // )
+                              Consumer<AccountListProvider>(
+                                builder: (context, accountListProvider, _) {
+                                  return IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    color: AppColors.primaryMain,
+                                    onPressed: () {
+                                      showDialog(
+                                        barrierDismissible: false,
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text(
+                                              LanguageService.getTranslated(
+                                                  context, "delete_account"),
+                                              style: typography.H5_Regular,
+                                            ),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  LanguageService.getTranslated(
+                                                      context,
+                                                      "confirm_delete_account"),
+                                                  style: typography.Body1,
+                                                ),
+                                                SizedBox(
+                                                  height: CustomSpacing.two,
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Expanded(child: Consumer<
+                                                            AccountListProvider>(
+                                                        builder: (context,
+                                                            accountListProvider,
+                                                            child) {
+                                                      return CustomButton(
+                                                          onPressed: () {
                                                             Navigator.pop(
                                                                 context);
-                                                          }
-                                                        } finally {
-                                                          provider.isDeleteLocationLoading =
-                                                          false;
-                                                          provider
-                                                              .notifyListeners();
-                                                        }
-                                                      },
-                                                      child: Text(
-                                                        LanguageService.getTranslated(
-                                                            context,
-                                                            "delete"),
+                                                          },
+                                                          child: Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "cancel"),
+                                                            style: typography
+                                                                .ButtonLarge,
+                                                          ),
+                                                          type:
+                                                              ButtonType.text);
+                                                    })),
+                                                    Expanded(
+                                                      child: Consumer<
+                                                          AccountListProvider>(
+                                                        builder: (context,
+                                                            provider, child) {
+                                                          return provider
+                                                                  .isDeleteLocationLoading
+                                                              ? Center(
+                                                                  child:
+                                                                      SizedBox(
+                                                                    height: 28,
+                                                                    width: 28,
+                                                                    child: CircularProgressIndicator(
+                                                                        strokeWidth:
+                                                                            2),
+                                                                  ),
+                                                                )
+                                                              : CustomButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    provider.isDeleteLocationLoading =
+                                                                        true;
+                                                                    provider
+                                                                        .notifyListeners();
+
+                                                                    bool
+                                                                        isSuccess =
+                                                                        false;
+
+                                                                    try {
+                                                                      isSuccess =
+                                                                          await provider
+                                                                              .deleteAccount(
+                                                                        context,
+                                                                        provider
+                                                                            .accountList[index]
+                                                                            .accountId!,
+                                                                      );
+                                                                      if (isSuccess) {
+                                                                        provider.forceReload =
+                                                                            true;
+                                                                        await provider
+                                                                            .fetchAccountList(
+                                                                          context,
+                                                                          _accountQuery,
+                                                                          1,
+                                                                          5,
+                                                                        );
+
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                      }
+                                                                    } finally {
+                                                                      provider.isDeleteLocationLoading =
+                                                                          false;
+                                                                      provider
+                                                                          .notifyListeners();
+                                                                    }
+                                                                  },
+                                                                  child: Text(
+                                                                    LanguageService.getTranslated(
+                                                                        context,
+                                                                        "delete"),
+                                                                  ),
+                                                                  type: ButtonType
+                                                                      .elevated,
+                                                                );
+                                                        },
                                                       ),
-                                                      type: ButtonType
-                                                          .elevated,
-                                                    );
-                                                  },
+                                                    )
+                                                  ],
                                                 ),
-                                              )
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              tooltip: LanguageService.getTranslated(
-                                  context, "delete"),
-                            );
-                          },
-                        )
-                      ],
-                    ),
-                  ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                    tooltip: LanguageService.getTranslated(
+                                        context, "delete"),
+                                  );
+                                },
+                              )
+                            ],
+                          ),
+                        ),
                 ],
               ),
             ),
@@ -1573,182 +1465,11 @@ class _AccountListScreenState extends State<AccountListScreen>
     );
   }
 
-  Future<void> _showTransferDialog(
-      BuildContext context, Accounts account) async {
-    var typography = CustomTypography(context);
-    TextEditingController _userSearchController = TextEditingController();
-    TransferAutocompleteModel? _selectedUser;
-    List<TransferAutocompleteModel> _autocompleteUsersList = [];
-    bool _isTransferLoading = false;
-    bool _isSearching = false;
-    Timer? _debounce;
-
-    // Function to handle search input changes
-    void _onSearchChanged(String query, StateSetter setState) {
-      // Cancel any existing debounce timer
-      if (_debounce?.isActive ?? false) _debounce?.cancel();
-
-      // Create a new debounce timer
-      _debounce = Timer(const Duration(milliseconds: 500), () async {
-        if (query.isNotEmpty) {
-          // Set searching state
-          setState(() {
-            _isSearching = true; // Start searching
-          });
-
-          // Fetch autocomplete users
-          _autocompleteUsersList = await fetchAutocompleteUsers(query);
-
-          // Update state after search
-          setState(() {
-            _isSearching = false; // End searching
-          });
-        } else {
-          // Clear search results if query is empty
-          setState(() {
-            _autocompleteUsersList.clear();
-            _isSearching = false; // No need to search if query is empty
-          });
-        }
-      });
-    }
-
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext dialogContext) {
-        // Use StatefulBuilder to manage internal dialog state
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Dialog(
-              child: Container(
-                width: 304,
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Transfer Account',
-                        style: typography.H5_Regular,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _userSearchController,
-                        onChanged: (query) {
-                          setState(() {
-                            _selectedUser =
-                            null; // Remove selected user when editing
-                          });
-                          // Call search change handler with local setState
-                          _onSearchChanged(query, setState);
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search for a user to transfer account',
-                          border: OutlineInputBorder(),
-                          suffixIcon: _isSearching
-                              ? Container(
-                              margin: EdgeInsets.fromLTRB(0, 8, 16, 8),
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator())
-                              : null,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Flexible(
-                      child: _selectedUser == null
-                          ? ListView.builder(
-                        addRepaintBoundaries: true,
-                        addAutomaticKeepAlives: false,
-                        cacheExtent: 500,
-                        shrinkWrap: true,
-                        itemCount: _autocompleteUsersList.length,
-                        itemBuilder: (context, index) {
-                          final user = _autocompleteUsersList[index];
-                          return ListTile(
-                            leading: user.imageUrl.isNotEmpty
-                                ? CircleAvatar(
-                              backgroundImage:
-                              NetworkImage(user.imageUrl),
-                            )
-                                : CircleAvatar(
-                              child:
-                              Text(user.name[0].toUpperCase()),
-                            ),
-                            title: Text(user.name),
-                            subtitle: Text(user.email),
-                            onTap: () {
-                              setState(() {
-                                _selectedUser = user;
-                                _userSearchController.text = user.name;
-                              });
-                            },
-                          );
-                        },
-                      )
-                          : Padding(
-                        padding: EdgeInsets.all(16),
-                        child:
-                        Text('Selected User: ${_selectedUser!.name}'),
-                      ),
-                    ),
-                    ButtonBar(
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: _selectedUser != null &&
-                              !_isTransferLoading
-                              ? () async {
-                            setState(() {
-                              _isTransferLoading =
-                              true; // Show loading only on Transfer
-                            });
-                            var provider =
-                            Provider.of<AccountListProvider>(context,
-                                listen: false);
-                            await provider.transferAccount(context,
-                                account.accountId!, _selectedUser!.id);
-                            setState(() {
-                              _isTransferLoading = false; // Stop loading
-                            });
-                            Navigator.pop(dialogContext);
-                          }
-                              : null,
-                          // Disable button if no user is selected or already transferring
-                          child: _isTransferLoading
-                              ? CircularProgressIndicator(strokeWidth: 2.0)
-                              : Text('Transfer'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      // Dispose of the debounce timer
-      if (_debounce?.isActive ?? false) _debounce?.cancel();
-    });
-  }
-
   Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
       String query) async {
     try {
       ApiService apiService =
-      ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
+          ApiService(AppConstant.TRANSFER_USER_AUTOCOMPLETE);
       String url = '?search=$query';
       var response = await apiService.get(url);
       List<TransferAutocompleteModel> users = (response['result'] as List)
@@ -1819,26 +1540,26 @@ class _AccountListScreenState extends State<AccountListScreen>
 
                                     _debounce =
                                         Timer(const Duration(milliseconds: 500),
-                                                () async {
-                                              await autoCompleteAccountsSearchClient(
-                                                  _autocompleteText);
-                                            });
+                                            () async {
+                                      await autoCompleteAccountsSearchClient(
+                                          _autocompleteText);
+                                    });
                                   },
                                   decoration: InputDecoration(
                                     suffixIcon: _textEditingController
-                                        .text.isNotEmpty
+                                            .text.isNotEmpty
                                         ? IconButton(
-                                      icon: Icon(Icons.clear),
-                                      onPressed: () {
-                                        setState(() {
-                                          _textEditingController.clear();
-                                          _accountAlreadyExists = false;
-                                          _selectedAccount = null;
-                                          accountListProvider
-                                              .clearAutoCompleteList();
-                                        });
-                                      },
-                                    )
+                                            icon: Icon(Icons.clear),
+                                            onPressed: () {
+                                              setState(() {
+                                                _textEditingController.clear();
+                                                _accountAlreadyExists = false;
+                                                _selectedAccount = null;
+                                                accountListProvider
+                                                    .clearAutoCompleteList();
+                                              });
+                                            },
+                                          )
                                         : null,
                                     labelText: LanguageService.getTranslated(
                                         context, "add_account"),
@@ -1857,7 +1578,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                                         _accountAlreadyExists = true;
                                         _selectedAccount = selection;
                                         _textEditingController.text =
-                                        selection.accountName!;
+                                            selection.accountName!;
                                         accountListProvider
                                             .clearAutoCompleteList();
                                       });
@@ -1871,7 +1592,7 @@ class _AccountListScreenState extends State<AccountListScreen>
                         ),
                         SizedBox(
                             height:
-                            viewInsets.bottom > 0 ? 8 : CustomSpacing.six),
+                                viewInsets.bottom > 0 ? 8 : CustomSpacing.six),
                         Column(
                           children: [
                             Row(
@@ -1880,70 +1601,70 @@ class _AccountListScreenState extends State<AccountListScreen>
                                   child: Consumer<AccountListProvider>(builder:
                                       (context, accountListProvider, _) {
                                     return accountListProvider
-                                        .isAddAccountLoading
+                                            .isAddAccountLoading
                                         ? Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                      children: [
-                                        SizedBox(
-                                            width: 25,
-                                            height: 25,
-                                            child:
-                                            CircularProgressIndicator()),
-                                      ],
-                                    )
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              SizedBox(
+                                                  width: 25,
+                                                  height: 25,
+                                                  child:
+                                                      CircularProgressIndicator()),
+                                            ],
+                                          )
                                         : CustomButton(
-                                      onPressed: () async {
-                                        if (_autocompleteText.isEmpty) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                              content: Text(
-                                                  LanguageService
-                                                      .getTranslated(
-                                                      context,
-                                                      "account_list_app_add_account_empty_text_error"),
-                                                  style: typography
-                                                      .ButtonLargeBlack)));
-                                          return;
-                                        }
+                                            onPressed: () async {
+                                              if (_autocompleteText.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                        content: Text(
+                                                            LanguageService
+                                                                .getTranslated(
+                                                                    context,
+                                                                    "account_list_app_add_account_empty_text_error"),
+                                                            style: typography
+                                                                .ButtonLargeBlack)));
+                                                return;
+                                              }
 
-                                        if (!_accountAlreadyExists) {
-                                          await accountListProvider
-                                              .addAccount(context,
-                                              _autocompleteText);
-                                        } else {
-                                          if (_messageController
-                                              .text.isEmpty) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                                content: Text(
-                                                  LanguageService.getTranslated(
-                                                      context,
-                                                      "account_list_app_add_account_empty_text_error"),
-                                                  style: TextStyle(
-                                                      color: Colors.black),
-                                                )));
-                                            return;
-                                          }
-                                          await accountListProvider
-                                              .requestAccess(
-                                              context,
-                                              _selectedAccount
-                                                  ?.accountId ??
-                                                  "",
-                                              _messageController
-                                                  .text);
-                                        }
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text(
-                                        LanguageService.getTranslated(
-                                            context, "submit"),
-                                        style:
-                                        typography.ButtonLargeBlack,
-                                      ),
-                                      type: ButtonType.elevated,
-                                    );
+                                              if (!_accountAlreadyExists) {
+                                                await accountListProvider
+                                                    .addAccount(context,
+                                                        _autocompleteText);
+                                              } else {
+                                                if (_messageController
+                                                    .text.isEmpty) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(SnackBar(
+                                                          content: Text(
+                                                    LanguageService.getTranslated(
+                                                        context,
+                                                        "account_list_app_add_account_empty_text_error"),
+                                                    style: TextStyle(
+                                                        color: Colors.black),
+                                                  )));
+                                                  return;
+                                                }
+                                                await accountListProvider
+                                                    .requestAccess(
+                                                        context,
+                                                        _selectedAccount
+                                                                ?.accountId ??
+                                                            "",
+                                                        _messageController
+                                                            .text);
+                                              }
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              LanguageService.getTranslated(
+                                                  context, "submit"),
+                                              style:
+                                                  typography.ButtonLargeBlack,
+                                            ),
+                                            type: ButtonType.elevated,
+                                          );
                                   }),
                                 ),
                               ],
@@ -1981,247 +1702,6 @@ class _AccountListScreenState extends State<AccountListScreen>
     });
   }
 
-  // Future<void> _showAddAccountDialog(BuildContext context) async {
-  //   await showDialog(
-  //     barrierDismissible: false,
-  //     context: context,
-  //     builder: (BuildContext dialogContext) {
-  //       return StatefulBuilder(
-  //         builder: (BuildContext context, StateSetter setState) {
-  //           return AlertDialog(
-  //             clipBehavior: Clip.antiAliasWithSaveLayer,
-  //             shape: RoundedRectangleBorder(
-  //               borderRadius: BorderRadius.circular(8.0),
-  //             ),
-  //             content: SingleChildScrollView(
-  //               child: SizedBox(
-  //                 width: 500,
-  //                 child: Column(
-  //                   mainAxisSize: MainAxisSize.min,
-  //                   children: [
-  //                     Text(
-  //                       LanguageService.getTranslated(context, "add_account"),
-  //                       style: typography.H5_Regular,
-  //                     ),
-  //                     SizedBox(height: 16.0),
-  //                     Consumer<AccountListProvider>(
-  //                       builder: (context, accountListProvider, child) {
-  //                         return Column(
-  //                           children: [
-  //                             TextField(
-  //                               controller: _textEditingController,
-  //                               onChanged: (value) {
-  //                                 setState(() {
-  //                                   _accountAlreadyExists = false;
-  //                                   _selectedAccount = null;
-  //                                   accountListProvider.clearAutoCompleteList();
-  //                                 });
-  //
-  //                                 _autocompleteText = value;
-  //
-  //                                 // Cancel the previous debounce timer
-  //                                 if (_debounce?.isActive ?? false)
-  //                                   _debounce!.cancel();
-  //
-  //                                 // Start a new debounce timer
-  //                                 _debounce =
-  //                                     Timer(const Duration(milliseconds: 500),
-  //                                         () async {
-  //                                   await autoCompleteAccountsSearchClient(
-  //                                       _autocompleteText);
-  //                                 });
-  //                               },
-  //                               decoration: InputDecoration(
-  //                                 suffixIcon: _textEditingController
-  //                                         .text.isNotEmpty
-  //                                     ? IconButton(
-  //                                         icon: Icon(Icons.clear),
-  //                                         onPressed: () {
-  //                                           setState(() {
-  //                                             _textEditingController.clear();
-  //                                             _accountAlreadyExists = false;
-  //                                             _selectedAccount = null;
-  //                                             accountListProvider
-  //                                                 .clearAutoCompleteList();
-  //                                           });
-  //                                         },
-  //                                       )
-  //                                     : null,
-  //                                 labelText: LanguageService.getTranslated(
-  //                                     context, "add_account"),
-  //                                 hintText: LanguageService.getTranslated(
-  //                                     context, "add_account"),
-  //                                 border: const OutlineInputBorder(),
-  //                               ),
-  //                             ),
-  //                             if (_textEditingController.text.isNotEmpty &&
-  //                                 !_accountAlreadyExists)
-  //                               AutocompleteOptions(
-  //                                 options: accountListProvider
-  //                                     .autoCompleteAccountList,
-  //                                 onSelected: (Accounts selection) {
-  //                                   setState(() {
-  //                                     _accountAlreadyExists = true;
-  //                                     _selectedAccount = selection;
-  //                                     _textEditingController.text =
-  //                                         selection.accountName!;
-  //                                     // Clear the autocomplete list when an option is selected
-  //                                     accountListProvider
-  //                                         .clearAutoCompleteList();
-  //                                   });
-  //                                 },
-  //                                 isLoading:
-  //                                     accountListProvider.isAutoCompleteLoading,
-  //                               ),
-  //                           ],
-  //                         );
-  //                       },
-  //                     ),
-  //                     SizedBox(height: CustomSpacing.six),
-  //                     Column(
-  //                       children: [
-  //                         Row(
-  //                           children: [
-  //                             Expanded(
-  //                               child: Consumer<AccountListProvider>(
-  //                                   builder: (context, accountListProvider, _) {
-  //                                 return accountListProvider.isAddAccountLoading
-  //                                     ? Row(
-  //                                         mainAxisAlignment:
-  //                                             MainAxisAlignment.center,
-  //                                         children: [
-  //                                           SizedBox(
-  //                                               width: 25,
-  //                                               height: 25,
-  //                                               child:
-  //                                                   CircularProgressIndicator()),
-  //                                         ],
-  //                                       )
-  //                                     : CustomButton(
-  //                                         onPressed: () async {
-  //                                           if (_autocompleteText.isEmpty) {
-  //                                             ScaffoldMessenger.of(context)
-  //                                                 .showSnackBar(SnackBar(
-  //                                                     content: Text(
-  //                                                         LanguageService
-  //                                                             .getTranslated(
-  //                                                                 context,
-  //                                                                 "account_list_app_add_account_empty_text_error"),
-  //                                                         style: typography
-  //                                                             .ButtonLargeBlack)));
-  //                                             return;
-  //                                           }
-  //
-  //                                           if (!_accountAlreadyExists) {
-  //                                             // Add account
-  //                                             await accountListProvider
-  //                                                 .addAccount(context,
-  //                                                     _autocompleteText);
-  //                                           } else {
-  //                                             // Request access
-  //                                             if (_messageController
-  //                                                 .text.isEmpty) {
-  //                                               ScaffoldMessenger.of(context)
-  //                                                   .showSnackBar(SnackBar(
-  //                                                       content: Text(
-  //                                                 LanguageService.getTranslated(
-  //                                                     context,
-  //                                                     "account_list_app_add_account_empty_text_error"),
-  //                                                 style: TextStyle(
-  //                                                     color: Colors.black),
-  //                                               )));
-  //                                               return;
-  //                                             }
-  //                                             await accountListProvider
-  //                                                 .requestAccess(
-  //                                                     context,
-  //                                                     _selectedAccount
-  //                                                             ?.accountId ??
-  //                                                         "",
-  //                                                     _messageController.text);
-  //                                           }
-  //                                           Navigator.pop(context);
-  //                                         },
-  //                                         child: Text(
-  //                                           // _accountAlreadyExists
-  //                                           //     ? LanguageService.getTranslated(
-  //                                           //         context,
-  //                                           //         "account_list_app_request_access_text")
-  //                                           //     :
-  //                                           LanguageService.getTranslated(
-  //                                               context, "submit"),
-  //                                           style: typography.ButtonLargeBlack,
-  //                                         ),
-  //                                         type: ButtonType.elevated,
-  //                                       );
-  //                               }),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                         CustomButton(
-  //                           onPressed: () {
-  //                             // Cancel
-  //                             _uploadedFileName = null;
-  //                             _sovNameController.clear();
-  //                             Navigator.pop(context);
-  //                           },
-  //                           child: Text(
-  //                             LanguageService.getTranslated(context, "cancel"),
-  //                             style: typography.ButtonLarge,
-  //                           ),
-  //                           type: ButtonType.text,
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   ).then((_) {
-  //     // Clear the autocomplete list when the dialog is dismissed
-  //     Provider.of<AccountListProvider>(context, listen: false)
-  //         .clearAutoCompleteList();
-  //     _textEditingController.clear();
-  //     _messageController.clear();
-  //     _accountAlreadyExists = false;
-  //   });
-  // }
-
-  _getComingSoonUI(String title) {
-    var typography = CustomTypography(context);
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                Text(
-                    title == "shared"
-                        ? 'A smarter way to track shared files-Coming Soon! '
-                        : 'A smarter way to track access requests – Coming Soon!',
-                    textAlign: TextAlign.center,
-                    style: typography.H5_Regular),
-                SizedBox(height: 10),
-                Text(
-                    LanguageService.getTranslated(
-                        context, 'coming_soon_subtitle'),
-                    textAlign: TextAlign.center,
-                    style: typography.Body1),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _getAccountUI() {
     var typography = CustomTypography(context);
     return Column(
@@ -2252,12 +1732,12 @@ class _AccountListScreenState extends State<AccountListScreen>
             decoration: InputDecoration(
               suffixIcon: _accountQuery.isNotEmpty
                   ? IconButton(
-                icon: Icon(Icons.clear),
-                onPressed: () {
-                  _textEditingController.clear();
-                  accountsSearchClient("");
-                },
-              )
+                      icon: Icon(Icons.clear),
+                      onPressed: () {
+                        _textEditingController.clear();
+                        accountsSearchClient("");
+                      },
+                    )
                   : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -2274,14 +1754,14 @@ class _AccountListScreenState extends State<AccountListScreen>
           children: [
             Consumer<AccountListProvider>(
                 builder: (context, accountListProvider, _) {
-                  return Text(
-                    accountListProvider.showAccountName?.trim().isNotEmpty == true
-                        ? accountListProvider.showAccountName.toString() == "null"
+              return Text(
+                accountListProvider.showAccountName.trim().isNotEmpty == true
+                    ? accountListProvider.showAccountName.toString() == "null"
                         ? "Account Name"
                         : accountListProvider.showAccountName.toString()
-                        : 'Account Name',
-                  );
-                }),
+                    : 'Account Name',
+              );
+            }),
           ],
         ),
         // List of accounts
@@ -2320,7 +1800,7 @@ class _AccountListScreenState extends State<AccountListScreen>
               return RefreshIndicator(
                 onRefresh: () async {
                   final provider =
-                  Provider.of<AccountListProvider>(context, listen: false);
+                      Provider.of<AccountListProvider>(context, listen: false);
 
                   provider.forceReload = true;
 
@@ -2333,14 +1813,11 @@ class _AccountListScreenState extends State<AccountListScreen>
                 },
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (scrollInfo) {
-                    // ✅ Only trigger when scrolling DOWN near bottom
                     if (scrollInfo is ScrollUpdateNotification &&
                         scrollInfo.metrics.pixels >=
                             scrollInfo.metrics.maxScrollExtent - 150) {
                       final provider = Provider.of<AccountListProvider>(context,
                           listen: false);
-
-                      // ✅ prevent duplicate calls
                       if (!provider.isNextPageLoading &&
                           provider.accountList.length < provider.accountHits) {
                         provider.fetchAccountList(
@@ -2357,16 +1834,11 @@ class _AccountListScreenState extends State<AccountListScreen>
                   child: ListView.builder(
                     key: const PageStorageKey('accountListView'),
                     physics: const AlwaysScrollableScrollPhysics(),
-
-                    // ✅ performance flags
                     addRepaintBoundaries: true,
                     addAutomaticKeepAlives: false,
                     cacheExtent: 500,
-
                     itemCount: accountList.length + (isNextPageLoading ? 1 : 0),
-
                     itemBuilder: (context, index) {
-                      // ✅ loader at bottom
                       if (index >= accountList.length) {
                         return const Padding(
                           padding: EdgeInsets.all(8.0),
@@ -2377,7 +1849,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                       final provider = Provider.of<AccountListProvider>(context,
                           listen: false);
 
-                      // ✅ wrap with RepaintBoundary (IMPORTANT)
                       return RepaintBoundary(
                         child: _buildAccountCard(index, provider),
                       );
@@ -2385,61 +1856,6 @@ class _AccountListScreenState extends State<AccountListScreen>
                   ),
                 ),
               );
-              //   RefreshIndicator(
-              //   onRefresh: () async {
-              //     final provider =
-              //         Provider.of<AccountListProvider>(context, listen: false);
-              //     provider.forceReload = true;
-              //     await provider.fetchAccountList(
-              //         context, provider.lastSearchQuery, 1, 5);
-              //   },
-              //   child: NotificationListener<ScrollNotification>(
-              //     onNotification: (scrollInfo) {
-              //       if (!isNextPageLoading &&
-              //           scrollInfo.metrics.pixels >=
-              //               scrollInfo.metrics.maxScrollExtent - 200) {
-              //         final provider = Provider.of<AccountListProvider>(context,
-              //             listen: false);
-              //
-              //         // Only fetch next page if there are more records to load
-              //         if (provider.accountList.length < provider.accountHits) {
-              //           provider.fetchAccountList(
-              //             context,
-              //             _accountQuery,
-              //             currentPage + 1,
-              //             5,
-              //           );
-              //         } else {
-              //           debugPrint(
-              //               "All data loaded (${provider.accountList.length} / ${provider.accountHits})");
-              //         }
-              //       }
-              //
-              //       return false;
-              //     },
-              //     child: ListView.builder(
-              //       key: const PageStorageKey('accountListView'),
-              //       physics: const AlwaysScrollableScrollPhysics(),
-              //       itemCount: accountList.length + (isNextPageLoading ? 1 : 0),
-              //       itemBuilder: (context, index) {
-              //         if (index >= accountList.length) {
-              //           return const Padding(
-              //             padding: EdgeInsets.all(8.0),
-              //             child: Center(child: CircularProgressIndicator()),
-              //           );
-              //         }
-              //
-              //         final account = accountList[index];
-              //         return _buildAccountCard(
-              //             index,
-              //             Provider.of<AccountListProvider>(context,
-              //                 listen: false));
-              //
-              //         // return _buildAccountCard(context, account, index);
-              //       },
-              //     ),
-              //   ),
-              // );
             },
           ),
         )
@@ -2449,11 +1865,11 @@ class _AccountListScreenState extends State<AccountListScreen>
 }
 
 void _showRemoveFavoriteBottomSheet(
-    BuildContext context,
-    AccountListProvider provider,
-    String accountId,
-    bool currentStatus,
-    ) {
+  BuildContext context,
+  AccountListProvider provider,
+  String accountId,
+  bool currentStatus,
+) {
   bool isLoading = false;
 
   showModalBottomSheet(
@@ -2477,7 +1893,6 @@ void _showRemoveFavoriteBottomSheet(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 8),
-
                 const Text(
                   "Remove Favorite Status?",
                   style: TextStyle(
@@ -2486,23 +1901,18 @@ void _showRemoveFavoriteBottomSheet(
                     color: Colors.white,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 const Text(
                   "This account is a favorite because of its sub-accounts. "
-                      "Removing it here will remove it from all sub-accounts. "
-                      "To reapply, mark the sub-account as a favorite in the Sub-Account page.",
+                  "Removing it here will remove it from all sub-accounts. "
+                  "To reapply, mark the sub-account as a favorite in the Sub-Account page.",
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.white70,
                     height: 1.4,
                   ),
                 ),
-
                 const SizedBox(height: 100),
-
-                /// CONFIRM BUTTON
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -2516,46 +1926,43 @@ void _showRemoveFavoriteBottomSheet(
                     onPressed: isLoading
                         ? null
                         : () async {
-                      setModalState(() {
-                        isLoading = true;
-                      });
+                            setModalState(() {
+                              isLoading = true;
+                            });
 
-                      final success = await provider.updateDefaultAccount(
-                        context,
-                        accountId,
-                        currentStatus,
-                      );
+                            final success = await provider.updateDefaultAccount(
+                              context,
+                              accountId,
+                              currentStatus,
+                            );
 
-                      if (success) {
-                        Navigator.pop(context); // close sheet
-                      } else {
-                        setModalState(() {
-                          isLoading = false;
-                        });
-                      }
-                    },
+                            if (success) {
+                              Navigator.pop(context); // close sheet
+                            } else {
+                              setModalState(() {
+                                isLoading = false;
+                              });
+                            }
+                          },
                     child: isLoading
                         ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
                         : const Text(
-                      "Confirm",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                            "Confirm",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                /// CANCEL BUTTON
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
@@ -2569,8 +1976,8 @@ void _showRemoveFavoriteBottomSheet(
                     onPressed: isLoading
                         ? null
                         : () {
-                      Navigator.pop(context);
-                    },
+                            Navigator.pop(context);
+                          },
                     child: const Text(
                       "Cancel",
                       style: TextStyle(
@@ -2580,7 +1987,6 @@ void _showRemoveFavoriteBottomSheet(
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 10),
               ],
             ),

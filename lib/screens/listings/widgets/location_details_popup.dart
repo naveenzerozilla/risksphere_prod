@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:RiskSphere/models/my_location_list_model.dart';
-import 'package:RiskSphere/screens/listings/location_profile.dart';
 import 'package:RiskSphere/screens/listings/widgets/my_scrollable_scores_widget.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';

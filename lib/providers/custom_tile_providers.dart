@@ -1,14 +1,9 @@
 import 'dart:collection';
-import 'dart:typed_data';
-import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import '../utils/global_imports.dart';
-import 'dart:async';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 
 class CustomTileProvider implements TileProvider {
   final Map<String, Map<String, Map<int, String>>> tileUrls;

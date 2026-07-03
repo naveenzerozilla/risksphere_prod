@@ -57,7 +57,7 @@ class _CorporateTypeRolesBottomSheetState extends State<CorporateTypeRolesBottom
                     'usermanagement_app_employee_create_account_select_role_title',
                   ),
                   style: typography.H7.copyWith(
-                    color: Theme.of(context).colorScheme.onBackground,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

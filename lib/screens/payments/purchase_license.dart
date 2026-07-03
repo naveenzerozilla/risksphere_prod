@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../design_system/repo/constants.dart';
@@ -159,11 +158,11 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
               total +=
                   num.tryParse(selection.totalPrice?.toString() ?? '0') ?? 0;
 
-              if (selection.title != null && selection.title!.isNotEmpty) {
-                titles.add(selection.title!);
+              if (selection.title.isNotEmpty) {
+                titles.add(selection.title);
               }
-              if (selection.planId != null && selection.planId!.isNotEmpty) {
-                planId.add(selection.planId!);
+              if (selection.planId.isNotEmpty) {
+                planId.add(selection.planId);
               }
 
               if (selection.userCount != null &&
@@ -180,15 +179,13 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                 priceperuser.add(selection.priceperuser!);
               }
               if (selection.planType == "event_cost") {
-                licensePrice.add(selection.licensePrice!);
-              } else if (selection.licensePrice != null &&
-                  selection.licensePrice!.isNotEmpty) {
-                licensePrice.add(selection.licensePrice!);
+                licensePrice.add(selection.licensePrice);
+              } else if (selection.licensePrice.isNotEmpty) {
+                licensePrice.add(selection.licensePrice);
               }
 
-              if (selection.planType != null &&
-                  selection.planType!.isNotEmpty) {
-                planTypes.add(selection.planType!);
+              if (selection.planType.isNotEmpty) {
+                planTypes.add(selection.planType);
               }
             }
           }

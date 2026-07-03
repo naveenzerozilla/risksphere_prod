@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:RiskSphere/design_system/components/custom_toast.dart';
 import 'package:RiskSphere/service/api_service.dart';
 import 'package:RiskSphere/utils/api_constants.dart';
-import 'package:http/http.dart' as http;
 
 class NewsFeedProvider extends ChangeNotifier {
   bool _isActivityLoading = false;
@@ -62,7 +61,7 @@ class NewsFeedProvider extends ChangeNotifier {
 
   set isEventDateLoading(bool value) {
     _isEventDateLoading = value;
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -211,7 +210,7 @@ class NewsFeedProvider extends ChangeNotifier {
       }
 
       var response = await apiService.get(url);
-      if (response != null && response.containsKey('result')) {
+      if (response.containsKey('result')) {
         List<dynamic> results = response['result'];
         final parsedResults =
             results.map((item) => Map<String, dynamic>.from(item)).toList();
@@ -305,7 +304,7 @@ class NewsFeedProvider extends ChangeNotifier {
 
       var response = await apiService.get(url);
 
-      if (response != null && response.containsKey('result')) {
+      if (response.containsKey('result')) {
         List<dynamic> results = response['result'];
         final parsedResults =
             results.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -362,13 +361,12 @@ class NewsFeedProvider extends ChangeNotifier {
       print("MAP API RESPONSE 👉 $response");
 
       //  DIRECT RESPONSE (YOUR CASE)
-      if (response != null && response.containsKey('map_url')) {
+      if (response.containsKey('map_url')) {
         return response['map_url'];
       }
 
       //  BACKUP (if API changes later)
-      if (response != null &&
-          response.containsKey('result') &&
+      if (response.containsKey('result') &&
           response['result'] != null) {
         return response['result']['map_url'];
       }

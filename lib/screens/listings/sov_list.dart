@@ -1,25 +1,17 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 // import 'package:country_list_picker/country_list_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:RiskSphere/design_system/components/custom_button.dart';
-import 'package:RiskSphere/design_system/components/roles_dropdown.dart';
 import 'package:RiskSphere/models/account_list_model.dart';
 import 'package:RiskSphere/models/sov_list_model.dart';
-import 'package:RiskSphere/providers/account_list_provider.dart';
-import 'package:RiskSphere/providers/connections_provider.dart';
 import 'package:RiskSphere/providers/sov_list_provider.dart';
 import 'package:RiskSphere/providers/sub_account_list_provider.dart';
 import 'package:RiskSphere/screens/listings/location_list.dart';
-import 'package:RiskSphere/screens/listings/location_profile.dart';
-import 'package:RiskSphere/screens/listings/widgets/export_dialog.dart';
 import 'package:RiskSphere/screens/listings/widgets/mapping_screen.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -28,24 +20,16 @@ import '../../constants/enums.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../design_system/components/custom_drawer.dart';
 import '../../design_system/components/custom_gradient_circular_progress_bar.dart';
-import '../../design_system/components/rating_bar.dart';
-import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/primitives/app_colors.dart';
 import '../../design_system/primitives/custom_typography.dart';
 import '../../design_system/primitives/utilities/custom_spacing.dart';
-import '../../design_system/repo/constants.dart';
-import '../../models/initial_data_model.dart';
 import '../../models/transfer_autocomplete_model.dart';
-import '../../providers/role_provider.dart';
 import '../../providers/theme_provider.dart';
-import 'package:RiskSphere/models/role_model.dart' as roleModel;
 
 import '../../providers/upload_sov_provider.dart';
 import '../../service/api_service.dart';
 import '../../service/language_service.dart';
 import '../../utils/api_constants.dart';
-import 'add_location_screen.dart';
-import 'widgets/auto_complete_options.dart';
 
 class SovListScreen extends StatefulWidget {
   final String accountId;
@@ -193,7 +177,7 @@ class _SovListScreenState extends State<SovListScreen>
           builder: (buildContext, themeProvider, child) {
         return Scaffold(
           key: _scaffoldKey,
-          backgroundColor: themeProvider.getTheme.colorScheme.background,
+          backgroundColor: themeProvider.getTheme.colorScheme.surface,
           appBar: CustomAppBar(
             isExpanded: _isExpanded,
             showDropdown: true,
@@ -479,58 +463,6 @@ class _SovListScreenState extends State<SovListScreen>
                           return _buildSovCard(index, sovListProvider);
                         },
                       );
-
-            // : ListView.builder(
-            //     itemCount: sovListProvider.sovList.length,
-            //     itemBuilder: (context, index) {
-            //       if (index == sovListProvider.sovList.length - 1) {
-            //         // Check if it's the last item
-            //         if (sovListProvider.isNextPageLoading) {
-            //           // Display loading indicator
-            //           return Padding(
-            //             padding: const EdgeInsets.all(8.0),
-            //             child: Center(
-            //               child: CircularProgressIndicator(),
-            //             ),
-            //           );
-            //         } else if (sovListProvider.page >=
-            //                 sovListProvider.totalPages &&
-            //             sovListProvider.sovList.isNotEmpty) {
-            //           // Display end of list message
-            //           return Column(
-            //             children: [
-            //               _buildSovCard(index, sovListProvider),
-            //               Padding(
-            //                 padding: const EdgeInsets.all(8.0),
-            //                 child: Center(
-            //                   child: Text(
-            //                     LanguageService.getTranslated(context,
-            //                         "sov_list_app_end_of_list_text"),
-            //                     style: typography.Body1,
-            //                   ),
-            //                 ),
-            //               ),
-            //             ],
-            //           );
-            //         } else {
-            //           // Trigger fetching the next page
-            //           sovListProvider.page = sovListProvider.page + 1;
-            //           sovListProvider.fetchSovList(
-            //               context,
-            //               // widget.accountId,
-            //               // widget.subAccountId,
-            //               _sovQuery,
-            //               sovListProvider.page,
-            //               10,
-            //               '' // Page size
-            //               );
-            //           return SizedBox();
-            //         }
-            //       }
-            //
-            //       return _buildSovCard(index, sovListProvider);
-            //     },
-            //   );
           }),
         ),
       ],
@@ -572,32 +504,14 @@ class _SovListScreenState extends State<SovListScreen>
 
   Widget _buildSovCard(int index, SOVListProvider sOVListProvider) {
     var typography = CustomTypography(context);
-    // bool isDisabled = sOVListProvider.sovList[index].disabled ?? false;
     return Container(
       margin: EdgeInsets.only(top: 0.0, bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap:
-            // isDisabled
-            //     ? null
-            //     :
+
             () {
-          // On tap of card
-          // if (showCheckbox) {
-          //   // setState(() {
-          //   //   sOVListProvider.sovList[index].isChecked =
-          //   //   !(sOVListProvider.sovList[index].isChecked ?? false);
-          //   // });
-          // }
-          // if all are unselected then hide checkbox
-          // if (sOVListProvider.sovList
-          //     .every((element) => element.isChecked == false)) {
-          //   WidgetsBinding.instance.addPostFrameCallback((_) {
-          //     setState(() {
-          //       showCheckbox = false;
-          //     });
-          //   });
-          // }
+
           Navigator.push(context, MaterialPageRoute(builder: (context) {
             return LocationList(
               userId: sOVListProvider.sovList[index].accountId ?? "",
@@ -631,16 +545,7 @@ class _SovListScreenState extends State<SovListScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Add Checkbox here
-            // showCheckbox?
-            // Checkbox(
-            //   value: sOVListProvider.sovList[index].isChecked ?? false,
-            //   onChanged: isDisabled?null:(value) {
-            //     setState(() {
-            //       sOVListProvider.sovList[index].isChecked = value??false;
-            //     });
-            //   },
-            // ):SizedBox(),
+
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -956,7 +861,7 @@ class _SovListScreenState extends State<SovListScreen>
                   // isDisabled?SizedBox():
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       // bottom left and right corners curved
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(8),
@@ -1325,7 +1230,7 @@ class _SovListScreenState extends State<SovListScreen>
                                   'Selected User: ${_selectedUser!.displayName}'),
                             ),
                     ),
-                    ButtonBar(
+                    OverflowBar(
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext),

@@ -1,19 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:external_path/external_path.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../utils/global_imports.dart';
-import 'package:RiskSphere/providers/invoice_provider.dart';
-import 'package:RiskSphere/screens/payments/purchase_license.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../models/invoice_model.dart';
-import '../../providers/payment_provider.dart';
-import 'invoice_webview.dart';
+import '../chatbot/chatbot.dart';
 
 class PaymentTransactionsPage extends StatefulWidget {
   final int? initialTabIndex;
@@ -103,178 +97,237 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
     final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
-      child: SafeArea(
-        child: Scaffold(
-          appBar: CustomAppBar(
-            isExpanded: _isExpanded,
-            showNotificationDot: _showNotificationDot,
-            onExpandPressed: (isExpanded) {
-              setState(() {
-                _isExpanded = isExpanded;
-              });
-            },
-            onSearchPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-          ),
-          drawer: CustomDrawer(),
-          body: Consumer<UserProfileProvider>(
-              builder: (context, userProfile, child) {
-            final trialStatus = userProfile.trialInfo['status'] ?? '';
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 10),
-                Center(
-                  child: TabBar(
-                    onTap: (value) {
-                      setState(() {
-                        value == _tabIndex;
-                        filterItem = "";
-                        _selectedValue = 'All License';
-                      });
-                      print(_tabIndex);
-                      print(value);
-                      print(_tabController.index);
-                    },
-                    controller: _tabController,
-                    isScrollable: false,
-                    labelColor: AppColors.primaryMain,
-                    unselectedLabelColor: Colors.grey,
-                    labelStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    indicatorColor: AppColors.primaryMain,
-                    indicatorWeight: 1,
-                    tabs: [
-                      Tab(
-                          text: LanguageService.getTranslated(
-                              context, "payment_transactions")),
-                      Tab(
-                          text: LanguageService.getTranslated(
-                              context, "invoice_history")),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Consumer2<PaymentProvider, InvoiceProvider>(
-                  builder: (context, paymentProvider, invoiceProvider, child) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding:
-                                  const EdgeInsets.only(right: 3, left: 10),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: AppColors.primaryMain, width: 1.0),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: DropdownButton2<String>(
-                                value: _selectedValue,
-                                buttonStyleData: ButtonStyleData(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10),
-                                ),
-                                dropdownStyleData: DropdownStyleData(
-                                  width: 300,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF1E1E1E),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                style: const TextStyle(color: Colors.white),
-                                items: [
-                                  'All License',
-                                  'Location Count(Geocoding & Hazard)',
-                                  'Location Improvement Cost',
-                                  'User License'
-                                ].map<DropdownMenuItem<String>>((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  if (newValue != null) {
-                                    setState(() {
-                                      _selectedValue = newValue;
-                                    });
-
-                                    final valueMap = {
-                                      'All License': '',
-                                      'Location Count(Geocoding & Hazard)':
-                                          'location_hazard',
-                                      'Location Improvement Cost':
-                                          'location_improvement_cost',
-                                      'User License': 'user_cost',
-                                    };
-
-                                    filterItem = valueMap[newValue] ?? '';
-
-                                    if (_tabController.index == 0) {
-                                      paymentProvider.fetchTransactionList(
-                                        context,
-                                        filterItem,
-                                        '',
-                                      );
-                                    } else {
-                                      invoiceProvider.fetchInvoiceList(
-                                        context,
-                                        filterItem,
-                                      );
-                                    }
-                                  }
-                                },
-                                underline: const SizedBox(),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Container(
-                              width: 130,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: AppColors.primaryMain, width: 1.0),
-                              ),
-                              child: TextButton(
-                                onPressed: () => _selectDateRange(context),
-                                child: Text(
-                                  dateText,
-                                  maxLines: 2,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+      child: Consumer2<ThemeProvider, MyLocationListProvider>(builder: (
+        context,
+        themeProvider,
+        locationProfileProvider,
+        child,
+      ) {
+        return SafeArea(
+          child: Scaffold(
+            appBar: CustomAppBar(
+              isExpanded: _isExpanded,
+              showNotificationDot: _showNotificationDot,
+              onExpandPressed: (isExpanded) {
+                setState(() {
+                  _isExpanded = isExpanded;
+                });
+              },
+              onSearchPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+            ),
+            floatingActionButton: Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ChatbotBottomSheet(
+                        locationId: locationProfileProvider
+                            .locationProfile?.finalAddress?.locationId
+                            .toString(),
                       ),
                     );
                   },
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: TabBarView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    controller: _tabController,
-                    children: [
-                      _buildTransactionsHistoryList(),
-                      _buildInvoiceHistoryList(),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Need Help?",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppColors.primaryMain,
+                          child: Icon(Icons.smart_toy,
+                              color: Colors.white, size: 18),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-              // ],
-            );
-          }),
-        ),
-      ),
+              ),
+            ),
+            drawer: CustomDrawer(),
+            body: Consumer<UserProfileProvider>(
+                builder: (context, userProfile, child) {
+              final trialStatus = userProfile.trialInfo['status'] ?? '';
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 10),
+                  Center(
+                    child: TabBar(
+                      onTap: (value) {
+                        setState(() {
+                          value == _tabIndex;
+                          filterItem = "";
+                          _selectedValue = 'All License';
+                        });
+                        print(_tabIndex);
+                        print(value);
+                        print(_tabController.index);
+                      },
+                      controller: _tabController,
+                      isScrollable: false,
+                      labelColor: AppColors.primaryMain,
+                      unselectedLabelColor: Colors.grey,
+                      labelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      indicatorColor: AppColors.primaryMain,
+                      indicatorWeight: 1,
+                      tabs: [
+                        Tab(
+                            text: LanguageService.getTranslated(
+                                context, "payment_transactions")),
+                        Tab(
+                            text: LanguageService.getTranslated(
+                                context, "invoice_history")),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Consumer2<PaymentProvider, InvoiceProvider>(
+                    builder:
+                        (context, paymentProvider, invoiceProvider, child) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding:
+                                    const EdgeInsets.only(right: 3, left: 10),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: AppColors.primaryMain, width: 1.0),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: DropdownButton2<String>(
+                                  value: _selectedValue,
+                                  buttonStyleData: ButtonStyleData(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                  ),
+                                  dropdownStyleData: DropdownStyleData(
+                                    width: 300,
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFF1E1E1E),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  style: const TextStyle(color: Colors.white),
+                                  items: [
+                                    'All License',
+                                    'Location Count(Geocoding & Hazard)',
+                                    'Location Improvement Cost',
+                                    'User License'
+                                  ].map<DropdownMenuItem<String>>(
+                                      (String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        _selectedValue = newValue;
+                                      });
+
+                                      final valueMap = {
+                                        'All License': '',
+                                        'Location Count(Geocoding & Hazard)':
+                                            'location_hazard',
+                                        'Location Improvement Cost':
+                                            'location_improvement_cost',
+                                        'User License': 'user_cost',
+                                      };
+
+                                      filterItem = valueMap[newValue] ?? '';
+
+                                      if (_tabController.index == 0) {
+                                        paymentProvider.fetchTransactionList(
+                                          context,
+                                          filterItem,
+                                          '',
+                                        );
+                                      } else {
+                                        invoiceProvider.fetchInvoiceList(
+                                          context,
+                                          filterItem,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  underline: const SizedBox(),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                width: 130,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: AppColors.primaryMain, width: 1.0),
+                                ),
+                                child: TextButton(
+                                  onPressed: () => _selectDateRange(context),
+                                  child: Text(
+                                    dateText,
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: TabBarView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      controller: _tabController,
+                      children: [
+                        _buildTransactionsHistoryList(),
+                        _buildInvoiceHistoryList(),
+                      ],
+                    ),
+                  ),
+                ],
+                // ],
+              );
+            }),
+          ),
+        );
+      }),
     );
   }
 
@@ -428,17 +481,21 @@ class _PaymentTransactionsPageState extends State<PaymentTransactionsPage>
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          invoice.plans != null && invoice.plans!.isNotEmpty
-                                              ? invoice.plans!.every(
-                                                  (e) => (e.planType ?? '').toLowerCase() == 'yearly')
-                                              ? 'Yearly'
-                                              : invoice.plans!
-                                              .map(
-                                                (e) => _capitalizeFirstLetter(
-                                              e.planType ?? 'N/A',
-                                            ),
-                                          )
-                                              .join(', ')
+                                          invoice.plans != null &&
+                                                  invoice.plans!.isNotEmpty
+                                              ? invoice.plans!.every((e) =>
+                                                      (e.planType ?? '')
+                                                          .toLowerCase() ==
+                                                      'yearly')
+                                                  ? 'Yearly'
+                                                  : invoice.plans!
+                                                      .map(
+                                                        (e) =>
+                                                            _capitalizeFirstLetter(
+                                                          e.planType ?? 'N/A',
+                                                        ),
+                                                      )
+                                                      .join(', ')
                                               : 'No plans',
                                           style: const TextStyle(
                                             color: Colors.grey,
@@ -1082,7 +1139,7 @@ String _formatDate(DeductionDate? date) {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, super.key});
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;

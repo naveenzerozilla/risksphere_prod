@@ -3,6 +3,8 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../models/my_location_list_model.dart';
 import '../../utils/global_imports.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
+import '../chatbot/chatbot.dart';
+import '../event/event_visualisations.dart';
 import '../payments/purchase_license.dart';
 
 class MontoringSovList extends StatefulWidget {
@@ -226,8 +228,13 @@ class _MySovListState extends State<MontoringSovList>
         },
         child: Consumer<UserProfileProvider>(
           builder: (context, userProfileProvider, child) {
-            return Consumer<ThemeProvider>(
-              builder: (buildContext, themeProvider, child) {
+            return Consumer2<ThemeProvider, MyLocationListProvider>(
+              builder: (
+                context,
+                themeProvider,
+                locationProfileProvider,
+                child,
+              ) {
                 return Scaffold(
                   key: _scaffoldKey,
                   backgroundColor:
@@ -246,6 +253,56 @@ class _MySovListState extends State<MontoringSovList>
                         _isExpanded = !_isExpanded;
                       });
                     },
+                  ),
+                  floatingActionButton: Padding(
+                    padding: const EdgeInsets.only(bottom: 50),
+                    child: SafeArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => ChatbotBottomSheet(
+                              locationId: locationProfileProvider
+                                  .locationProfile?.finalAddress?.locationId
+                                  .toString(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(25),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Need Help?",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              SizedBox(width: 8),
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: AppColors.primaryMain,
+                                child: Icon(Icons.smart_toy,
+                                    color: Colors.white, size: 18),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   drawer: CustomDrawer(),
                   body: Stack(
@@ -308,7 +365,7 @@ class _MySovListState extends State<MontoringSovList>
   Widget monitoringsovBody(CustomTypography typography) {
     return Consumer2<SOVListProvider, UserProfileProvider>(
         builder: (context, sovListProvider, user, _) {
-      final String trialStatus = user.trialInfo?['status'] ?? '';
+      final String trialStatus = user.trialInfo['status'] ?? '';
 
       return (trialStatus.contains('Expired') && isHasAnyPlan == false)
           ? Container(
@@ -416,80 +473,6 @@ class _MySovListState extends State<MontoringSovList>
                     );
                   },
                 ),
-                // SingleChildScrollView(
-                //   scrollDirection: Axis.horizontal,
-                //   child: Consumer<SOVListProvider>(
-                //     builder: (context, sovListProvider, _) {
-                //       return LayoutBuilder(
-                //         builder: (context, constraints) {
-                //           final isMobile = constraints.maxWidth < 600;
-                //
-                //           return Wrap(
-                //             spacing: 12,
-                //             runSpacing: 12,
-                //             children: [
-                //               SizedBox(
-                //                 width: isMobile
-                //                     ? (constraints.maxWidth - 12) / 2
-                //                     : 220,
-                //                 child: InfoCard(
-                //                   title: "Total Events",
-                //                   count: safeParseInt(
-                //                     sovListProvider.totalEvent.toString(),
-                //                   ),
-                //                   icon: Icons.gas_meter_outlined,
-                //                 ),
-                //               ),
-                //
-                //               SizedBox(
-                //                 width: isMobile
-                //                     ? (constraints.maxWidth - 12) / 2
-                //                     : 220,
-                //                 child: InfoCard(
-                //                   title: "Impacted\nLocations of Total",
-                //                   count: safeParseInt(
-                //                     sovListProvider.totalImpactLocation,
-                //                   ),
-                //                   icon: Icons.flash_on,
-                //                 ),
-                //               ),
-                //
-                //               SizedBox(
-                //                 width: isMobile
-                //                     ? (constraints.maxWidth - 12) / 2
-                //                     : 220,
-                //                 child: InfoCard(
-                //                   title:
-                //                   "Hurricane Monitoring Locations",
-                //                   count: safeParseInt(
-                //                     sovListProvider
-                //                         .hurricaneMonitoringLocations,
-                //                   ),
-                //                   icon: Icons.gas_meter_outlined,
-                //                 ),
-                //               ),
-                //
-                //               SizedBox(
-                //                 width: isMobile
-                //                     ? (constraints.maxWidth - 12) / 2
-                //                     : 220,
-                //                 child: InfoCard(
-                //                   title:
-                //                   "Earthquake Monitoring Locations",
-                //                   count: safeParseInt(
-                //                     sovListProvider
-                //                         .earthquakeMonitoringLocations,
-                //                   ),
-                //                   icon: Icons.crisis_alert,
-                //                 ),
-                //               ),
-                //             ],
-                //           );
-                //         },
-                //       );
-                //     },
-                //   )
-                // ),
                 monitoringLimitCard(),
                 SizedBox(height: CustomSpacing.two),
                 Consumer<SOVListProvider>(
@@ -528,25 +511,26 @@ class _MySovListState extends State<MontoringSovList>
 
                         return GestureDetector(
                             onTap: () {
-                              print("View Event for ${sov.eventName}");
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      NotificationMapScreen(notificationData: {
-                                    'title': sov.hazardName ?? "Event Details",
-                                    'body': "body",
-                                    'timestamp':
-                                        DateTime.fromMillisecondsSinceEpoch(
-                                            (sov.updatedAt?.iSeconds ?? 0) *
-                                                1000),
-                                    'eventId': sov.id,
-                                    'lat': sov.locationCoordinates?.latitude ??
-                                        20.5937,
-                                    'long':
-                                        sov.locationCoordinates?.longitude ??
+                                  builder: (context) => EventVisulisationScreen(
+                                      notificationData: {
+                                        'title':
+                                            sov.hazardName ?? "Event Details",
+                                        'body': "body",
+                                        'timestamp':
+                                            DateTime.fromMillisecondsSinceEpoch(
+                                                (sov.updatedAt?.iSeconds ?? 0) *
+                                                    1000),
+                                        'eventId': sov.id,
+                                        'lat':
+                                            sov.locationCoordinates?.latitude ??
+                                                20.5937,
+                                        'long': sov.locationCoordinates
+                                                ?.longitude ??
                                             78.9629,
-                                  }),
+                                      }),
                                 ),
                               );
                               // Navigator.push(
@@ -760,11 +744,8 @@ Future<List<TransferAutocompleteModel>> fetchAutocompleteUsers(
     String query, String type) async {
   try {
     ApiService apiService = ApiService(AppConstant.GET_SEARCH_LIST_BY_SOV);
-    // String url = "/v2/search_users?search=$query";
     String url = "/v2/search_users?search=${Uri.encodeComponent(query)}";
     var response = await apiService.get(url);
-
-    // Parse the response to extract user data
     List<TransferAutocompleteModel> users = (response['result'] as List)
         .map((user) => TransferAutocompleteModel.fromJson(user))
         .toList();

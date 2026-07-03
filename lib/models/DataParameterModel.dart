@@ -320,7 +320,7 @@ class LinkVendor {
 }
 
 class History {
-  dynamic? value;
+  dynamic value;
   String? paramType;
   List<Reference>? reference;
   String? userName;
@@ -956,7 +956,7 @@ class VersionHistory {
   String? mode;
   dynamic version;
   String? userName;
-  Null? image;
+  Null image;
   String? docId;
 
   VersionHistory(
@@ -1014,7 +1014,7 @@ class User {
   String? name;
   String? email;
   String? userId;
-  Null? imageUrl;
+  Null imageUrl;
 
   User({this.name, this.email, this.userId, this.imageUrl});
 
@@ -1283,7 +1283,7 @@ class ParameterData {
   int? selectedParameterType;
   bool? isList;
   String? dataCategoryId;
-  Null? date;
+  Null date;
   String? tooltip;
 
   // List<String>? parents;
@@ -1294,9 +1294,9 @@ class ParameterData {
   Private? private;
   String? parameterType;
   List<Null>? valueList;
-  Null? startDate;
+  Null startDate;
   List<String>? tags;
-  Null? endDate;
+  Null endDate;
 
   // ParameterType? parameterType;
   HelpDocumantion? helpDocumantion;

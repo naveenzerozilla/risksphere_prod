@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import '../primitives/app_colors.dart';
 import '../primitives/custom_typography.dart';
 
-import 'package:flutter/material.dart';
-import '../primitives/app_colors.dart';
-import '../primitives/custom_typography.dart';
 
 class CustomGradientCircularProgressBar extends StatelessWidget {
   final double strokeWidth;

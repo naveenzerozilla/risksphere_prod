@@ -1,33 +1,15 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
-import 'package:aad_oauth/aad_oauth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:RiskSphere/constants/enums.dart';
-import 'package:RiskSphere/design_system/components/custom_button.dart';
-import 'package:RiskSphere/service/api_service.dart';
-import 'package:RiskSphere/service/language_service.dart';
-import 'package:aad_oauth/model/config.dart';
-import '../design_system/primitives/custom_typography.dart';
-import '../design_system/primitives/utilities/custom_spacing.dart';
 import '../main.dart';
 import '../models/initial_data_model.dart' hide Config;
-import '../models/role_model.dart' hide Roles;
 import '../screens/onboarding/create_account_screen.dart';
-import '../screens/onboarding/splash_screen.dart';
-import '../service/shared_preference_service.dart';
 import 'package:http/http.dart' as http;
-import '../utils/api_constants.dart';
 import '../utils/global_imports.dart' hide CompanyType;
 
 class AuthNotifier extends ChangeNotifier {
@@ -1431,7 +1413,7 @@ class AuthNotifier extends ChangeNotifier {
         /// ------------------------------------------------------
 
         else if (selectedCompany != null &&
-            selectedCompany!.corporateUserVerificationByAdmin! &&
+            selectedCompany.corporateUserVerificationByAdmin &&
             roles?.name!.toLowerCase() != 'admin') {
           showDialog(
             context: context,
@@ -2217,14 +2199,14 @@ extension UserCredentialExtension on UserCredential {
       },
       'credential': credential is EmailAuthCredential
           ? {
-              'email': (credential as EmailAuthCredential).email,
-              'password': (credential as EmailAuthCredential).password,
+              'email': (credential).email,
+              'password': (credential).password,
             }
           : credential is GoogleAuthCredential
               ? {
                   'accessToken':
-                      (credential as GoogleAuthCredential).accessToken,
-                  'idToken': (credential as GoogleAuthCredential).idToken,
+                      (credential).accessToken,
+                  'idToken': (credential).idToken,
                 }
               : null,
     };

@@ -30,17 +30,12 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   TextEditingController _textEditingController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
   TextEditingController _messageController = TextEditingController();
-
   String? _uploadedFileName;
   TextEditingController _sovNameController = TextEditingController();
-
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-// Add a new controller at the top of the state class:
   TextEditingController _subAccountSearchController = TextEditingController();
   bool showCheckbox = false;
   bool isLoading = false;
-
   Timer? deBouncer;
 
   TextEditingController _subAccountEditNameController = TextEditingController();
@@ -166,7 +161,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
   Future<void> _closeOverlay() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(
-        'isFirstTimeSubAccount', false); // 👈 save only when user closes it
+        'isFirstTimeSubAccount', false); 
     setState(() => _showOverlay_subaccount = false);
   }
 
@@ -273,8 +268,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                 },
                 child: Stack(
                   children: [
-                    // ✅ Keep background image OUTSIDE rebuild scope (using child)
-                    if (child != null) child,
+                   if (child != null) child,
                     Column(
                       children: [
                         Expanded(
@@ -329,39 +323,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                     ),
                                   ),
                                 ),
-
-                                // Padding(
-                                //   padding: const EdgeInsets.symmetric(
-                                //       horizontal: 10.0),
-                                //   child: Row(
-                                //     children: [
-                                //       InkWell(
-                                //         onTap: () {
-                                //           Navigator.pushAndRemoveUntil(
-                                //             context,
-                                //             MaterialPageRoute(
-                                //                 builder: (_) =>
-                                //                     AccountListScreen()),
-                                //             (route) => false,
-                                //           );
-                                //         },
-                                //         child: Text(
-                                //           widget.accountName.toString(),
-                                //           style: const TextStyle(
-                                //               fontSize: 14,
-                                //               color: Colors.white70),
-                                //         ),
-                                //       ),
-                                //       Text(' > ', style: typography.InputLabel),
-                                //       Text(
-                                //           LanguageService.getTranslated(
-                                //               context, "sub_accounts"),
-                                //           style: TextStyle(
-                                //               fontSize: 14,
-                                //               color: Colors.white)),
-                                //     ],
-                                //   ),
-                                // ),
 
                                 SizedBox(height: CustomSpacing.two),
 
@@ -522,8 +483,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                 ),
               );
             },
-
-            // ✅ Background image outside rebuild
             child: Positioned.fill(
               child: Image.asset(
                 'assets/images/mesh.png',
@@ -538,7 +497,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
 
   Widget _buildOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.7), // dim background/ dim background
+      color: Colors.black.withOpacity(0.7), 
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(40.0),
@@ -2322,7 +2281,7 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
             Consumer<SubAccountListProvider>(
                 builder: (context, subaccountlist, _) {
               return Text(
-                  subaccountlist.showAccountName?.trim().isNotEmpty == true
+                  subaccountlist.showAccountName.trim().isNotEmpty == true
                       ? subaccountlist.showAccountName.toString() == "null"
                           ? "Sub Account Name"
                           : subaccountlist.showAccountName.toString()
@@ -2383,19 +2342,9 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
                                       subAccountListProvider.totalPages &&
                                   subAccountListProvider
                                       .subAccountList.isNotEmpty) {
-                                // Display end of list message
-                                print(
-                                    "sub account list: ${subAccountListProvider.subAccountList}");
-                                return Column(
+                             return Column(
                                   children: [
-                                    // Text(widget.accountId.toString()),
-                                    // Text(subAccountListProvider
-                                    //     .subAccountList[0].subAccountId
-                                    //     .toString()),Text(subAccountListProvider
-                                    //     .subAccountList[1].subAccountId
-                                    //     .toString()),
-                                    // Text(subAccountListProvider.subaccooun.toString()),
-                                    _buildSubAccountCard(
+                                   _buildSubAccountCard(
                                         index, subAccountListProvider),
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),

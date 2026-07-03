@@ -2972,21 +2972,17 @@
 //   }
 // }
 
-import 'package:RiskSphere/models/user_corporate_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/user_profile_model.dart';
 import '../../utils/global_imports.dart';
 import 'package:RiskSphere/models/networking_model.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:phone_input/phone_input_package.dart';
 import '../../design_system/components/custom_flexible_roles_bottom_sheet.dart';
-import '../../design_system/components/roles_bottom_sheet.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/initial_data_model.dart';
 import 'package:image/image.dart' as img;
 import '../../utils/utils.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ProfileScreen extends StatefulWidget {
@@ -4245,7 +4241,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                             .acceptedRole
                                                             ?.map((role) =>
                                                                 role.toJson())
-                                                            ?.toList() ??
+                                                            .toList() ??
                                                         [];
                                                 print(
                                                     "Accepted Roles: $acceptedRoles");
@@ -4328,7 +4324,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                                 .acceptedRole
                                                                 ?.map((role) =>
                                                                     role.toJson())
-                                                                ?.toList() ??
+                                                                .toList() ??
                                                             [];
                                                     return CustomFlexibleRolesBottomSheet(
                                                       showCorporateSwitch: true,
@@ -4653,7 +4649,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                     .userData.acceptedRole
                                                     ?.map(
                                                         (role) => role.toJson())
-                                                    ?.toList() ??
+                                                    .toList() ??
                                                 []
                                           }
                                         };

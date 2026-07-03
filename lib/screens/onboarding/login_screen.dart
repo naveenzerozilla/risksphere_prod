@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String tenantId = 'abf269e2-9404-46f3-b577-2b0c86eac933';
   String redirectUrl = 'https://erp.projectzerozilla.com/';
   late String discoveryUrl =
-      "https://login.microsoftonline.com/${tenantId!}/v2.0/.well-known/openid-configuration";
+      "https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration";
   List<String> scopes = ['openid', 'profile', 'email', 'User.Read'];
 
   @override

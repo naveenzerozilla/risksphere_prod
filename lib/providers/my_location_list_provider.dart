@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +22,6 @@ import '../design_system/components/custom_button.dart';
 import '../design_system/components/custom_toast.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import '../service/firestore_service.dart';
 
@@ -562,7 +560,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -573,7 +571,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isSearchLoading(bool value) {
     _isSearchLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -584,7 +582,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   void setHeatmapGeneratingLive(bool value) {
     _isHeatMapGeneratingLive = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -602,7 +600,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isAllLocationLoading(bool value) {
     _isAllLocationLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -624,7 +622,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isNextPageLoading(bool value) {
     _isNextPageLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -635,7 +633,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isNextPageCertifiedLoading(bool value) {
     _isNextPageCertifiedLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -757,7 +755,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isMainTileProvidersLoading(bool value) {
     _isMainTileProvidersLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -863,7 +861,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set page(int value) {
     _page = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -874,7 +872,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set totalPages(int value) {
     _totalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -885,7 +883,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set certifiedPage(int value) {
     _certifiedPage = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -896,7 +894,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set certifiedTotalPages(int value) {
     _certifiedTotalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -909,7 +907,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set locationListOld(List<Location> value) {
     _locationListOld = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -920,7 +918,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set locationcount(int value) {
     _locationCount = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -964,7 +962,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set certifiedLocationList(List<MyLocation> value) {
     _certifiedLocationList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -975,7 +973,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set searchLocationList(List<MyLocation> value) {
     _searchLocationList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -986,7 +984,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set locationProfile(MyLocation? value) {
     _locationProfile = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -997,7 +995,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set grapDataProfile(GraphData? value) {
     _grapData = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1008,7 +1006,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set fullLocationList(List<MyLocation> value) {
     _fullLocationList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1027,14 +1025,14 @@ class MyLocationListProvider with ChangeNotifier {
 
   set summaryList(List<String> value) {
     _summaryList = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
   void addToLocationListOld(List<Location> newLocations) {
     _locationListOld.addAll(newLocations);
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1246,7 +1244,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set subdestinations(List<Subdestination> value) {
     _subdestinations = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1257,7 +1255,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set allAcitivityLogs(List<AllActivityLogs> value) {
     _allActivitylogs = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -1271,7 +1269,7 @@ class MyLocationListProvider with ChangeNotifier {
 
   set isIndividualLocationLoading(bool value) {
     _isIndividualLocationLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -2311,7 +2309,7 @@ class MyLocationListProvider with ChangeNotifier {
         "Content-Type": "application/json",
       });
 
-      var url = Uri.parse("${AppConstant.Fetch_purchase_chatbot}");
+      var url = Uri.parse("${AppConstant.Fetch_purchase}");
 
       final Map<String, dynamic> contextData = {"page": "dashboard"};
 
@@ -2665,7 +2663,7 @@ class MyLocationListProvider with ChangeNotifier {
       Navigator.pop(context);
       isAddLocationLoading = false;
       return true;
-    } on BackendException catch (e) {
+    } on BackendException {
       isAddLocationLoading = false;
       // CustomToast.error(context, e.message);
       return false;

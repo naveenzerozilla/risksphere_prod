@@ -1,15 +1,15 @@
 import 'package:RiskSphere/screens/chatbot/chatbot.dart';
-import 'package:tuple/tuple.dart';
-import 'package:uuid/uuid.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../../utils/global_imports.dart';
 import 'dart:developer';
 import 'package:easy_localization/easy_localization.dart';
-import '../../design_system/components/expandable_card_container.dart';
-import '../../providers/news_feed_provider.dart';
 import '../listings/my_location_list.dart';
 import '../payments/purchase_license.dart';
 import '../userManagement/connections_screen.dart';
 import '../userManagement/user_management.dart';
+import 'widgets/overview_card.dart';
+import 'widgets/company_onboarding_stats_card.dart';
+import 'widgets/user_onboarding_stats_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String? newUser;
@@ -43,10 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final String? sovName;
   late final String? sovid;
 
-  bool isCompanyOnboardingStatsExpanded = false;
-  bool isUserOnboardingStatsExpanded = true;
-  DateTime? _selectedDateCompany;
-  DateTime? _selectedDateUser;
+  // Expansion and selected period dates are now encapsulated inside CompanyOnboardingStatsCard and UserOnboardingStatsCard
 
   bool showTotalCorporates = false;
   bool showAllUsers = false;
@@ -509,6 +506,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
             drawer: CustomDrawer(),
+            floatingActionButton: Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ChatbotBottomSheet(
+                        locationId: locationProfileProvider
+                            .locationProfile?.finalAddress?.locationId
+                            .toString(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Need Help?",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppColors.primaryMain,
+                          child: Icon(Icons.smart_toy,
+                              color: Colors.white, size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
             body: RefreshIndicator(
               onRefresh: _handleRefresh,
               child: _showFirstTimeLoader
@@ -560,7 +608,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                                             style: typography.Body1,
                                           ),
-                                          // tappable
                                           TextSpan(
                                             text: ' Upgrade Now!',
                                             style: typography.Body1.copyWith(
@@ -585,55 +632,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             return SizedBox.shrink();
                           },
                         ),
-                        Positioned(
-                          bottom: 70, // adjust above SpeedDial
-                          right: 16,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                useSafeArea: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => ChatbotBottomSheet(
-                                  locationId: locationProfileProvider
-                                      .locationProfile?.finalAddress?.locationId
-                                      .toString(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.black87,
-                                borderRadius: BorderRadius.circular(25),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "Need Help?",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  SizedBox(width: 8),
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppColors.primaryMain,
-                                    child: Icon(Icons.smart_toy,
-                                        color: Colors.white, size: 18),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Positioned(
+                        //   right: 16,
+                        //   bottom: 16,
+                        //   child: SafeArea(
+                        //     child: GestureDetector(
+                        //       onTap: () {
+                        //         showModalBottomSheet(
+                        //           context: context,
+                        //           isScrollControlled: true,
+                        //           useSafeArea: true,
+                        //           backgroundColor: Colors.transparent,
+                        //           builder: (_) => ChatbotBottomSheet(
+                        //             locationId: locationProfileProvider
+                        //                 .locationProfile?.finalAddress?.locationId
+                        //                 .toString(),
+                        //           ),
+                        //         );
+                        //       },
+                        //       child: Container(
+                        //         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        //         decoration: BoxDecoration(
+                        //           color: Colors.black87,
+                        //           borderRadius: BorderRadius.circular(25),
+                        //           boxShadow: const [
+                        //             BoxShadow(
+                        //               color: Colors.black26,
+                        //               blurRadius: 6,
+                        //             ),
+                        //           ],
+                        //         ),
+                        //         child: Row(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: const [
+                        //             Text(
+                        //               "Need Help?",
+                        //               style: TextStyle(color: Colors.white),
+                        //             ),
+                        //             SizedBox(width: 8),
+                        //             CircleAvatar(
+                        //               radius: 16,
+                        //               child: Icon(Icons.smart_toy, size: 18),
+                        //             ),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
             ),
@@ -664,15 +710,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       endDate: endDate),
                 )
               ],
-              Text(
-                LanguageService.getTranslated(
-                    context, 'usermanagement_dash_overview'),
-                style: typography.H5_Regular,
+              InkWell(
+                onTap: () {
+                  FirebaseCrashlytics.instance.crash();
+                },
+                child: Text(
+                  LanguageService.getTranslated(
+                      context, 'usermanagement_dash_overview'),
+                  style: typography.H5_Regular,
+                ),
               ),
               SizedBox(height: CustomSpacing.six),
               !showTotalCorporates
                   ? SizedBox()
-                  : _overviewCardHorizontal(
+                  : OverviewCardHorizontal(
                       title: LanguageService.getTranslated(
                           context, 'usermanagement_dash_total_corps'),
                       amount: dashboardProvider
@@ -707,7 +758,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   : SizedBox(width: CustomSpacing.four),
               !showAllUsers
                   ? SizedBox()
-                  : _overviewCardHorizontal(
+                  : OverviewCardHorizontal(
                       title: LanguageService.getTranslated(
                           context, 'usermanagement_dash_signups'),
                       amount: dashboardProvider
@@ -744,7 +795,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               .toLowerCase() ==
                           "admin" &&
                       (isSuperAdmin || isPgAdmin || isAdmin))
-                  ? _overviewCardHorizontal(
+                  ? OverviewCardHorizontal(
                       title: LanguageService.getTranslated(
                           context, 'usermanagement_dash_verification_req'),
                       amount: ((dashboardProvider
@@ -799,8 +850,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
 
                           const SizedBox(width: 12),
-
-                          /// ➡️ See All
                           Expanded(
                             child: CustomButton(
                               key: keyFeature2,
@@ -843,7 +892,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     )
                   : showTotalCorporates.toString() == "true"
-                      ? _overviewCardHorizontal(
+                      ? OverviewCardHorizontal(
                           title: LanguageService.getTranslated(
                               context, 'usermanagement_dash_verification_req'),
                           amount: ((dashboardProvider
@@ -856,7 +905,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           icon: 'assets/images/verification_req_checks.svg',
                           bottomWidget: Row(
                             children: [
-                              /// ➕ Add User
                               Expanded(
                                 child: CustomButton(
                                   key: keyFeature1,
@@ -899,10 +947,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                               ),
-
                               const SizedBox(width: 12),
-
-                              /// ➡️ See All
                               Expanded(
                                 child: CustomButton(
                                   key: keyFeature2,
@@ -952,7 +997,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               !showConnectionRequests
                   ? SizedBox()
                   : SizedBox(width: CustomSpacing.four),
-              _overviewCardHorizontal(
+              OverviewCardHorizontal(
                 title: LanguageService.getTranslated(
                     context, 'usermanagement_dash_connection_request'),
                 amount:
@@ -962,7 +1007,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 bottomWidget: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    //reduce border radius
                     CustomButton(
                       key: keyFeature3,
                       type: ButtonType.outlined,
@@ -1015,43 +1059,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(
                 height: CustomSpacing.one,
               ),
-              // (userProfileProvider.userData.role != null &&
-              //         userProfileProvider.userData.role!.isNotEmpty &&
-              //         userProfileProvider.userData.role![0].name
-              //                 .toString() ==
-              //             "Admin" &&
-              //         (isSuperAdmin || isPgAdmin || isAdmin))
-              // InkWell(
-              //   onTap: () async {
-              //     final status = await Permission.camera.request();
-              //     if (status.isGranted) {
-              //       final pickedFile = await ImagePicker()
-              //           .pickImage(source: ImageSource.camera);
-              //       if (pickedFile != null) {
-              //         // Use pickedFile.path
-              //         print('Image path: ${pickedFile.path}');
-              //       }
-              //     } else {
-              //       ScaffoldMessenger.of(context).showSnackBar(
-              //         SnackBar(content: Text('Camera permission denied')),
-              //       );
-              //     }
-              //   },
-              //   child: Text("Camera", style: typography.H5_Regular),
-              // ),
+
               showAllUsers
                   ? SizedBox()
                   : Consumer2<UserProfileProvider, ConfigurationProvider>(
                       builder: (context, userProfileProvider, provider, child) {
-                        // if (provider.isLoading) {
-                        //   return Container(
-                        //     padding: const EdgeInsets.symmetric(horizontal: 50),
-                        //     alignment: Alignment.center,
-                        //     width: MediaQuery.of(context).size.width,
-                        //     height: MediaQuery.of(context).size.height / 2,
-                        //     child: const CircularProgressIndicator(),
-                        //   );
-                        // }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1093,18 +1105,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             )
                           ],
                         )
-                      : ExpandableCardContainer(
-                          isExpanded: isCompanyOnboardingStatsExpanded,
-                          collapsedChild: _collapsedCompanyCardWidget(
-                            title: Text(
-                              LanguageService.getTranslated(context,
-                                  'usermanagement_dash_company_onboarding_status_title'),
-                              style: typography.Body1,
-                            ),
-                          ),
-                          expandedChild: _expandedCompanyOnboardingStatsWidget(
-                              dashboardProvider),
-                        ),
+                      : const CompanyOnboardingStatsCard(),
               SizedBox(height: CustomSpacing.one),
               !showUserOnboardingStats
                   ? SizedBox()
@@ -1119,18 +1120,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             )
                           ],
                         )
-                      : ExpandableCardContainer(
-                          isExpanded: isUserOnboardingStatsExpanded,
-                          collapsedChild: _collapsedUserCardWidget(
-                            title: Text(
-                              LanguageService.getTranslated(context,
-                                  'usermanagement_dash_user_on_boarding_status'),
-                              style: typography.Body1,
-                            ),
-                          ),
-                          expandedChild: _expandedUserOnboardingStatsWidget(
-                              dashboardProvider),
-                        ),
+                      : const UserOnboardingStatsCard(),
               SizedBox(height: CustomSpacing.eight),
             ],
           ),
@@ -1162,767 +1152,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         );
       },
-    );
-  }
-
-  // Widget _subscriptionBody() {
-  //   return ListView.builder(
-  //     itemCount: subscriptionMeta.length,
-  //     shrinkWrap: true,
-  //     physics: NeverScrollableScrollPhysics(),
-  //     itemBuilder: (context, index) {
-  //       final data = subscriptionMeta[index];
-  //
-  //       return Padding(
-  //         padding: EdgeInsets.only(bottom: CustomSpacing.one),
-  //         child: SubscriptionCard(
-  //           title: "${data['hazardLabel']} (${data['vendorName']})",
-  //           description: data['description'],
-  //           iconPath: data['vendorImage'],
-  //           isSubscribed: data['isSubscribed'],
-  //           isPgAdmin: isPgAdmin,
-  //           isAdmin: isAdmin,
-  //           isSuperAdmin: isSuperAdmin,
-  //           onSubscribe: () {
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(builder: (_) => PurchaseLicensePage()),
-  //             );
-  //           },
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
-  // Widget _subscriptionBody() {
-  //   return Selector2<UserProfileProvider, ConfigurationProvider,
-  //       Tuple4<bool, Map<String, dynamic>?, bool, String>>(
-  //     selector: (_, userProfile, config) => Tuple4(
-  //         config.isLoading,
-  //         userProfile.trialInfo,
-  //         (userProfile.trialInfo['status']?.toString() ?? '') == 'active',
-  //         ''
-  //
-  //         // userProfile.isSubscribed,
-  //         // userProfile.subscriptionStatus ?? '',
-  //         ),
-  //     builder: (context, data, child) {
-  //       final isConfigLoading = data.item1;
-  //       final trialInfo = data.item2;
-  //       final isSubscribed = data.item3;
-  //       final subscriptionStatus = data.item4;
-  //
-  //       if (isConfigLoading) {
-  //         return Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 50),
-  //           alignment: Alignment.center,
-  //           width: MediaQuery.of(context).size.width,
-  //           height: MediaQuery.of(context).size.height / 2,
-  //           child: const CircularProgressIndicator(),
-  //         );
-  //       }
-  //
-  //       return Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: subscriptions.keys.map((key) {
-  //           return FutureBuilder<Map<String, dynamic>?>(
-  //             future: _fetchSubscriptionData(key),
-  //             builder: (context, snapshot) {
-  //               if (snapshot.connectionState == ConnectionState.waiting ||
-  //                   loadingSubscriptions.contains(key)) {
-  //                 return const Center(child: CircularProgressIndicator());
-  //               }
-  //
-  //               if (!snapshot.hasData) {
-  //                 return const SizedBox.shrink();
-  //               }
-  //
-  //               final data = snapshot.data!;
-  //               final trialStatus = trialInfo?['status'] ?? '';
-  //
-  //               return Column(
-  //                 children: [
-  //                   SubscriptionCard(
-  //                     title: '${data['hazardLabel']} (${data['vendorName']})',
-  //                     description:
-  //                         data['description'] ?? "Basic Subscription plan",
-  //                     iconPath: data['vendorImage'],
-  //                     isSubscribed: data['isSubscribed'],
-  //                     onSubscribe: () async {
-  //                       setState(() => loadingSubscriptions.add(key));
-  //                       Navigator.of(context).push(MaterialPageRoute(
-  //                           builder: (_) => const PurchaseLicensePage()));
-  //                       setState(() => loadingSubscriptions.remove(key));
-  //                     },
-  //                     isPgAdmin: isPgAdmin,
-  //                     isAdmin: isAdmin,
-  //                     isSuperAdmin: isSuperAdmin,
-  //                   ),
-  //                   SizedBox(height: CustomSpacing.one),
-  //                 ],
-  //               );
-  //             },
-  //           );
-  //         }).toList(),
-  //       );
-  //     },
-  //   );
-  // }
-
-  /// Fetch vendor and hazard data for each subscription key
-  Future<Map<String, dynamic>?> _fetchSubscriptionData(String key) async {
-    final parts = key.split('_');
-    if (parts.length != 2) return null;
-
-    final vendorId = parts[0];
-    final hazardName = parts[1];
-
-    final vendor = vendorList.firstWhere(
-      (v) => v['vendor_id'] == vendorId,
-      orElse: () => null,
-    );
-
-    if (vendor == null) return null;
-
-    final hazard = (vendor['hazard_commercials'] as List?)
-        ?.firstWhere((h) => h['hazard_name'] == hazardName, orElse: () => null);
-
-    if (hazard == null) return null;
-
-    final subscription = subscriptions[key];
-    final config = Provider.of<ConfigurationProvider>(context, listen: false)
-            .configurations['result'] ??
-        {};
-
-    return {
-      'vendorName': vendor['vendor_name_label'] ?? '',
-      'vendorImage':
-          vendor['display_image_url'] ?? 'assets/images/default_vendor.png',
-      'hazardLabel': hazard['hazard_name_label'] ?? 'Unknown Hazard',
-      'description': subscription['description'] ?? '',
-      'isSubscribed': subscription['is_subscribed'] == true ||
-          subscription['is_subscribed'] == 'true',
-      'mainId': config['id'] ?? '',
-      'level': config['level'] ?? '',
-    };
-  }
-
-  _overviewCardHorizontal(
-      {required String title,
-      required String amount,
-      required String icon,
-      required Row bottomWidget}) {
-    var typography = CustomTypography(context);
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.only(
-                top: CustomSpacing.two,
-                left: CustomSpacing.four,
-                right: CustomSpacing.four),
-            child: Row(
-              children: [
-                Row(
-                  children: [
-                    Card(
-                      elevation: 100,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: Container(
-                        padding: EdgeInsets.all(CustomSpacing.two),
-                        child: SvgPicture.asset(
-                          icon,
-                          width: 24,
-                          height: 24,
-                          colorFilter: ColorFilter.mode(
-                              Theme.of(context).colorScheme.onBackground,
-                              BlendMode.srcIn),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: CustomSpacing.four),
-                    Text(
-                      title,
-                      style: typography.Body1,
-                    ),
-                    SizedBox(height: CustomSpacing.two),
-                  ],
-                ),
-                Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      amount,
-                      style: typography.H4,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Divider(
-            color: AppColors.black,
-            thickness: 2,
-          ),
-          SizedBox(height: CustomSpacing.one),
-          Container(
-              padding: EdgeInsets.only(
-                  bottom: CustomSpacing.two,
-                  left: CustomSpacing.four,
-                  right: CustomSpacing.four),
-              child: Center(child: bottomWidget)),
-        ],
-      ),
-    );
-  }
-
-  _collapsedCompanyCardWidget({required Text title}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Column(
-              children: [
-                Row(
-                  children: [
-                    //Circular Icon button
-                    IconButton(
-                      icon: Icon(
-                        Icons.keyboard_arrow_down_outlined,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isCompanyOnboardingStatsExpanded =
-                              !isCompanyOnboardingStatsExpanded;
-                        });
-                      },
-                    ),
-                    SizedBox(width: CustomSpacing.two),
-                    Flexible(child: title),
-                    Spacer(),
-                  ],
-                ),
-                SizedBox(height: CustomSpacing.two),
-
-                // Select Period Datetime Picker
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        readOnly: true, // Make the field read-only
-                        controller: TextEditingController(
-                            text: _selectedDateCompany == null
-                                ? ''
-                                : DateFormat('MMMM yyyy')
-                                    .format(_selectedDateCompany!)),
-                        decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(context,
-                              'usermanagement_dash_select_period_label'),
-                          hintText: LanguageService.getTranslated(
-                              context, 'usermanagement_dash_calendar'),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onTap: () async {
-                          final DateTime? pickedDate = await showMonthPicker(
-                            context: context,
-                            initialDate: _selectedDateCompany ?? DateTime.now(),
-                            firstDate: DateTime(DateTime.now().year - 10),
-                            lastDate: DateTime.now(),
-                          );
-
-                          if (pickedDate != null &&
-                              pickedDate != _selectedDateCompany) {
-                            setState(() {
-                              _selectedDateCompany = pickedDate;
-                            });
-                            Provider.of<DashboardProvider>(context,
-                                    listen: false)
-                                .getDashboardDataForCompanies(
-                                    context, pickedDate);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  _expandedCompanyOnboardingStatsWidget(DashboardProvider dashboardProvider) {
-    var typography = CustomTypography(context);
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                //Circular Icon button
-                IconButton(
-                  icon: Icon(
-                    Icons.keyboard_arrow_up_outlined,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      isCompanyOnboardingStatsExpanded =
-                          !isCompanyOnboardingStatsExpanded;
-                    });
-                  },
-                ),
-                SizedBox(width: CustomSpacing.two),
-                Flexible(
-                  child: Text(
-                    LanguageService.getTranslated(context,
-                        'usermanagement_dash_company_onboarding_status_title'),
-                    style: typography.Body1,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: CustomSpacing.two),
-
-            // Select Period Datetime Picker
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    readOnly: true, // Make the field read-only
-                    controller: TextEditingController(
-                        text: _selectedDateCompany == null
-                            ? ''
-                            : DateFormat('MMMM yyyy')
-                                .format(_selectedDateCompany!)),
-                    decoration: InputDecoration(
-                      labelText: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_select_period_label'),
-                      hintText: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_calendar'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onTap: () async {
-                      final DateTime? pickedDate = await showMonthPicker(
-                        context: context,
-                        initialDate: _selectedDateCompany ?? DateTime.now(),
-                        firstDate: DateTime(DateTime.now().year - 10),
-                        lastDate: DateTime.now(),
-                      );
-
-                      if (pickedDate != null &&
-                          pickedDate != _selectedDateCompany) {
-                        setState(() {
-                          _selectedDateCompany = pickedDate;
-                        });
-                        Provider.of<DashboardProvider>(context, listen: false)
-                            .getDashboardDataForCompanies(context, pickedDate);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: CustomSpacing.six),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.two),
-              child: ListView(
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                children: []..addAll(dashboardProvider
-                        .dashboardModel?.companyType
-                        ?.map((corporate) {
-                      return companyOnboardingStatsProgressCards(
-                          corporate, dashboardProvider);
-                    }) ??
-                    []),
-              ),
-            ),
-            SizedBox(height: CustomSpacing.four),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getPercentConversions(
-                        dashboardProvider.dashboardModel?.companyPercent ??
-                            "0"),
-                    style: typography.H4.copyWith(
-                      color: Colors.red,
-                    ),
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Text(
-                    LanguageService.getTranslated(
-                        context, 'usermanagement_dash_conversions'),
-                    style: typography.Body1,
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                    'usermanagement_dash_forcast_part_1'),
-                                style: typography.Body1.copyWith(
-                                  color: AppColors.primaryMain,
-                                ),
-                              ),
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                    'usermanagement_dash_forcast_part_2'),
-                                style: typography.Body1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget companyOnboardingStatsProgressCards(
-      CompanyType corporate, DashboardProvider dashboardProvider) {
-    var typography = CustomTypography(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          corporate.name ?? '',
-          style: typography.Body1,
-        ),
-        SizedBox(height: CustomSpacing.two),
-        Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: corporate.count == null
-                    ? 0
-                    : corporate.count! /
-                        (dashboardProvider.dashboardModel?.max ?? 1),
-              ),
-            ),
-            SizedBox(width: CustomSpacing.two),
-            Text(
-              corporate.count.toString(),
-              style: typography.Subtitle1,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  _collapsedUserCardWidget({required Text title}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Column(
-              children: [
-                Row(
-                  children: [
-                    //Circular Icon button
-                    IconButton(
-                      icon: Icon(
-                        Icons.keyboard_arrow_down_outlined,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isUserOnboardingStatsExpanded =
-                              !isUserOnboardingStatsExpanded;
-                        });
-                      },
-                    ),
-                    SizedBox(width: CustomSpacing.two),
-                    Flexible(child: title),
-                    Spacer(),
-                  ],
-                ),
-                SizedBox(height: CustomSpacing.two),
-
-                // Select Period Datetime Picker
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        readOnly: true, // Make the field read-only
-                        controller: TextEditingController(
-                            text: _selectedDateUser == null
-                                ? ''
-                                : DateFormat('MMMM yyyy')
-                                    .format(_selectedDateUser!)),
-                        decoration: InputDecoration(
-                          labelText: LanguageService.getTranslated(context,
-                              'usermanagement_dash_select_period_label'),
-                          hintText: LanguageService.getTranslated(
-                              context, 'usermanagement_dash_calendar'),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onTap: () async {
-                          final DateTime? pickedDate = await showMonthPicker(
-                            context: context,
-                            initialDate: _selectedDateUser ?? DateTime.now(),
-                            firstDate: DateTime(DateTime.now().year - 10),
-                            lastDate: DateTime.now(),
-                          );
-
-                          if (pickedDate != null &&
-                              pickedDate != _selectedDateUser) {
-                            setState(() {
-                              _selectedDateUser = pickedDate;
-                            });
-                            Provider.of<DashboardProvider>(context,
-                                    listen: false)
-                                .getDashboardDataForRoles(context, pickedDate);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  _expandedUserOnboardingStatsWidget(DashboardProvider dashboardProvider) {
-    var typography = CustomTypography(context);
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(CustomSpacing.two),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                //Circular Icon button
-                IconButton(
-                  icon: Icon(
-                    Icons.keyboard_arrow_up_outlined,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      isUserOnboardingStatsExpanded =
-                          !isUserOnboardingStatsExpanded;
-                    });
-                  },
-                ),
-                SizedBox(width: CustomSpacing.two),
-                Flexible(
-                  child: Text(
-                    LanguageService.getTranslated(
-                        context, 'usermanagement_dash_user_on_boarding_status'),
-                    style: typography.Body1,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: CustomSpacing.two),
-
-            // Select Period Datetime Picker
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    readOnly: true, // Make the field read-only
-                    controller: TextEditingController(
-                        text: _selectedDateUser == null
-                            ? ''
-                            : DateFormat('MMMM yyyy')
-                                .format(_selectedDateUser!)),
-                    decoration: InputDecoration(
-                      labelText: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_select_period_label'),
-                      hintText: LanguageService.getTranslated(
-                          context, 'usermanagement_dash_calendar'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onTap: () async {
-                      final DateTime? pickedDate = await showMonthPicker(
-                        context: context,
-                        initialDate: _selectedDateUser ?? DateTime.now(),
-                        firstDate: DateTime(DateTime.now().year - 10),
-                        lastDate: DateTime.now(),
-                      );
-
-                      if (pickedDate != null &&
-                          pickedDate != _selectedDateUser) {
-                        setState(() {
-                          _selectedDateUser = pickedDate;
-                        });
-                        Provider.of<DashboardProvider>(context, listen: false)
-                            .getDashboardDataForRoles(context, pickedDate);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: CustomSpacing.four),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-              child: ListView(
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                children: []
-                  ..addAll(dashboardProvider.dashboardModel?.roles?.map((role) {
-                        return userOnboardingStatsProgressCards(
-                            role, dashboardProvider);
-                      }) ??
-                      []),
-              ),
-            ),
-            SizedBox(height: CustomSpacing.four),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: CustomSpacing.four),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getPercentConversions(
-                        dashboardProvider.dashboardModel?.rolePercent ?? "0"),
-                    style: typography.H4.copyWith(
-                      color: Colors.red,
-                    ),
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Text(
-                    LanguageService.getTranslated(
-                        context, 'usermanagement_dash_conversions'),
-                    style: typography.Body1,
-                  ),
-                  SizedBox(height: CustomSpacing.two),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                    'usermanagement_dash_forcast_part_1'),
-                                style: typography.Body1.copyWith(
-                                  color: AppColors.primaryMain,
-                                ),
-                              ),
-                              TextSpan(
-                                text: LanguageService.getTranslated(context,
-                                    'usermanagement_dash_forcast_part_2'),
-                                style: typography.Body1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget userOnboardingStatsProgressCards(
-      DashboardRoles role, DashboardProvider dashboardProvider) {
-    var typography = CustomTypography(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          role.name ?? '',
-          style: typography.Body1,
-        ),
-        SizedBox(height: CustomSpacing.two),
-        Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: role.count == null
-                    ? 0
-                    : role.count! /
-                        (dashboardProvider.dashboardModel?.max ?? 1),
-              ),
-            ),
-            SizedBox(width: CustomSpacing.two),
-            Text(
-              role.count.toString(),
-              style: typography.Subtitle1,
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -1974,8 +1203,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   double getChangePercentage(int current, int past) {
-    print('current: $current');
-    print('past: $past');
     double changePercentage = ((current - past) * 100) / (past == 0 ? 1 : past);
     return changePercentage;
   }
@@ -2020,571 +1247,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String decoded = utf8.decode(base64Url.decode(normalized));
     return json.decode(decoded);
   }
-
-  _updateSubscription(
-      String vendorId, bool isSubscribed, String mainId, String level) {
-    var typography = CustomTypography(context);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        final provider =
-            Provider.of<ConfigurationProvider>(context, listen: false);
-        bool isLoading = false; // Loader for "Yes" button
-        bool isLoading1 = false; // Loader for "No" button
-
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width / 2,
-                    child: Text(
-                      'Do you want to apply this change globally?',
-                      maxLines: 2,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.close),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isLoading1
-                      ? null
-                      : () async {
-                          setState(() {
-                            isLoading1 = true;
-                          });
-
-                          String key = 'subscribe.$vendorId.is_subscribed';
-
-                          await provider.updateConfiguration(
-                            context,
-                            mainId,
-                            key,
-                            level,
-                            !isSubscribed,
-                            "false",
-                          );
-
-                          setState(() {
-                            isLoading1 = false;
-                          });
-
-                          if (!provider.isLoading) Navigator.pop(context);
-                          _getData();
-                        },
-                  style: TextButton.styleFrom(
-                    side: BorderSide(color: AppColors.primaryMain, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: isLoading1
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: AppColors.primaryMain,
-                            strokeWidth: 3,
-                          ),
-                        )
-                      : Text(
-                          'No',
-                          style: typography.Body1.copyWith(
-                              color: AppColors.primaryMain),
-                        ),
-                ),
-                SizedBox(width: 10),
-                TextButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-
-                          String key = 'subscribe.$vendorId.is_subscribed';
-
-                          await provider.updateConfiguration(
-                            context,
-                            mainId,
-                            key,
-                            level,
-                            !isSubscribed,
-                            "true",
-                          );
-
-                          setState(() {
-                            isLoading = false;
-                          });
-
-                          if (!provider.isLoading) Navigator.pop(context);
-                          _getData();
-                        },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.primaryMain,
-                    side: BorderSide(color: AppColors.primaryMain, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  ),
-                  child: isLoading
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
-                        )
-                      : Text(
-                          'Yes',
-                          style: typography.Body1.copyWith(color: Colors.black),
-                        ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 }
-
-// class _ChatbotContent extends StatefulWidget {
-//   final String? locationId;
-//
-//   const _ChatbotContent({this.locationId});
-//
-//   @override
-//   State<_ChatbotContent> createState() => _ChatbotContentState();
-// }
-//
-// class _ChatbotContentState extends State<_ChatbotContent> {
-//   final TextEditingController _controller = TextEditingController();
-//   final ScrollController _scrollController = ScrollController();
-//   String? _sessionId;
-//   bool _isTyping = false;
-//   bool _hasText = false;
-//   bool _showEligibilityButton = true;
-//   bool _showLocationsButton = true;
-//   List<Map<String, dynamic>> messages = [];
-//
-//   bool get _showSuggestions =>
-//       messages.where((m) => m["isBot"] == false).isEmpty;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _sessionId = const Uuid().v4();
-//     messages.add({
-//       "isBot": true,
-//       "text": "Hi, I'm RiskBuddy your personalized Assistant.",
-//     });
-//     _controller.addListener(() {
-//       final hasText = _controller.text.trim().isNotEmpty;
-//       if (hasText != _hasText) setState(() => _hasText = hasText);
-//     });
-//   }
-//
-//   @override
-//   void dispose() {
-//     _controller.dispose();
-//     _scrollController.dispose();
-//     super.dispose();
-//   }
-//
-//   String _currentTime() {
-//     final now = DateTime.now();
-//     final hour = now.hour > 12
-//         ? now.hour - 12
-//         : now.hour == 0
-//             ? 12
-//             : now.hour;
-//     final minute = now.minute.toString().padLeft(2, '0');
-//     final period = now.hour >= 12 ? "PM" : "AM";
-//     return "$hour:$minute $period";
-//   }
-//
-//   Future<void> _sendMessage() async {
-//     if (_controller.text.trim().isEmpty) return;
-//     final userMessage = _controller.text.trim();
-//
-//     setState(() {
-//       messages.add({"isBot": false, "text": userMessage});
-//       _isTyping = true;
-//     });
-//
-//     _controller.clear();
-//     _scrollToBottom();
-//
-//     final provider =
-//         Provider.of<MyLocationListProvider>(context, listen: false);
-//
-//     try {
-//       final reply = await provider.sendChatDashboardMessage(
-//         context: context,
-//         message: userMessage,
-//         page: "dashboard",
-//       );
-//       // final reply = await provider.sendChatMessage(
-//       //   context: context,
-//       //   message: userMessage,
-//       //   locationId: widget.locationId ?? "",
-//       //   sessionId: _sessionId!,
-//       //   locationName: provider.selectedLocation?.locationName ?? "",
-//       //   accountName: provider.selectedLocation?.accountName ?? "",
-//       // );
-//
-//       debugPrint("BOT REPLY => $reply");
-//       setState(() {
-//         _isTyping = false;
-//         messages.add({"isBot": true, "text": reply ?? "No response"});
-//       });
-//       _scrollToBottom();
-//     } catch (e) {
-//       setState(() => _isTyping = false);
-//     }
-//   }
-//
-//   void _scrollToBottom() {
-//     Future.delayed(const Duration(milliseconds: 300), () {
-//       if (_scrollController.hasClients) {
-//         _scrollController.animateTo(
-//           _scrollController.position.maxScrollExtent,
-//           duration: const Duration(milliseconds: 300),
-//           curve: Curves.easeOut,
-//         );
-//       }
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       children: [
-//         /// ── Header ──
-//         Container(
-//           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-//           child: Row(
-//             children: [
-//               CircleAvatar(
-//                 radius: 18,
-//                 backgroundColor: AppColors.primaryMain,
-//                 child:
-//                     const Icon(Icons.smart_toy, color: Colors.white, size: 18),
-//               ),
-//               const SizedBox(width: 10),
-//               Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   const Text(
-//                     "RiskBuddy",
-//                     style: TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 16,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                   Row(
-//                     children: [
-//                       SvgPicture.asset(
-//                         "assets/images/ai.svg",
-//                         color: AppColors.primaryMain,
-//                         width: 12,
-//                         height: 12,
-//                       ),
-//                       const SizedBox(width: 4),
-//                       const Text(
-//                         "Smarter decisions, lower risk.",
-//                         style: TextStyle(color: Colors.grey, fontSize: 11),
-//                       ),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//               const Spacer(),
-//               Row(
-//                 children: [
-//                   // IconButton(
-//                   //   icon: const Icon(Icons.open_in_full,
-//                   //       color: Colors.grey, size: 18),
-//                   //   onPressed: () {
-//                   //     // Navigator.pop(context);
-//                   //     // Navigator.push(
-//                   //     //   context,
-//                   //     //   MaterialPageRoute(
-//                   //     //     builder: (_) =>
-//                   //     //         ChatbotPage(locationId: widget.locationId),
-//                   //     //   ),
-//                   //     // );
-//                   //   },
-//                   // ),
-//                   IconButton(
-//                     icon: const Icon(Icons.close, color: Colors.grey, size: 20),
-//                     onPressed: () => Navigator.pop(context),
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//
-//         const Divider(color: Color(0xFF2A2A2A), height: 1),
-//
-//         /// ── Messages ──
-//         Expanded(
-//           child: ListView.builder(
-//             controller: _scrollController,
-//             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-//             itemCount: messages.length + (_isTyping ? 1 : 0),
-//             itemBuilder: (context, index) {
-//               if (_isTyping && index == messages.length) {
-//                 return Align(
-//                   alignment: Alignment.centerLeft,
-//                   child: Container(
-//                     margin: const EdgeInsets.symmetric(vertical: 6),
-//                     padding: const EdgeInsets.symmetric(
-//                         horizontal: 14, vertical: 12),
-//                     decoration: BoxDecoration(
-//                       color: const Color(0xFF1E1E1E),
-//                       borderRadius: BorderRadius.circular(18),
-//                     ),
-//                     child: const Text("...",
-//                         style: TextStyle(color: Colors.white)),
-//                   ),
-//                 );
-//               }
-//
-//               final message = messages[index];
-//               final isBot = message["isBot"] as bool;
-//
-//               return Column(
-//                 crossAxisAlignment:
-//                     isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-//                 children: [
-//                   Container(
-//                     margin: const EdgeInsets.symmetric(vertical: 4),
-//                     padding: const EdgeInsets.symmetric(
-//                         horizontal: 14, vertical: 10),
-//                     constraints: BoxConstraints(
-//                       maxWidth: MediaQuery.of(context).size.width * 0.75,
-//                     ),
-//                     decoration: BoxDecoration(
-//                       color: isBot
-//                           ? const Color(0xFF1E1E1E)
-//                           : const Color(0xFF2D2D2D),
-//                       borderRadius: BorderRadius.circular(18),
-//                     ),
-//                     child: isBot
-//                         ? _buildFormattedText(context, message["text"])
-//                         : Text(
-//                             message["text"],
-//                             style: const TextStyle(
-//                                 color: Colors.white, fontSize: 13),
-//                           ),
-//                   ),
-//                   Padding(
-//                     padding: const EdgeInsets.only(bottom: 2),
-//                     child: Text(
-//                       _currentTime(),
-//                       style: const TextStyle(color: Colors.grey, fontSize: 10),
-//                     ),
-//                   ),
-//                 ],
-//               );
-//             },
-//           ),
-//         ),
-//
-//         Container(
-//           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//           color: Colors.black,
-//           child: Container(
-//             height: 48,
-//             padding: const EdgeInsets.symmetric(horizontal: 16),
-//             decoration: BoxDecoration(
-//               color: const Color(0xFF2A2A2A),
-//               borderRadius: BorderRadius.circular(30),
-//               border: Border.all(color: const Color(0xFF3A3A3A), width: 1),
-//             ),
-//             child: Row(
-//               children: [
-//                 Expanded(
-//                   child: TextField(
-//                     controller: _controller,
-//                     style: const TextStyle(color: Colors.white, fontSize: 14),
-//                     decoration: const InputDecoration(
-//                       hintText: "Ask about risk data, eligibility...",
-//                       hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
-//                       border: InputBorder.none,
-//                       isCollapsed: true,
-//                     ),
-//                     onSubmitted: (_) => _sendMessage(),
-//                   ),
-//                 ),
-//                 GestureDetector(
-//                   onTap: _hasText ? _sendMessage : null,
-//                   child: Icon(
-//                     Icons.telegram_sharp,
-//                     color: _hasText ? AppColors.primaryMain : Colors.grey,
-//                     size: 38,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//         SizedBox(
-//           height: 25,
-//         )
-//       ],
-//     );
-//   }
-// }
-//
-// Widget _buildFormattedText(BuildContext context, String rawText) {
-//   final text = rawText.replaceAll('**', '');
-//   final lines = text.split('\n');
-//   final List<Widget> elements = [];
-//
-//   for (int i = 0; i < lines.length; i++) {
-//     final trimmed = lines[i].trim();
-//     if (RegExp(r'^\d+\.$').hasMatch(trimmed)) continue;
-//     if (trimmed.isEmpty) {
-//       elements.add(const SizedBox(height: 8));
-//       continue;
-//     }
-//
-//     if (trimmed.endsWith(':') && !trimmed.startsWith('*')) {
-//       elements.add(Padding(
-//         padding: EdgeInsets.only(top: i > 0 ? 8.0 : 0, bottom: 4),
-//         child: Text(
-//           trimmed,
-//           style: TextStyle(
-//             fontWeight: FontWeight.w600,
-//             fontSize: 13,
-//             color: AppColors.primaryMain,
-//           ),
-//         ),
-//       ));
-//     } else if (trimmed.startsWith('*')) {
-//       final bulletText = trimmed.substring(1).trim();
-//       elements.add(Padding(
-//         padding: const EdgeInsets.only(left: 8, bottom: 3),
-//         child: Row(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Text(
-//               '• ',
-//               style: TextStyle(
-//                 fontSize: 13,
-//                 color: Colors.grey.shade500,
-//               ),
-//             ),
-//             Expanded(
-//               child: Text(
-//                 bulletText,
-//                 style: const TextStyle(
-//                   fontSize: 13,
-//                   height: 1.4,
-//                   color: Colors.white,
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ));
-//     } else {
-//       final isHighRisk =
-//           trimmed.contains('Very High') || trimmed.contains('High');
-//       elements.add(Padding(
-//         padding: const EdgeInsets.only(bottom: 4),
-//         child: Text(
-//           trimmed,
-//           style: TextStyle(
-//             fontSize: 13,
-//             height: 1.5,
-//             color: isHighRisk ? Colors.white : Colors.white,
-//           ),
-//         ),
-//       ));
-//     }
-//   }
-//
-//   return Column(
-//     crossAxisAlignment: CrossAxisAlignment.start,
-//     children: elements,
-//   );
-// }
-//
-// class _ChatbotBottomSheet extends StatefulWidget {
-//   final String? locationId;
-//
-//   const _ChatbotBottomSheet({this.locationId});
-//
-//   @override
-//   State<_ChatbotBottomSheet> createState() => _ChatbotBottomSheetState();
-// }
-//
-// class _ChatbotBottomSheetState extends State<_ChatbotBottomSheet> {
-//   bool _isFullScreen = false;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final screenHeight = MediaQuery.of(context).size.height;
-//
-//     return Padding(
-//       padding: MediaQuery.of(context).viewInsets,
-//       child: Container(
-//         height: _isFullScreen ? screenHeight : screenHeight * 0.62,
-//         decoration: const BoxDecoration(
-//           color: Colors.black,
-//           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-//         ),
-//         child: Column(
-//           children: [
-//             GestureDetector(
-//               onTap: () => setState(() => _isFullScreen = !_isFullScreen),
-//               child: Container(
-//                 width: double.infinity,
-//                 padding: const EdgeInsets.symmetric(vertical: 10),
-//                 child: Column(
-//                   children: [
-//                     Container(
-//                       width: 40,
-//                       height: 4,
-//                       decoration: BoxDecoration(
-//                         color: Colors.grey.shade600,
-//                         borderRadius: BorderRadius.circular(4),
-//                       ),
-//                     ),
-//                     const SizedBox(height: 6),
-//                     Icon(
-//                       _isFullScreen
-//                           ? Icons.keyboard_arrow_down
-//                           : Icons.keyboard_arrow_up,
-//                       color: Colors.grey,
-//                       size: 20,
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//             Expanded(
-//               child: _ChatbotContent(locationId: widget.locationId),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }

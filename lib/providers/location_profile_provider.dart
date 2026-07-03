@@ -1,19 +1,6 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/models/location_profile_model.dart';
-import 'package:RiskSphere/screens/listings/location_list.dart';
-import 'package:RiskSphere/screens/listings/location_profile_preview.dart';
-import 'package:RiskSphere/service/api_service.dart';
-import 'package:RiskSphere/utils/api_constants.dart';
-import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 
-import '../models/location_list_model.dart';
-import '../utils/common_headers.dart';
-import 'location_list_provider.dart';
 
 class LocationProfileProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -25,7 +12,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   set isLoading(bool value) {
     _isLoading = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -54,7 +41,7 @@ class LocationProfileProvider extends ChangeNotifier {
 
   set subdestinations(List<Subdestination> value) {
     _subdestinations = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
@@ -63,7 +50,7 @@ class LocationProfileProvider extends ChangeNotifier {
   String? get totalPages => _totalPages;
   set totalPages(String? value) {
     _totalPages = value;
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }

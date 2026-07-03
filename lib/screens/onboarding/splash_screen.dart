@@ -11,7 +11,6 @@ import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:http/http.dart' as http;
 import '../../main.dart';
 import '../../models/pending_location.dart';
-import '../../utils/app_update.dart';
 import '../listings/add_location_screen.dart';
 
 class SplashScreen extends StatefulWidget {

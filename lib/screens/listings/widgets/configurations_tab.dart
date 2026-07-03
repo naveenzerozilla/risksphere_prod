@@ -136,7 +136,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         var subscriptions = config['subscribe'] ?? {};
 
         // Update selectedServices when configuration changes
-        WidgetsBinding.instance!.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (selectedServices.isEmpty && services.isNotEmpty) {
             setState(() {
               selectedServices = services.entries
@@ -148,7 +148,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
           }
         });
 
-        WidgetsBinding.instance!.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (selectedStars.isEmpty && ratings.isNotEmpty) {
             setState(() {
               selectedStars = ratings.entries
@@ -2339,7 +2339,7 @@ Widget accountNameInput({
   required VoidCallback onSubmit,
 }) {
   final TextEditingController _safeController = TextEditingController(
-      text: controller?.text == "null" ? "" : controller.text ?? '');
+      text: controller.text == "null" ? "" : controller.text ?? '');
 
   return Container(
     padding: const EdgeInsets.all(5),

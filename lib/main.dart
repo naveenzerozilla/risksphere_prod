@@ -4,6 +4,7 @@ import 'package:RiskSphere/utils/http_client.dart';
 import 'package:app_links/app_links.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_performance/firebase_performance.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
 import '../../utils/global_imports.dart';
@@ -38,6 +39,19 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint(' Firebase initialized');
+
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+
+    if (kDebugMode) {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+    }
   } catch (e) {
     debugPrint(' Firebase init error: $e');
   }
@@ -198,11 +212,11 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
             subAccountId: subAccountId,
             sovId: '',
             locationId: '',
-            accountName: (accountName != null && accountName.isNotEmpty)
+            accountName: (accountName.isNotEmpty)
                 ? accountName
                 : 'Default Account',
             subAccountName:
-                (subAccountName != null && subAccountName.isNotEmpty)
+                (subAccountName.isNotEmpty)
                     ? subAccountName
                     : 'Default Subaccount',
           ),

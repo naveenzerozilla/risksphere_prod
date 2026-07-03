@@ -1,22 +1,15 @@
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gcaptcha_v3/constants.dart';
 import 'package:RiskSphere/models/avatar_model.dart';
 import 'package:RiskSphere/models/company_type_model.dart';
 import 'package:RiskSphere/models/user_profile_model.dart';
 import 'package:RiskSphere/models/user_team_model.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert'; // Import for JSON encoding/decoding
-import 'dart:developer'; // Import for logging
+// Import for JSON encoding/decoding
+// Import for logging
 
 import '../design_system/components/custom_toast.dart';
-import '../models/company_model.dart';
-import '../models/employee_list_model.dart';
 import '../models/networking_model.dart';
 import '../models/view_employee_model.dart';
 import '../screens/home/dashboard_screen.dart';

@@ -7,10 +7,6 @@ import 'package:RiskSphere/models/company_model.dart';
 import 'package:RiskSphere/models/company_type_model.dart';
 import 'package:RiskSphere/models/corporate_verification_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
-import 'package:RiskSphere/providers/company_provider.dart';
-import 'package:RiskSphere/providers/employee_provider.dart';
-import 'package:RiskSphere/providers/non_corporate_user_Provider.dart';
-import 'package:RiskSphere/providers/verification_provider.dart';
 import 'package:RiskSphere/screens/userManagement/connections_screen.dart';
 import 'package:RiskSphere/screens/userManagement/service/user_management_corporate_dropdown_menu_service.dart';
 import 'package:RiskSphere/screens/userManagement/service/verification_tab_service.dart';
@@ -24,8 +20,6 @@ import '../../design_system/repo/constants.dart';
 import '../../models/company_type_model.dart' as companyType;
 import '../../models/initial_data_model.dart';
 import '../../models/user_corporate_model.dart';
-import '../../providers/corporate_user_provider.dart';
-import '../../providers/role_provider.dart';
 import '../../utils/utils.dart';
 import 'package:country_picker/country_picker.dart' as country_picker;
 import 'package:dropdown_button2/dropdown_button2.dart';
@@ -578,7 +572,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       }
     } else {
       // Default behavior
-      if (widget.initialIndex != null && _tabController != null) {
+      if (_tabController != null) {
         _tabController!.animateTo(widget.initialIndex);
       }
     }
@@ -2812,7 +2806,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   Text(
                                                     'To ensure continuity, please assign another eligible user to take over their responsibilities.',
                                                     style: typography.Body1
-                                                        ?.copyWith(
+                                                        .copyWith(
                                                             color:
                                                                 Colors.white70),
                                                   ),
@@ -2917,7 +2911,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                   Text(
                                                     "Note: All related Accounts, Sub-Accounts, SOVs, and Location Lists will be transferred and shared via email with the assigned user.",
                                                     style: typography.Body2
-                                                        ?.copyWith(
+                                                        .copyWith(
                                                             color:
                                                                 Colors.white60),
                                                   ),
@@ -5468,7 +5462,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                 "Are you sure you want to delete "
                                                 '$name?',
                                                 style:
-                                                    typography.Body1?.copyWith(
+                                                    typography.Body1.copyWith(
                                                   color: Colors.white,
                                                   fontSize: 20,
                                                   fontWeight: FontWeight.w500,
@@ -5478,7 +5472,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                               Text(
                                                 'Their data including Account, Sub-Account, SOV, and Location List, will be transferred to the assigned Admin.',
                                                 style:
-                                                    typography.Body1?.copyWith(
+                                                    typography.Body1.copyWith(
                                                   color: Colors.white70,
                                                   height: 1.4,
                                                 ),
@@ -5643,7 +5637,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             radius: 40,
                           )
                         : CircleAvatar(
-                            backgroundImage: NetworkImage(employeeImageUrl!),
+                            backgroundImage: NetworkImage(employeeImageUrl),
                             radius: 40,
                           ),
                     SizedBox(
@@ -6362,7 +6356,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // If company image is not uploaded, show default image
-                          employeeImageUrl == null || employeeImageUrl == ''
+                          employeeImageUrl == ''
                               ? const CircleAvatar(
                                   backgroundImage: AssetImage(
                                       'assets/images/loginImage.png'),
@@ -6370,7 +6364,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 )
                               : CircleAvatar(
                                   backgroundImage:
-                                      NetworkImage(employeeImageUrl!),
+                                      NetworkImage(employeeImageUrl),
                                   radius: 40,
                                 ),
                           SizedBox(
@@ -6834,7 +6828,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   void _addCorporateChip(value) {
     setState(() {
-      selectedCorporateTypeRole?.add(value);
+      selectedCorporateTypeRole.add(value);
       _textEditingController.clear();
     });
   }
@@ -6843,7 +6837,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     print('Removing chip: ${value.name}');
     setState(() {
       selectedCorporateTypeRole
-          ?.removeWhere((element) => element.name == value.name);
+          .removeWhere((element) => element.name == value.name);
     });
     print(
         'Selected roles: ${_selectedRoles.map((role) => role.name).toList()}');
@@ -6851,7 +6845,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
   void _removeAllCorporateChips() {
     setState(() {
-      selectedCorporateTypeRole?.clear();
+      selectedCorporateTypeRole.clear();
     });
   }
 
@@ -7448,7 +7442,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             )
                           : Switch(
                               value: nonCorporateProvider
-                                      .employeeList![index]!.status ??
+                                      .employeeList![index].status ??
                                   false,
                               onChanged: (value) {
                                 // Handle switch value change
@@ -7806,7 +7800,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // If company image is not uploaded, show default image
-                          employeeImageUrl == null || employeeImageUrl == ''
+                          employeeImageUrl == ''
                               ? const CircleAvatar(
                                   backgroundImage: AssetImage(
                                       'assets/images/loginImage.png'),
@@ -7814,7 +7808,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 )
                               : CircleAvatar(
                                   backgroundImage:
-                                      NetworkImage(employeeImageUrl!),
+                                      NetworkImage(employeeImageUrl),
                                   radius: 40,
                                 ),
                           SizedBox(
@@ -8005,7 +7999,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                           'Removing chip: ${value.name}');
                                                       setState(() {
                                                         selectedCorporateTypeRole
-                                                            ?.removeWhere(
+                                                            .removeWhere(
                                                                 (element) =>
                                                                     element
                                                                         .name ==
@@ -8453,7 +8447,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         children: [
                           Checkbox(
                             value: (employeeProvider.employeeList ?? [])
-                                .every((element) => element.isSelected!),
+                                .every((element) => element.isSelected),
                             onChanged: (value) {
                               // Handle select all checkbox value change
                               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -8745,7 +8739,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       : showCheckbox
                           ? Checkbox(
                               value: employeeProvider
-                                  .employeeList?[index].isSelected!,
+                                  .employeeList?[index].isSelected,
                               onChanged: (value) {
                                 // Handle checkbox value change
                                 WidgetsBinding.instance
@@ -9096,14 +9090,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // If company image is not uploaded, show default image
-                    employeeImageUrl == null || employeeImageUrl == ''
+                    employeeImageUrl == ''
                         ? const CircleAvatar(
                             backgroundImage:
                                 AssetImage('assets/images/loginImage.png'),
                             radius: 40,
                           )
                         : CircleAvatar(
-                            backgroundImage: NetworkImage(employeeImageUrl!),
+                            backgroundImage: NetworkImage(employeeImageUrl),
                             radius: 40,
                           ),
                     SizedBox(
@@ -10251,7 +10245,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   _verificationUserRequestsListItem(
       int index, VerificationProvider verificationProvider) {
     DateTime dateTime =
-        verificationProvider.userRequests[index]?.createdAt?.toDateTime() ??
+        verificationProvider.userRequests[index].createdAt?.toDateTime() ??
             DateTime.now();
     DateFormat dateFormat = DateFormat('MMM d, yyyy HH:mm');
     String? date = dateFormat.format(dateTime.toLocal());

@@ -130,7 +130,7 @@ class UserData {
     }
     if (this.acceptedRole != null) {
       data['accepted_role'] =
-          this.acceptedRole!.map((v) => v?.toJson()).toList();
+          this.acceptedRole!.map((v) => v.toJson()).toList();
     }
     return data;
   }
@@ -144,8 +144,8 @@ class AcceptedRole {
   bool? isApplicableForInternal;
   bool? status;
   String? id;
-  Null? updatedAt;
-  Null? createdAt;
+  Null updatedAt;
+  Null createdAt;
   String? description;
   bool? isSelectable;
 

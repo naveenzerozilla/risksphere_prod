@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recaptcha_v2_compat/flutter_recaptcha_v2_compat.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:RiskSphere/design_system/components/country_picker_flag_name.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
@@ -126,7 +124,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   TextEditingController adminPasswordController = TextEditingController();
   TextEditingController adminConfirmPasswordController =
       TextEditingController();
-  dynamic? selectedCompanyType;
+  dynamic selectedCompanyType;
   String? selectedCompanyType1 = "";
   String? selectedCompanyId = ""; // <-- This will store company ID
   String? selectedCompanyTypeId;
@@ -975,7 +973,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               //     : LanguageService.getTranslated(
               //     context, "register_corporate_create_corporate_act_title"),
               style: typography.H5_Regular.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground),
+                  color: Theme.of(context).colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
           ),
@@ -1139,7 +1137,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ? 'Almost there! Please complete your account setup.'
                   : 'Do you want to create a corporate account?',
               style: typography.H5_Regular.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground),
+                  color: Theme.of(context).colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
           ),
@@ -1759,7 +1757,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               LanguageService.getTranslated(
                   context, "categorymanagement_category_role_field_label"),
               style: typography.Subtitle1.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground),
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
             Expanded(
               child: Divider(
@@ -2662,7 +2660,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               LanguageService.getTranslated(
                   context, "register_non_corporate_role_field_label"),
               style: typography.Subtitle1.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground),
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
             Expanded(
               child: Divider(
@@ -2870,10 +2868,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     // 1️⃣ Match by ID
     try {
-      if (selected.companyTypeId != null) {
-        return types.firstWhere((t) => t.id == selected.companyTypeId);
-      }
-    } catch (_) {}
+      return types.firstWhere((t) => t.id == selected.companyTypeId);
+        } catch (_) {}
 
     // 2️⃣ Exact type or name match
     for (var t in types) {
@@ -3187,7 +3183,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 }
 
                 return DropdownButtonFormField<String>(
-                  value: selectedManualCompanyType,
+                  initialValue: selectedManualCompanyType,
                   // 👈 SAME as manual
                   decoration: const InputDecoration(
                     labelText: "Company Type",
@@ -3365,7 +3361,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // If manual entry -> only Admin role (manualRoles)
         if (isManualEntry)
           DropdownButtonFormField<String>(
-            value: selectedManualRole,
+            initialValue: selectedManualRole,
             decoration: InputDecoration(
               labelText: 'Role',
               border: OutlineInputBorder(),
@@ -3418,15 +3414,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     // Debug: Check the current state
                     print('Selected name: $selectedName');
                     print(
-                        'Company list length: ${authNotifier.companyType?.length}');
+                        'Company list length: ${authNotifier.companyType.length}');
 
                     // Find the matching company in companyType list
                     CompanyType? matchingCompany;
 
-                    if (selectedName.isNotEmpty &&
-                        authNotifier.companyType != null) {
+                    if (selectedName.isNotEmpty) {
                       try {
-                        matchingCompany = authNotifier.companyType!.firstWhere(
+                        matchingCompany = authNotifier.companyType.firstWhere(
                           (c) =>
                               (c.companyName ?? "").trim().toLowerCase() ==
                               selectedName.toLowerCase(),
@@ -3483,7 +3478,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             labelText: 'Select Role',
                             border: OutlineInputBorder(),
                           ),
-                          value: selectedRole, // <-- your selected variable
+                          initialValue: selectedRole, // <-- your selected variable
                           items: roles.map((role) {
                             return DropdownMenuItem<Roles>(
                               value: role,

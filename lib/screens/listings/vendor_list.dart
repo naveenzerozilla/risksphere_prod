@@ -8,10 +8,8 @@ import '../../models/my_location_list_model.dart';
 import '../../utils/global_imports.dart';
 import '../../models/sov_list_model.dart';
 import 'package:RiskSphere/models/role_model.dart' as roleModel;
-import 'package:http/http.dart' as http;
 
 import '../payments/purchase_license.dart';
-import 'export_dialogsov.dart';
 
 class VendorList extends StatefulWidget {
   final String? status;
@@ -406,7 +404,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (!mounted) return;
                       setState(() {
-                        _dedupedVendors = deduped!;
+                        _dedupedVendors = deduped;
                       });
                     });
                   }
@@ -710,7 +708,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
   void _updateVendorList(SOVListProvider provider) {
     final vendors = provider.allVendorList
         .map((e) => e.vendorName)
-        .where((v) => v != null && v!.isNotEmpty)
+        .where((v) => v != null && v.isNotEmpty)
         .cast<String>()
         .toSet()
         .toList();
@@ -728,7 +726,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
     return Consumer2<SOVListProvider, UserProfileProvider>(
         builder: (context, sovListProvider, user, _) {
       _updateVendorList(sovListProvider);
-      final String trialStatus = user.trialInfo?['status'] ?? '';
+      final String trialStatus = user.trialInfo['status'] ?? '';
 
       return (trialStatus.contains('Expired') && isHasAnyPlan == false)
           ? Container(
@@ -1446,9 +1444,8 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                                             CircleAvatar(
                                               backgroundColor: Colors.grey[800],
                                               child: Text(
-                                                (user.name != null &&
-                                                        user.name!.isNotEmpty)
-                                                    ? user.name!
+                                                (user.name.isNotEmpty)
+                                                    ? user.name
                                                         .substring(0, 2)
                                                         .toUpperCase()
                                                     : "?",

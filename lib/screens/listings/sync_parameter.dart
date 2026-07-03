@@ -1,6 +1,4 @@
-import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../design_system/components/custom_toast.dart';
@@ -158,7 +156,7 @@ class _SyncParametersPageState extends State<SyncParametersPage> {
           return Consumer<MyLocationListProvider>(
             builder: (context, locationProfileProvider, child) {
               return Scaffold(
-                backgroundColor: themeProvider.getTheme.colorScheme.background,
+                backgroundColor: themeProvider.getTheme.colorScheme.surface,
                 appBar: CustomAppBar(
                   isExpanded: _isExpanded,
                   showNotificationDot: _showNotificationDot,
@@ -176,7 +174,7 @@ class _SyncParametersPageState extends State<SyncParametersPage> {
                 bottomNavigationBar: Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   decoration: BoxDecoration(
-                    color: themeProvider.getTheme.colorScheme.background,
+                    color: themeProvider.getTheme.colorScheme.surface,
                     border: Border(
                       top: BorderSide(
                         color: Colors.white.withOpacity(0.06),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
@@ -21,7 +20,6 @@ import '../../providers/user_profile_provider.dart';
 import '../../service/firestore_service.dart';
 import '../../service/language_service.dart';
 import '../../service/shared_preference_service.dart';
-import 'maintainance_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JobMonitoringDashboard extends StatefulWidget {
@@ -252,7 +250,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     }
 
                     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: jobMonitoringProvider!
+                      stream: jobMonitoringProvider
                           .getJobMonitoringData(accountId, subAccountId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
@@ -1842,8 +1840,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
 
   Widget _buildRunTimeSummary(Map<String, dynamic> processData) {
     // Extract time data
-    if (processData == null ||
-        processData.isEmpty ||
+    if (processData.isEmpty ||
         processData['geocode_starting_time'] == null ||
         processData['geocode_ending_time'] == null) {
       return const SizedBox.shrink();
@@ -2886,7 +2883,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
   }
 
   Widget _buildRunTimeSummaryGeocodingTask(Map<String, dynamic> taskData) {
-    if (taskData == null || taskData.isEmpty) {
+    if (taskData.isEmpty) {
       return const SizedBox.shrink();
     }
 

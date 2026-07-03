@@ -1,13 +1,14 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:RiskSphere/providers/news_feed_provider.dart';
 import 'package:RiskSphere/screens/event/widgets/hazard_info_section.dart';
 import 'package:RiskSphere/screens/event/widgets/image_filter_section.dart';
-import 'package:RiskSphere/screens/listings/hazard_proto.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import '../../design_system/components/custom_appbar.dart';
 import '../../providers/custom_tile_providers.dart';
 
@@ -128,65 +129,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
     );
   }
 
-  // void _showLocationDetails(
-  //   Map<String, dynamic> location,
-  // ) {
-  //   final eventMap = location['event'] as Map<String, dynamic>? ?? {};
-  //
-  //   final firstEvent = eventMap.isNotEmpty
-  //       ? eventMap.values.first as Map<String, dynamic>
-  //       : {};
-  //
-  //   showModalBottomSheet(
-  //     context: context,
-  //     shape: const RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(
-  //         top: Radius.circular(20),
-  //       ),
-  //     ),
-  //     builder: (_) {
-  //       return Padding(
-  //         padding: const EdgeInsets.all(16),
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             const Text(
-  //               "Location Details",
-  //               style: TextStyle(
-  //                 fontSize: 18,
-  //                 fontWeight: FontWeight.bold,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 16),
-  //             _buildDetailRow(
-  //               "Location Name",
-  //               location['location_name'] ?? '',
-  //             ),
-  //             _buildDetailRow(
-  //               "Address",
-  //               location['address'] ?? '',
-  //             ),
-  //             _buildDetailRow(
-  //               "Hazard Type",
-  //               firstEvent['hazard_name'] ?? '',
-  //             ),
-  //             _buildDetailRow(
-  //               "Event Severity",
-  //               firstEvent['impact_value']?.toString() ?? '',
-  //             ),
-  //             _buildDetailRow(
-  //               "Associated SOV",
-  //               firstEvent['sov_id'] ?? '',
-  //             ),
-  //             const SizedBox(height: 20),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _buildDetailRow(
     String title,
     String value,
@@ -229,7 +171,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
     _initialLng = widget.notificationData['long'] ?? 78.9629;
     _initialMapCenter = LatLng(_initialLat, _initialLng);
 
-    debugPrint("📍 Map Center: $_initialMapCenter");
+    debugPrint(" Map Center: $_initialMapCenter");
 
     _initialize();
   }
@@ -239,12 +181,8 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
       if (_tileOverlays.isNotEmpty) setState(() => _tileOverlays = {});
       return;
     }
-
     if (url == _currentMapUrl) return;
-
     _currentMapUrl = url;
-
-    // ✅ Clear first, then set — prevents iOS from stacking old + new overlay
     setState(() => _tileOverlays = {});
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -414,59 +352,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
       });
     }
   }
-
-  // Future<void> _fetchEventInfo() async {
-  //   final provider = Provider.of<NewsFeedProvider>(context, listen: false);
-  //   final eventId = widget.notificationData['eventId'];
-  //
-  //   print("EVENT ID 👉 $eventId");
-  //
-  //   setState(() => _isLoading = true);
-  //
-  //   await provider.fetchEventInfo(eventId: eventId);
-  //
-  //   final result = provider.eventInfo;
-  //
-  //   if (result.isNotEmpty) {
-  //     String? fetchedMapUrl = result['map_url'];
-  //
-  //     if (fetchedMapUrl == null || fetchedMapUrl.isEmpty) {
-  //       fetchedMapUrl = await provider.fetchMapUrl(eventId);
-  //     }
-  //
-  //     print("FINAL MAP URL 👉 $fetchedMapUrl");
-  //
-  //     Set<Marker> markers =
-  //         (result['locations_data'] as List).map<Marker>((location) {
-  //       return Marker(
-  //         markerId: MarkerId(location['location_id']),
-  //         position: LatLng(location['latitude'], location['longitude']),
-  //         infoWindow: InfoWindow(
-  //           title: location['location_name'],
-  //         ),
-  //       );
-  //     }).toSet();
-  //     setState(() {
-  //       mapUrl = fetchedMapUrl;
-  //       locationsData = result['locations_data'] ?? [];
-  //       _markers = markers;
-  //       _allMarkers = markers;
-  //       _isLoading = false;
-  //     });
-  //     // setState(() {
-  //     //   mapUrl = fetchedMapUrl;
-  //     //   _markers = markers;
-  //     //   _allMarkers = markers;
-  //     //   _isLoading = false;
-  //     // });
-  //
-  //     //  Build overlay AFTER setState — only if URL changed
-  //     _buildTileOverlay(fetchedMapUrl);
-  //   } else {
-  //     print(" EVENT INFO EMPTY");
-  //     setState(() => _isLoading = false);
-  //   }
-  // }
 
   void _filterMarkers(String label) {
     setState(() {

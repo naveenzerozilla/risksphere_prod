@@ -1,23 +1,11 @@
-import 'dart:io';
 
-import 'package:RiskSphere/providers/user_profile_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:RiskSphere/design_system/components/theme_switcher.dart';
 import 'package:RiskSphere/screens/home/dashboard_screen.dart';
 import 'package:RiskSphere/screens/userManagement/user_management.dart';
-import '../../constants/enums.dart';
 import '../../models/my_location_list_model.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/drawer_selection_provider.dart';
-import '../../providers/my_location_list_provider.dart';
 import '../../screens/listings/location_profile.dart';
 import '../../screens/listings/monitoring_sov.dart';
 import '../../screens/listings/mysov_list.dart';
@@ -25,20 +13,12 @@ import '../../screens/listings/news_feed_screen.dart';
 import '../../screens/listings/users_list.dart';
 import '../../screens/listings/vendor_list.dart';
 import '../../screens/listings/widgets/auto_complete_options_locations.dart';
-import '../../screens/listings/widgets/message_card.dart';
-import '../../screens/onboarding/login_screen.dart';
-import '../../screens/onboarding/splash_screen.dart';
 import '../../screens/onboarding/supportscreen.dart';
 import '../../screens/payments/purchase_license.dart';
 import '../../screens/payments/transaction_summary.dart';
 import '../../screens/settings/link_parameter.dart';
-import '../../service/language_service.dart';
-import '../../service/shared_preference_service.dart';
 import '../../utils/debouncer.dart';
 import '../../utils/global_imports.dart';
-import '../primitives/app_colors.dart';
-import '../primitives/utilities/custom_spacing.dart';
-import 'custom_button.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({

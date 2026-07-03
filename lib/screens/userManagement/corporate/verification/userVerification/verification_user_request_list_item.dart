@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 
@@ -122,7 +121,7 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                                           );
                                         }).toList(),
                                         onChanged: onRoleSelected??null,
-                                        value: selectedRole,
+                                        initialValue: selectedRole,
                                         decoration: InputDecoration(
                                           border: OutlineInputBorder(
                                             borderRadius:

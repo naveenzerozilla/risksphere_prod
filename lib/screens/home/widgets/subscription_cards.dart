@@ -1,13 +1,10 @@
 import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 import 'package:RiskSphere/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
-
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../design_system/primitives/utilities/custom_spacing.dart';
 import '../../listings/widgets/message_card.dart';
@@ -62,6 +59,7 @@ class SubscriptionCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Circular Icon Container
+
                 Container(
                   alignment: Alignment.center,
                   padding: EdgeInsets.all(CustomSpacing.two),

@@ -78,7 +78,7 @@ class SubaccountParameterProvider with ChangeNotifier {
       final dataParameters =
           await compute<Map<String, dynamic>, DataParametersModel>(
         DataParametersModel.fromJson,
-        response as Map<String, dynamic>,
+        response,
       );
       _parameters = dataParameters;
     } on BackendException catch (e) {
@@ -108,7 +108,7 @@ class SubaccountParameterProvider with ChangeNotifier {
       final response = await apiService.get();
       final result = response['result'] as List<dynamic>;
       _hazardList = result.map((json) => Hazard.fromJson(json)).toList();
-    } on BackendException catch (e) {
+    } on BackendException {
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(
       //     content: Text(
@@ -159,11 +159,11 @@ class SubaccountParameterProvider with ChangeNotifier {
       CustomToast.success(
           context, response['message'] ?? "Image deleted successfully");
       return true;
-    } on BackendException catch (e, stack) {
+    } on BackendException catch (e) {
       log("Backend error: ${e.message}");
       CustomToast.error(context, e.message);
       return false;
-    } catch (e, stack) {
+    } catch (e) {
       log("Unexpected error: $e");
       CustomToast.error(context, "Something went wrong");
       return false;
@@ -284,7 +284,7 @@ class SubaccountParameterProvider with ChangeNotifier {
 
       final response = await apiService.patch(updatedFields);
 
-      if (response != null && response['score'] != null) {
+      if (response['score'] != null) {
         final double score = (response['score'] as num).toDouble();
 
         setUpdatedScore(score.round());

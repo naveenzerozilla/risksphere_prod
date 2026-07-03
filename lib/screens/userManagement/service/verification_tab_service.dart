@@ -6,9 +6,6 @@ import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/user_profile_provider.dart';
 import '../../../service/language_service.dart';
 
-import 'package:flutter/material.dart';
-import '../../../design_system/primitives/custom_typography.dart';
-import '../../../service/language_service.dart';
 import '../../listings/widgets/message_card.dart';
 
 class VerificationTabsService {

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -540,7 +539,7 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
                             child: Text(vendor.name, style: typography.InputLabel),
                             onPressed: () {
                               // Change hazard and vendor selection
-                              _changeHazardLayer(hazard.id!);
+                              _changeHazardLayer(hazard.id);
                               _changeVendor(vendor.name);
                             },
                           );
@@ -992,7 +991,7 @@ class _LocationProfileMapViewState extends State<LocationProfileMapView>
                                           _togglePinVisibility();
                                         }
                                       },
-                                      activeColor: Theme.of(context).colorScheme.primary,
+                                      activeThumbColor: Theme.of(context).colorScheme.primary,
                                       activeTrackColor:
                                       Theme.of(context).colorScheme.primary.withOpacity(0.5),
                                       inactiveThumbColor: Theme.of(context).colorScheme.surface,

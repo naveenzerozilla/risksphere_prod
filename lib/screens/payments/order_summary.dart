@@ -1,5 +1,4 @@
 import '../../utils/global_imports.dart';
-import '../../providers/payment_provider.dart';
 
 class OrderSummary extends StatefulWidget {
   final String sessionId;
@@ -181,7 +180,6 @@ class _OrderSummaryCard extends StatelessWidget {
   final String totalPayment;
 
   _OrderSummaryCard({
-    super.key,
     required this.invoiceNo,
     required this.transactionNo,
     required this.paymentMethod,

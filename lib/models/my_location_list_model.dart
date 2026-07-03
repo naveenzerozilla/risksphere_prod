@@ -340,7 +340,7 @@ class AllActivityLogs {
   dynamic actorUserId;
   String? eventId;
   At? at;
-  dynamic? companyId;
+  dynamic companyId;
   String? targetType;
   String? action;
   String? targetId;
@@ -518,7 +518,7 @@ class Meta {
 class ChangesFlat {
   String? field;
   String? type;
-  dynamic? before;
+  dynamic before;
 
   ChangesFlat({this.field, this.type, this.before});
 
@@ -540,7 +540,7 @@ class ChangesFlat {
 
 class Event {
   Params? params;
-  dynamic? timestamp;
+  dynamic timestamp;
 
   Event({this.params, this.timestamp});
 
@@ -812,7 +812,7 @@ class GeocodeInputAddress {
   String? country;
   String? docId;
   String? locationName;
-  Null? duplicates;
+  Null duplicates;
   bool? isDuplicate;
   String? postalCode;
   String? formattedAddress;
@@ -1816,13 +1816,11 @@ class GlobalPerilCounts {
   GlobalPerilCounts({this.globalPerilCounts});
 
   GlobalPerilCounts.fromJson(Map<String, dynamic> json) {
-    if (json != null) {
-      globalPerilCounts = {};
-      json.forEach((key, value) {
-        globalPerilCounts![key] = Hurricane.fromJson(value);
-      });
+    globalPerilCounts = {};
+    json.forEach((key, value) {
+      globalPerilCounts![key] = Hurricane.fromJson(value);
+    });
     }
-  }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
@@ -1882,13 +1880,11 @@ class GlobalValueCounts {
   GlobalValueCounts({this.globalValueCounts});
 
   GlobalValueCounts.fromJson(Map<String, dynamic> json) {
-    if (json != null) {
-      globalValueCounts = {};
-      json.forEach((key, value) {
-        globalValueCounts![key] = LocationValue.fromJson(value);
-      });
+    globalValueCounts = {};
+    json.forEach((key, value) {
+      globalValueCounts![key] = LocationValue.fromJson(value);
+    });
     }
-  }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
