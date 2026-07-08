@@ -875,7 +875,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
           ),
         ),
 
-        if (_filteredLocations.isNotEmpty)
+        // if (_filteredLocations.isNotEmpty)
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -919,13 +919,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
                         }
                       });
                     },
-                    // onMapCreated: (GoogleMapController controller) {
-                    //   mapController = controller;
-                    //   _mapReady = true;
-                    //   clusterManager.setMapId(controller.mapId);
-                    //   mapController.setMapStyle(_mapStyle);
-                    //   _tryAttachMarkers();
-                    // },
+
                     tileOverlays: _selectedTabIndex == 0
                         ? {}
                         : (_selectedHazard != null &&

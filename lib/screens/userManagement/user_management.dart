@@ -9451,7 +9451,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                                     _selectedCountryCode,
                                                 "display_image_url":
                                                     employeeImageUrl,
-                                                "is_pgsupport": true,
                                                 "isIndividual": true,
                                                 "displayName": "",
                                               }

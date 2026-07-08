@@ -1,64 +1,48 @@
 {
   "project_info": {
-    "project_number": "863607711683",
-    "project_id": "project-green-prod",
-    "storage_bucket": "project-green-prod.firebasestorage.app"
+    "project_number": "857135835532",
+    "project_id": "project-green-r5-1-qa",
+    "storage_bucket": "project-green-r5-1-qa.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:863607711683:android:3f822b45f25191a7bcff76",
+        "mobilesdk_app_id": "1:857135835532:android:7dfee0b61d1da828c84ea9",
         "android_client_info": {
           "package_name": "com.risksphere.green"
         }
       },
       "oauth_client": [
         {
-          "client_id": "863607711683-7uq9vqs3uhibq7esnholk6u286d2fukl.apps.googleusercontent.com",
+          "client_id": "857135835532-jnn6kp4e401k1tpcun32vpgcb2jnugup.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.risksphere.green",
-            "certificate_hash": "98a56ba467eb38675eab7e39addd25ab4c6c2bcd"
+            "certificate_hash": "3667556574deb7acb3bd02b2f11afe5bb07715b9"
           }
         },
         {
-          "client_id": "863607711683-ibb5abhfasppk1d9v018poe0cdjf6no9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.risksphere.green",
-            "certificate_hash": "7d6d9ecf61967bb5f4ba6be82490d51a2f8b78b0"
-          }
-        },
-        {
-          "client_id": "863607711683-nd67f6915ps0lb97jjoov4deolm4b06a.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.risksphere.green",
-            "certificate_hash": "e3017ed8954f0cfc56e8056ef2eb9d3e1baeab31"
-          }
-        },
-        {
-          "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAaTjxnFgG55q7C1eZ4JrFWUeFTO5rs5AY"
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "863607711683-anu60r24cd4j6jv23lrgcl68qe8bvta8.apps.googleusercontent.com",
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.risksphere.green"
+                "bundle_id": "com.zerozilla.green"
               }
             }
           ]
@@ -67,34 +51,58 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:863607711683:android:dca2debefe810709bcff76",
+        "mobilesdk_app_id": "1:857135835532:android:1ac1bb46dab75e11c84ea9",
         "android_client_info": {
           "package_name": "com.risksphere.green.qa"
         }
       },
       "oauth_client": [
         {
-          "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+          "client_id": "857135835532-o58l5om4oa6i9sn4nbd56kgc5au7e3ah.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green.qa",
+            "certificate_hash": "7d6d9ecf61967bb5f4ba6be82490d51a2f8b78b0"
+          }
+        },
+        {
+          "client_id": "857135835532-oassn7k8ngl9mg8cp2kjvnc330q9q3g4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green.qa",
+            "certificate_hash": "98a56ba467eb38675eab7e39addd25ab4c6c2bcd"
+          }
+        },
+        {
+          "client_id": "857135835532-oef60laob4fce38o6fc4kh05tba7r45c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green.qa",
+            "certificate_hash": "e3017ed8954f0cfc56e8056ef2eb9d3e1baeab31"
+          }
+        },
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAaTjxnFgG55q7C1eZ4JrFWUeFTO5rs5AY"
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "863607711683-anu60r24cd4j6jv23lrgcl68qe8bvta8.apps.googleusercontent.com",
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.risksphere.green"
+                "bundle_id": "com.zerozilla.green"
               }
             }
           ]
@@ -103,34 +111,94 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:863607711683:android:e21347abbb7b92f3bcff76",
+        "mobilesdk_app_id": "1:857135835532:android:d5618f10229091f1c84ea9",
         "android_client_info": {
           "package_name": "com.riskspheree.green"
         }
       },
       "oauth_client": [
         {
-          "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+          "client_id": "857135835532-51nmbhn2q71udvdflpjmokktaham0lkl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riskspheree.green",
+            "certificate_hash": "98a56ba467eb38675eab7e39addd25ab4c6c2bcd"
+          }
+        },
+        {
+          "client_id": "857135835532-fv11c27er504vdcsr76sacmjmuo78evl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riskspheree.green",
+            "certificate_hash": "7d6d9ecf61967bb5f4ba6be82490d51a2f8b78b0"
+          }
+        },
+        {
+          "client_id": "857135835532-vcpb6g5bl8qd5kqb21lhb6pts4q16c8v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riskspheree.green",
+            "certificate_hash": "e3017ed8954f0cfc56e8056ef2eb9d3e1baeab31"
+          }
+        },
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAaTjxnFgG55q7C1eZ4JrFWUeFTO5rs5AY"
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "863607711683-jvnak0ie8uopn3ctp793784in18993a5.apps.googleusercontent.com",
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "863607711683-anu60r24cd4j6jv23lrgcl68qe8bvta8.apps.googleusercontent.com",
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.risksphere.green"
+                "bundle_id": "com.zerozilla.green"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857135835532:android:6b9c06c80a185c4fc84ea9",
+        "android_client_info": {
+          "package_name": "com.zerozilla.risksphere"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857135835532-2jeo706mqa07b63jh67nj6drrnf0vgf6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zerozilla.green"
               }
             }
           ]

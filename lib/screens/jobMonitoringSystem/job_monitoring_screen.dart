@@ -8,7 +8,7 @@ import 'package:RiskSphere/design_system/primitives/app_colors.dart';
 import 'package:RiskSphere/design_system/primitives/custom_typography.dart';
 import 'package:RiskSphere/screens/listings/my_location_list.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
+import 'package:lottie/lottie.dart' hide Marker;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -204,7 +204,6 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-
                         IconButton(
                           icon: Icon(Icons.arrow_back_ios, size: 16),
                           onPressed: () {
@@ -218,26 +217,26 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                           style: typography.Body1.copyWith(
                               fontWeight: FontWeight.w600),
                         ),
-            // Consumer<UserProfileProvider>(
-            // builder: (context, userProfileProvider, child) {
-            //           bool isNotIndividual =
-            //           (userProfileProvider.userData.isIndividual ?? true);
-            //     return isNotIndividual ?Container():
-            //       IconButton(
-            //           icon: const Icon(Icons.miscellaneous_services,
-            //           color: AppColors.warning),
-            //           onPressed: () {
-            //           // Open bottom sheet for scheduling a new maintenance.
-            //           showModalBottomSheet(
-            //           context: context,
-            //           isScrollControlled: true,
-            //           builder: (context) {
-            //           return const MaintainanceBottomSheet();
-            //           },
-            //           );
-            //           },
-            //           );
-            //           } )
+                        // Consumer<UserProfileProvider>(
+                        // builder: (context, userProfileProvider, child) {
+                        //           bool isNotIndividual =
+                        //           (userProfileProvider.userData.isIndividual ?? true);
+                        //     return isNotIndividual ?Container():
+                        //       IconButton(
+                        //           icon: const Icon(Icons.miscellaneous_services,
+                        //           color: AppColors.warning),
+                        //           onPressed: () {
+                        //           // Open bottom sheet for scheduling a new maintenance.
+                        //           showModalBottomSheet(
+                        //           context: context,
+                        //           isScrollControlled: true,
+                        //           builder: (context) {
+                        //           return const MaintainanceBottomSheet();
+                        //           },
+                        //           );
+                        //           },
+                        //           );
+                        //           } )
                       ],
                     ),
                   );
@@ -250,8 +249,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                     }
 
                     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: jobMonitoringProvider
-                          .getJobMonitoringData(accountId, subAccountId),
+                      stream: jobMonitoringProvider.getJobMonitoringData(
+                          accountId, subAccountId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -734,10 +733,12 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: ListView(
-          physics: ClampingScrollPhysics(),
+        child: ListView.builder(
+          physics: const ClampingScrollPhysics(),
           shrinkWrap: true,
-          children: subprocesses.entries.map((entry) {
+          itemCount: subprocesses.entries.length,
+          itemBuilder: (context, index) {
+            final entry = subprocesses.entries.elementAt(index);
             var subprocessData =
                 <String, dynamic>{}; // Define a fallback empty map
 
@@ -761,7 +762,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             int completedTasks = successCount;
             var typography = CustomTypography(context);
             String subprocessId =
-                subprocessData['payload']?['subtask_id']?.toString() ?? 'Unknown Subprocess';
+                subprocessData['payload']?['subtask_id']?.toString() ??
+                    'Unknown Subprocess';
             // Define color variations for hover effect
             final Color collapsedColor = Theme.of(context)
                 .hoverColor
@@ -773,16 +775,14 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
             return ExpansionTile(
               maintainState: true,
               showTrailingIcon: false,
-              tilePadding: EdgeInsets.all(0),
-              title: SizedBox(
-                height: cardHeight,
+              title: Container(
+                color: (expandedSubprocess[subprocessName] ?? false)
+                    ? expandedColor2
+                    : Colors.transparent,
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 0.0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Column to hold the "+" icon and dotted line
                       Column(
                         children: [
                           Icon(
@@ -799,142 +799,6 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         ],
                       ),
                       SizedBox(width: 8), // Space between the line and content
-
-                      // Main Content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 8),
-                            Tooltip(
-                              message: subprocessId,
-                              child: Text(
-                                subprocessName,
-                                style: typography.Body1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: LinearProgressIndicator(
-                                    value: completedTasks / totalTasks,
-                                    minHeight: 4,
-                                    backgroundColor: Colors.grey[300],
-                                    color: AppColors.primaryMain,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                SizedBox(width: 22),
-                                Text(
-                                  '$completedTasks/$totalTasks',
-                                  style: typography.Subtitle2.copyWith(
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                              height: 2,
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                /*Chip(
-                                  label: Text(
-                                    subprocessName,
-                                  ),
-                                  backgroundColor:
-                                      AppColors.primaryMain.withOpacity(0.2),
-                                  //.withOpacity(0.5),//AppColors.hover,
-                                  labelStyle: typography.Body1.copyWith(
-                                    color: AppColors.primaryMain,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    side: BorderSide(
-                                      color: Colors.transparent,
-                                    ),
-                                  ),
-                                ),*/
-                                Row(
-                                  children: [
-                                    _buildIconWithCount(Icons.check_circle,
-                                        Colors.green, successCount),
-                                    SizedBox(width: 4),
-                                    _buildIconWithCount(Icons.error_outline,
-                                        Colors.red, totalTasks - successCount),
-                                  ],
-                                ),
-                                SizedBox(
-                                  width: 16,
-                                ),
-                                IconButton(
-                                  icon: SvgPicture.asset(
-                                      'assets/images/contract.svg'),
-                                  onPressed: () async {
-                                    setState(() {
-                                      isSubProcessSummaryOpen =
-                                          true; // Open summary view
-                                      selectedSubProcessId = subprocessId;
-                                      selectedProcessId = jobData['id'];
-                                    });
-
-                                    /* var provider = Provider.of<JobMonitoringProvider>(context, listen: false);
-                                    print('Job id: ${jobData['id']}');
-                                    Map<String, dynamic>? summaryDataLocal = await provider.fetchSummary(jobData['id']);
-                                    print('Summary data: $summaryDataLocal');
-
-                                    if (mounted) { // Always check if the widget is still mounted
-                                      setState(() {
-                                        if (summaryDataLocal != null) {
-                                          jobData = summaryDataLocal;
-                                          debugPrint('Selected subprocessId: $subprocessId');
-                                          debugPrint('Available subprocess keys: ${summaryDataLocal['result']['subprocesses']?.keys}');
-
-                                        } else {
-                                          SnackBar(content: Text('Failed to fetch summary', style: typography.Body1.copyWith(color: Colors.white)));
-
-                                          isProcessSummaryOpen = false; // Close summary if API fails
-                                        }
-                                      });
-                                    }*/
-
-                                    var provider =
-                                        Provider.of<JobMonitoringProvider>(
-                                            context,
-                                            listen: false);
-                                    Map<String, dynamic>? summaryData =
-                                        await provider
-                                            .fetchSummary(jobData['id']);
-
-                                    if (mounted) {
-                                      // Always check if the widget is still mounted
-                                      setState(() {
-                                        if (summaryData != null) {
-                                          jobSummaryData = summaryData;
-                                        } else {
-                                          SnackBar(
-                                              content: Text(
-                                                  'Failed to fetch summary',
-                                                  style:
-                                                      typography.Body1.copyWith(
-                                                          color:
-                                                              Colors.white)));
-
-                                          isSubProcessSummaryOpen =
-                                              false; // Close summary if API fails
-                                        }
-                                      });
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -963,7 +827,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 ),
               ],
             );
-          }).toList(),
+          },
         ),
       ),
     );
@@ -2088,8 +1952,7 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            LanguageService.getTranslated(context,
-                "hazard_rating_summary"),
+            LanguageService.getTranslated(context, "hazard_rating_summary"),
             style: typography.Body1.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
@@ -2180,8 +2043,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                         ),
                         initiallyExpanded: false,
                         title: Text(
-                          LanguageService.getTranslated(context,
-                              "hazard_risk_score_wise_locations"),
+                          LanguageService.getTranslated(
+                              context, "hazard_risk_score_wise_locations"),
                           style: typography.Body2.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).disabledColor,
@@ -3180,8 +3043,8 @@ class JobMonitoringDashboardState extends State<JobMonitoringDashboard> {
                 childrenPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: Text(
-                  LanguageService.getTranslated(context,
-                      "hazard_risk_score_wise_locations"),
+                  LanguageService.getTranslated(
+                      context, "hazard_risk_score_wise_locations"),
                   style: typography.Body2.copyWith(
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).disabledColor,

@@ -195,6 +195,7 @@ class SovItem {
   int? impactedLocCount;
   LocationCoordinates? locationCoordinates;
   CreatedAt? updatedAt;
+  FrontendUrls? frontendUrls;
 
   SovItem({
     this.id,
@@ -205,6 +206,7 @@ class SovItem {
     this.impactedLocCount,
     this.locationCoordinates,
     this.updatedAt,
+    this.frontendUrls,
   });
 
   factory SovItem.fromJson(Map<String, dynamic> json) {
@@ -221,10 +223,41 @@ class SovItem {
       updatedAt: json['updated_at'] != null
           ? CreatedAt.fromJson(json['updated_at'])
           : null,
+      frontendUrls: json['frontend_urls'] != null
+          ? FrontendUrls.fromJson(json['frontend_urls'])
+          : null
     );
   }
 }
 
+class FrontendUrls {
+  String? uiDataGeojson;
+  String? stormForecastPointsGeojson;
+  String? stormSwathGeojson;
+  String? stormTrackGeojson;
+
+  FrontendUrls(
+      {this.uiDataGeojson,
+        this.stormForecastPointsGeojson,
+        this.stormSwathGeojson,
+        this.stormTrackGeojson});
+
+  FrontendUrls.fromJson(Map<String, dynamic> json) {
+    uiDataGeojson = json['ui_data.geojson'];
+    stormForecastPointsGeojson = json['storm_forecast_points.geojson'];
+    stormSwathGeojson = json['storm_swath.geojson'];
+    stormTrackGeojson = json['storm_track.geojson'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['ui_data.geojson'] = this.uiDataGeojson;
+    data['storm_forecast_points.geojson'] = this.stormForecastPointsGeojson;
+    data['storm_swath.geojson'] = this.stormSwathGeojson;
+    data['storm_track.geojson'] = this.stormTrackGeojson;
+    return data;
+  }
+}
 class CreatedAt {
   int? iSeconds;
   int? iNanoseconds;

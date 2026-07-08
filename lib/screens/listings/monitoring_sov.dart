@@ -530,26 +530,11 @@ class _MySovListState extends State<MontoringSovList>
                                         'long': sov.locationCoordinates
                                                 ?.longitude ??
                                             78.9629,
+                                        'frontendUrls': sov.frontendUrls,
                                       }),
                                 ),
                               );
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) =>
-                              //         NotificationMapScreen(notificationData: {
-                              //       'title': sov.hazardName ?? "Event Details",
-                              //       'body': "body",
-                              //       'timestamp':
-                              //           DateTime.fromMillisecondsSinceEpoch(
-                              //               (sov.updatedAt?.iSeconds ?? 0) *
-                              //                   1000),
-                              //       'eventId': sov.id,
-                              //       'lat': sov.locationCoordinates!.latitude,
-                              //       'long': sov.locationCoordinates!.longitude,
-                              //     }),
-                              //   ),
-                              // );
+
                             },
                             child: _buildMonitoringSovCard(
                                 index, sovListProvider));
@@ -567,10 +552,10 @@ class _MySovListState extends State<MontoringSovList>
       margin: const EdgeInsets.all(6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E), // dark background
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFFFA726), // orange border
+          color: const Color(0xFFFFA726),
           width: 1,
         ),
       ),

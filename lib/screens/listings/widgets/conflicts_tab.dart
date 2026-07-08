@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../design_system/primitives/app_colors.dart';
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../providers/upload_sov_provider.dart';
+import '../../../service/api_service.dart';
+import '../../../utils/api_constants.dart';
 import '../add_location_screen.dart';
 
 class ConflictsTab extends StatefulWidget {
@@ -55,6 +57,12 @@ class ConflictsTabState extends State<ConflictsTab> {
   bool conflictResolved = false;
   bool isRefreshing = false;
   LatLng? selectedConflictLatLng;
+  bool showAiRecommendation = false;
+  bool isAiLoading = false;
+  String aiReason = '';
+  int? aiSelectedIndex;
+  bool isLowProbability = false;
+  List<dynamic> aiResults = [];
 
   @override
   void initState() {
@@ -236,6 +244,123 @@ class ConflictsTabState extends State<ConflictsTab> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to resolve conflict. Try again.")),
+      );
+    }
+  }
+
+  void _fetchAiRecommendation() async {
+    final currentConflictId = widget.location == null
+        ? (widget.conflict != null && widget.conflict!.isNotEmpty ? widget.conflict![0].locationId : null)
+        : (widget.location != null && widget.location!.isNotEmpty ? widget.location![currentIndex].id : null);
+
+    if (currentConflictId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid location ID")),
+      );
+      return;
+    }
+
+    setState(() {
+      isAiLoading = true;
+    });
+
+    try {
+      final baseApiUrl = AppConstant.HANDLE_CONFLICT; // '$baseURL/locations_v2'
+      final url = "$baseApiUrl/conflicts/$currentConflictId";
+      
+      final apiService = ApiService(url);
+      final response = await apiService.get();
+      
+      print("AI GET response: $response");
+      
+      int index = 0;
+      List<dynamic> results = [];
+      
+      if (response != null) {
+        index = int.tryParse(response['best_index']?.toString() ?? '0') ?? 0;
+        results = response['resolved_results'] as List<dynamic>? ?? [];
+      }
+      
+      setState(() {
+        aiSelectedIndex = index;
+        aiResults = results;
+        showAiRecommendation = true;
+        isAiLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching AI recommendation: $e");
+      setState(() {
+        aiSelectedIndex = 0;
+        aiReason = '';
+        showAiRecommendation = true; 
+        isAiLoading = false;
+      });
+    }
+  }
+
+  void _resolveConflictWithAi() async {
+    final currentConflictId = widget.location == null
+        ? (widget.conflict != null && widget.conflict!.isNotEmpty ? widget.conflict![0].locationId : null)
+        : (widget.location != null && widget.location!.isNotEmpty ? widget.location![currentIndex].id : null);
+
+    if (currentConflictId == null) return;
+
+    setState(() {
+      isResolving = true;
+    });
+
+    try {
+      final baseApiUrl = AppConstant.HANDLE_CONFLICT; // '$baseURL/locations_v2'
+      final url = "$baseApiUrl/conflicts/$currentConflictId";
+      
+      final apiService = ApiService(url);
+      
+      final idxStr = (aiSelectedIndex ?? 0).toString();
+      final body = {
+        "lelected_index": idxStr,
+        "selected_index": idxStr,
+        "location_id": currentConflictId,
+      };
+      
+      print("AI POST body: $body");
+      final response = await apiService.post(body);
+      print("AI POST response: $response");
+      
+      if (widget.location == null) {
+        setState(() {
+          isResolving = false;
+          widget.startHazard = true;
+        });
+        Navigator.pop(context, true);
+      } else {
+        setState(() {
+          widget.location!.removeAt(currentIndex);
+          widget.startHazard = true;
+          showAiRecommendation = false;
+          selectedOption = 'none';
+          selectedValue = null;
+          selectedIndex = null;
+
+          if (currentIndex >= widget.location!.length) {
+            currentIndex =
+                widget.location!.isNotEmpty ? widget.location!.length - 1 : 0;
+          }
+
+          if (widget.location!.isEmpty) {
+            Navigator.pop(context, true);
+          }
+          isResolving = false;
+        });
+
+        _updateMap();
+      }
+    } catch (e) {
+      print("Error resolving conflict with AI: $e");
+      setState(() {
+        isResolving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to resolve conflict with AI: $e")),
       );
     }
   }
@@ -605,7 +730,162 @@ class ConflictsTabState extends State<ConflictsTab> {
                             const SizedBox(height: 10),
 
                             // Conflict List
-                            if (!hasMultipleLocations)
+                            if (showAiRecommendation)
+                              Builder(
+                                builder: (context) {
+                                  List<dynamic> currentOptions = [];
+                                  if (!hasMultipleLocations) {
+                                    currentOptions = widget.conflict ?? [];
+                                  } else if (currentItem != null) {
+                                    currentOptions = (currentItem as MyLocation).conflicts ?? [];
+                                  }
+
+                                  return Column(
+                                    children: currentOptions.asMap().entries.map((entry) {
+                                      final index = entry.key;
+                                      final option = entry.value;
+                                      final address = option.address ?? 'Unknown';
+                                      final isRecommended = index == (aiSelectedIndex ?? 0);
+
+                                      // Retrieve corresponding AI metadata if available
+                                      Map<String, dynamic>? aiItem;
+                                      if (index < aiResults.length) {
+                                        aiItem = aiResults[index] as Map<String, dynamic>?;
+                                      }
+
+                                      final prob = aiItem?['probability']?.toString() ?? 'High';
+                                      final reasonText = aiItem?['reason']?.toString() ?? 
+                                          "This location is recommended based on hazard risk, exposure insights, geospatial accuracy, and data completeness.";
+
+                                      Color badgeColor;
+                                      String badgeText;
+                                      if (prob.toLowerCase() == 'high') {
+                                        badgeColor = Colors.green;
+                                        badgeText = "Best Match";
+                                      } else if (prob.toLowerCase() == 'medium') {
+                                        badgeColor = Colors.orange;
+                                        badgeText = "Medium Match";
+                                      } else {
+                                        badgeColor = Colors.red;
+                                        badgeText = "Probability Low";
+                                      }
+
+                                      if (isRecommended) {
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1E1E1E),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.white12,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Radio<int>(
+                                                    value: index,
+                                                    groupValue: aiSelectedIndex ?? 0,
+                                                    onChanged: (val) {
+                                                      setState(() {
+                                                        aiSelectedIndex = val;
+                                                      });
+                                                    },
+                                                    activeColor: Colors.lightBlueAccent,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: badgeColor.withOpacity(0.2),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(
+                                                        color: badgeColor.withOpacity(0.6),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      badgeText,
+                                                      style: TextStyle(
+                                                        color: badgeColor,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                address,
+                                                style: typography.Body1.copyWith(color: Colors.white),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                "Why this match?",
+                                                style: typography.Caption.copyWith(color: Colors.white54),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                reasonText,
+                                                style: typography.Body2.copyWith(color: Colors.white70),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      } else {
+                                        return RadioListTile<int>(
+                                          title: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(address, style: typography.Body1.copyWith(color: Colors.white)),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: badgeColor.withOpacity(0.2),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(
+                                                        color: badgeColor.withOpacity(0.6),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      badgeText,
+                                                      style: TextStyle(
+                                                        color: badgeColor,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          value: index,
+                                          groupValue: aiSelectedIndex ?? 0,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              aiSelectedIndex = val;
+                                            });
+                                          },
+                                          activeColor: Colors.lightBlueAccent,
+                                        );
+                                      }
+                                    }).toList(),
+                                  );
+                                }
+                              )
+                            else if (!hasMultipleLocations)
                               Column(
                                 key: ValueKey(selectedOption),
                                 children: widget.conflict!
@@ -712,42 +992,84 @@ class ConflictsTabState extends State<ConflictsTab> {
                             const SizedBox(height: 25),
 
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Row(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Column(
                                 children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed:
-                                          isResolving ? null : _resolveConflict,
-                                      style: ElevatedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8)),
-                                        foregroundColor: Colors.white,
-                                        backgroundColor: Colors.lightBlueAccent,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 10),
-                                      ),
-                                      child: isResolving
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 3,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(Colors.white),
-                                              ),
-                                            )
-                                          : Text(
-                                              "Resolve",
-                                              style: CustomTypography(context)
-                                                  .ButtonLarge
-                                                  .copyWith(
-                                                      color: Colors.black),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: isResolving
+                                              ? null
+                                              : (showAiRecommendation
+                                                  ? _resolveConflictWithAi
+                                                  : _resolveConflict),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
                                             ),
-                                    ),
+                                            foregroundColor: Colors.white,
+                                            backgroundColor: Colors.lightBlueAccent,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                          ),
+                                          child: isResolving
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 3,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  ),
+                                                )
+                                              : Text(
+                                                  showAiRecommendation ? "Resolve With AI" : "Resolve",
+                                                  style: CustomTypography(context).ButtonLarge.copyWith(color: Colors.black),
+                                                ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: isAiLoading
+                                              ? null
+                                              : (showAiRecommendation
+                                                  ? () => setState(() => showAiRecommendation = false)
+                                                  : _fetchAiRecommendation),
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              side: const BorderSide(color: Colors.white24),
+                                            ),
+                                            foregroundColor: Colors.white,
+                                            backgroundColor: Colors.transparent,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                          ),
+                                          child: isAiLoading
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  ),
+                                                )
+                                              : (showAiRecommendation
+                                                  ? const Text("Go Back")
+                                                  : const Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Icon(Icons.auto_awesome, size: 16, color: Colors.lightBlueAccent),
+                                                        SizedBox(width: 8),
+                                                        Text("AI Recommendation"),
+                                                      ],
+                                                    )),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

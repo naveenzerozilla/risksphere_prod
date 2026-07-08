@@ -1,7 +1,7 @@
 import 'environment.dart';
 
 class Configuration {
-  static String environment = Environment.prod;
+  static String environment = Environment.qa;
 
   static const Map<String, String> projectIds = {
     Environment.dev: 'project-green-r5-1-dev',
