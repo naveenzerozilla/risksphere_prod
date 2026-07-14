@@ -73,7 +73,7 @@ class LocationProfileDetailsPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: (geocodingScore == 5)
                       ? Image.network(
-                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=$lat,$long&key=AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI",
+                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=$lat,$long&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,

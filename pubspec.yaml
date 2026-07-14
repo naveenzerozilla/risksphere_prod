@@ -11,7 +11,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   provider: ^6.1.2
   flutter_svg: ^2.0.10+1
-  firebase_core: ^3.4.0
+  flutter_dotenv: ^5.0.2
   firebase_storage: ^12.4.10
   firebase_auth: ^5.2.0
   firebase_crashlytics:
@@ -102,6 +102,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutterfire_cli: ^1.1.0
+  flutter_lints: ^3.0.0
 
 dependency_overrides:
   intl: ^0.20.2

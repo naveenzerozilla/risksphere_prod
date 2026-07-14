@@ -462,7 +462,7 @@ class _MissingParameterScreenState extends State<MissingParameterScreen>
                         // square corners
                         child: CachedNetworkImage(
                           imageUrl:
-                              "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${item.latitude},${item.longitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                              "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${item.latitude},${item.longitude}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,

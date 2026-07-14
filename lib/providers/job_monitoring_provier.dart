@@ -13,6 +13,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   set isLoading(bool val) {
+    if (_isLoading == val) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isLoading = val;
       notifyListeners();
@@ -24,6 +25,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   bool get isSummaryLoading => _isSummaryLoading;
 
   set isSummaryLoading(bool val) {
+    if (_isSummaryLoading == val) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isSummaryLoading = val;
       notifyListeners();
@@ -57,6 +59,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   bool get isAddLoading => _isAddLoading;
 
   set isAddLoading(bool val) {
+    if (_isAddLoading == val) return;
     _isAddLoading = val;
     notifyListeners();
   }
@@ -66,6 +69,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   bool get isEditLoading => _isEditLoading;
 
   set isEditLoading(bool val) {
+    if (_isEditLoading == val) return;
     _isEditLoading = val;
     notifyListeners();
   }
@@ -75,6 +79,7 @@ class JobMonitoringProvider extends ChangeNotifier {
   bool get isDeleteLoading => _isDeleteLoading;
 
   set isDeleteLoading(bool val) {
+    if (_isDeleteLoading == val) return;
     _isDeleteLoading = val;
     notifyListeners();
   }

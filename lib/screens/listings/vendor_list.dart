@@ -905,7 +905,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8),
                     child: CachedNetworkImage(
                       imageUrl:
-                          "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${vendorData.locationLatitude},${vendorData.locationLongitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                          "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${vendorData.locationLatitude},${vendorData.locationLongitude}&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}",
                       width: 50,
                       height: 50,
                       fit: BoxFit.cover,

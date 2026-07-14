@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class EventVisulisationScreen extends StatefulWidget {
   final Map<String, dynamic> notificationData;
@@ -121,7 +122,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         getCacheFilename(trackUrl, 'storm_track.geojson'),
         trackUrl,
       );
-      final trackJson = jsonDecode(trackString);
+      final trackJson = await compute(jsonDecode, trackString);
 
       // Forecast Points — chronological points, used for map animation +
       // the wind-speed-over-time chart.
@@ -129,14 +130,14 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         getCacheFilename(pointUrl, 'storm_forecast_points.geojson'),
         pointUrl,
       );
-      final pointJson = jsonDecode(pointString);
+      final pointJson = await compute(jsonDecode, pointString);
 
       // Storm Swath/Cone — visual overlay only.
       final swathString = await _getLocalFileContent(
         getCacheFilename(swathUrl, 'storm_swath.geojson'),
         swathUrl,
       );
-      final coneJson = jsonDecode(swathString);
+      final coneJson = await compute(jsonDecode, swathString);
 
       // UI Data — master location dataset, already enriched per-location
       // with local hazard values. Source of the Exposure Table + the
@@ -145,7 +146,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         getCacheFilename(uiDataUrl, 'ui_data.geojson'),
         uiDataUrl,
       );
-      final uiDataJson = jsonDecode(uiDataString);
+      final uiDataJson = await compute(jsonDecode, uiDataString);
 
       // ── DEBUG: print the real keys coming back for ui_data.geojson ──
       // Remove this block once field names are confirmed.

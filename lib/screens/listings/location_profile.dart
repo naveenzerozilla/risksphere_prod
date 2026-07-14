@@ -3813,7 +3813,7 @@ class _LocationProfileState extends State<LocationProfile>
             Positioned.fill(
               child: CachedNetworkImage(
                 imageUrl:
-                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${profile?.finalAddress?.latitude ?? 0},${profile?.finalAddress?.longitude ?? 0}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${profile?.finalAddress?.latitude ?? 0},${profile?.finalAddress?.longitude ?? 0}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
                 fit: BoxFit.cover,
                 placeholder: (context, url) => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),

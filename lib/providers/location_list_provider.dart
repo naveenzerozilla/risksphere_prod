@@ -22,6 +22,7 @@ class LocationListProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   set isLoading(bool value) {
+    if (_isLoading == value) return;
     _isLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
@@ -33,6 +34,7 @@ class LocationListProvider extends ChangeNotifier {
   bool get isNextPageLoading => _isNextPageLoading;
 
   set isNextPageLoading(bool value) {
+    if (_isNextPageLoading == value) return;
     _isNextPageLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
@@ -44,6 +46,7 @@ class LocationListProvider extends ChangeNotifier {
   bool get isAddLocationLoading => _isAddLocationLoading;
 
   set isAddLocationLoading(bool value) {
+    if (_isAddLocationLoading == value) return;
     _isAddLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       notifyListeners();
@@ -55,6 +58,7 @@ class LocationListProvider extends ChangeNotifier {
   bool get isDeleteLocationLoading => _isDeleteLocationLoading;
 
   set isDeleteLocationLoading(bool value) {
+    if (_isDeleteLocationLoading == value) return;
     _isDeleteLocationLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       notifyListeners();
@@ -66,6 +70,7 @@ class LocationListProvider extends ChangeNotifier {
   bool get isImageUploadLoading => _isImageUploadLoading;
 
   set isImageUploadLoading(bool value) {
+    if (_isImageUploadLoading == value) return;
     _isImageUploadLoading = value;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();

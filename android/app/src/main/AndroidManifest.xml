@@ -2,10 +2,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.risksphere.green">
 
+    <!-- Permissions -->
     <uses-permission
         android:name="android.permission.READ_MEDIA_IMAGES"
         tools:node="remove" />
-
     <uses-permission
         android:name="android.permission.READ_MEDIA_VIDEO"
         tools:node="remove" />
@@ -18,14 +18,18 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
     <application
         android:enableOnBackInvokedCallback="true"
-        android:hardwareAccelerated="true"
         android:icon="@mipmap/launcher_icon"
-        android:label="RiskSphere"
-        android:usesCleartextTraffic="true">
+        android:label="RiskSphere">
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-2989895610511269~9292987573"/>
 
-        <!-- Google Sign-In -->
         <meta-data
             android:name="com.google.android.gms.auth.api.signin.v2.DEFAULT_SIGN_IN"
             android:value="true" />
@@ -35,15 +39,15 @@
             android:name="firebase_performance_logcat_enabled"
             android:value="true" />
 
-        <!-- Google Maps -->
+        <!-- Google Maps API -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
-
         <meta-data
             android:name="com.google.android.gms.wallet.api.enabled"
             android:value="true" />
 
+        <!-- ================= MAIN ACTIVITY ================= -->
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -58,45 +62,66 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
 
+            <!-- Launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Receive Shared Text (Google Maps link) -->
+
+            <!-- ================= RECEIVE SHARED TEXT ================= -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:mimeType="text/plain" />
-
             </intent-filter>
 
+            <!-- ================= PUSH NOTIFICATION CLICK ================= -->
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- ================= HTTPS APP LINK (PRODUCTION) ================= -->
             <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.sonofthunder.risksphere"
+                    android:host="apple-callback" />
+
+                <data
+                    android:host="app.risksphere.ai"
+                    android:pathPrefix="/"
+                    android:scheme="https" />
+
+                <data
+                    android:host="app.auth.risksphere.ai"
+                    android:pathPrefix="/"
+                    android:scheme="https" />
+
+                <data
+                    android:host="web.risksphere.site"
+                    android:pathPrefix="/learner"
+                    android:scheme="https" />
+            </intent-filter>
+
+            <!-- ================= CUSTOM SCHEME FALLBACK ================= -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="qa.risksphere.ai"
-                    android:pathPrefix="/"
-                    android:scheme="https" />
-
-                <data
-                    android:host="qa.auth.risksphere.ai"
-                    android:pathPrefix="/"
-                    android:scheme="https" />
+                    android:host="learner"
+                    android:scheme="risksphere" />
             </intent-filter>
 
         </activity>
 
+        <!-- Microsoft Login -->
         <activity
             android:name="com.microsoft.identity.client.BrowserTabActicvity"
             android:exported="true">
@@ -125,5 +150,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
     </application>
 </manifest>

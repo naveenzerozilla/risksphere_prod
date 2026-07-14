@@ -470,7 +470,7 @@ class _UpdateParameterScreenState extends State<UpdateParameterScreen>
                                           6), // small radius
                                       child: CachedNetworkImage(
                                         imageUrl:
-                                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.item.latitude},${widget.item.longitude}&key=AIzaSyBA8NoBrHa9JwGQT8Mk1s9lXqElfON_NGI",
+                                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.item.latitude},${widget.item.longitude}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
                                         width: 50,
                                         height: 50,
                                         fit: BoxFit.cover,
