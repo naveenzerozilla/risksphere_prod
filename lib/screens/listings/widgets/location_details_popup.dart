@@ -3,6 +3,7 @@ import 'package:RiskSphere/models/my_location_list_model.dart';
 import 'package:RiskSphere/screens/listings/widgets/my_scrollable_scores_widget.dart';
 
 import '../../../design_system/primitives/custom_typography.dart';
+import '../../../utils/env.dart';
 import 'hazard_section_widget.dart';
 
 class LocationDetailsPopup extends StatelessWidget {
