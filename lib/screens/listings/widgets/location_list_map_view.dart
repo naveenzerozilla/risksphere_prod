@@ -129,7 +129,7 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
     debugPrint("Dataset ID Loaded: $datasetID");
 
-    if (datasetID != null && datasetID!.isNotEmpty && datasetID != "1") {
+    if (datasetID != null && datasetID!.isNotEmpty && datasetID != "1" && datasetID != "null") {
       await loadDatasetLocations();
     } else {
       debugPrint("Invalid Dataset ID: $datasetID");
@@ -141,13 +141,9 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
     String? datasetIdd = await SharedPreferenceService.getDefaultDatasetID();
     setState(() {
-      datasetID = datasetIdd.toString();
+      datasetID = (datasetIdd != null && datasetIdd != "null") ? datasetIdd : null;
     });
     print("DatasetId => $datasetID");
-
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   void _applySubAccountFilter() {
@@ -888,8 +884,8 @@ class _LocationListMapViewState extends State<LocationListMapView>
                 children: [
                   GoogleMap(
                     cloudMapId: Platform.isAndroid
-                        ? "f1fd26ce85e093cea861303b"
-                        : "f1fd26ce85e093ceb59d481f",
+                        ? "df78fbd8e414bf264398784a"
+                        : "df78fbd8e414bf269a617fe7",
                     initialCameraPosition: const CameraPosition(
                       target: LatLng(20.5937, 78.9629),
                       zoom: 9,

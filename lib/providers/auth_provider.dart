@@ -11,6 +11,7 @@ import '../models/initial_data_model.dart' hide Config;
 import '../screens/onboarding/create_account_screen.dart';
 import 'package:http/http.dart' as http;
 import '../utils/global_imports.dart' hide CompanyType;
+import 'package:RiskSphere/utils/appcheckService.dart';
 
 class AuthNotifier extends ChangeNotifier {
   ValueNotifier<List<Companies>> companyOptionsNotifier = ValueNotifier([]);
@@ -66,8 +67,52 @@ class AuthNotifier extends ChangeNotifier {
   User? get user => _user;
 
   bool _isSigningIn = false;
+  bool _isSigningInGoogle = false;
+  bool _isSigningInMicrosoft = false;
+  bool _isSigningInApple = false;
 
-  bool get isSigningIn => _isSigningIn;
+  bool get isSigningIn => _isSigningIn || _isSigningInGoogle || _isSigningInMicrosoft || _isSigningInApple;
+  bool get isSigningInGoogle => _isSigningInGoogle;
+  bool get isSigningInMicrosoft => _isSigningInMicrosoft;
+  bool get isSigningInApple => _isSigningInApple;
+
+  set isSigningIn(bool value) {
+    _isSigningIn = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  set isSigningInGoogle(bool value) {
+    _isSigningInGoogle = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  set isSigningInMicrosoft(bool value) {
+    _isSigningInMicrosoft = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  set isSigningInApple(bool value) {
+    _isSigningInApple = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void resetSigningInStates() {
+    _isSigningIn = false;
+    _isSigningInGoogle = false;
+    _isSigningInMicrosoft = false;
+    _isSigningInApple = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
   bool _isSigningOut = false;
 
@@ -339,6 +384,12 @@ class AuthNotifier extends ChangeNotifier {
         notifyListeners();
       });
 
+      print("================ LOGIN DETAILS ================");
+      print("Authenticating with Firebase Auth...");
+      print("Email: $email");
+      print("Password: [REDACTED]");
+      print("===============================================");
+
       final UserCredential userCredential =
           await _auth.signInWithEmailAndPassword(
         email: email,
@@ -379,13 +430,15 @@ class AuthNotifier extends ChangeNotifier {
       if (isAdminVerified == "server_error") {
         _isSigningIn = false;
 
-        ScaffoldMessenger.of(context1).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "We're experiencing a server issue. Please try again later.",
+        if (context1.mounted) {
+          ScaffoldMessenger.of(context1).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "We're experiencing a server issue. Please try again later.",
+              ),
             ),
-          ),
-        );
+          );
+        }
 
         await _auth.signOut();
 
@@ -533,14 +586,16 @@ class AuthNotifier extends ChangeNotifier {
     } catch (e) {
       _isSigningIn = false;
       var typography = CustomTypography(context1);
-      ScaffoldMessenger.of(context1).showSnackBar(
-        SnackBar(
-          content: Text(
-            LanguageService.getTranslated(
-                context1, "login_invaild_email_password_error"),
+      if (context1.mounted) {
+        ScaffoldMessenger.of(context1).showSnackBar(
+          SnackBar(
+            content: Text(
+              LanguageService.getTranslated(
+                  context1, "login_invaild_email_password_error"),
+            ),
           ),
-        ),
-      );
+        );
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -550,7 +605,7 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> signInWithGoogle({BuildContext? context}) async {
     try {
-      _isSigningIn = true;
+      _isSigningInGoogle = true;
       notifyListeners(); // Immediately notify listeners about signing in state
       await _googleSignIn.signOut(); // optional but safe
 
@@ -581,8 +636,6 @@ class AuthNotifier extends ChangeNotifier {
         unawaited(initFCM(_user!.uid));
 
         print('Is Individual? ${claims['isIndividual']}');
-        _isSigningIn = false; // Stop loader before navigation
-        notifyListeners();
 
         if (claims['isIndividual'] == null) {
           isNewUser = true;
@@ -604,30 +657,42 @@ class AuthNotifier extends ChangeNotifier {
           );
         }
       } else {
-        _isSigningIn = false;
-        notifyListeners(); // Ensure the loader is hidden if sign-in is canceled
+        if (context != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Google Sign-In returned null (canceled or config mismatch).'),
+            ),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
-      _isSigningIn = false;
-      notifyListeners(); // Stop loader
       print("Error signing in with Google: $e");
-
-      ScaffoldMessenger.of(context!).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? 'An error occurred.'),
-        ),
-      );
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An error occurred.'),
+          ),
+        );
+      }
     } catch (e) {
       print(e);
-      _isSigningIn = false;
-      notifyListeners(); // Stop loader
       print("Error signing in with Google: $e");
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-In Error: $e'),
+          ),
+        );
+      }
+    } finally {
+      _isSigningInGoogle = false;
+      notifyListeners();
     }
   }
 
   Future<void> signInWithMicrosoft({BuildContext? context}) async {
     try {
-      _isSigningIn = true;
+      _isSigningInMicrosoft = true;
       notifyListeners();
 
       final microsoftProvider = MicrosoftAuthProvider();
@@ -655,10 +720,6 @@ class AuthNotifier extends ChangeNotifier {
       await SharedPreferenceService.setClaims(claims);
       await SharedPreferenceService.getAllClaims();
 
-      print('Is Individual? ${claims['isIndividual']}');
-
-      print('Current User: ${userCredential.user!.email}');
-      print('Current firebase user: ${_auth.currentUser!.email}');
       _user = userCredential.user;
       if (claims['isIndividual'] == null) {
         isNewUser = true;
@@ -678,13 +739,8 @@ class AuthNotifier extends ChangeNotifier {
           (route) => false,
         );
       }
-
-      _isSigningIn = false;
-      notifyListeners();
     } on FirebaseAuthException catch (e) {
-      _isSigningIn = false;
-      notifyListeners();
-      print("Error signing in with Microsoft: $e");
+      print("Error signing in with Microsoft: Code: ${e.code} | Message: ${e.message} | Email: ${e.email} | Details: ${e.toString()}");
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -692,6 +748,9 @@ class AuthNotifier extends ChangeNotifier {
           ),
         );
       }
+    } finally {
+      _isSigningInMicrosoft = false;
+      notifyListeners();
     }
   }
 
@@ -732,9 +791,19 @@ class AuthNotifier extends ChangeNotifier {
       bool isUserRegistered = await userExists(email.trim());
 
       if (isUserRegistered) {
+        String? appCheckToken;
+        try {
+          appCheckToken = await AppCheckService.getToken();
+        } catch (e) {
+          debugPrint("Failed to get App Check token: $e");
+        }
+
         final response = await http.post(
-          Uri.parse('${AppConstant.baseURL}/auth_handler/user-check'),
-          headers: {"Content-Type": "application/json"},
+          Uri.parse('${AppConstant.baseURL}/auth_handler_v2/user-check'),
+          headers: {
+            "Content-Type": "application/json",
+            if (appCheckToken != null) "X-Firebase-AppCheck": appCheckToken,
+          },
           body: jsonEncode({"email": email.trim()}),
         );
 
@@ -1079,7 +1148,7 @@ class AuthNotifier extends ChangeNotifier {
         //Send email to verify
         // await userCredential.user?.sendEmailVerification();
         final url =
-            '${AppConstant.baseURL}/sendEmail_to_client?type=email_verification&email=$mail';
+            '${AppConstant.baseURL}/sendEmail_to_client_v2?type=email_verification&email=$mail';
         final response = await http.get(Uri.parse(url));
         print("Email verification response: ${response.body}");
         showDialog(
@@ -1358,7 +1427,7 @@ class AuthNotifier extends ChangeNotifier {
       /// 6️⃣ SUCCESS FLOW
       if (decodedResponse['data'] == 'role_assigned') {
         final url =
-            '${AppConstant.baseURL}/sendEmail_to_client?type=email_verification&email=$adminEmail';
+            '${AppConstant.baseURL}/sendEmail_to_client_v2?type=email_verification&email=$adminEmail';
         await http.get(Uri.parse(url));
 
         if (initialData != null &&
@@ -1693,7 +1762,7 @@ class AuthNotifier extends ChangeNotifier {
   //
   //     if (decodedResponse['data'] == 'role_assigned') {
   //       final url =
-  //           '${AppConstant.baseURL}/sendEmail_to_client?type=email_verification&email=$adminEmail';
+  //           '${AppConstant.baseURL}/sendEmail_to_client_v2?type=email_verification&email=$adminEmail';
   //       await http.get(Uri.parse(url));
   //
   //       if (initialData != null &&
@@ -1982,6 +2051,11 @@ class AuthNotifier extends ChangeNotifier {
 
       String? token = await _auth.currentUser!.getIdToken(false);
 
+      print("================ CALLABLE: assignClaims_v2 ================");
+      print("URL: HTTPS Callable Function (assignClaims_v2)");
+      print("Payload data: {'Authorization': 'Bearer ${token != null ? (token.substring(0, 15) + "...") : "null"}'}");
+      print("==========================================================");
+
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',
       });
@@ -2129,7 +2203,7 @@ class AuthNotifier extends ChangeNotifier {
       // Get the ID token of the current user
       String? idToken = await user.getIdToken();
 
-      final url = '${AppConstant.baseURL}/sendEmail_to_client?type=remind';
+      final url = '${AppConstant.baseURL}/sendEmail_to_client_v2?type=remind';
 
       // Set the headers including the Authorization header with the token
       final headers = {

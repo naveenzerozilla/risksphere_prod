@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
+import '../../utils/env.dart';
 
 class EventVisulisationScreen extends StatefulWidget {
   final Map<String, dynamic> notificationData;
@@ -57,23 +58,51 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$filename');
 
+      bool isCacheValid = false;
       if (await file.exists()) {
-        print("Loading $filename from local cache...");
-        return await file.readAsString();
+        try {
+          final lastModified = await file.lastModified();
+          final age = DateTime.now().difference(lastModified);
+          if (age.inMinutes < 30) {
+            isCacheValid = true;
+          }
+        } catch (e) {
+          print("Error checking cache file age: $e");
+        }
+      }
+
+      if (isCacheValid) {
+        try {
+          print("Loading $filename from valid local cache...");
+          return await file.readAsString();
+        } catch (e) {
+          print("Error reading cached file $filename: $e");
+        }
       }
 
       print("Downloading $filename from remote URL...");
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        await file.writeAsString(response.body);
-        return response.body;
-      } else {
-        throw Exception("Failed to download $filename");
+      try {
+        final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          try {
+            await file.writeAsString(response.body);
+          } catch (e) {
+            print("Error saving $filename to cache: $e");
+          }
+          return response.body;
+        } else {
+          throw Exception("Failed to download $filename: Status ${response.statusCode}");
+        }
+      } catch (downloadError) {
+        if (await file.exists()) {
+          print("Download failed. Falling back to old cached file $filename. Error: $downloadError");
+          return await file.readAsString();
+        }
+        rethrow;
       }
     } catch (e) {
-      print("Error in local cache for $filename: $e");
-      final response = await http.get(Uri.parse(url));
-      return response.body;
+      print("Error in local cache/download for $filename: $e");
+      rethrow;
     }
   }
 
@@ -108,45 +137,39 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         return defaultName;
       }
 
+      final bucket = Env.get('FIREBASE_STORAGE_BUCKET').isNotEmpty
+          ? Env.get('FIREBASE_STORAGE_BUCKET')
+          : 'risksphere-qa.firebasestorage.app';
+
       final trackUrl = urls?.stormTrackGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_track.geojson';
+          'https://storage.googleapis.com/$bucket/event/kineticast/hurricane/frontend_assets/BAVI/storm_track.geojson';
       final pointUrl = urls?.stormForecastPointsGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_forecast_points.geojson';
+          'https://storage.googleapis.com/$bucket/event/kineticast/hurricane/frontend_assets/BAVI/storm_forecast_points.geojson';
       final swathUrl = urls?.stormSwathGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_swath.geojson';
+          'https://storage.googleapis.com/$bucket/event/kineticast/hurricane/frontend_assets/BAVI/storm_swath.geojson';
       final uiDataUrl = urls?.uiDataGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/ui_data.geojson';
+          'https://storage.googleapis.com/$bucket/event/kineticast/hurricane/frontend_assets/BAVI/ui_data.geojson';
 
-      // Storm Track — source of GLOBAL storm metadata (NAME, FCST_DTG, VMAX, FSPD)
-      final trackString = await _getLocalFileContent(
-        getCacheFilename(trackUrl, 'storm_track.geojson'),
-        trackUrl,
-      );
-      final trackJson = await compute(jsonDecode, trackString);
+      // Fetch all GeoJSON strings concurrently
+      final geojsonStrings = await Future.wait([
+        _getLocalFileContent(getCacheFilename(trackUrl, 'storm_track.geojson'), trackUrl),
+        _getLocalFileContent(getCacheFilename(pointUrl, 'storm_forecast_points.geojson'), pointUrl),
+        _getLocalFileContent(getCacheFilename(swathUrl, 'storm_swath.geojson'), swathUrl),
+        _getLocalFileContent(getCacheFilename(uiDataUrl, 'ui_data.geojson'), uiDataUrl),
+      ]);
 
-      // Forecast Points — chronological points, used for map animation +
-      // the wind-speed-over-time chart.
-      final pointString = await _getLocalFileContent(
-        getCacheFilename(pointUrl, 'storm_forecast_points.geojson'),
-        pointUrl,
-      );
-      final pointJson = await compute(jsonDecode, pointString);
+      // Decode all JSON strings concurrently using compute in separate isolates
+      final decodedJsons = await Future.wait([
+        compute(jsonDecode, geojsonStrings[0]),
+        compute(jsonDecode, geojsonStrings[1]),
+        compute(jsonDecode, geojsonStrings[2]),
+        compute(jsonDecode, geojsonStrings[3]),
+      ]);
 
-      // Storm Swath/Cone — visual overlay only.
-      final swathString = await _getLocalFileContent(
-        getCacheFilename(swathUrl, 'storm_swath.geojson'),
-        swathUrl,
-      );
-      final coneJson = await compute(jsonDecode, swathString);
-
-      // UI Data — master location dataset, already enriched per-location
-      // with local hazard values. Source of the Exposure Table + the
-      // per-location Hurricane Summary values shown on marker tap.
-      final uiDataString = await _getLocalFileContent(
-        getCacheFilename(uiDataUrl, 'ui_data.geojson'),
-        uiDataUrl,
-      );
-      final uiDataJson = await compute(jsonDecode, uiDataString);
+      final trackJson = decodedJsons[0];
+      final pointJson = decodedJsons[1];
+      final coneJson = decodedJsons[2];
+      final uiDataJson = decodedJsons[3];
 
       // ── DEBUG: print the real keys coming back for ui_data.geojson ──
       // Remove this block once field names are confirmed.
@@ -181,7 +204,12 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       // Parse Markers from forecast points
       final pointFeatures = pointJson['features'] as List<dynamic>? ?? [];
       Set<Marker> markers = {};
+      int processedCount = 0;
       for (var feature in pointFeatures) {
+        processedCount++;
+        if (processedCount % 50 == 0) {
+          await Future.delayed(Duration.zero);
+        }
         final geometry = feature['geometry'];
         if (geometry == null || geometry['type'] != 'Point') continue;
 
@@ -225,6 +253,10 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       // Summary values (storm category / surge / rainfall / wave / wind).
       final uiFeatures = uiDataJson['features'] as List<dynamic>? ?? [];
       for (var feature in uiFeatures) {
+        processedCount++;
+        if (processedCount % 50 == 0) {
+          await Future.delayed(Duration.zero);
+        }
         final geometry = feature['geometry'];
         if (geometry == null || geometry['type'] != 'Point') continue;
         final coords = geometry['coordinates'] as List<dynamic>;
@@ -261,6 +293,10 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       Set<Polyline> polylines = {};
       int polylineIndex = 0;
       for (var feature in trackFeatures) {
+        processedCount++;
+        if (processedCount % 50 == 0) {
+          await Future.delayed(Duration.zero);
+        }
         final geometry = feature['geometry'];
         if (geometry == null || geometry['type'] != 'LineString') continue;
         final coords = geometry['coordinates'] as List<dynamic>;
@@ -284,6 +320,10 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       Set<Polygon> polygons = {};
       int polygonIndex = 0;
       for (var feature in coneFeatures) {
+        processedCount++;
+        if (processedCount % 50 == 0) {
+          await Future.delayed(Duration.zero);
+        }
         final geometry = feature['geometry'];
         if (geometry == null) continue;
         final geomType = geometry['type'];
@@ -340,6 +380,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
 
       if (markers.isNotEmpty) {
         final firstPoint = markers.first.position;
+        _initialMapCenter = firstPoint;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _mapController != null) {
             try {
@@ -836,10 +877,16 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                   },
                 ),
                 Expanded(
-                    child: isMapView
-                        ? Stack(
-                            children: [
-                              Container(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        )
+                      : isMapView
+                          ? Stack(
+                              children: [
+                                Container(
                                 margin:
                                     const EdgeInsets.fromLTRB(16, 1, 16, 2.0),
                                 decoration: BoxDecoration(
@@ -1428,10 +1475,10 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                 maxY: 160,
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
-                  _buildLine(_windSpeedSeries, Colors.red),
-                  _buildLine(_getMockedSurgeSeries(), Colors.purple),
-                  _buildLine(_getMockedRainSeries(), Colors.blue),
-                  _buildLine(_getMockedWaveSeries(), Colors.teal),
+                  _buildLine(_windSpeedSeries, const Color(0xFFE53935)), // Red
+                  _buildLine(_getMockedSurgeSeries(), const Color(0xFF2196F3)), // Blue
+                  _buildLine(_getMockedRainSeries(), const Color(0xFF4CAF50)), // Green
+                  _buildLine(_getMockedWaveSeries(), const Color(0xFF9C27B0)), // Purple
                 ],
               ),
             ),
@@ -1453,12 +1500,13 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
             )
-          : LineChart(
-              LineChartData(
+          : BarChart(
+              BarChartData(
                 backgroundColor: const Color(0xFF1E1E1E),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
+                  drawHorizontalLine: true,
                   getDrawingHorizontalLine: (_) => FlLine(
                     color: Colors.white12,
                     strokeWidth: 0.5,
@@ -1474,10 +1522,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                       showTitles: true,
                       reservedSize: 36,
                       getTitlesWidget: (value, _) {
-                        if (value == 0.0 || value == 0.5) {
-                          return const Text('TS',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
-                        } else if (value == 1.0) {
+                        if (value == 1.0) {
                           return const Text('Cat 1',
                               style: TextStyle(color: Colors.white38, fontSize: 8));
                         } else if (value == 2.0) {
@@ -1505,10 +1550,19 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                         if (idx < 0 || idx >= _chartDateLabels.length) {
                           return const SizedBox.shrink();
                         }
-                        return Text(
-                          _chartDateLabels[idx],
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 7),
+                        if (_chartDateLabels.length > 8 && idx % 4 != 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Transform.rotate(
+                            angle: -0.5,
+                            child: Text(
+                              _chartDateLabels[idx],
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 7),
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -1521,31 +1575,30 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                 minY: 0,
                 maxY: 5,
                 borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: _intensitySeries,
-                    isStepLineChart: true,
-                    lineChartStepData: const LineChartStepData(
-                      stepDirection: LineChartStepData.stepDirectionForward,
-                    ),
-                    color: Colors.orange,
-                    barWidth: 2,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.red.withOpacity(0.35),
-                          Colors.orange.withOpacity(0.2),
-                          Colors.yellow.withOpacity(0.1),
-                          Colors.green.withOpacity(0.05),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ],
+                barGroups: _intensitySeries.map((spot) {
+                  final val = spot.y;
+                  Color barColor = const Color(0xFF2196F3); // Blue for TS / TD (below Cat 1)
+                  if (val >= 4.0) {
+                    barColor = const Color(0xFFE57373); // Light red/pink for Cat 4/5
+                  } else if (val >= 1.0) {
+                    barColor = const Color(0xFFFFB74D); // Yellow/orange for Cat 1/2/3
+                  }
+                  
+                  return BarChartGroupData(
+                    x: spot.x.toInt(),
+                    barRods: [
+                      BarChartRodData(
+                        toY: val,
+                        color: barColor,
+                        width: 6,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(1),
+                          topRight: Radius.circular(1),
+                        ),
+                      )
+                    ],
+                  );
+                }).toList(),
               ),
             ),
     );
@@ -1568,16 +1621,16 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _buildLegendItem(
-            Colors.red,
+            const Color(0xFFE53935),
             'Max Wind Speed',
             _maxWindSpeedFromSeries > 0
                 ? '${_maxWindSpeedFromSeries.toStringAsFixed(0)} mph'
                 : (_stormOverview['maxWindSpeed']?.toString() ?? 'N/A')),
-        _buildLegendItem(Colors.purple, 'Storm Surge',
+        _buildLegendItem(const Color(0xFF2196F3), 'Max Surge',
             loc?['usofcl_fcst_surge_ft_LABEL']?.toString() ?? 'N/A'),
-        _buildLegendItem(Colors.blue, 'Rainfall',
+        _buildLegendItem(const Color(0xFF4CAF50), 'Max Rainfall',
             loc?['usofcl_fcst_rain_in_LABEL']?.toString() ?? 'N/A'),
-        _buildLegendItem(Colors.teal, 'Wave\nHeight',
+        _buildLegendItem(const Color(0xFF9C27B0), 'Max Wave Height',
             loc?['usofcl_fcst_wave_ft_LABEL']?.toString() ?? 'N/A'),
       ],
     );

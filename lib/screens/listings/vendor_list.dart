@@ -4,6 +4,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../utils/env.dart';
 import '../../design_system/repo/constants.dart';
 import '../../models/my_location_list_model.dart';
 import '../../utils/global_imports.dart';
@@ -906,7 +907,7 @@ class _VendorListState extends State<VendorList> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8),
                     child: CachedNetworkImage(
                       imageUrl:
-                          "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${vendorData.locationLatitude},${vendorData.locationLongitude}&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}",
+                          "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${vendorData.locationLatitude},${vendorData.locationLongitude}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
                       width: 50,
                       height: 50,
                       fit: BoxFit.cover,

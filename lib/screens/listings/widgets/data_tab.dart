@@ -5,6 +5,7 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/services.dart';
@@ -2077,7 +2078,7 @@ class _ImageUploadCardState extends State<ImageUploadCard> {
   }
 
   Future<String> uploadFileToFirebaseRest(File file) async {
-    const bucket = "project-green-r5-1-qa.firebasestorage.app";
+    final bucket = Firebase.app().options.storageBucket ?? "risksphere-qa.firebasestorage.app";
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {

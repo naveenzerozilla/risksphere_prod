@@ -7,11 +7,13 @@ class SocialMediaButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String buttonText;
   final String iconPath;
+  final bool isLoading;
 
   const SocialMediaButton({
     required this.onPressed,
     required this.buttonText,
     required this.iconPath,
+    this.isLoading = false,
     Key? key,
   }) : super(key: key);
 
@@ -22,7 +24,7 @@ class SocialMediaButton extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: onPressed,
+            onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -33,15 +35,24 @@ class SocialMediaButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: Container(
-              width: 19.60,
-              height: 20,
-              child: SvgPicture.asset(
-                iconPath,
-              ),
-            ),
+            icon: isLoading
+                ? Container(
+                    width: 20,
+                    height: 20,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Container(
+                    width: 19.60,
+                    height: 20,
+                    child: SvgPicture.asset(
+                      iconPath,
+                    ),
+                  ),
             label: Text(
-              buttonText,
+              isLoading ? "Connecting..." : buttonText,
               style: typography.BottomNavigationActiveLabel.copyWith(
                   color: Theme.of(context).colorScheme.onSurface),
             ),

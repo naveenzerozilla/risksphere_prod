@@ -2984,6 +2984,7 @@ import '../../models/initial_data_model.dart';
 import 'package:image/image.dart' as img;
 import '../../utils/utils.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/env.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -6085,13 +6086,11 @@ String _providerLabel(String providerId) {
 }
 
 Future<void> sendPasswordResetViaRest(String email) async {
-  // const apiKey = "AIzaSyCYkVSSfxlq0G0URowvvyfq7Pn1Af_f2YA";
-  const apiKey = "AIzaSyCWLlgn4SYw-8aHdPLfeylQ78AsUqyCvv4";
+  final apiKey = Env.get('FIREBASE_API_KEY');
 
   final url = Uri.parse(
     "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$apiKey",
   );
-  https: //identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyCWLlgn4SYw-8aHdPLfeylQ78AsUqyCvv4
   final response = await http.post(
     url,
     headers: {

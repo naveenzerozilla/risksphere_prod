@@ -22,12 +22,14 @@ class PlaceApiProvider {
 
   PlaceApiProvider(this.sessionToken);
 
-  static final String androidKey = 'AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI';
-  static final String iosKey = 'AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI';
+  static final String androidKey = 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw';
+  static final String iosKey = 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw';
+  // static final String iosKey = 'AIzaSyANTq11H8jWvLmmFojVIP7j3tfCZ9lUavE';
   final apiKey = Platform.isAndroid ? androidKey : iosKey;
 
   Future<List<Suggestion>> fetchSuggestions(String input, String lang) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode|establishment&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode|establishment&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
 
     final response = await client.get(Uri.parse(request));
 
@@ -48,7 +50,8 @@ class PlaceApiProvider {
   }
 
   Future<Map<String, dynamic>> getPlaceDetails(String placeId) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address,address_component&key=$apiKey';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address,address_component&key=$apiKey';
     final response = await client.get(Uri.parse(request));
 
     if (response.statusCode == 200) {
@@ -63,7 +66,8 @@ class PlaceApiProvider {
   }
 
   Future<LatLng> getLatLngFromPlaceId(String placeId) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address&key=$apiKey';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address&key=$apiKey';
     final response = await client.get(Uri.parse(request));
 
     if (response.statusCode == 200) {

@@ -13,6 +13,12 @@ class PerformanceHttpClient extends http.BaseClient {
       request.headers['X-Firebase-AppCheck'] = appCheckToken;
     }
 
+    print("================ HTTP REQUEST ================");
+    print("Method: ${request.method}");
+    print("URL: ${request.url}");
+    print("Headers: ${request.headers}");
+    print("==============================================");
+
     final metric = FirebasePerformance.instance.newHttpMetric(
       request.url.toString(),
       _getHttpMethod(request.method),

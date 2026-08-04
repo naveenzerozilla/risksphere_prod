@@ -321,10 +321,9 @@ class ConflictsTabState extends State<ConflictsTab> {
         "selected_index": idxStr,
         "location_id": currentConflictId,
       };
-      
-      print("AI POST body: $body");
+
       final response = await apiService.post(body);
-      print("AI POST response: $response");
+
       
       if (widget.location == null) {
         setState(() {
@@ -379,6 +378,16 @@ class ConflictsTabState extends State<ConflictsTab> {
 
     final hasMultipleLocations =
         widget.location != null && widget.location!.length > 1;
+
+    if (!hasMultipleLocations &&
+        widget.conflict != null &&
+        widget.conflict!.isNotEmpty &&
+        (selectedOption == 'none' || selectedOption == null)) {
+      final defaultOption = widget.conflict![0].address ?? 'Unknown';
+      selectedOption = defaultOption;
+      selectedValue = defaultOption;
+      selectedIndex = 0;
+    }
 
     return Scaffold(
         appBar: AppBar(
@@ -745,7 +754,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                       final index = entry.key;
                                       final option = entry.value;
                                       final address = option.address ?? 'Unknown';
-                                      final isRecommended = index == (aiSelectedIndex ?? 0);
+                                      final isRecommended = index == 0;
 
                                       // Retrieve corresponding AI metadata if available
                                       Map<String, dynamic>? aiItem;
@@ -848,7 +857,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                                     child: Text(address, style: typography.Body1.copyWith(color: Colors.white)),
                                                   ),
                                                   const SizedBox(width: 8),
-                                                  Container(
+                                                  index == 0 ? Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                     decoration: BoxDecoration(
                                                       color: badgeColor.withOpacity(0.2),
@@ -866,7 +875,7 @@ class ConflictsTabState extends State<ConflictsTab> {
                                                         fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
-                                                  ),
+                                                  ) : const SizedBox(),
                                                 ],
                                               ),
                                             ],

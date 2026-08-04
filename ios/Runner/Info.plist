@@ -51,8 +51,8 @@
             <string>Editor</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>com.googleusercontent.apps.863607711683-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
-                <string>app-1-863607711683-ios-i3mv3tofm7pmuft2osqpq1m5rea1338m</string>
+                <string>com.googleusercontent.apps.733517635954-u4fmh34dev6cf28ak18hp573djle1h0n</string>
+                <string>app-1-733517635954-ios-a414de0cd681c5353e7deb</string>
             </array>
         </dict>
         <dict>
@@ -64,14 +64,11 @@
                 <string>msal184459ca-bb23-407f-845c-720d49b25768</string>
             </array>
         </dict>
-        <dict>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>app-1-863607711683-ios-f0160ac7f584c6bdbcff76</string>
-            </array>
-        </dict>
+    </array>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>msauthv2</string>
+        <string>msauthv3</string>
     </array>
 
     <key>FirebaseAppDelegateProxyEnabled</key>

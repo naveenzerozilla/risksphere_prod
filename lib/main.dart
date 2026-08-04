@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/utils/http_client.dart';
@@ -32,6 +33,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await EasyLocalization.ensureInitialized();
 
   try {
@@ -90,19 +92,22 @@ void main() async {
   }
 
   initializeNotifications();
-  runApp(
-    EasyLocalization(
-      supportedLocales: const [
-        Locale('en'),
-        Locale('es'),
-        Locale('fr'),
-        Locale('ja'),
-        Locale('zh'),
-      ],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('en'),
-      child: AppLifecycleManager(),
+  http.runWithClient(
+    () => runApp(
+      EasyLocalization(
+        supportedLocales: const [
+          Locale('en'),
+          Locale('es'),
+          Locale('fr'),
+          Locale('ja'),
+          Locale('zh'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en'),
+        child: AppLifecycleManager(),
+      ),
     ),
+    () => PerformanceHttpClient(),
   );
 }
 
@@ -539,11 +544,17 @@ void checkForInitialMessage() async {
 Future<bool> _subscribeToNotifications(String userId, String token) async {
   try {
     final url = Uri.parse(AppConstant.SUBSCRIBE_NOTIFICATION);
+    final payload = {'user_id': userId, 'topic': 'general', 'mobile_token': token};
+    
+    print("================ API: Subscribe Notification ================");
+    print("URL: $url");
+    print("Payload: ${jsonEncode(payload)}");
+    print("============================================================");
+
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-          {'user_id': userId, 'topic': 'general', 'mobile_token': token}),
+      body: jsonEncode(payload),
     );
 
     return response.statusCode == 200;

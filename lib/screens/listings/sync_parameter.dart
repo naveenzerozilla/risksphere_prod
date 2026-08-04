@@ -130,8 +130,15 @@ class _SyncParametersPageState extends State<SyncParametersPage> {
         vendorResults.isNotEmpty && (vendorResults.first["found"] == true);
     try {
       final decoded = jsonDecode(localRawValue);
-
-      localValue = decoded["value"]["value"]?.toString() ?? "N/A";
+      if (decoded is Map) {
+        if (decoded["value"] is Map) {
+          localValue = decoded["value"]["value"]?.toString() ?? "N/A";
+        } else {
+          localValue = decoded["value"]?.toString() ?? "N/A";
+        }
+      } else {
+        localValue = localRawValue;
+      }
     } catch (e) {
       localValue = localRawValue;
     }

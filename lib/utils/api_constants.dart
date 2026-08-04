@@ -407,7 +407,7 @@ class AppConstant {
   static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations_v2/sov';
 
   static String get SHARE_SOV_LIST => '$baseURL/locations_v2/share_sov';
-  static String get sendConnectionRequest => '$baseURL/user_management';
+  static String get sendConnectionRequest => '$baseURL/user_management_v2';
 
   static String get GET_SUB_ACCOUNT_LIST => '$baseURL/locations_v2';
 

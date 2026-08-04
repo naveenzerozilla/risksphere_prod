@@ -135,6 +135,33 @@ class MyLocationListProvider with ChangeNotifier {
   bool isGalleryLoading = false;
   bool isGalleryLoaded = false;
 
+  Future<void> fetchLocationActivityLogs(String locationId) async {
+    try {
+      final headers = await CommonHeaders.createHeaders();
+      final url = "${AppConstant.baseURL}/locations_v2/getlocation_activity?location_id=$locationId";
+      
+      print("Fetching location activity logs from: $url");
+      final response = await http.get(Uri.parse(url), headers: headers);
+      print("Activity logs status code: ${response.statusCode}");
+      
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        if (jsonResponse['results'] != null) {
+          final List<dynamic> logsJson = jsonResponse['results'];
+          _allActivitylogs = logsJson.map((v) => AllActivityLogs.fromJson(v)).toList();
+          print("Loaded ${_allActivitylogs.length} activity logs.");
+          notifyListeners();
+        } else {
+          print("Failed loading logs: 'results' key is null");
+        }
+      } else {
+        print("Failed loading logs: status code not 200");
+      }
+    } catch (e) {
+      print("Error fetching location activity logs: $e");
+    }
+  }
+
   Future<void> fetchGalleryMedia({
     required BuildContext context,
     required String locationId,
@@ -3809,7 +3836,13 @@ class MyLocationListProvider with ChangeNotifier {
             await compute<Map<String, dynamic>, MyLocationModel>(
                 MyLocationModel.fromJson, jsonResponse as Map<String, dynamic>);
 
-        allAcitivityLogs = locationListModel.results![0].allActivityLogs ?? [];
+        if (locationId != null && locationId.isNotEmpty) {
+          allAcitivityLogs = locationListModel.filterByLocationResult?.allActivityLogs ?? [];
+        } else {
+          allAcitivityLogs = (locationListModel.results != null && locationListModel.results!.isNotEmpty)
+              ? (locationListModel.results![0].allActivityLogs ?? [])
+              : [];
+        }
         print(allAcitivityLogs.length.toString());
 
         if (locationListModel.totalRecords != null) {

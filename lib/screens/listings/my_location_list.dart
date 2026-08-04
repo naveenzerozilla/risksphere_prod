@@ -1368,61 +1368,61 @@ class _MyLocationListState extends State<MyLocationList>
                           ],
                         ),
                         if (_showOverlay_mylocation) _buildOverlay(),
-                        Positioned(
-                          bottom: 110, // adjust above SpeedDial
-                          right: 16,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                useSafeArea: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) =>
-                                    _ChatbotBottomSheet(
-                                      locationId: locationProfileProvider
-                                          .locationProfile?.finalAddress
-                                          ?.locationId
-                                          .toString(),
-                                      accountId: widget.accountID!,
-                                      subAccountId: widget.subAccountID!,
-                                      accountName: widget.accountName,
-                                      subAccountName: widget.subAccountName,
-                                    ),
-                              );
-                            },
-                            child: Container(
-                              padding:
-                              EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.black87,
-                                borderRadius: BorderRadius.circular(25),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "Need Help?",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  SizedBox(width: 8),
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppColors.primaryMain,
-                                    child: Icon(Icons.smart_toy,
-                                        color: Colors.white, size: 18),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Positioned(
+                        //   bottom: 110, // adjust above SpeedDial
+                        //   right: 16,
+                        //   child: GestureDetector(
+                        //     onTap: () {
+                        //       showModalBottomSheet(
+                        //         context: context,
+                        //         isScrollControlled: true,
+                        //         useSafeArea: true,
+                        //         backgroundColor: Colors.transparent,
+                        //         builder: (_) =>
+                        //             _ChatbotBottomSheet(
+                        //               locationId: locationProfileProvider
+                        //                   .locationProfile?.finalAddress
+                        //                   ?.locationId
+                        //                   .toString(),
+                        //               accountId: widget.accountID!,
+                        //               subAccountId: widget.subAccountID!,
+                        //               accountName: widget.accountName,
+                        //               subAccountName: widget.subAccountName,
+                        //             ),
+                        //       );
+                        //     },
+                        //     child: Container(
+                        //       padding:
+                        //       EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                        //       decoration: BoxDecoration(
+                        //         color: Colors.black87,
+                        //         borderRadius: BorderRadius.circular(25),
+                        //         boxShadow: [
+                        //           BoxShadow(
+                        //             color: Colors.black26,
+                        //             blurRadius: 6,
+                        //           ),
+                        //         ],
+                        //       ),
+                        //       child: Row(
+                        //         mainAxisSize: MainAxisSize.min,
+                        //         children: [
+                        //           Text(
+                        //             "Need Help?",
+                        //             style: TextStyle(color: Colors.white),
+                        //           ),
+                        //           SizedBox(width: 8),
+                        //           CircleAvatar(
+                        //             radius: 16,
+                        //             backgroundColor: AppColors.primaryMain,
+                        //             child: Icon(Icons.smart_toy,
+                        //                 color: Colors.white, size: 18),
+                        //           )
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                     endDrawer: Drawer(
