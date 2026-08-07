@@ -46,3 +46,5 @@ app.*.map.json
 
 pubspec.lock
 .env
+# Ignore firebase options files
+lib/firebase_options.dart
