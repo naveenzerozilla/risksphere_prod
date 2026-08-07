@@ -55,6 +55,7 @@ class Companies {
   bool? isEnabled;
   UpdatedAt? updatedAt;
   String? name;
+
   //Admins? admins;
   bool? status;
   String? id;
@@ -67,22 +68,27 @@ class Companies {
   String? adminCountryCode;
   List<CorporateAdmins>? admins = [];
 
-  Companies(
-      {this.companyType,
-        this.companyTypeName,
-        this.domainList,
-        this.displayName,
-        this.companyImageUrl,
-        this.isEnabled,
-        this.updatedAt,
-        this.name,
-        //this.admins,
-        this.status,
-        this.id, this.isSelected,
-        this.enableDomainCheck, this.countryName,
-        this.adminName, this.adminEmail, this.adminMobile, this.adminCountryCode,
-        this.admins,
-      });
+  Companies({
+    this.companyType,
+    this.companyTypeName,
+    this.domainList,
+    this.displayName,
+    this.companyImageUrl,
+    this.isEnabled,
+    this.updatedAt,
+    this.name,
+    //this.admins,
+    this.status,
+    this.id,
+    this.isSelected,
+    this.enableDomainCheck,
+    this.countryName,
+    this.adminName,
+    this.adminEmail,
+    this.adminMobile,
+    this.adminCountryCode,
+    this.admins,
+  });
 
   Companies.fromJson(Map<String, dynamic> json) {
     companyType = json['company_type'];
@@ -98,10 +104,9 @@ class Companies {
     status = json['status'];
     id = json['id'];
     enableDomainCheck = json['enable_domain_check'];
-    if(json['country'] == null) {
+    if (json['country'] == null) {
       countryName = "";
-    } else
-    if(json['country'].runtimeType == String) {
+    } else if (json['country'].runtimeType == String) {
       countryName = json['country'];
     } else {
       countryName = json['country']['name'];
@@ -176,17 +181,24 @@ class CorporateAdmins {
   String? countryCode;
   String? imageUrl;
 
-  CorporateAdmins({this.name, this.displayName, this.email, this.userId, this.mobile, this.countryCode, this.imageUrl});
+  CorporateAdmins(
+      {this.name,
+      this.displayName,
+      this.email,
+      this.userId,
+      this.mobile,
+      this.countryCode,
+      this.imageUrl});
 
   CorporateAdmins.fromJson(Map<String, dynamic> json) {
     name = json['name'];
 
-    displayName = json['displayName']??"";
+    displayName = json['displayName'] ?? "";
     email = json['email'];
     userId = json['user_id'];
-    mobile = json['phone']??"";
-    countryCode = json['country_code']??"";
-    imageUrl = json['display_image_url']??"";
+    mobile = json['phone'] ?? "";
+    countryCode = json['country_code'] ?? "";
+    imageUrl = json['display_image_url'] ?? "";
   }
 
   Map<String, dynamic> toJson() {

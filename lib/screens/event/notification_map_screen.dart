@@ -157,6 +157,11 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
     );
   }
 
+  String get _lastUpdatedString {
+    final DateTime date = widget.notificationData['timestamp'] ?? DateTime.now();
+    return "Last Updated: ${DateFormat('MMM dd, yyyy hh:mm a').format(date)} EDT";
+  }
+
   @override
   void initState() {
     super.initState();
@@ -393,6 +398,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
                     hazardName:
                         widget.notificationData['title'] ?? "Event Hazard",
                     selectedDate: selectedDate!,
+                    lastUpdated: _lastUpdatedString,
                     availableDates: availableDates,
                     onDateChanged: (value) {
                       setState(() {

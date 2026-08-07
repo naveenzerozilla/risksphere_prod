@@ -65,7 +65,7 @@ class CustomTileProvider1 implements TileProvider {
 
   static int _activeRequests = 0;
 
-  static int get _maxConcurrent => Platform.isIOS ? 20 : 24;
+  static int get _maxConcurrent => Platform.isIOS ? 8 : 24;
 
   static final Queue<_TileRequest> _waitingQueue = Queue<_TileRequest>();
   static final Map<String, Tile> _tileCache = {};
@@ -87,7 +87,7 @@ class CustomTileProvider1 implements TileProvider {
       final ioClient = HttpClient()
         ..connectionTimeout = const Duration(seconds: 10)
         ..idleTimeout = const Duration(seconds: 30)
-        ..maxConnectionsPerHost = 20;
+        ..maxConnectionsPerHost = 8;
       return IOClient(ioClient);
     }
     return http.Client();
@@ -151,7 +151,7 @@ class CustomTileProvider1 implements TileProvider {
     _fetchWithRetry(url, x, y, zoom).then((tile) {
       if (!completer.isCompleted) completer.complete(tile);
     }).catchError((e) {
-      debugPrint("Tile Fatal [$zoom/$x/$y] => $e");
+      // debugPrint("Tile Fatal [$zoom/$x/$y] => $e");
       if (!completer.isCompleted) completer.complete(_emptyTile());
     }).whenComplete(() {
       _pendingTiles.remove(url);
@@ -161,9 +161,6 @@ class CustomTileProvider1 implements TileProvider {
   }
 
   void _processQueue() {
-    debugPrint(
-      "Queue=${_waitingQueue.length}, Active=$_activeRequests",
-    );
     while (_waitingQueue.isNotEmpty && _activeRequests < _maxConcurrent) {
       final request = _waitingQueue.removeFirst();
 
@@ -204,8 +201,6 @@ class CustomTileProvider1 implements TileProvider {
       attempt++;
 
       try {
-        final stopwatch = Stopwatch()..start();
-
         final response = await _httpClient.get(
           Uri.parse(url),
           headers: {
@@ -214,16 +209,6 @@ class CustomTileProvider1 implements TileProvider {
           },
         ).timeout(_requestTimeout);
 
-        stopwatch.stop();
-        debugPrint(
-          "Tile [$zoom/$x/$y] "
-              "${stopwatch.elapsedMilliseconds}ms "
-              "Status=${response.statusCode} "
-              "Size=${response.bodyBytes.length ~/ 1024}KB",
-        );
-        debugPrint(
-          "Headers => ${response.headers['content-type']}",
-        );
         if (response.statusCode == 200 &&
             response.bodyBytes.isNotEmpty) {
           final tile = Tile(
@@ -243,9 +228,9 @@ class CustomTileProvider1 implements TileProvider {
           );
         }
       } catch (e) {
-        debugPrint(
-          "Tile error [$zoom/$x/$y] => $e",
-        );
+        // debugPrint(
+        //   "Tile error [$zoom/$x/$y] => $e",
+        // );
 
         if (attempt < _maxRetries) {
           await Future.delayed(
@@ -261,7 +246,7 @@ class CustomTileProvider1 implements TileProvider {
   void _addToCache(String url, Tile tile) {
     _tileCache[url] = tile;
 
-    if (_tileCache.length > 20000) {
+    if (_tileCache.length > 1000) {
       _tileCache.remove(_tileCache.keys.first);
     }
   }

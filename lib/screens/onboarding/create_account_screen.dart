@@ -452,29 +452,27 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       return;
                                     }
 
-                                    // ✅ CHECK 3: Validate form fields
                                     if (!_formKey.currentState!.validate()) {
                                       return;
                                     }
 
-                                    if (_selectedRoles.isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Please select at least one role to continue.',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                      return; // 🔥 STOP HERE - DO NOT PROCEED
-                                    }
+                                    // if (_selectedRoles.isEmpty) {
+                                    //   ScaffoldMessenger.of(context)
+                                    //       .showSnackBar(
+                                    //     SnackBar(
+                                    //       content: Text(
+                                    //         'Please select at least one role to continue.',
+                                    //         style: TextStyle(
+                                    //             color: Colors.white,
+                                    //             fontWeight: FontWeight.bold),
+                                    //       ),
+                                    //       backgroundColor: Colors.red,
+                                    //       duration: Duration(seconds: 2),
+                                    //     ),
+                                    //   );
+                                    //   return; // 🔥 STOP HERE - DO NOT PROCEED
+                                    // }
 
-                                    // ✅ ALL VALIDATIONS PASSED - NOW PROCEED WITH SIGNUP
                                     if (authNotifier.isNewUser) {
                                       String result = await authNotifier
                                           .signUpIndividualWithGoogle(
@@ -1203,41 +1201,44 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: CustomSpacing.two),
         Consumer<AuthNotifier>(builder: (context, authNotifier, child) {
           return SocialMediaButton(
-            onPressed: () async {
-              try {
-                await authNotifier.signInWithGoogle(context: context);
+            onPressed: authNotifier.isSigningIn
+                ? null
+                : () async {
+                    try {
+                      await authNotifier.signInWithGoogle(context: context);
 
-                if (authNotifier.user != null) {
-                  // Fetch user data only if user exists
-                  Provider.of<UserProfileProvider>(context, listen: false)
-                      .getAllUserData(context, '', '');
+                      if (authNotifier.user != null) {
+                        // Fetch user data only if user exists
+                        Provider.of<UserProfileProvider>(context, listen: false)
+                            .getAllUserData(context, '', '');
 
-                  // Navigate to Dashboard if not a new user
-                  if (!authNotifier.isNewUser) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DashboardScreen(),
-                      ),
-                    );
-                  }
-                } else {
-                  // Handle sign-in failure
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content:
-                            Text("Google sign-in failed. Please try again.")),
-                  );
-                }
-              } catch (e) {
-                // Catch any errors during sign-in
-                debugPrint("Error during Google sign-in: $e");
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text("An error occurred. Please try again.")),
-                );
-              }
-            },
+                        // Navigate to Dashboard if not a new user
+                        if (!authNotifier.isNewUser) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DashboardScreen(),
+                            ),
+                          );
+                        }
+                      } else {
+                        // Handle sign-in failure
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content:
+                                  Text("Google sign-in failed. Please try again.")),
+                        );
+                      }
+                    } catch (e) {
+                      // Catch any errors during sign-in
+                      debugPrint("Error during Google sign-in: $e");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text("An error occurred. Please try again.")),
+                      );
+                    }
+                  },
+            isLoading: authNotifier.isSigningInGoogle,
             buttonText:
                 LanguageService.getTranslated(context, "login_googlebutton"),
             iconPath: 'assets/images/googleLogo.svg',
@@ -1250,12 +1251,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Consumer<AuthNotifier>(
           builder: (context, authNotifier, child) {
             return SocialMediaButton(
-              onPressed: () async {
-                await authNotifier.signInWithMicrosoft(context: context);
-                print(authNotifier.user.toString());
-                print(authNotifier.userProfile.toString());
-                print(authNotifier.isNewUser.toString());
-              },
+              onPressed: authNotifier.isSigningIn
+                  ? null
+                  : () async {
+                      await authNotifier.signInWithMicrosoft(context: context);
+                      print(authNotifier.user.toString());
+                      print(authNotifier.userProfile.toString());
+                      print(authNotifier.isNewUser.toString());
+                    },
+              isLoading: authNotifier.isSigningInMicrosoft,
               buttonText: LanguageService.getTranslated(
                   context, "login_microsoft_button"),
               iconPath: 'assets/images/microsoftLogo.svg',
@@ -1769,53 +1773,107 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
         SizedBox(height: CustomSpacing.four),
         // Text(context.read<AuthNotifier>().roles.length.toString()),
-        CompositedTransformTarget(
-          link: _layerLink,
-          child: GestureDetector(
-            onTap: () => _toggleDropdown(context),
-            child: Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
+        Consumer<AuthNotifier>(
+          builder: (context, authNotifier, child) {
+            final rolesList = authNotifier.roles;
+
+            if (rolesList.length == 1) {
+              final singleRole = rolesList.first;
+              final alreadySelected = _selectedRoles.any((r) => r.id == singleRole.id);
+              if (!alreadySelected) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _selectedRoles.isEmpty) {
+                    setState(() {
+                      _selectedRoles.add(Categories(
+                        isForIndividual: singleRole.isForIndividual,
+                        isApplicableForTrial: singleRole.isApplicableForTrial,
+                        role: singleRole.role,
+                        name: singleRole.name,
+                        isMultipleRoleEnabled: singleRole.isMultipleRoleEnabled,
+                        id: singleRole.id,
+                      ));
+                    });
+                  }
+                });
+              }
+            }
+
+            Roles? currentValue;
+            if (rolesList.length == 1) {
+              currentValue = rolesList.first;
+            } else if (_selectedRoles.isNotEmpty) {
+              final match = rolesList.where((role) => _selectedRoles.any((selected) => selected.id == role.id));
+              if (match.isNotEmpty) {
+                currentValue = match.first;
+              }
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<Roles>(
+                  value: currentValue,
+                  items: rolesList.map((Roles role) {
+                    return DropdownMenuItem<Roles>(
+                      value: role,
+                      child: Text(
+                        role.name ?? '',
+                        style: typography.Subtitle1.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: rolesList.length <= 1
+                      ? null
+                      : (Roles? newRole) {
+                          if (newRole != null) {
+                            setState(() {
+                              final cat = Categories(
+                                isForIndividual: newRole.isForIndividual,
+                                isApplicableForTrial: newRole.isApplicableForTrial,
+                                role: newRole.role,
+                                name: newRole.name,
+                                isMultipleRoleEnabled: newRole.isMultipleRoleEnabled,
+                                id: newRole.id,
+                              );
+                              if (newRole.isMultipleRoleEnabled == true) {
+                                if (!_selectedRoles.any((r) => r.id == newRole.id)) {
+                                  _selectedRoles.add(cat);
+                                }
+                              } else {
+                                _selectedRoles = [cat];
+                              }
+                            });
+                          }
+                        },
+                  decoration: InputDecoration(
+                    labelText: LanguageService.getTranslated(
+                        context, "usermanagement_roles_label"),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                if (_selectedRoles.isNotEmpty && rolesList.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: _selectedRoles.isEmpty
-                            ? [
-                                Text(
-                                  "Select Roles",
-                                  style: TextStyle(color: Colors.grey),
-                                )
-                              ]
-                            : _selectedRoles
-                                .map(
-                                  (role) => Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: Chip(
-                                      label: Text(role.name ?? ""),
-                                      onDeleted: () => _removeRole(role),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                        children: _selectedRoles.map((value) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Chip(
+                              label: Text(value.name!),
+                              onDeleted: () => _removeRole(value),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
-                  Icon(
-                    _isDropdownOpen
-                        ? Icons.arrow_drop_up
-                        : Icons.arrow_drop_down,
-                  ),
-                ],
-              ),
-            ),
-          ),
+              ],
+            );
+          },
         ),
 
         // Stack(
@@ -2671,69 +2729,107 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ],
         ),
         SizedBox(height: CustomSpacing.two),
-        Stack(
-          children: [
-            TextField(
-              readOnly: true,
-              controller: _textEditingController,
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  useSafeArea: true,
-                  isScrollControlled: true,
-                  builder: (BuildContext context) {
-                    return RolesBottomSheet(
-                      showCorporateSwitch: false,
-                      options: context.read<AuthNotifier>().roles,
-                      selectedRoles: _selectedRoles,
-                      addChip: _addChip,
-                      removeChip: _removeChip,
-                      removeAllChips: _removeAllChips,
-                      selectedOption:
-                          _selectedOption ?? SignUpOptions.individual,
-                      onOptionChanged: (SignUpOptions option) {
-                        setState(() {
-                          _selectedOption = option;
-                        });
-                      },
-                    );
-                  },
-                );
-              },
-              decoration: InputDecoration(
-                labelText: LanguageService.getTranslated(
-                    context, "usermanagement_roles_label"),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                hintText: _selectedRoles.isEmpty
-                    ? LanguageService.getTranslated(
-                        context, "usermanagement_cuser_roles_placeholder")
-                    : null,
-                contentPadding: const EdgeInsets.fromLTRB(12, 40, 48, 12),
-                border: const OutlineInputBorder(),
-                suffixIcon: const Icon(Icons.arrow_drop_down),
-              ),
-            ),
-            if (_selectedRoles.isNotEmpty)
-              Positioned(
-                top: 18,
-                left: 12,
-                right: 48,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _selectedRoles.map((value) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Chip(
-                          label: Text(value.name!),
-                          onDeleted: () => _removeChip(value),
+        Consumer<AuthNotifier>(
+          builder: (context, authNotifier, child) {
+            final rolesList = authNotifier.roles;
+
+            if (rolesList.length == 1) {
+              final singleRole = rolesList.first;
+              final alreadySelected = _selectedRoles.any((r) => r.id == singleRole.id);
+              if (!alreadySelected) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _selectedRoles.isEmpty) {
+                    setState(() {
+                      _selectedRoles.add(Categories(
+                        isForIndividual: singleRole.isForIndividual,
+                        isApplicableForTrial: singleRole.isApplicableForTrial,
+                        role: singleRole.role,
+                        name: singleRole.name,
+                        isMultipleRoleEnabled: singleRole.isMultipleRoleEnabled,
+                        id: singleRole.id,
+                      ));
+                    });
+                  }
+                });
+              }
+            }
+
+            Roles? currentValue;
+            if (rolesList.length == 1) {
+              currentValue = rolesList.first;
+            } else if (_selectedRoles.isNotEmpty) {
+              final match = rolesList.where((role) => _selectedRoles.any((selected) => selected.id == role.id));
+              if (match.isNotEmpty) {
+                currentValue = match.first;
+              }
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<Roles>(
+                  value: currentValue,
+                  items: rolesList.map((Roles role) {
+                    return DropdownMenuItem<Roles>(
+                      value: role,
+                      child: Text(
+                        role.name ?? '',
+                        style: typography.Subtitle1.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                      );
-                    }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: rolesList.length <= 1
+                      ? null
+                      : (Roles? newRole) {
+                          if (newRole != null) {
+                            setState(() {
+                              final cat = Categories(
+                                isForIndividual: newRole.isForIndividual,
+                                isApplicableForTrial: newRole.isApplicableForTrial,
+                                role: newRole.role,
+                                name: newRole.name,
+                                isMultipleRoleEnabled: newRole.isMultipleRoleEnabled,
+                                id: newRole.id,
+                              );
+                              if (newRole.isMultipleRoleEnabled == true) {
+                                if (!_selectedRoles.any((r) => r.id == newRole.id)) {
+                                  _selectedRoles.add(cat);
+                                }
+                              } else {
+                                _selectedRoles = [cat];
+                              }
+                            });
+                          }
+                        },
+                  decoration: InputDecoration(
+                    labelText: LanguageService.getTranslated(
+                        context, "usermanagement_roles_label"),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
-              ),
-          ],
+                if (_selectedRoles.isNotEmpty && rolesList.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _selectedRoles.map((value) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Chip(
+                              label: Text(value.name!),
+                              onDeleted: () => _removeChip(value),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
 
         // Stack(
@@ -2869,7 +2965,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     // 1️⃣ Match by ID
     try {
       return types.firstWhere((t) => t.id == selected.companyTypeId);
-        } catch (_) {}
+    } catch (_) {}
 
     // 2️⃣ Exact type or name match
     for (var t in types) {
@@ -3478,7 +3574,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             labelText: 'Select Role',
                             border: OutlineInputBorder(),
                           ),
-                          initialValue: selectedRole, // <-- your selected variable
+                          initialValue: selectedRole,
+                          // <-- your selected variable
                           items: roles.map((role) {
                             return DropdownMenuItem<Roles>(
                               value: role,

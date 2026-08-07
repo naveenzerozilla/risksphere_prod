@@ -506,57 +506,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
             drawer: CustomDrawer(),
-            floatingActionButton: Padding(
-              padding: const EdgeInsets.only(bottom: 50),
-              child: SafeArea(
-                child: GestureDetector(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => ChatbotBottomSheet(
-                        locationId: locationProfileProvider
-                            .locationProfile?.finalAddress?.locationId
-                            .toString(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Need Help?",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        SizedBox(width: 8),
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: AppColors.primaryMain,
-                          child: Icon(Icons.smart_toy,
-                              color: Colors.white, size: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+            // floatingActionButton: Padding(
+            //   padding: const EdgeInsets.only(bottom: 50),
+            //   child: SafeArea(
+            //     child: GestureDetector(
+            //       onTap: () {
+            //         showModalBottomSheet(
+            //           context: context,
+            //           isScrollControlled: true,
+            //           useSafeArea: true,
+            //           backgroundColor: Colors.transparent,
+            //           builder: (_) => ChatbotBottomSheet(
+            //             locationId: locationProfileProvider
+            //                 .locationProfile?.finalAddress?.locationId
+            //                 .toString(),
+            //           ),
+            //         );
+            //       },
+            //       child: Container(
+            //         padding: const EdgeInsets.symmetric(
+            //             horizontal: 10, vertical: 10),
+            //         decoration: BoxDecoration(
+            //           color: Colors.black87,
+            //           borderRadius: BorderRadius.circular(25),
+            //           boxShadow: const [
+            //             BoxShadow(
+            //               color: Colors.black26,
+            //               blurRadius: 6,
+            //             ),
+            //           ],
+            //         ),
+            //         child: Row(
+            //           mainAxisSize: MainAxisSize.min,
+            //           children: [
+            //             Text(
+            //               "Need Help?",
+            //               style: TextStyle(color: Colors.white),
+            //             ),
+            //             SizedBox(width: 8),
+            //             CircleAvatar(
+            //               radius: 16,
+            //               backgroundColor: AppColors.primaryMain,
+            //               child: Icon(Icons.smart_toy,
+            //                   color: Colors.white, size: 18),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
             body: RefreshIndicator(
               onRefresh: _handleRefresh,
               child: _showFirstTimeLoader

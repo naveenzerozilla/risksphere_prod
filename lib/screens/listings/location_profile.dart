@@ -1846,55 +1846,55 @@ class _LocationProfileState extends State<LocationProfile>
                       child: _locationProfileBody(),
                     ),
                   if (_selectedMarker != null) _buildCustomInfoWindow(),
-                  Positioned(
-                    bottom: 70, // adjust above SpeedDial
-                    right: 16,
-                    child: GestureDetector(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => _ChatbotBottomSheet(
-                            locationId: locationProfileProvider
-                                .locationProfile?.finalAddress?.locationId
-                                .toString(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "Need Help?",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            SizedBox(width: 8),
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: AppColors.primaryMain,
-                              child: Icon(Icons.smart_toy,
-                                  color: Colors.white, size: 18),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Positioned(
+                  //   bottom: 70, // adjust above SpeedDial
+                  //   right: 16,
+                  //   child: GestureDetector(
+                  //     onTap: () {
+                  //       showModalBottomSheet(
+                  //         context: context,
+                  //         isScrollControlled: true,
+                  //         useSafeArea: true,
+                  //         backgroundColor: Colors.transparent,
+                  //         builder: (_) => _ChatbotBottomSheet(
+                  //           locationId: locationProfileProvider
+                  //               .locationProfile?.finalAddress?.locationId
+                  //               .toString(),
+                  //         ),
+                  //       );
+                  //     },
+                  //     child: Container(
+                  //       padding:
+                  //           EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  //       decoration: BoxDecoration(
+                  //         color: Colors.black87,
+                  //         borderRadius: BorderRadius.circular(25),
+                  //         boxShadow: [
+                  //           BoxShadow(
+                  //             color: Colors.black26,
+                  //             blurRadius: 6,
+                  //           ),
+                  //         ],
+                  //       ),
+                  //       child: Row(
+                  //         mainAxisSize: MainAxisSize.min,
+                  //         children: [
+                  //           Text(
+                  //             "Need Help?",
+                  //             style: TextStyle(color: Colors.white),
+                  //           ),
+                  //           SizedBox(width: 8),
+                  //           CircleAvatar(
+                  //             radius: 16,
+                  //             backgroundColor: AppColors.primaryMain,
+                  //             child: Icon(Icons.smart_toy,
+                  //                 color: Colors.white, size: 18),
+                  //           )
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               );
             }),
@@ -2224,6 +2224,14 @@ class _LocationProfileState extends State<LocationProfile>
                                 forceRefresh:
                                     true, // forces reload every time tab is clicked
                               );
+                            }
+                          }
+
+                          /// ACTIVITY LOG TAB
+                          if (index == 2) {
+                            final locationId = provider.locationProfile?.locationId;
+                            if (locationId != null && locationId.isNotEmpty) {
+                              provider.fetchLocationActivityLogs(locationId);
                             }
                           }
 
@@ -3802,8 +3810,23 @@ class _LocationProfileState extends State<LocationProfile>
       ),
     );
   }
-
   Widget _buildGoogleImage(MyLocation? profile) {
+    final lat = profile?.finalAddress?.latitude ?? 0.0;
+    final lng = profile?.finalAddress?.longitude ?? 0.0;
+
+    final apiKey = Env.get('GOOGLE_MAPS_API_KEY')
+        .trim()
+        .replaceAll("'", "")
+        .replaceAll('"', "");
+
+    final imageUrl =
+        "https://maps.googleapis.com/maps/api/streetview"
+        "?size=600x300"
+        "&location=$lat,$lng"
+        "&key=$apiKey";
+
+    // debugPrint("Street View URL: $imageUrl");
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: ClipRRect(
@@ -3813,31 +3836,36 @@ class _LocationProfileState extends State<LocationProfile>
             /// IMAGE
             Positioned.fill(
               child: CachedNetworkImage(
-                imageUrl:
-                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${profile?.finalAddress?.latitude ?? 0},${profile?.finalAddress?.longitude ?? 0}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
+                imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                errorWidget: (context, url, error) =>
-                    const Center(child: Icon(Icons.location_on, size: 40)),
+                errorWidget: (context, url, error) {
+                  debugPrint("Street View Error: $error");
+                  return const Center(
+                    child: Icon(Icons.location_on, size: 40),
+                  );
+                },
               ),
             ),
 
-            /// GOOGLE TEXT OVERLAY (FIXED)
+            /// GOOGLE TEXT OVERLAY
             Positioned(
               left: 8,
               right: 200,
               bottom: 8,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Text(
                       '@',
                       style: TextStyle(
@@ -3865,7 +3893,6 @@ class _LocationProfileState extends State<LocationProfile>
       ),
     );
   }
-
   Widget _deleteIcon({required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,

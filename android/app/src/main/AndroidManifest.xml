@@ -28,7 +28,7 @@
         android:label="RiskSphere">
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-2989895610511269~9292987573"/>
+            android:value="${admobAppId}"/>
 
         <meta-data
             android:name="com.google.android.gms.auth.api.signin.v2.DEFAULT_SIGN_IN"
@@ -42,7 +42,7 @@
         <!-- Google Maps API -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI" />
+            android:value="${mapsApiKey}" />
         <meta-data
             android:name="com.google.android.gms.wallet.api.enabled"
             android:value="true" />

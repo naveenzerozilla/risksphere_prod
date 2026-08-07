@@ -24,14 +24,14 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
   int _currentPage = 1;
   int _totalRecords = 0;
   final int _pageSize = 20;
-  DateTime? _lastFetchTime; // ✅ cache timestamp
+  DateTime? _lastFetchTime;
 
   bool get _hasMore => _giftList.length < _totalRecords;
 
   String _selectedStatus = 'All Status';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  Timer? _debounce; // ✅ debounce timer
+  Timer? _debounce;
 
   final List<String> _statusOptions = [
     'All Status',
@@ -44,7 +44,7 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchGifts(); // ✅ direct call — no addPostFrameCallback delay
+    _fetchGifts();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
   }
@@ -283,7 +283,6 @@ class _LocationManagementScreenState extends State<LocationManagementScreen> {
     );
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':

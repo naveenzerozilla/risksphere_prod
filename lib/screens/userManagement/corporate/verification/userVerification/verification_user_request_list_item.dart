@@ -247,7 +247,6 @@ class VerificationUserRequestsListItem extends StatelessWidget {
                       SizedBox(width: CustomSpacing.two),
                       Text(
                         '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                        //'Mar 7, 2024 23:26',
                           style: typography.Caption),
                     ],
                   ),

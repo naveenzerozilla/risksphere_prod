@@ -19,7 +19,7 @@ class DefaultFirebaseOptions {
     if (kIsWeb) {
       throw UnsupportedError(
         'DefaultFirebaseOptions have not been configured for web - '
-            'you can reconfigure this by running the FlutterFire CLI again.',
+        'you can reconfigure this by running the FlutterFire CLI again.',
       );
     }
     switch (defaultTargetPlatform) {
@@ -30,14 +30,14 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -47,82 +47,22 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
-    appId: '1:857135835532:android:7dfee0b61d1da828c84ea9',
-    messagingSenderId: '857135835532',
-    projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
+    apiKey: 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw',
+    appId: '1:733517635954:android:24b7f1816d68861d3e7deb',
+    messagingSenderId: '733517635954',
+    projectId: 'risksphere-qa',
+    storageBucket: 'risksphere-qa.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-    appId: '1:857135835532:ios:dce11826e3313f03c84ea9',
-    messagingSenderId: '857135835532',
-    projectId: 'project-green-r5-1-qa',
-    storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-    androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-    iosClientId: '857135835532-al09g5oa31ue7i0ikttr6r1m97t9tep0.apps.googleusercontent.com',
+    apiKey: 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw',
+    appId: '1:733517635954:ios:a414de0cd681c5353e7deb',
+    messagingSenderId: '733517635954',
+    projectId: 'risksphere-qa',
+    storageBucket: 'risksphere-qa.firebasestorage.app',
+    iosClientId:
+        '733517635954-u4fmh34dev6cf28ak18hp573djle1h0n.apps.googleusercontent.com',
     iosBundleId: 'com.sonofthunder.risksphere',
   );
-  // static const FirebaseOptions android = FirebaseOptions(
-  //   apiKey: 'AIzaSyAde3xjkTNXUWAHi-9NGwSrmncgbDkmWqc',
-  //   appId: '1:857135835532:android:7dfee0b61d1da828c84ea9',
-  //   messagingSenderId: '857135835532',
-  //   projectId: 'project-green-r5-1-qa',
-  //   storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-  // );
-  //
-  // /// Config for package: com.example.green
-  //
-  // static const FirebaseOptions ios = FirebaseOptions(
-  //   apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-  //   appId: '1:857135835532:ios:1e1a91db9912a20fc84ea9',
-  //   messagingSenderId: '857135835532',
-  //   projectId: 'project-green-r5-1-qa',
-  //   storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-  //   androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-  //   iosClientId: '857135835532-518sk0mc0br8kaqpifp2f1up65pp0o71.apps.googleusercontent.com',
-  //   iosBundleId: 'com.risksphere.green',
-  // );
-
-// static const FirebaseOptions ios = FirebaseOptions(
-//   apiKey: 'AIzaSyCulWY0eINJsX03kQ2Eywdv3Ow1wlh8Ryw',
-//   appId: '1:857135835532:ios:646781baac94f7c1c84ea9',
-//   messagingSenderId: '857135835532',
-//   projectId: 'project-green-r5-1-qa',
-//   storageBucket: 'project-green-r5-1-qa.firebasestorage.app',
-//   androidClientId: '857135835532-1uml0fpig7bf2b5ne4oirkkpafc93gdt.apps.googleusercontent.com',
-//   iosClientId: '857135835532-20c2hnu4kouijlm2a5l6p8ovce37tioc.apps.googleusercontent.com',
-//   iosBundleId: 'com.zerozilla.green',
-// );
-
-  /// Config for package: com.risksphere.green.qa
-// static const FirebaseOptions android = FirebaseOptions(
-//   apiKey: 'AIzaSyBVuZ3q3ztDvt6lSfwtmLzttJmI6WKxTy4',
-//   appId: '1:37861143894:android:3f15059cd05d48e1bd12f7',
-//   messagingSenderId: '37861143894',
-//   projectId: 'project-green-f4d78',
-//   databaseURL: 'https://project-green-f4d78-default-rtdb.firebaseio.com',
-//   storageBucket: 'project-green-f4d78.firebasestorage.app',
-// );
-//
-// static const FirebaseOptions ios = FirebaseOptions(
-//   apiKey: 'AIzaSyAMSQEI5O6EXj1SgdU4YA25KIaEeu5uv-o',
-//   appId: '1:37861143894:ios:5b6ce902afab71b5bd12f7',
-//   messagingSenderId: '37861143894',
-//   projectId: 'project-green-f4d78',
-//   databaseURL: 'https://project-green-f4d78-default-rtdb.firebaseio.com',
-//   storageBucket: 'project-green-f4d78.firebasestorage.app',
-//   androidClientId: '37861143894-n9cr0a2g3d38sv2uothhaffhl43dhgda.apps.googleusercontent.com',
-//   iosClientId: '37861143894-bjhuqbmhiup2i290no49ra2d4ld6qdfb.apps.googleusercontent.com',
-//   iosBundleId: 'com.zerozilla.green',
-// );
-
-// apiKey: "AIzaSyCYkVSSfxlq0G0URowvvyfq7Pn1Af_f2YA",
-// authDomain: "project-green-r5-1-qa.firebaseapp.com",
-// projectId: "project-green-r5-1-qa",
-// storageBucket: "project-green-r5-1-qa.firebasestorage.app",
-// messagingSenderId: "857135835532",
-// appId: "1:857135835532:web:921d30d6259ce18ac84ea9"
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyCWLlgn4SYw-8aHdPLfeylQ78AsUqyCvv4',

@@ -113,7 +113,6 @@ class _LinkParameterPageState extends State<LinkParameterPage>
                       ),
                     ),
 
-                    /// 🔹 Title
                     const Text(
                       'Confirm Parameter Linking',
                       style: TextStyle(

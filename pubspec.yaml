@@ -1,7 +1,7 @@
 name: RiskSphere
 description: "A new Flutter project."
 publish_to: 'none'
-version: 9.4.2+457
+version: 10.1.1+101
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
@@ -131,6 +131,7 @@ flutter:
     - assets/translations/
     - assets/proto/
     - assets/lottie/
+    - .env
 
 
 

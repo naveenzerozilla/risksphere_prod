@@ -263,13 +263,11 @@ class _MyLocationCardState extends State<MyLocationCard> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-               
                 (showViewHazard || showUnlockHazard)
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-
                           InkWell(
                             borderRadius: BorderRadius.circular(20),
                             onTap: () {
@@ -294,7 +292,7 @@ class _MyLocationCardState extends State<MyLocationCard> {
                               } else if (showUnlockHazard) {
                                 showInsufficientCreditsBottomSheet(
                                   context,
-                               locationName: widget.address,
+                                  locationName: widget.address,
                                   hasHazardHubCount: widget.hasHazardHubCount,
                                   selectedLocationIds: [widget.locationId],
                                   onConfirmStart: () {
@@ -330,7 +328,6 @@ class _MyLocationCardState extends State<MyLocationCard> {
                                   //   widget.onNavigateBack?.call();
                                   // },
                                 );
-
                               }
                             },
                             child: Container(
@@ -490,8 +487,24 @@ class _MyLocationCardState extends State<MyLocationCard> {
     super.dispose();
   }
 
-  Widget _buildTopRow(BuildContext context, List<String> chipLabels,
-      bool isSelected, String image) {
+  Widget _buildTopRow(
+    BuildContext context,
+    List<String> chipLabels,
+    bool isSelected,
+    String image,
+  ) {
+    final apiKey = Env.get('GOOGLE_MAPS_API_KEY')
+        .trim()
+        .replaceAll("'", "")
+        .replaceAll('"', "");
+
+    final streetViewUrl = "https://maps.googleapis.com/maps/api/streetview"
+        "?size=600x300"
+        "&location=${widget.lat},${widget.long}"
+        "&key=$apiKey";
+
+    // debugPrint("Street View URL: $streetViewUrl");
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -522,15 +535,23 @@ class _MyLocationCardState extends State<MyLocationCard> {
                         borderRadius: BorderRadius.circular(99),
                         child: (widget.geocodingScore == 5)
                             ? CachedNetworkImage(
-                                imageUrl:
-                                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${widget.lat},${widget.long}&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
+                                imageUrl: streetViewUrl,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    CircularProgressIndicator(strokeWidth: 2),
-                                errorWidget: (context, url, error) =>
-                                    Icon(Icons.error),
+                                placeholder: (context, url) => const Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) {
+                                  debugPrint("Street View Error: $error");
+                                  return const Icon(Icons.location_on,
+                                      color: Colors.grey);
+                                },
                               )
                             : image.isNotEmpty
                                 ? CachedNetworkImage(
@@ -2385,7 +2406,7 @@ void showInsufficientCreditsBottomSheet(
                     Text(
                       insufficientCredits
                           ? "To continue, you can purchase more credits."
-                      :"This will consume $length HazardHub credit. You have $hasHazardHubCount credits remaining.",
+                          : "This will consume $length HazardHub credit. You have $hasHazardHubCount credits remaining.",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -2553,7 +2574,8 @@ void showInsufficientCreditsBottomSheet(
                                               .toList(),
                                         );
 
-                                        Navigator.pop(context); // close bottom sheet
+                                        Navigator.pop(
+                                            context); // close bottom sheet
 
                                         await Future.delayed(
                                           const Duration(milliseconds: 300),

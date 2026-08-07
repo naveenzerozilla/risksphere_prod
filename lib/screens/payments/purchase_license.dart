@@ -434,56 +434,7 @@ class _PurchaseLicensePageState extends State<PurchaseLicensePage>
                               );
                   },
                 ),
-                Positioned(
-                  bottom: 80,
-                  right: 16,
-                  child: GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => _ChatbotBottomSheet(),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
-                            "Need Help?",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          SizedBox(width: 8),
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: AppColors.primaryMain,
-                            child: Icon(
-                              Icons.smart_toy,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+
               ],
             ),
           ),

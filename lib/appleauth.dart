@@ -8,6 +8,8 @@ import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AppleSignInButton extends StatelessWidget {
@@ -36,40 +38,45 @@ class AppleSignInButton extends StatelessWidget {
   }
 
   Future<void> _signInWithApple(BuildContext context) async {
+    final authNotifier = Provider.of<AuthNotifier>(context, listen: false);
     try {
-      final rawNonce = _generateNonce();
-      final hashedNonce = _sha256ofString(rawNonce);
+      authNotifier.isSigningInApple = true;
+      UserCredential userCredential;
 
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: const [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: hashedNonce,
-        webAuthenticationOptions: Platform.isIOS
-            ? null
-            : WebAuthenticationOptions(
-          clientId: serviceId,
-          redirectUri: Uri.parse(
-            'https://project-green-prod.firebaseapp.com/__/auth/handler',
-            // 'com.sonofthunder.risksphere://apple-callback',
-          ),
-        ),
-      );
+      if (Platform.isAndroid) {
+        // Use Firebase native Apple provider to handle redirects and session states automatically
+        final appleProvider = OAuthProvider('apple.com');
+        appleProvider.addScope('email');
+        appleProvider.addScope('name');
+        
+        userCredential = await FirebaseAuth.instance.signInWithProvider(appleProvider);
+      } else {
+        // Native Apple login sheet for iOS
+        final rawNonce = _generateNonce();
+        final hashedNonce = _sha256ofString(rawNonce);
 
-      if (appleCredential.identityToken == null) {
-        throw Exception('Apple identity token is missing');
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: const [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: hashedNonce,
+        );
+
+        if (appleCredential.identityToken == null) {
+          throw Exception('Apple identity token is missing');
+        }
+
+        final oauthCredential = OAuthProvider('apple.com').credential(
+          idToken: appleCredential.identityToken,
+          rawNonce: rawNonce,
+          accessToken: appleCredential.authorizationCode,
+        );
+
+        userCredential = await FirebaseAuth.instance.signInWithCredential(
+          oauthCredential,
+        );
       }
-
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-        accessToken: appleCredential.authorizationCode,
-      );
-
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        oauthCredential,
-      );
 
       final user = userCredential.user;
 
@@ -114,28 +121,44 @@ class AppleSignInButton extends StatelessWidget {
     } catch (e) {
       debugPrint('Unknown Error: $e');
       onError?.call(Exception(e.toString()));
+    } finally {
+      authNotifier.isSigningInApple = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.grey),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Consumer<AuthNotifier>(
+      builder: (context, authNotifier, child) {
+        final isLoading = authNotifier.isSigningInApple;
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.grey),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: isLoading ? null : () => _signInWithApple(context),
+            icon: isLoading
+                ? Container(
+                    width: 20,
+                    height: 20,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.apple, color: Colors.white),
+            label: Text(
+              isLoading ? "Connecting..." : "Continue with Apple",
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
           ),
-        ),
-        onPressed: () => _signInWithApple(context),
-        icon: const Icon(Icons.apple, color: Colors.white),
-        label: const Text(
-          "Continue with Apple",
-          style: TextStyle(color: Colors.white, fontSize: 16),
-        ),
-      ),
+        );
+      },
     );
   }
 }

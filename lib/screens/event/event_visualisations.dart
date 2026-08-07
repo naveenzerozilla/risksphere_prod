@@ -1,4 +1,5 @@
 import 'package:RiskSphere/screens/event/widgets/hazard_info_section.dart';
+import 'package:RiskSphere/main.dart' show routeObserver;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../providers/custom_tile_providers.dart';
@@ -11,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
+import '../../utils/env.dart';
 
 class EventVisulisationScreen extends StatefulWidget {
   final Map<String, dynamic> notificationData;
@@ -22,10 +24,10 @@ class EventVisulisationScreen extends StatefulWidget {
       _EventVisulisationScreenState();
 }
 
-class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
+class _EventVisulisationScreenState extends State<EventVisulisationScreen>
+    with RouteAware {
   int _currentPage = 0;
   bool _showGraph = false;
-
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   Set<Polygon> _polygons = {};
@@ -35,62 +37,142 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
   bool isMapView = true;
   String? _currentMapUrl;
   Set<TileOverlay> _tileOverlays = {};
+  String _lastUpdatedString = "N/A";
+
+  static final http.Client _rawHttpClient = http.Client();
 
   @override
   void initState() {
     super.initState();
+
     _initialize();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    _initialize();
+  }
+
+  @override
+  void didPush() {
+    super.didPush();
+  }
+
   Future<void> _initialize() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
-    // await _fetchEventInfo();
+    try {
+      // Only load GeoJSON storm data — eventInfo API is not called.
+      await _loadStormData().timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          print("===== INITIALIZE TIMED OUT — forcing loading=false =====");
+        },
+      );
+    } catch (e) {
+      print("===== INITIALIZE ERROR: $e =====");
+    } finally {
+      // Always unblock the spinner — no matter what happened above
+      if (mounted) setState(() => _isLoading = false);
+      print("===== INITIALIZE END =====");
+    }
+  }
 
-    await loadStormGeoJson();
+  Future<void> _loadStormData() async {
+    try {
+      final dynamic rawUrls = widget.notificationData['frontendUrls'];
 
-    setState(() => _isLoading = false);
+      FrontendUrls? parsedUrls;
+      if (rawUrls is FrontendUrls) {
+        parsedUrls = rawUrls;
+      } else if (rawUrls is Map<String, dynamic>) {
+        parsedUrls = FrontendUrls.fromJson(rawUrls);
+      } else if (rawUrls is String) {
+        try {
+          parsedUrls = FrontendUrls.fromJson(jsonDecode(rawUrls));
+        } catch (e) {
+          debugPrint('Error parsing frontendUrls JSON: $e');
+        }
+      }
+
+      if (parsedUrls == null) {
+        debugPrint('No frontendUrls found in notificationData');
+        return;
+      }
+
+      String _toProxyUrl(String? url) {
+        if (url == null || url.isEmpty) return '';
+
+        if (url.contains('risksphere.ai/api/geojson/proxy')) {
+          final uri = Uri.tryParse(url);
+          final inner = uri?.queryParameters['url'];
+          if (inner != null && inner.isNotEmpty) {
+            return 'https://app.risksphere.ai/api/geojson/proxy?url=${Uri.encodeComponent(inner)}';
+          }
+          return url;
+        }
+        return 'https://app.risksphere.ai/api/geojson/proxy?url=${Uri.encodeComponent(url)}';
+      }
+
+      final resolvedUrls = FrontendUrls(
+        stormTrackGeojson: _toProxyUrl(parsedUrls.stormTrackGeojson),
+        stormForecastPointsGeojson:
+            _toProxyUrl(parsedUrls.stormForecastPointsGeojson),
+        stormSwathGeojson: _toProxyUrl(parsedUrls.stormSwathGeojson),
+        uiDataGeojson: _toProxyUrl(parsedUrls.uiDataGeojson),
+      );
+
+      await loadStormGeoJson(resolvedUrls);
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   Future<String> _getLocalFileContent(String filename, String url) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$filename');
+      final response = await _rawHttpClient
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
 
-      if (await file.exists()) {
-        print("Loading $filename from local cache...");
-        return await file.readAsString();
-      }
-
-      print("Downloading $filename from remote URL...");
-      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        await file.writeAsString(response.body);
         return response.body;
       } else {
-        throw Exception("Failed to download $filename");
+        throw Exception(
+            "Failed to download $filename: Status ${response.statusCode}");
       }
     } catch (e) {
-      print("Error in local cache for $filename: $e");
-      final response = await http.get(Uri.parse(url));
-      return response.body;
+      print("Error in download for $filename: $e");
+      rethrow;
     }
   }
 
-  Future<void> loadStormGeoJson() async {
+  Future<void> loadStormGeoJson(FrontendUrls urls) async {
+    print("===== loadStormGeoJson =====");
     try {
-      final dynamic rawUrls = widget.notificationData['frontendUrls'];
-      FrontendUrls? urls;
-      if (rawUrls is FrontendUrls) {
-        urls = rawUrls;
-      } else if (rawUrls is Map<String, dynamic>) {
-        urls = FrontendUrls.fromJson(rawUrls);
-      } else if (rawUrls is String) {
-        try {
-          urls = FrontendUrls.fromJson(jsonDecode(rawUrls));
-        } catch (e) {
-          print("Error parsing frontendUrls JSON string: $e");
-        }
+      // URLs arrive already resolved by _loadStormData — use directly.
+      final trackUrl = urls.stormTrackGeojson;
+      final pointUrl = urls.stormForecastPointsGeojson;
+      final swathUrl = urls.stormSwathGeojson;
+      final uiDataUrl = urls.uiDataGeojson;
+
+      if (trackUrl == null ||
+          trackUrl.isEmpty ||
+          pointUrl == null ||
+          pointUrl.isEmpty ||
+          swathUrl == null ||
+          swathUrl.isEmpty ||
+          uiDataUrl == null ||
+          uiDataUrl.isEmpty) {
+        print("loadStormGeoJson: one or more URLs are empty — aborting");
+        return;
       }
 
       String getCacheFilename(String url, String defaultName) {
@@ -108,69 +190,24 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         return defaultName;
       }
 
-      final trackUrl = urls?.stormTrackGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_track.geojson';
-      final pointUrl = urls?.stormForecastPointsGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_forecast_points.geojson';
-      final swathUrl = urls?.stormSwathGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/storm_swath.geojson';
-      final uiDataUrl = urls?.uiDataGeojson ??
-          'https://storage.googleapis.com/project-green-r5-1-qa.appspot.com/event/kineticast/hurricane/frontend_assets/BAVI/ui_data.geojson';
+      final geojsonStrings = await Future.wait([
+        _getLocalFileContent(
+            getCacheFilename(trackUrl, 'storm_track.geojson'), trackUrl),
+        _getLocalFileContent(
+            getCacheFilename(pointUrl, 'storm_forecast_points.geojson'),
+            pointUrl),
+        _getLocalFileContent(
+            getCacheFilename(swathUrl, 'storm_swath.geojson'), swathUrl),
+        _getLocalFileContent(
+            getCacheFilename(uiDataUrl, 'ui_data.geojson'), uiDataUrl),
+      ]);
 
-      // Storm Track — source of GLOBAL storm metadata (NAME, FCST_DTG, VMAX, FSPD)
-      final trackString = await _getLocalFileContent(
-        getCacheFilename(trackUrl, 'storm_track.geojson'),
-        trackUrl,
-      );
-      final trackJson = await compute(jsonDecode, trackString);
+      final trackJson = jsonDecode(geojsonStrings[0]);
+      final pointJson = jsonDecode(geojsonStrings[1]);
+      final coneJson = jsonDecode(geojsonStrings[2]);
+      final uiDataJson = jsonDecode(geojsonStrings[3]);
 
-      // Forecast Points — chronological points, used for map animation +
-      // the wind-speed-over-time chart.
-      final pointString = await _getLocalFileContent(
-        getCacheFilename(pointUrl, 'storm_forecast_points.geojson'),
-        pointUrl,
-      );
-      final pointJson = await compute(jsonDecode, pointString);
-
-      // Storm Swath/Cone — visual overlay only.
-      final swathString = await _getLocalFileContent(
-        getCacheFilename(swathUrl, 'storm_swath.geojson'),
-        swathUrl,
-      );
-      final coneJson = await compute(jsonDecode, swathString);
-
-      // UI Data — master location dataset, already enriched per-location
-      // with local hazard values. Source of the Exposure Table + the
-      // per-location Hurricane Summary values shown on marker tap.
-      final uiDataString = await _getLocalFileContent(
-        getCacheFilename(uiDataUrl, 'ui_data.geojson'),
-        uiDataUrl,
-      );
-      final uiDataJson = await compute(jsonDecode, uiDataString);
-
-      // ── DEBUG: print the real keys coming back for ui_data.geojson ──
-      // Remove this block once field names are confirmed.
-      final _uiFeaturesDebug = uiDataJson['features'] as List<dynamic>? ?? [];
-      if (_uiFeaturesDebug.isNotEmpty) {
-        final _firstProps =
-            _uiFeaturesDebug.first['properties'] as Map<String, dynamic>? ?? {};
-        print("=== ui_data.geojson FIRST FEATURE PROPERTIES ===");
-        print(const JsonEncoder.withIndent('  ').convert(_firstProps));
-        print("=== ALL KEYS: ${_firstProps.keys.toList()} ===");
-      }
-
-      // ── DEBUG: print the real keys coming back for storm_track.geojson ──
-      final _trackFeaturesDebug = trackJson['features'] as List<dynamic>? ?? [];
-      if (_trackFeaturesDebug.isNotEmpty) {
-        final _firstTrackProps =
-            _trackFeaturesDebug.first['properties'] as Map<String, dynamic>? ??
-                {};
-        print("=== storm_track.geojson FIRST FEATURE PROPERTIES ===");
-        print(const JsonEncoder.withIndent('  ').convert(_firstTrackProps));
-        print("=== ALL KEYS: ${_firstTrackProps.keys.toList()} ===");
-      }
-
-      // Pre-create circle icons for storm forecast points (Red for hurricane, Orange for storm, Yellow for depression)
+      // Optimize: Cache/Pre-create circle icons exactly once to avoid redundant redraws
       final BitmapDescriptor redCircleIcon =
           await _getCircleIcon(Colors.red, 24);
       final BitmapDescriptor orangeCircleIcon =
@@ -178,168 +215,94 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       final BitmapDescriptor yellowCircleIcon =
           await _getCircleIcon(Colors.yellow, 24);
 
-      // Parse Markers from forecast points
+      // Parse all GeoJSON features synchronously (much faster than compute() isolate overhead for these sizes)
       final pointFeatures = pointJson['features'] as List<dynamic>? ?? [];
-      Set<Marker> markers = {};
-      for (var feature in pointFeatures) {
-        final geometry = feature['geometry'];
-        if (geometry == null || geometry['type'] != 'Point') continue;
-
-        final coords = geometry['coordinates'] as List<dynamic>;
-        if (coords.length < 2) continue;
-
-        final lat = coords[1].toDouble();
-        final lng = coords[0].toDouble();
-
-        final props = feature['properties'] as Map<String, dynamic>? ?? {};
-
-        final markerId = props['ID']?.toString() ??
-            props['DTG']?.toString() ??
-            UniqueKey().toString();
-
-        final vmax = (props['VMAX'] as num?)?.toDouble() ?? 0.0;
-
-        BitmapDescriptor icon = yellowCircleIcon;
-        if (vmax >= 74) {
-          icon = redCircleIcon;
-        } else if (vmax >= 39) {
-          icon = orangeCircleIcon;
-        }
-
-        markers.add(
-          Marker(
-            markerId: MarkerId(markerId),
-            position: LatLng(lat, lng),
-            icon: icon,
-            anchor: const Offset(0.5, 0.5),
-            infoWindow: InfoWindow(
-              title: props['NAME']?.toString() ?? "Forecast Point",
-              snippet: "Wind Max: ${props['VMAX']} mph | Time: ${props['DTG']}",
-            ),
-          ),
-        );
-      }
-
-      // Parse UI Data Locations (Azure markers). Tapping a marker updates
-      // the "selected location" that drives the per-location Hurricane
-      // Summary values (storm category / surge / rainfall / wave / wind).
       final uiFeatures = uiDataJson['features'] as List<dynamic>? ?? [];
-      for (var feature in uiFeatures) {
-        final geometry = feature['geometry'];
-        if (geometry == null || geometry['type'] != 'Point') continue;
-        final coords = geometry['coordinates'] as List<dynamic>;
-        if (coords.length < 2) continue;
-        final lat = coords[1].toDouble();
-        final lng = coords[0].toDouble();
-
-        final props = feature['properties'] as Map<String, dynamic>? ?? {};
-        final markerId =
-            props['location_id']?.toString() ?? UniqueKey().toString();
-
-        markers.add(
-          Marker(
-            markerId: MarkerId(markerId),
-            position: LatLng(lat, lng),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueAzure),
-            infoWindow: InfoWindow(
-              title:
-                  _firstNonEmpty(props, ['name', 'LocationName', 'address']) ??
-                      "Asset Location",
-              snippet:
-                  "TIV Exposed: ${props['TIV_Exposed'] ?? ''} | Category: ${props['usofcl_fcst_sscats_LABEL'] ?? ''}",
-            ),
-            onTap: () {
-              setState(() => _selectedLocationProps = props);
-            },
-          ),
-        );
-      }
-
-      // Parse Polylines from tracks
       final trackFeatures = trackJson['features'] as List<dynamic>? ?? [];
-      Set<Polyline> polylines = {};
-      int polylineIndex = 0;
-      for (var feature in trackFeatures) {
-        final geometry = feature['geometry'];
-        if (geometry == null || geometry['type'] != 'LineString') continue;
-        final coords = geometry['coordinates'] as List<dynamic>;
-        List<LatLng> points = coords.map((c) {
-          final list = c as List<dynamic>;
-          return LatLng(list[1].toDouble(), list[0].toDouble());
-        }).toList();
-
-        polylines.add(
-          Polyline(
-            polylineId: PolylineId('track_${polylineIndex++}'),
-            points: points,
-            color: Colors.red,
-            width: 3,
-          ),
-        );
-      }
-
-      // Parse Polygons from cone/swath
       final coneFeatures = coneJson['features'] as List<dynamic>? ?? [];
-      Set<Polygon> polygons = {};
-      int polygonIndex = 0;
-      for (var feature in coneFeatures) {
-        final geometry = feature['geometry'];
-        if (geometry == null) continue;
-        final geomType = geometry['type'];
-        final props = feature['properties'] as Map<String, dynamic>? ?? {};
 
-        if (geomType == 'Polygon') {
-          final coordsList = geometry['coordinates'] as List<dynamic>;
-          for (var ring in coordsList) {
-            final points = (ring as List<dynamic>).map((c) {
-              final list = c as List<dynamic>;
-              return LatLng(list[1].toDouble(), list[0].toDouble());
-            }).toList();
+      final pointMarkerData = _parsePointMarkers({'features': pointFeatures});
+      final polylineData = _parsePolylines(trackFeatures);
+      final polygonData = _parsePolygonData(coneFeatures);
+      final uiMarkerData = _parseUiMarkerData(uiFeatures);
 
-            Color polyColor = Colors.blue.withOpacity(0.15);
-            Color strokeColor = Colors.blue.withOpacity(0.5);
+      final Set<Marker> markers = {};
 
-            if (props['COLOR'] != null) {
-              final colorStr = props['COLOR'].toString();
-              try {
-                if (colorStr.length == 8) {
-                  final a = int.parse(colorStr.substring(0, 2), radix: 16);
-                  final r = int.parse(colorStr.substring(2, 4), radix: 16);
-                  final g = int.parse(colorStr.substring(4, 6), radix: 16);
-                  final b = int.parse(colorStr.substring(6, 8), radix: 16);
-                  polyColor = Color.fromARGB(a, r, g, b);
-                  strokeColor = Color.fromARGB(255, r, g, b);
-                }
-              } catch (_) {}
-            }
-
-            polygons.add(
-              Polygon(
-                polygonId: PolygonId('swath_${polygonIndex++}'),
-                points: points,
-                fillColor: polyColor,
-                strokeColor: strokeColor,
-                strokeWidth: 1,
-              ),
-            );
-          }
-        }
+      for (final d in pointMarkerData) {
+        BitmapDescriptor icon = yellowCircleIcon;
+        if (d['iconType'] == 'red')
+          icon = redCircleIcon;
+        else if (d['iconType'] == 'orange') icon = orangeCircleIcon;
+        markers.add(Marker(
+          markerId: MarkerId(d['id'] as String),
+          position: LatLng(d['lat'] as double, d['lng'] as double),
+          icon: icon,
+          anchor: const Offset(0.5, 0.5),
+          infoWindow: InfoWindow(
+            title: d['name'] as String,
+            snippet: d['snippet'] as String,
+          ),
+        ));
       }
 
+      for (final d in uiMarkerData) {
+        final props = d['props'] as Map<String, dynamic>;
+        markers.add(Marker(
+          markerId: MarkerId(d['id'] as String),
+          position: LatLng(d['lat'] as double, d['lng'] as double),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: InfoWindow(
+            title: d['title'] as String,
+            snippet: d['snippet'] as String,
+          ),
+          onTap: () => setState(() => _selectedLocationProps = props),
+        ));
+      }
+
+      final Set<Polyline> polylines = {};
+      for (int i = 0; i < polylineData.length; i++) {
+        final pts = (polylineData[i]['points'] as List)
+            .map((p) => LatLng(p[0] as double, p[1] as double))
+            .toList();
+        polylines.add(Polyline(
+          polylineId: PolylineId('track_$i'),
+          points: pts,
+          color: Colors.red,
+          width: 3,
+        ));
+      }
+
+      final Set<Polygon> polygons = {};
+      for (int i = 0; i < polygonData.length; i++) {
+        final d = polygonData[i];
+        final pts = (d['points'] as List)
+            .map((p) => LatLng(p[0] as double, p[1] as double))
+            .toList();
+        polygons.add(Polygon(
+          polygonId: PolygonId('swath_$i'),
+          points: pts,
+          fillColor: Color(d['fillColor'] as int),
+          strokeColor: Color(d['strokeColor'] as int),
+          strokeWidth: 1,
+        ));
+      }
+
+      // Optimize: execute all synchronous mapping builders first
+      _buildGlobalStormOverview(trackFeatures, pointFeatures, uiFeatures);
+      _buildWindSpeedChart(pointFeatures);
+      _buildLocationExposuresFromUiFeatures(uiFeatures);
+
+      // Optimize: Batch state updates to trigger only 1 widget rebuild
       setState(() {
         _markers = markers;
         _polylines = polylines;
         _polygons = polygons;
       });
 
-      // ── Build the dynamic Overview + Location Exposure data ──
-      _buildGlobalStormOverview(trackFeatures, pointFeatures, uiFeatures);
-      _buildWindSpeedChart(pointFeatures);
-      _buildLocationExposuresFromUiFeatures(uiFeatures);
-
       if (markers.isNotEmpty) {
         final firstPoint = markers.first.position;
+        _initialMapCenter = firstPoint;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _mapController != null) {
             try {
@@ -352,16 +315,11 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       }
     } catch (e) {
       print("Error loading or parsing storm GeoJSON: $e");
+      // Always unblock the spinner so the page doesn't stay stuck
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ════════════════════════════════════════════════════════════════════
-  //  DYNAMIC DATA (parsed from JSON) — replaces the old hardcoded values
-  // ════════════════════════════════════════════════════════════════════
-
-  /// Global storm metadata — from the FIRST feature of storm_track.geojson,
-  /// per the data dictionary: NAME, FCST_DTG, VMAX, FSPD. Track point count
-  /// comes from storm_forecast_points.geojson's feature count.
   Map<String, dynamic> _stormOverview = {
     'stormName': 'N/A',
     'stormId': 'N/A',
@@ -374,10 +332,6 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
     'totalExposedValue': 'N/A',
     'estClaims': 'N/A',
   };
-
-  /// The currently "selected" property location (defaults to the first
-  /// entry in ui_data.geojson, updates when a marker is tapped). Drives the
-  /// per-location Hurricane Summary values.
   Map<String, dynamic>? _selectedLocationProps;
 
   List<Map<String, dynamic>> _locationExposures = [];
@@ -394,8 +348,40 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
   ) {
     if (trackFeatures.isEmpty) return;
 
+    // The event name the user actually clicked — used as the primary filter.
+    final clickedEventName = (widget.notificationData['title'] as String? ?? '')
+        .trim()
+        .toUpperCase();
+
+    // Helper: does a feature's properties match the clicked event name?
+    bool _matchesEvent(dynamic feature) {
+      if (clickedEventName.isEmpty) return true; // no filter if title missing
+      final props = (feature['properties'] as Map<String, dynamic>?) ?? {};
+      final name =
+          (props['NAME']?.toString() ?? props['STORMNAME']?.toString() ?? '')
+              .trim()
+              .toUpperCase();
+      return name == clickedEventName || name.isEmpty;
+    }
+
+    // Filter all feature lists to only the clicked event's data
+    final filteredTrack = trackFeatures.where(_matchesEvent).toList();
+    final filteredPoint = pointFeatures.where(_matchesEvent).toList();
+    final filteredUi =
+        uiFeatures; // ui_data features rarely carry NAME; use all
+
+    if (filteredTrack.isEmpty && trackFeatures.isNotEmpty) {
+      // NAME field doesn't match — fall back to all features (single-storm file)
+      print('Storm name filter found no matches — using all track features');
+    }
+
+    final sourceTrack =
+        filteredTrack.isNotEmpty ? filteredTrack : trackFeatures;
+    final sourcePoint =
+        filteredPoint.isNotEmpty ? filteredPoint : pointFeatures;
+
     final trackProps =
-        (trackFeatures.first['properties'] as Map<String, dynamic>?) ?? {};
+        (sourceTrack.first['properties'] as Map<String, dynamic>?) ?? {};
 
     final stormName = trackProps['NAME']?.toString() ??
         trackProps['STORMNAME']?.toString() ??
@@ -403,40 +389,48 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
     final stormId = trackProps['STORMID']?.toString() ?? 'N/A';
     final vmax = (trackProps['VMAX'] as num?)?.toDouble() ?? 0.0;
     final fspd = trackProps['FSPD'];
-    final dtg = trackProps['FCST_DTG']?.toString() ?? trackProps['DTG']?.toString();
+    final dtg =
+        trackProps['FCST_DTG']?.toString() ?? trackProps['DTG']?.toString();
 
-    // Financial calculations
-    final locationsCount = uiFeatures.length;
+    _lastUpdatedString = trackProps['RUN_DTG']?.toString() ??
+        trackProps['DTG']?.toString() ??
+        trackProps['FCST_DTG']?.toString() ??
+        'N/A';
+
+    // Financial calculations — scoped to the filtered ui features (supporting pd_value_sum)
+    final locationsCount = filteredUi.length;
     double totalTiv = 0.0;
-    for (var feature in uiFeatures) {
+    for (var feature in filteredUi) {
       final props = (feature['properties'] as Map<String, dynamic>?) ?? {};
-      final rawTiv = props['TIV_Exposed'] ?? props['TIV'];
+      final rawTiv =
+          props['TIV_Exposed'] ?? props['TIV'] ?? props['pd_value_sum'];
       if (rawTiv != null) {
-        final tivVal = (rawTiv is num) ? rawTiv.toDouble() : double.tryParse(rawTiv.toString());
+        final tivVal = (rawTiv is num)
+            ? rawTiv.toDouble()
+            : double.tryParse(rawTiv.toString());
         if (tivVal != null) {
           totalTiv += tivVal;
         }
       }
     }
 
-    double damageRatio = 0.05; // default 5%
-    if (vmax >= 157) damageRatio = 0.15;
-    else if (vmax >= 130) damageRatio = 0.12;
-    else if (vmax >= 111) damageRatio = 0.10;
-    else if (vmax >= 96) damageRatio = 0.08;
-    else if (vmax >= 74) damageRatio = 0.05;
-    else damageRatio = 0.02;
+    // React code uses a fixed 8% (0.08) damage ratio for estimated claims calculation
+    double damageRatio = 0.08;
 
     double estClaims = totalTiv * damageRatio;
 
     setState(() {
       _stormOverview = {
-        'stormName': stormName,
+        // Always show the clicked event name — not the GeoJSON internal NAME
+        'stormName': clickedEventName.isNotEmpty
+            ? widget.notificationData['title']
+            : stormName,
         'stormId': stormId,
         'category': _categoryFromVmax(vmax),
         'forecastTime': _formatDtg(dtg),
         'forwardSpeed': fspd != null ? '$fspd mph' : 'N/A',
-        'trackPointCount': pointFeatures.length.toString(),
+        // Track point count from the filtered (event-specific) points
+        'trackPointCount': sourcePoint.length.toString(),
         'maxWindSpeed': vmax > 0 ? '${vmax.toStringAsFixed(0)} mph' : 'N/A',
         'locationsImpacted': locationsCount.toString(),
         'totalExposedValue': _formatCurrency(totalTiv),
@@ -446,15 +440,30 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
   }
 
   double _categoryValueFromProps(Map<String, dynamic> props) {
+    // Check CAT_DESC first
     final catDesc = props['CAT_DESC']?.toString().toLowerCase() ?? '';
     if (catDesc.contains('5')) return 5.0;
     if (catDesc.contains('4')) return 4.0;
     if (catDesc.contains('3')) return 3.0;
     if (catDesc.contains('2')) return 2.0;
     if (catDesc.contains('1')) return 1.0;
-    if (catDesc.contains('tropical storm') || catDesc.contains('ts')) return 0.5;
-    if (catDesc.contains('depression') || catDesc.contains('td')) return 0.2;
+    if (catDesc.contains('tropical storm') ||
+        catDesc.contains('ts') ||
+        catDesc.contains('storm')) {
+      return 0.5;
+    }
+    if (catDesc.contains('depression') || catDesc.contains('td')) {
+      return 0.2;
+    }
 
+    // Fall back to SS (Saffir-Simpson) Category if present
+    final ssCat = props['SS_CAT'] ?? props['CATEGORY'] ?? props['SSCAT'];
+    if (ssCat != null) {
+      final double? parsedSS = double.tryParse(ssCat.toString());
+      if (parsedSS != null) return parsedSS;
+    }
+
+    // Fall back to calculation from VMAX (wind speed)
     final vmax = (props['VMAX'] as num?)?.toDouble() ?? 0.0;
     if (vmax >= 157) return 5.0;
     if (vmax >= 130) return 4.0;
@@ -465,12 +474,29 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
     return 0.0;
   }
 
-  /// Wind-speed-over-time chart, built from the chronological
-  /// storm_forecast_points.geojson (DTG + VMAX per point).
+  /// Wind-speed-over-time chart — only plots points belonging to the
+  /// clicked event (filtered by storm name).
   void _buildWindSpeedChart(List<dynamic> pointFeatures) {
     if (pointFeatures.isEmpty) return;
 
-    final sortedPoints = List<dynamic>.from(pointFeatures);
+    final clickedEventName = (widget.notificationData['title'] as String? ?? '')
+        .trim()
+        .toUpperCase();
+
+    // Filter to the clicked storm; fall back to all if NAME field is absent
+    final filtered = pointFeatures.where((f) {
+      if (clickedEventName.isEmpty) return true;
+      final props = (f['properties'] as Map<String, dynamic>?) ?? {};
+      final name =
+          (props['NAME']?.toString() ?? props['STORMNAME']?.toString() ?? '')
+              .trim()
+              .toUpperCase();
+      return name == clickedEventName || name.isEmpty;
+    }).toList();
+
+    final sourcePoints = filtered.isNotEmpty ? filtered : pointFeatures;
+
+    final sortedPoints = List<dynamic>.from(sourcePoints);
     sortedPoints.sort((a, b) {
       final dtgA =
           ((a['properties'] as Map<String, dynamic>?)?['DTG'] ?? '').toString();
@@ -479,19 +505,28 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       return dtgA.compareTo(dtgB);
     });
 
+    // Get only the last 5 forecast points
+    final lastFivePoints = sortedPoints.length > 5
+        ? sortedPoints.sublist(sortedPoints.length - 5)
+        : sortedPoints;
+
     final wind = <FlSpot>[];
     final intensity = <FlSpot>[];
     final labels = <String>[];
 
-    for (var i = 0; i < sortedPoints.length; i++) {
+    int indexCounter = 0;
+    for (var i = 0; i < lastFivePoints.length; i++) {
       final props =
-          (sortedPoints[i]['properties'] as Map<String, dynamic>?) ?? {};
+          (lastFivePoints[i]['properties'] as Map<String, dynamic>?) ?? {};
+      final dtg = (props['DTG'] ?? '').toString();
       final v = (props['VMAX'] as num?)?.toDouble();
       if (v != null) {
-        wind.add(FlSpot(i.toDouble(), v));
-        intensity.add(FlSpot(i.toDouble(), _categoryValueFromProps(props)));
+        wind.add(FlSpot(indexCounter.toDouble(), v));
+        intensity.add(
+            FlSpot(indexCounter.toDouble(), _categoryValueFromProps(props)));
+        labels.add(_formatDtgShort(dtg));
+        indexCounter++;
       }
-      labels.add(_formatDtgShort(props['DTG']?.toString()));
     }
 
     setState(() {
@@ -508,40 +543,74 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
   /// already carries its own local hazard values per the data dictionary.
   void _buildLocationExposuresFromUiFeatures(List<dynamic> uiFeatures) {
     final exposures = <Map<String, dynamic>>[];
+    final RegExp nonNumericRegex = RegExp(r'[^0-9.]');
 
     for (var feature in uiFeatures) {
       final props = (feature['properties'] as Map<String, dynamic>?) ?? {};
 
-      final locationName =
-          _firstNonEmpty(props, ['name', 'LocationName', 'address']) ??
-              'Unknown';
-      final county = _firstNonEmpty(props, ['County', 'county_name']) ?? '';
+      final locationName = props['LocationName']?.toString() ??
+          props['name']?.toString() ??
+          props['address']?.toString() ??
+          'Unknown Location';
+      final county = props['County']?.toString() ??
+          props['county_name']?.toString() ??
+          props['county']?.toString() ??
+          '-';
+      final stateValue =
+          props['State']?.toString() ?? props['state']?.toString() ?? '-';
       final categoryLabel =
-          props['usofcl_fcst_sscats_LABEL']?.toString() ?? 'N/A';
-      final tiv = _formatCurrency(props['TIV_Exposed'] ?? props['TIV']);
+          props['usofcl_fcst_sscats_LABEL']?.toString() ?? '-';
+      final rawTiv =
+          props['TIV_Exposed'] ?? props['TIV'] ?? props['pd_value_sum'];
+      double tivVal = 0.0;
+      if (rawTiv is num) {
+        tivVal = rawTiv.toDouble();
+      } else if (rawTiv != null) {
+        tivVal = double.tryParse(rawTiv.toString()) ?? 0.0;
+      }
+      final tiv = _formatCurrency(tivVal);
+
+      // Parse wind speed for Event Score calculation
+      final windSpeedRaw =
+          props['usofcl_swath_wind_mph_LABEL'] ?? props['wind_speed'];
+      double? windSpeedNum;
+      if (windSpeedRaw is num) {
+        windSpeedNum = windSpeedRaw.toDouble();
+      } else if (windSpeedRaw != null) {
+        windSpeedNum = double.tryParse(
+            windSpeedRaw.toString().replaceAll(nonNumericRegex, ''));
+      }
+
+      // Calculate event score (0-100 scale derived from wind speed matching Web)
+      int eventScore = 0;
+      if (windSpeedNum != null) {
+        eventScore = ((windSpeedNum / 157.0) * 100.0).round().clamp(0, 100);
+      }
 
       final geometry = feature['geometry'];
-      final coords = geometry != null ? geometry['coordinates'] as List<dynamic>? : null;
-      final lat = (coords != null && coords.length >= 2) ? coords[1].toDouble() : null;
-      final lng = (coords != null && coords.length >= 2) ? coords[0].toDouble() : null;
+      final coords =
+          geometry != null ? geometry['coordinates'] as List<dynamic>? : null;
+      final lat =
+          (coords != null && coords.length >= 2) ? coords[1].toDouble() : null;
+      final lng =
+          (coords != null && coords.length >= 2) ? coords[0].toDouble() : null;
 
       exposures.add({
         'city': locationName,
         'county': county,
+        'state': stateValue,
         'category': categoryLabel,
         'tiv': tiv,
+        'event_score': eventScore,
         'catColor': _colorForCategory(categoryLabel),
         'lat': lat,
         'lng': lng,
         'rawProps': props,
-        // Raw hazard labels shown as chips on the card instead of a
-        // synthetic 1-5 score, since the dictionary only gives us these
-        // descriptive LABEL strings, not a numeric score.
         'hazards': {
           'Surge': props['usofcl_fcst_surge_ft_LABEL']?.toString(),
           'Rain': props['usofcl_fcst_rain_in_LABEL']?.toString(),
           'Wave': props['usofcl_fcst_wave_ft_LABEL']?.toString(),
-          'Wind': props['usofcl_swath_wind_mph_LABEL']?.toString(),
+          'Wind': windSpeedRaw?.toString(),
         },
       });
     }
@@ -607,27 +676,54 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
   }
 
   String _formatDtgShort(String? dtg) {
-    if (dtg == null || dtg.length < 8) return '';
+    if (dtg == null || dtg.isEmpty) return '';
     try {
-      final month = int.parse(dtg.substring(4, 6));
-      final day = dtg.substring(6, 8);
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ];
-      return '${months[month - 1]} $day';
+      // Handle standard format: yyyyMMddHH (10 characters)
+      if (dtg.length >= 10) {
+        final month = int.parse(dtg.substring(4, 6));
+        final day = int.parse(dtg.substring(6, 8));
+        final hour = dtg.substring(8, 10);
+        const months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+        return '${months[month - 1]} $day $hour:00';
+      }
+
+      // Fallback format: yyyyMMdd
+      if (dtg.length >= 8) {
+        final month = int.parse(dtg.substring(4, 6));
+        final day = int.parse(dtg.substring(6, 8));
+        const months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+        return '${months[month - 1]} $day';
+      }
+
+      return dtg;
     } catch (_) {
-      return '';
+      return dtg;
     }
   }
 
@@ -724,7 +820,8 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
 
     print("EVENT ID 👉 $eventId");
 
-    setState(() => _isLoading = true);
+    // Note: _isLoading is already managed by _initialize().
+    // Do NOT set it here to avoid races with the global loading state.
 
     await provider.fetchEventInfo(
       eventId: eventId,
@@ -760,6 +857,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       print("FINAL MAP URL 👉 $fetchedMapUrl");
 
       setState(() {
+        locationsData = locations;
         _isLoading = false;
       });
 
@@ -795,6 +893,7 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this); // Always unsubscribe to avoid memory leaks
     _pageController.dispose();
     super.dispose();
   }
@@ -828,293 +927,329 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                       widget.notificationData['title'] ?? "Event Hazard",
                   selectedDate: "12/1/1111",
                   availableDates: availableDates,
+                  lastUpdated: _lastUpdatedString,
                   onDateChanged: (value) {
                     setState(() {
                       selectedDate = value;
                     });
-                    _fetchEventInfo();
+                    // Re-resolve URLs fresh from notificationData and reload
+                    _loadStormData();
                   },
                 ),
                 Expanded(
-                    child: isMapView
-                        ? Stack(
-                            children: [
-                              Container(
-                                margin:
-                                    const EdgeInsets.fromLTRB(16, 1, 16, 2.0),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20.0),
-                                  color: Colors.grey.shade100,
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: GoogleMap(
-                                  onMapCreated: (controller) {
-                                    _mapController = controller;
-                                  },
-                                  initialCameraPosition: CameraPosition(
-                                    target: _initialMapCenter ??
-                                        LatLng(20.5937, 78.9629),
-                                    zoom: 5,
-                                  ),
-                                  markers: _markers,
-                                  polylines: _polylines,
-                                  polygons: _polygons,
-                                  tileOverlays: _tileOverlays,
-                                  mapToolbarEnabled: false,
-                                  mapType: MapType.normal,
-                                  myLocationButtonEnabled: true,
-                                  zoomControlsEnabled: true,
-                                  onCameraMove: (_) {
-                                    if (_tileOverlays.isNotEmpty) {
-                                      final overlay = _tileOverlays.first;
-                                      _mapController!.clearTileCache(
-                                          overlay.tileOverlayId);
-                                    }
-                                  },
-                                ),
-                              ),
-                            ],
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade800,
-                                    border: Border.all(
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  child: IntrinsicHeight(
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 3,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                right: BorderSide(
-                                                  color: Colors.grey.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Text("Location Name"),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 4,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                right: BorderSide(
-                                                  color: Colors.grey.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Text("Address"),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                right: BorderSide(
-                                                  color: Colors.grey.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Text("Hazard Name"),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            child: const Text("Event Name"),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _isLoading
-                                      ? const Center(
-                                          child: CircularProgressIndicator(),
-                                        )
-                                      : locationsData.isEmpty
-                                          ? const Center(
-                                              child: Text(
-                                                "No Data Found",
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            )
-                                          : ListView.builder(
-                                              itemCount: locationsData.length,
-                                              itemBuilder: (context, index) {
-                                                final location =
-                                                    locationsData[index];
-
-                                                final eventMap =
-                                                    location['event'] as Map<
-                                                            String, dynamic>? ??
-                                                        {};
-
-                                                final firstEvent = eventMap
-                                                        .isNotEmpty
-                                                    ? eventMap.values.first
-                                                        as Map<String, dynamic>
-                                                    : {};
-
-                                                return Container(
-                                                  decoration: BoxDecoration(
-                                                    border: Border(
-                                                      left: BorderSide(
-                                                        color: Colors
-                                                            .grey.shade700,
-                                                      ),
-                                                      right: BorderSide(
-                                                        color: Colors
-                                                            .grey.shade700,
-                                                      ),
-                                                      bottom: BorderSide(
-                                                        color: Colors
-                                                            .grey.shade700,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  child: IntrinsicHeight(
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .stretch,
-                                                      children: [
-                                                        Expanded(
-                                                          flex: 3,
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(12),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              border: Border(
-                                                                right:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade700,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            child: Text(
-                                                              location['location_name']
-                                                                      ?.toString() ??
-                                                                  '',
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          flex: 4,
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(12),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              border: Border(
-                                                                right:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade700,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            child: Text(
-                                                              location['address']
-                                                                      ?.toString() ??
-                                                                  '',
-                                                              maxLines: 3,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          flex: 2,
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(12),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              border: Border(
-                                                                right:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade700,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            child: Text(
-                                                              firstEvent['hazard_name']
-                                                                      ?.toString() ??
-                                                                  '',
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          flex: 2,
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(12),
-                                                            child: Text(
-                                                              firstEvent['event_name']
-                                                                      ?.toString() ??
-                                                                  '',
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                )
-                              ],
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
                             ),
-                          )),
+                          )
+                        : isMapView
+                            ? Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                        16, 1, 16, 2.0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20.0),
+                                      color: Colors.grey.shade100,
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: GoogleMap(
+                                      onMapCreated: (controller) {
+                                        _mapController = controller;
+                                      },
+                                      initialCameraPosition: CameraPosition(
+                                        target: _initialMapCenter ??
+                                            LatLng(20.5937, 78.9629),
+                                        zoom: 5,
+                                      ),
+                                      markers: _markers,
+                                      polylines: _polylines,
+                                      polygons: _polygons,
+                                      tileOverlays: _tileOverlays,
+                                      mapToolbarEnabled: false,
+                                      mapType: MapType.normal,
+                                      myLocationButtonEnabled: true,
+                                      zoomControlsEnabled: true,
+                                      onCameraMove: (_) {
+                                        if (_tileOverlays.isNotEmpty) {
+                                          final overlay = _tileOverlays.first;
+                                          _mapController!.clearTileCache(
+                                              overlay.tileOverlayId);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  if (_isLoading)
+                                    const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade800,
+                                        border: Border.all(
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      child: IntrinsicHeight(
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 3,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  border: Border(
+                                                    right: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child:
+                                                    const Text("Location Name"),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 4,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  border: Border(
+                                                    right: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: const Text("Address"),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  border: Border(
+                                                    right: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child:
+                                                    const Text("Hazard Name"),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                child: const Text("Event Name"),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _isLoading
+                                          ? const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            )
+                                          : locationsData.isEmpty
+                                              ? const Center(
+                                                  child: Text(
+                                                    "No Data Found",
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                )
+                                              : ListView.builder(
+                                                  itemCount:
+                                                      locationsData.length,
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    final location =
+                                                        locationsData[index];
+
+                                                    final eventMap =
+                                                        location['event']
+                                                                as Map<String,
+                                                                    dynamic>? ??
+                                                            {};
+
+                                                    final firstEvent = eventMap
+                                                            .isNotEmpty
+                                                        ? eventMap.values.first
+                                                            as Map<String,
+                                                                dynamic>
+                                                        : {};
+
+                                                    return Container(
+                                                      decoration: BoxDecoration(
+                                                        border: Border(
+                                                          left: BorderSide(
+                                                            color: Colors
+                                                                .grey.shade700,
+                                                          ),
+                                                          right: BorderSide(
+                                                            color: Colors
+                                                                .grey.shade700,
+                                                          ),
+                                                          bottom: BorderSide(
+                                                            color: Colors
+                                                                .grey.shade700,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      child: IntrinsicHeight(
+                                                        child: Row(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .stretch,
+                                                          children: [
+                                                            Expanded(
+                                                              flex: 3,
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  border:
+                                                                      Border(
+                                                                    right:
+                                                                        BorderSide(
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade700,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                child: Text(
+                                                                  location['location_name']
+                                                                          ?.toString() ??
+                                                                      '',
+                                                                  maxLines: 2,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 4,
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  border:
+                                                                      Border(
+                                                                    right:
+                                                                        BorderSide(
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade700,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                child: Text(
+                                                                  location['address']
+                                                                          ?.toString() ??
+                                                                      '',
+                                                                  maxLines: 3,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 2,
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  border:
+                                                                      Border(
+                                                                    right:
+                                                                        BorderSide(
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade700,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                child: Text(
+                                                                  firstEvent['hazard_name']
+                                                                          ?.toString() ??
+                                                                      '',
+                                                                  maxLines: 2,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 2,
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                                child: Text(
+                                                                  firstEvent['event_name']
+                                                                          ?.toString() ??
+                                                                      '',
+                                                                  maxLines: 2,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                    )
+                                  ],
+                                ),
+                              )),
                 _buildTabBar(),
                 Expanded(
                   child: _selectedTab == 0
                       ? _buildOverviewTab()
                       : _buildLocationExposureTab(),
                 ),
-                _buildBottomNavigation(),
+                // _buildBottomNavigation(),
               ],
             ),
           ),
@@ -1265,38 +1400,24 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOverviewItem('Storm Name', _stormOverview['stormName']?.toString() ?? 'N/A'),
-              _buildOverviewItem('ATCF ID', _stormOverview['stormId']?.toString() ?? 'N/A'),
-              _buildOverviewItem('Category', _stormOverview['category']?.toString() ?? 'N/A'),
+              _buildOverviewItem('Storm Name',
+                  _stormOverview['stormName']?.toString() ?? 'N/A'),
+              _buildOverviewItem(
+                  'ATCF ID', _stormOverview['stormId']?.toString() ?? 'N/A'),
+              _buildOverviewItem(
+                  'Category', _stormOverview['category']?.toString() ?? 'N/A'),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOverviewItem('Forecast Time', _stormOverview['forecastTime']?.toString() ?? 'N/A'),
-              _buildOverviewItem('Forward Speed', _stormOverview['forwardSpeed']?.toString() ?? 'N/A'),
-              _buildOverviewItem('Max Wind Speed', _stormOverview['maxWindSpeed']?.toString() ?? 'N/A'),
-            ],
-          ),
-          const Divider(color: Colors.white12, height: 24),
-          // Bottom Half: Financial Impact
-          const Text(
-            'FINANCIAL IMPACT AGGREGATIONS',
-            style: TextStyle(
-              color: Colors.greenAccent,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildOverviewItem('Locations Impacted', _stormOverview['locationsImpacted']?.toString() ?? 'N/A'),
-              _buildOverviewItem('Total Exposed Value', _stormOverview['totalExposedValue']?.toString() ?? 'N/A'),
-              _buildOverviewItem('Est. Claims (5-15%)', _stormOverview['estClaims']?.toString() ?? 'N/A'),
+              _buildOverviewItem('Forecast Time',
+                  _stormOverview['forecastTime']?.toString() ?? 'N/A'),
+              _buildOverviewItem('Forward Speed',
+                  _stormOverview['forwardSpeed']?.toString() ?? 'N/A'),
+              _buildOverviewItem('Max Wind Speed',
+                  _stormOverview['maxWindSpeed']?.toString() ?? 'N/A'),
             ],
           ),
         ],
@@ -1414,7 +1535,8 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                         if (rightVal % 5 == 0) {
                           return Text(
                             rightVal.toInt().toString(),
-                            style: const TextStyle(color: Colors.white38, fontSize: 8),
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 8),
                           );
                         }
                         return const SizedBox.shrink();
@@ -1476,22 +1598,28 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
                       getTitlesWidget: (value, _) {
                         if (value == 0.0 || value == 0.5) {
                           return const Text('TS',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         } else if (value == 1.0) {
                           return const Text('Cat 1',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         } else if (value == 2.0) {
                           return const Text('Cat 2',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         } else if (value == 3.0) {
                           return const Text('Cat 3',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         } else if (value == 4.0) {
                           return const Text('Cat 4',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         } else if (value == 5.0) {
                           return const Text('Cat 5',
-                              style: TextStyle(color: Colors.white38, fontSize: 8));
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 8));
                         }
                         return const SizedBox.shrink();
                       },
@@ -1603,11 +1731,20 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
     );
   }
 
-  // Local hazard values (surge/rain/wave/wind) come from ui_data.geojson
-  // for whichever location is currently selected (tap a marker on the map
-  // to change it — defaults to the first location).
   Widget _buildHurricaneSummary() {
     final loc = _selectedLocationProps;
+
+    // Fallback checks matching the keys mapped in React component
+    final surge = loc?['usofcl_fcst_surge_ft_LABEL'] ?? loc?['surge'] ?? 'N/A';
+    final rain = loc?['usofcl_fcst_rain_in_LABEL'] ??
+        loc?['rainfall'] ??
+        loc?['rain'] ??
+        'N/A';
+    final wave = loc?['usofcl_fcst_wave_ft_LABEL'] ??
+        loc?['wave_height'] ??
+        loc?['wave'] ??
+        'N/A';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1618,12 +1755,9 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
         children: [
           _buildSummaryItem('Max wind\nspeed',
               _stormOverview['maxWindSpeed']?.toString() ?? 'N/A'),
-          _buildSummaryItem('Storm\nSurge',
-              loc?['usofcl_fcst_surge_ft_LABEL']?.toString() ?? 'N/A'),
-          _buildSummaryItem('Rainfall',
-              loc?['usofcl_fcst_rain_in_LABEL']?.toString() ?? 'N/A'),
-          _buildSummaryItem('Wave\nHeight',
-              loc?['usofcl_fcst_wave_ft_LABEL']?.toString() ?? 'N/A'),
+          _buildSummaryItem('Storm\nSurge', surge.toString()),
+          _buildSummaryItem('Rainfall', rain.toString()),
+          _buildSummaryItem('Wave\nHeight', wave.toString()),
         ],
       ),
     );
@@ -1793,7 +1927,9 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
             Text(
               data['tiv'],
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13),
             ),
             const SizedBox(height: 8),
             const Text('Local Hazards :',
@@ -1803,7 +1939,8 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
               spacing: 6,
               runSpacing: 6,
               children: hazards.entries
-                  .where((e) => e.value != null && e.value.toString().isNotEmpty)
+                  .where(
+                      (e) => e.value != null && e.value.toString().isNotEmpty)
                   .map((e) => _buildHazardChip(e.key, e.value.toString()))
                   .toList(),
             ),
@@ -1827,57 +1964,118 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen> {
       ),
     );
   }
+}
 
-  Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        border: Border(top: BorderSide(color: Colors.white12)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          OutlinedButton.icon(
-            onPressed: _currentPage > 0
-                ? () {
-                    setState(() => _currentPage--);
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                : null,
-            icon: const Icon(Icons.arrow_back, size: 14),
-            label: const Text('Previous'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white70,
-              side: const BorderSide(color: Colors.white24),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              setState(() => _currentPage++);
-              _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            icon: const Icon(Icons.arrow_forward,
-                size: 14, color: Colors.black87),
-            label: const Text('Next', style: TextStyle(color: Colors.black87)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryMain,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            ),
-          ),
-        ],
-      ),
-    );
+List<Map<String, dynamic>> _parsePointMarkers(Map<String, dynamic> args) {
+  final features = args['features'] as List<dynamic>;
+  final result = <Map<String, dynamic>>[];
+  for (final feature in features) {
+    final geometry = feature['geometry'];
+    if (geometry == null || geometry['type'] != 'Point') continue;
+    final coords = geometry['coordinates'] as List<dynamic>;
+    if (coords.length < 2) continue;
+    final lat = coords[1].toDouble();
+    final lng = coords[0].toDouble();
+    final props = feature['properties'] as Map<String, dynamic>? ?? {};
+    final vmax = (props['VMAX'] as num?)?.toDouble() ?? 0.0;
+    String iconType = 'yellow';
+    if (vmax >= 74) {
+      iconType = 'red';
+    } else if (vmax >= 39) {
+      iconType = 'orange';
+    }
+    final id =
+        props['ID']?.toString() ?? props['DTG']?.toString() ?? '$lat,$lng';
+    result.add({
+      'id': id,
+      'lat': lat,
+      'lng': lng,
+      'iconType': iconType,
+      'name': props['NAME']?.toString() ?? 'Forecast Point',
+      'snippet': 'Wind Max: ${props['VMAX']} mph | Time: ${props['DTG']}',
+    });
   }
+  return result;
+}
+
+List<Map<String, dynamic>> _parsePolylines(List<dynamic> features) {
+  final result = <Map<String, dynamic>>[];
+  for (final feature in features) {
+    final geometry = feature['geometry'];
+    if (geometry == null || geometry['type'] != 'LineString') continue;
+    final coords = geometry['coordinates'] as List<dynamic>;
+    final points = coords.map((c) {
+      final list = c as List<dynamic>;
+      return [list[1].toDouble(), list[0].toDouble()];
+    }).toList();
+    result.add({'points': points});
+  }
+  return result;
+}
+
+List<Map<String, dynamic>> _parsePolygonData(List<dynamic> features) {
+  final result = <Map<String, dynamic>>[];
+  for (final feature in features) {
+    final geometry = feature['geometry'];
+    if (geometry == null || geometry['type'] != 'Polygon') continue;
+    final props = feature['properties'] as Map<String, dynamic>? ?? {};
+    final coordsList = geometry['coordinates'] as List<dynamic>;
+    // Default colours (blue swath)
+    int fillColor = const Color(0x26007AFF).value; // blue 15% opacity
+    int strokeColor = const Color(0x807AE4FF).value; // blue 50% opacity
+    if (props['COLOR'] != null) {
+      final colorStr = props['COLOR'].toString();
+      try {
+        if (colorStr.length == 8) {
+          final a = int.parse(colorStr.substring(0, 2), radix: 16);
+          final r = int.parse(colorStr.substring(2, 4), radix: 16);
+          final g = int.parse(colorStr.substring(4, 6), radix: 16);
+          final b = int.parse(colorStr.substring(6, 8), radix: 16);
+          fillColor = Color.fromARGB(a, r, g, b).value;
+          strokeColor = Color.fromARGB(255, r, g, b).value;
+        }
+      } catch (_) {}
+    }
+    for (final ring in coordsList) {
+      final points = (ring as List<dynamic>).map((c) {
+        final list = c as List<dynamic>;
+        return [list[1].toDouble(), list[0].toDouble()];
+      }).toList();
+      result.add({
+        'points': points,
+        'fillColor': fillColor,
+        'strokeColor': strokeColor,
+      });
+    }
+  }
+  return result;
+}
+
+List<Map<String, dynamic>> _parseUiMarkerData(List<dynamic> features) {
+  final result = <Map<String, dynamic>>[];
+  for (final feature in features) {
+    final geometry = feature['geometry'];
+    if (geometry == null || geometry['type'] != 'Point') continue;
+    final coords = geometry['coordinates'] as List<dynamic>;
+    if (coords.length < 2) continue;
+    final lat = coords[1].toDouble();
+    final lng = coords[0].toDouble();
+    final props = feature['properties'] as Map<String, dynamic>? ?? {};
+    final id = props['location_id']?.toString() ?? '$lat,$lng';
+    final title = (props['address'] ?? props['LocationName'] ?? props['name'])
+            ?.toString() ??
+        'Asset Location';
+    final rawTiv =
+        props['TIV_Exposed'] ?? props['TIV'] ?? props['pd_value_sum'] ?? '';
+    final snippet = 'TIV Exposed: $rawTiv | City: ${props['city'] ?? ''}';
+    result.add({
+      'id': id,
+      'lat': lat,
+      'lng': lng,
+      'title': title,
+      'snippet': snippet,
+      'props': props,
+    });
+  }
+  return result;
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart';
+import '../utils/env.dart';
 
 // For storing our result
 class Suggestion {
@@ -22,12 +23,11 @@ class PlaceApiProvider {
 
   PlaceApiProvider(this.sessionToken);
 
-  static final String androidKey = 'AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI';
-  static final String iosKey = 'AIzaSyB3NiU-vWDp1TUIARsRKqLBvTGAVcka0yI';
-  final apiKey = Platform.isAndroid ? androidKey : iosKey;
+  final apiKey = Env.get('GOOGLE_MAPS_API_KEY');
 
   Future<List<Suggestion>> fetchSuggestions(String input, String lang) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode|establishment&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=geocode|establishment&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
 
     final response = await client.get(Uri.parse(request));
 
@@ -48,7 +48,8 @@ class PlaceApiProvider {
   }
 
   Future<Map<String, dynamic>> getPlaceDetails(String placeId) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address,address_component&key=$apiKey';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address,address_component&key=$apiKey';
     final response = await client.get(Uri.parse(request));
 
     if (response.statusCode == 200) {
@@ -63,7 +64,8 @@ class PlaceApiProvider {
   }
 
   Future<LatLng> getLatLngFromPlaceId(String placeId) async {
-    final request = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address&key=$apiKey';
+    final request =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=place_id,types,geometry,name,formatted_address&key=$apiKey';
     final response = await client.get(Uri.parse(request));
 
     if (response.statusCode == 200) {

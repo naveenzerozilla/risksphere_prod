@@ -11,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.risksphere.green"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,34 +24,52 @@ android {
     defaultConfig {
         applicationId = "com.risksphere.green"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        manifestPlaceholders["appAuthRedirectScheme"] =
-            "com.risksphere.green"
+        // Load properties for secure credentials injection
+        val localProperties = java.util.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.risksphere.green"
+        manifestPlaceholders["mapsApiKey"] = localProperties.getProperty("maps.api.key") ?: ""
+        manifestPlaceholders["admobAppId"] = localProperties.getProperty("admob.app.id") ?: ""
+    }
+
+    // Load properties at root level of android block for signing configurations
+    val localProperties = java.util.Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
     }
 
     signingConfigs {
         create("release") {
-            storeFile = file("/Users/naveen/Documents/new-upload-key.jks")
-            storePassword = "zerozilla"
-            keyAlias = "upload"
-            keyPassword = "zerozilla"
+            val path = localProperties.getProperty("signing.storeFilePath") ?: ""
+            storeFile = if (path.isNotEmpty()) file(path) else null
+            storePassword = localProperties.getProperty("signing.storePassword") ?: ""
+            keyAlias = localProperties.getProperty("signing.keyAlias") ?: ""
+            keyPassword = localProperties.getProperty("signing.keyPassword") ?: ""
         }
 
         create("qa") {
-            storeFile = file("/Users/naveen/Documents/new-upload-key.jks")
-            storePassword = "zerozilla"
-            keyAlias = "upload"
-            keyPassword = "zerozilla"
+            val path = localProperties.getProperty("signing.storeFilePath") ?: ""
+            storeFile = if (path.isNotEmpty()) file(path) else null
+            storePassword = localProperties.getProperty("signing.storePassword") ?: ""
+            keyAlias = localProperties.getProperty("signing.keyAlias") ?: ""
+            keyPassword = localProperties.getProperty("signing.keyPassword") ?: ""
         }
 
         getByName("debug") {
-            storeFile = file("/Users/naveen/Documents/new-upload-key.jks")
-            storePassword = "zerozilla"
-            keyAlias = "upload"
-            keyPassword = "zerozilla"
+            val path = localProperties.getProperty("signing.storeFilePath") ?: ""
+            storeFile = if (path.isNotEmpty()) file(path) else null
+            storePassword = localProperties.getProperty("signing.storePassword") ?: ""
+            keyAlias = localProperties.getProperty("signing.keyAlias") ?: ""
+            keyPassword = localProperties.getProperty("signing.keyPassword") ?: ""
         }
     }
 

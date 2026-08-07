@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:RiskSphere/providers/data_list_parameters.dart';
 import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/utils/http_client.dart';
@@ -14,6 +15,8 @@ import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 
 late PerformanceHttpClient httpClient;
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -32,6 +35,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await EasyLocalization.ensureInitialized();
 
   try {
@@ -90,19 +94,22 @@ void main() async {
   }
 
   initializeNotifications();
-  runApp(
-    EasyLocalization(
-      supportedLocales: const [
-        Locale('en'),
-        Locale('es'),
-        Locale('fr'),
-        Locale('ja'),
-        Locale('zh'),
-      ],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('en'),
-      child: AppLifecycleManager(),
+  http.runWithClient(
+    () => runApp(
+      EasyLocalization(
+        supportedLocales: const [
+          Locale('en'),
+          Locale('es'),
+          Locale('fr'),
+          Locale('ja'),
+          Locale('zh'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en'),
+        child: AppLifecycleManager(),
+      ),
     ),
+    () => PerformanceHttpClient(),
   );
 }
 
@@ -308,8 +315,7 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 }
 
 class MyApp extends StatelessWidget {
-  // static final GlobalKey<NavigatorState> navigatorKey =
-  //     GlobalKey<NavigatorState>();
+
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -367,10 +373,10 @@ class MyApp extends StatelessWidget {
             themeMode: themeProvider.getTheme.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            navigatorObservers: [routeObserver],
             home: GlobalBackHandler(
               child: SplashScreen(),
             ),
-            // home: SplashScreen(),
           );
         },
       ),
@@ -539,11 +545,11 @@ void checkForInitialMessage() async {
 Future<bool> _subscribeToNotifications(String userId, String token) async {
   try {
     final url = Uri.parse(AppConstant.SUBSCRIBE_NOTIFICATION);
+    final payload = {'user_id': userId, 'topic': 'general', 'mobile_token': token};
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-          {'user_id': userId, 'topic': 'general', 'mobile_token': token}),
+      body: jsonEncode(payload),
     );
 
     return response.statusCode == 200;
