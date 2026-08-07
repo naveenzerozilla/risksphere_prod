@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart';
+import '../utils/env.dart';
 
 // For storing our result
 class Suggestion {
@@ -22,10 +23,7 @@ class PlaceApiProvider {
 
   PlaceApiProvider(this.sessionToken);
 
-  static final String androidKey = 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw';
-  static final String iosKey = 'AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw';
-  // static final String iosKey = 'AIzaSyANTq11H8jWvLmmFojVIP7j3tfCZ9lUavE';
-  final apiKey = Platform.isAndroid ? androidKey : iosKey;
+  final apiKey = Env.get('GOOGLE_MAPS_API_KEY');
 
   Future<List<Suggestion>> fetchSuggestions(String input, String lang) async {
     final request =

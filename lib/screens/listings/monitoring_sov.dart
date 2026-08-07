@@ -6,6 +6,7 @@ import 'package:RiskSphere/models/role_model.dart' as roleModel;
 import '../chatbot/chatbot.dart';
 import '../event/event_visualisations.dart';
 import '../payments/purchase_license.dart';
+import 'sov_location_list.dart';
 
 class MontoringSovList extends StatefulWidget {
   final String? status;
@@ -316,9 +317,8 @@ class _MySovListState extends State<MontoringSovList>
                               child: Text(
                                 "Monitoring SoV",
                                 style: TextStyle(
-                                    fontSize: 20,
-                                    color: const Color.fromRGBO(
-                                        255, 255, 255, 0.7),
+                                    fontSize: 18,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.w400),
                               )),
                           SizedBox(height: CustomSpacing.one),
@@ -327,7 +327,7 @@ class _MySovListState extends State<MontoringSovList>
                               child: Text(
                                 "Create focused monitoring groups for live natural catastrophe tracking. Maximum 5 SoVs, up to 15 locations each.",
                                 style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: const Color.fromRGBO(
                                         255, 255, 255, 0.7),
                                     fontWeight: FontWeight.w400),
@@ -413,15 +413,15 @@ class _MySovListState extends State<MontoringSovList>
                   builder: (context, sovListProvider, _) {
                     return LayoutBuilder(
                       builder: (context, constraints) {
-                        final isMobile = constraints.maxWidth < 600;
+                        final isMobile = constraints.maxWidth < 500;
 
                         return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: 25,
+                          runSpacing: 6,
                           children: [
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 18
+                                  ? (constraints.maxWidth / 2) - 11
                                   : 220,
                               child: InfoCard(
                                 title: "Total Events",
@@ -433,7 +433,7 @@ class _MySovListState extends State<MontoringSovList>
                             ),
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 18
+                                  ? (constraints.maxWidth / 2) - 15
                                   : 220,
                               child: InfoCard(
                                 title: "Impacted Locations of Total",
@@ -445,7 +445,7 @@ class _MySovListState extends State<MontoringSovList>
                             ),
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 18
+                                  ? (constraints.maxWidth / 2) - 11
                                   : 220,
                               child: InfoCard(
                                 title: "Hurricane Monitoring Locations",
@@ -453,11 +453,14 @@ class _MySovListState extends State<MontoringSovList>
                                   sovListProvider.hurricaneMonitoringLocations,
                                 ),
                                 icon: Icons.gas_meter_outlined,
+                                onTap: () {
+
+                                },
                               ),
                             ),
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 18
+                                  ? (constraints.maxWidth / 2) - 15
                                   : 220,
                               child: InfoCard(
                                 title: "Earthquake Monitoring Locations",
@@ -465,6 +468,9 @@ class _MySovListState extends State<MontoringSovList>
                                   sovListProvider.earthquakeMonitoringLocations,
                                 ),
                                 icon: Icons.crisis_alert,
+                                onTap: () {
+
+                                },
                               ),
                             ),
                           ],
@@ -473,7 +479,7 @@ class _MySovListState extends State<MontoringSovList>
                     );
                   },
                 ),
-                monitoringLimitCard(),
+                // monitoringLimitCard(),
                 SizedBox(height: CustomSpacing.two),
                 Consumer<SOVListProvider>(
                   builder: (context, sovListProvider, _) {
@@ -517,7 +523,7 @@ class _MySovListState extends State<MontoringSovList>
                                   builder: (context) => EventVisulisationScreen(
                                       notificationData: {
                                         'title':
-                                            sov.hazardName ?? "Event Details",
+                                            sov.eventName ?? "Event Details",
                                         'body': "body",
                                         'timestamp':
                                             DateTime.fromMillisecondsSinceEpoch(
@@ -534,7 +540,6 @@ class _MySovListState extends State<MontoringSovList>
                                       }),
                                 ),
                               );
-
                             },
                             child: _buildMonitoringSovCard(
                                 index, sovListProvider));
@@ -547,66 +552,66 @@ class _MySovListState extends State<MontoringSovList>
     });
   }
 
-  Widget monitoringLimitCard() {
-    return Container(
-      margin: const EdgeInsets.all(6),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFFA726),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFA726).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Color(0xFFFFA726),
-                  size: 22,
-                ),
-              ),
-              SizedBox(width: 5),
-              Text(
-                "Monitoring Mode Limits Apply",
-                style: TextStyle(
-                  color: Color(0xFFFFA726),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(width: 12),
-
-          SizedBox(height: 8),
-
-          // Bullet Points
-          _BulletText(
-            text: "Maximum 5 Monitoring SoVs allowed per workspace",
-          ),
-          _BulletText(
-            text: "Maximum 15 locations per Monitoring SoV",
-          ),
-          _BulletText(
-            text:
-                "Only Monitoring-tagged SoVs can be pushed to live monitoring",
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget monitoringLimitCard() {
+  //   return Container(
+  //     margin: const EdgeInsets.all(6),
+  //     padding: const EdgeInsets.all(8),
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF1E1E1E),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: const Color(0xFFFFA726),
+  //         width: 1,
+  //       ),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             Container(
+  //               padding: const EdgeInsets.all(6),
+  //               decoration: BoxDecoration(
+  //                 color: const Color(0xFFFFA726).withOpacity(0.15),
+  //                 borderRadius: BorderRadius.circular(12),
+  //               ),
+  //               child: const Icon(
+  //                 Icons.warning_amber_rounded,
+  //                 color: Color(0xFFFFA726),
+  //                 size: 22,
+  //               ),
+  //             ),
+  //             SizedBox(width: 5),
+  //             Text(
+  //               "Monitoring Mode Limits Apply",
+  //               style: TextStyle(
+  //                 color: Color(0xFFFFA726),
+  //                 fontSize: 16,
+  //                 fontWeight: FontWeight.w600,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //
+  //         const SizedBox(width: 12),
+  //
+  //         SizedBox(height: 8),
+  //
+  //         // Bullet Points
+  //         _BulletText(
+  //           text: "Maximum 5 Monitoring SoVs allowed per workspace",
+  //         ),
+  //         _BulletText(
+  //           text: "Maximum 15 locations per Monitoring SoV",
+  //         ),
+  //         _BulletText(
+  //           text:
+  //               "Only Monitoring-tagged SoVs can be pushed to live monitoring",
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildMonitoringSovCard(int index, SOVListProvider sOVListProvider) {
     var typography = CustomTypography(context);
@@ -658,7 +663,6 @@ class _MySovListState extends State<MontoringSovList>
 
                 const SizedBox(height: 6),
 
-                /// 🔹 Locations Impacted
                 Text(
                   "Locations Impacted : ${sov.impactedLocCount ?? 0}",
                   style: typography.Body2.copyWith(
@@ -678,25 +682,66 @@ class _MySovListState extends State<MontoringSovList>
 
                 Row(
                   children: [
-                    Text(
-                      "Event Type : ",
-                      style: typography.Body2.copyWith(
-                        color: Colors.white70,
-                        fontSize: 13,
+                    Expanded(
+                      flex: 6,
+                      child: Row(
+                        children: [
+                          Text(
+                            "Event Type : ",
+                            style: typography.Body2.copyWith(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              sov.hazardName.toString(),
+                              style: typography.Body2.copyWith(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      sov.vendorName.toString(),
-                      style: typography.Body2.copyWith(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      flex: 4,
+                      child: Row(
+                        children: [
+                          Text(
+                            "Vendor : ",
+                            style: typography.Body2.copyWith(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              sov.vendorName.toString(),
+                              style: typography.Body2.copyWith(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 8),
+
 
                 Row(
                   children: [
@@ -781,21 +826,25 @@ class InfoCard extends StatelessWidget {
   final String title;
   final dynamic count;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const InfoCard({
     super.key,
     required this.title,
     required this.count,
     required this.icon,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 120,
-      width: 180,
-      child: Card(
-        color: Colors.white12,
+      height: 100,
+      width: 121,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Card(
+          color: Colors.white12,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(8, 1, 0, 2),
           child: Column(
@@ -848,8 +897,9 @@ class InfoCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 String? messageError;

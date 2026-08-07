@@ -176,41 +176,6 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
     );
   }
 
-  Stream<QuerySnapshot> _fetchBatchedProcesses(
-      List<String> docIds, int batchSize) {
-    print('Total docIds: ${docIds.length}'); // Debug print
-    final List<Stream<QuerySnapshot>> streams = [];
-
-    for (int i = 0; i < docIds.length; i += batchSize) {
-      final batch = docIds.sublist(
-        i,
-        i + batchSize > docIds.length ? docIds.length : i + batchSize,
-      );
-
-      print(
-          'Processing batch ${i ~/ batchSize + 1} with ${batch.length} IDs'); // Debug print
-      print('Batch IDs: $batch'); // Debug print
-
-      streams.add(FirestoreService.db
-          .collection('processes')
-          .where(FieldPath.documentId, whereIn: batch)
-          .snapshots()
-          .map((snapshot) {
-        print(
-            'Batch ${i ~/ batchSize + 1} returned ${snapshot.docs.length} documents'); // Debug print
-        return snapshot;
-      }));
-    }
-
-    // Return merged stream with additional debug info
-    return StreamGroup.merge(streams).map((snapshot) {
-      print(
-          'Merged snapshot has ${snapshot.docs.length} documents'); // Debug print
-      return snapshot;
-    });
-  }
-
-  // Build each process card with subprocesses inside as ExpansionTile
   Widget _buildProcessCard({
     required String processId,
     required String companyName,
@@ -671,7 +636,6 @@ class _ProcessMonitoringScreenState extends State<ProcessMonitoringScreen> {
   }
 }
 
-// Utility function to safely convert to Map<String, dynamic>
 Map<String, dynamic> convertToStringDynamicMap(Map<dynamic, dynamic>? data) {
   if (data == null) {
     return {};

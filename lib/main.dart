@@ -15,6 +15,8 @@ import 'package:http/http.dart' as http;
 import 'package:easy_localization/easy_localization.dart';
 
 late PerformanceHttpClient httpClient;
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -313,8 +315,7 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 }
 
 class MyApp extends StatelessWidget {
-  // static final GlobalKey<NavigatorState> navigatorKey =
-  //     GlobalKey<NavigatorState>();
+
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -372,10 +373,10 @@ class MyApp extends StatelessWidget {
             themeMode: themeProvider.getTheme.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            navigatorObservers: [routeObserver],
             home: GlobalBackHandler(
               child: SplashScreen(),
             ),
-            // home: SplashScreen(),
           );
         },
       ),
@@ -545,12 +546,6 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
   try {
     final url = Uri.parse(AppConstant.SUBSCRIBE_NOTIFICATION);
     final payload = {'user_id': userId, 'topic': 'general', 'mobile_token': token};
-    
-    print("================ API: Subscribe Notification ================");
-    print("URL: $url");
-    print("Payload: ${jsonEncode(payload)}");
-    print("============================================================");
-
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

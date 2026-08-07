@@ -216,7 +216,7 @@ class SovItem {
       hazardName: json['hazard_name'],
       vendorName: json['vendor_name'],
       status: json['status'],
-      impactedLocCount: json['impacted_locations'],
+      impactedLocCount: json['impacted_loc_count'],
       locationCoordinates: json['location_coordinates'] != null
           ? LocationCoordinates.fromJson(json['location_coordinates'])
           : null,
