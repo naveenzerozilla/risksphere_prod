@@ -12,14 +12,17 @@ import 'package:provider/provider.dart';
 import 'package:RiskSphere/providers/auth_provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'package:RiskSphere/utils/env.dart';
+
 class AppleSignInButton extends StatelessWidget {
   final VoidCallback? onSuccess;
   final void Function(Exception error)? onError;
 
   const AppleSignInButton({super.key, this.onSuccess, this.onError});
 
-  static const String serviceId = 'com.sonofthunder.risksphere.service';
-  static const String firebaseProjectId = 'project-green-prod';
+  static String get serviceId => Env.get('APPLE_SERVICE_ID');
+
+  static String get firebaseProjectId => Env.get('FIREBASE_PROJECT_ID');
 
   String _generateNonce([int length = 32]) {
     const charset =

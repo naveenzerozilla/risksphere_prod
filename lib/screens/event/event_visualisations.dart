@@ -70,15 +70,26 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
     setState(() => _isLoading = true);
 
     try {
-      // Only load GeoJSON storm data — eventInfo API is not called.
-      await _loadStormData().timeout(
-        const Duration(seconds: 20),
-        onTimeout: () {
-          print("===== INITIALIZE TIMED OUT — forcing loading=false =====");
-        },
-      );
+      final dynamic rawUrls = widget.notificationData['frontendUrls'];
+      if (rawUrls == null || (rawUrls is String && rawUrls.isEmpty)) {
+        print("No frontendUrls found in notificationData. Calling _fetchEventInfo...");
+        await _fetchEventInfo();
+      } else {
+        await _loadStormData().timeout(
+          const Duration(seconds: 20),
+          onTimeout: () async {
+            print("===== INITIALIZE TIMED OUT — calling fallback _fetchEventInfo =====");
+            await _fetchEventInfo();
+          },
+        );
+      }
     } catch (e) {
-      print("===== INITIALIZE ERROR: $e =====");
+      print("===== INITIALIZE ERROR: $e. Falling back to _fetchEventInfo... =====");
+      try {
+        await _fetchEventInfo();
+      } catch (fallbackErr) {
+        print("===== FALLBACK ERROR: $fallbackErr =====");
+      }
     } finally {
       // Always unblock the spinner — no matter what happened above
       if (mounted) setState(() => _isLoading = false);
@@ -88,7 +99,9 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
 
   Future<void> _loadStormData() async {
     try {
+      print("Notification Data received: ${widget.notificationData}");
       final dynamic rawUrls = widget.notificationData['frontendUrls'];
+      print("Raw URLs from notificationData: $rawUrls");
 
       FrontendUrls? parsedUrls;
       if (rawUrls is FrontendUrls) {
@@ -104,7 +117,8 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
       }
 
       if (parsedUrls == null) {
-        debugPrint('No frontendUrls found in notificationData');
+        debugPrint('No frontendUrls found in notificationData. Calling _fetchEventInfo fallback.');
+        await _fetchEventInfo();
         return;
       }
 
@@ -138,10 +152,12 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
 
   Future<String> _getLocalFileContent(String filename, String url) async {
     try {
+      print("Downloading $filename from URL: $url");
       final response = await _rawHttpClient
           .get(Uri.parse(url))
           .timeout(const Duration(seconds: 10));
 
+      print("Download $filename finished with status: ${response.statusCode}, body length: ${response.body.length}");
       if (response.statusCode == 200) {
         return response.body;
       } else {
@@ -171,7 +187,8 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
           swathUrl.isEmpty ||
           uiDataUrl == null ||
           uiDataUrl.isEmpty) {
-        print("loadStormGeoJson: one or more URLs are empty — aborting");
+        print("loadStormGeoJson: one or more URLs are empty — aborting and calling _fetchEventInfo fallback");
+        await _fetchEventInfo();
         return;
       }
 
@@ -221,10 +238,14 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
       final trackFeatures = trackJson['features'] as List<dynamic>? ?? [];
       final coneFeatures = coneJson['features'] as List<dynamic>? ?? [];
 
+      print("GeoJSON parsed feature counts - Points: ${pointFeatures.length}, UI: ${uiFeatures.length}, Track: ${trackFeatures.length}, Cone: ${coneFeatures.length}");
+
       final pointMarkerData = _parsePointMarkers({'features': pointFeatures});
       final polylineData = _parsePolylines(trackFeatures);
       final polygonData = _parsePolygonData(coneFeatures);
       final uiMarkerData = _parseUiMarkerData(uiFeatures);
+
+      print("Parsed structures - pointMarkers: ${pointMarkerData.length}, polylineData: ${polylineData.length}, polygonData: ${polygonData.length}, uiMarkers: ${uiMarkerData.length}");
 
       final Set<Marker> markers = {};
 
@@ -314,7 +335,12 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
         });
       }
     } catch (e) {
-      print("Error loading or parsing storm GeoJSON: $e");
+      print("Error loading or parsing storm GeoJSON: $e. Falling back to _fetchEventInfo...");
+      try {
+        await _fetchEventInfo();
+      } catch (fallbackErr) {
+        print("===== FALLBACK ERROR: $fallbackErr =====");
+      }
       // Always unblock the spinner so the page doesn't stay stuck
       if (mounted) setState(() => _isLoading = false);
     }
@@ -856,15 +882,32 @@ class _EventVisulisationScreenState extends State<EventVisulisationScreen>
 
       print("FINAL MAP URL 👉 $fetchedMapUrl");
 
+      Set<Marker> markers = locations.map<Marker>((location) {
+        return Marker(
+          markerId: MarkerId(
+            location['location_id']?.toString() ?? UniqueKey().toString(),
+          ),
+          position: LatLng(
+            (location['latitude'] ?? 20.5937).toDouble(),
+            (location['longitude'] ?? 78.9629).toDouble(),
+          ),
+          infoWindow: InfoWindow(
+            title: location['location_name']?.toString() ?? location['name']?.toString() ?? 'Location Details',
+            snippet: location['location_address']?.toString() ?? location['address']?.toString() ?? '',
+          ),
+        );
+      }).toSet();
+
       setState(() {
         locationsData = locations;
+        _markers = markers;
         _isLoading = false;
       });
 
       /// MOVE CAMERA TO FIRST LOCATION
-      if (_markers.isNotEmpty) {
+      if (_initialMapCenter != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
+          if (mounted && _mapController != null) {
             try {
               _mapController!.animateCamera(
                 CameraUpdate.newLatLngZoom(

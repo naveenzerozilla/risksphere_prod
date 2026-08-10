@@ -81,10 +81,19 @@ class _LocationTableState extends State<LocationTable> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+    if (!_scrollController.hasClients) return;
+    
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    
+    // Trigger only if we scrolled past 90% of the table length and are not already loading
+    if (currentScroll >= maxScroll * 0.9 &&
         !provider!.isNextPageLoading &&
+        !provider!.isLoading &&
         provider!.page < provider!.totalPages) {
+      
+      // Prevent duplicate updates by setting loading flag immediately before call
+      provider!.isNextPageLoading = true;
       provider!.page++;
 
       provider!.fetchLocationList(

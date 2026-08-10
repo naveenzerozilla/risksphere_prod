@@ -189,6 +189,16 @@ class Location {
   }
 
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Location &&
+          runtimeType == other.runtimeType &&
+          locationId == other.locationId;
+
+  @override
+  int get hashCode => locationId.hashCode;
+
+  @override
   String toString() {
     return 'Location(locationId: $locationId, locationName: $locationName, isChecked: $isChecked)';
   }
