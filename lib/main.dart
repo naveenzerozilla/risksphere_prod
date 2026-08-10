@@ -219,13 +219,11 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
             subAccountId: subAccountId,
             sovId: '',
             locationId: '',
-            accountName: (accountName.isNotEmpty)
-                ? accountName
-                : 'Default Account',
-            subAccountName:
-                (subAccountName.isNotEmpty)
-                    ? subAccountName
-                    : 'Default Subaccount',
+            accountName:
+                (accountName.isNotEmpty) ? accountName : 'Default Account',
+            subAccountName: (subAccountName.isNotEmpty)
+                ? subAccountName
+                : 'Default Subaccount',
           ),
         ),
         (route) => false,
@@ -315,7 +313,6 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager>
 }
 
 class MyApp extends StatelessWidget {
-
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -545,7 +542,11 @@ void checkForInitialMessage() async {
 Future<bool> _subscribeToNotifications(String userId, String token) async {
   try {
     final url = Uri.parse(AppConstant.SUBSCRIBE_NOTIFICATION);
-    final payload = {'user_id': userId, 'topic': 'general', 'mobile_token': token};
+    final payload = {
+      'user_id': userId,
+      'topic': 'general',
+      'mobile_token': token
+    };
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -560,7 +561,6 @@ Future<bool> _subscribeToNotifications(String userId, String token) async {
 
 class CustomToast {
   static void showToast(String title, String message) {
-    print("Foreground notifications");
     final context = navigatorKey.currentContext;
     if (context != null) {
       ScaffoldMessenger.of(context).showSnackBar(
