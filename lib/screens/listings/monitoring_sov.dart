@@ -386,7 +386,6 @@ class _MySovListState extends State<MontoringSovList>
                               'We hope you\'ve enjoyed your trial period! To continue accessing your account and keep your data safe, please upgrade before ${trialMap ?? 'your trial end date'}. After this date, we will need to delete your data. Thank you for being with us!',
                           style: typography.Body1,
                         ),
-                        // tappable
                         TextSpan(
                           text: ' Upgrade Now!',
                           style: typography.Body1.copyWith(
@@ -904,36 +903,3 @@ class InfoCard extends StatelessWidget {
 
 String? messageError;
 
-class _BulletText extends StatelessWidget {
-  final String text;
-
-  const _BulletText({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "• ",
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

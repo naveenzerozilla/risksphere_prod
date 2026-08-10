@@ -1,8 +1,8 @@
 import '../constants/configuration.dart';
+import 'env.dart';
 
 class AppConstant {
-  static const String Stripe_prod =
-      'pk_live_51RWO6tRwbwNkvtwyBk3hTthEuR3oWdTGMNeZ9J3gshZOOPgu7GvygcD0ckMwvgxm12JCu7EZX9Jlh7x70BLT3We400Lfw89f3z';
+  static String get Stripe_prod => Env.get('STRIPE_PUBLISHABLE_KEY');
 
   static const String REGION = "us-central1";
 

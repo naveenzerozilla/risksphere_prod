@@ -83,15 +83,22 @@ class LocationDataScreenState extends State<LocationDataScreen>
 
       if (querySnapshot.docs.isNotEmpty) {
         final data = querySnapshot.docs.first.data();
+        final newStatus = data['duplication_check_status'] ?? '';
 
         if (!mounted) return;
 
-        setState(() {
-          processStatus = data['duplication_check_status'] ?? '';
-        });
+        if (processStatus != newStatus) {
+          setState(() {
+            processStatus = newStatus;
+          });
+          print("Process status updated: $processStatus");
+          _getData();
+        }
 
-        print(processStatus);
-        _getData(); // Make sure _getData checks `mounted` before setState
+        // Optimize: If process completed/finished, we can cancel the listener
+        if (newStatus == 'completed' || newStatus == 'finished' || newStatus == 'failed') {
+          _processStatusSubscription?.cancel();
+        }
       }
     });
   }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -29,7 +31,7 @@ android {
         versionName = flutter.versionName
 
         // Load properties for secure credentials injection
-        val localProperties = java.util.Properties()
+        val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
             localProperties.load(localPropertiesFile.inputStream())
@@ -41,7 +43,7 @@ android {
     }
 
     // Load properties at root level of android block for signing configurations
-    val localProperties = java.util.Properties()
+    val localProperties = Properties()
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
         localProperties.load(localPropertiesFile.inputStream())
