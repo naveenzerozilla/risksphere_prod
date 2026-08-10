@@ -50,3 +50,5 @@ pubspec.lock
 firebase.json
 # Ignore firebase options files
 lib/firebase_options.dart
+assetlinks.json
+assetlink.json
