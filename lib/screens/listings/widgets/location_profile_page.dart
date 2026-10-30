@@ -5,6 +5,8 @@ import 'package:RiskSphere/screens/listings/widgets/my_scrollable_scores_widget.
 import '../../../design_system/primitives/custom_typography.dart';
 import '../../../utils/env.dart';
 import 'hazard_section_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class LocationProfileDetailsPage extends StatelessWidget {
   final String? lat;
@@ -53,6 +55,71 @@ class LocationProfileDetailsPage extends StatelessWidget {
     this.hazardProcess,
   });
 
+  void _showStreetViewDialog(BuildContext context, String? latStr, String? lngStr) {
+    final lat = double.tryParse(latStr ?? '') ?? 0.0;
+    final lng = double.tryParse(lngStr ?? '') ?? 0.0;
+    final apiKey = Env.get('GOOGLE_MAPS_API_KEY')
+        .trim()
+        .replaceAll("'", "")
+        .replaceAll('"', "");
+        
+    final String html = '''
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <style>
+            body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+            iframe { border: none; width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <iframe
+            src="https://www.google.com/maps/embed/v1/streetview?key=$apiKey&location=$lat,$lng"
+            allowfullscreen>
+          </iframe>
+        </body>
+      </html>
+    ''';
+
+    final WebViewController controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(html);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              width: MediaQuery.of(context).size.width,
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: controller),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black, size: 30),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white70,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
@@ -73,12 +140,17 @@ class LocationProfileDetailsPage extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: (geocodingScore == 5)
-                      ? Image.network(
-                    "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=$lat,$long&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                  )
+                      ? GestureDetector(
+                          onTap: () {
+                            _showStreetViewDialog(context, lat, long);
+                          },
+                          child: Image.network(
+                            "https://maps.googleapis.com/maps/api/streetview?size=600x300&location=$lat,$long&key=${Env.get('GOOGLE_MAPS_API_KEY')}",
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        )
                       : (imageUrl != null && imageUrl!.isNotEmpty)
                       ? Image.network(
                     imageUrl!,

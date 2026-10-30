@@ -186,46 +186,96 @@ class AggregationCounts {
   }
 }
 
+class OtherEvent {
+  String? eventId;
+  String? date;
+
+  OtherEvent({this.eventId, this.date});
+
+  factory OtherEvent.fromJson(dynamic json) {
+    if (json == null) return OtherEvent();
+    if (json is OtherEvent) return json;
+    if (json is Map) {
+      return OtherEvent(
+        eventId: json['event_id']?.toString() ?? json['id']?.toString(),
+        date: json['date']?.toString() ?? json['data_source_date']?.toString(),
+      );
+    }
+    return OtherEvent();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'event_id': eventId,
+      'date': date,
+    };
+  }
+}
+
 class SovItem {
   String? id;
+  String? eventId;
   String? eventName;
   String? hazardName;
   String? vendorName;
   String? status;
   int? impactedLocCount;
+  String? dataSourceDate;
+  String? runDtg;
   LocationCoordinates? locationCoordinates;
   CreatedAt? updatedAt;
+  CreatedAt? lastUpdateDate;
   FrontendUrls? frontendUrls;
+  List<OtherEvent>? otherEvents;
 
   SovItem({
     this.id,
+    this.eventId,
     this.eventName,
     this.hazardName,
     this.vendorName,
     this.status,
     this.impactedLocCount,
+    this.dataSourceDate,
+    this.runDtg,
     this.locationCoordinates,
     this.updatedAt,
+    this.lastUpdateDate,
     this.frontendUrls,
+    this.otherEvents,
   });
 
   factory SovItem.fromJson(Map<String, dynamic> json) {
     return SovItem(
-      id: json['id'],
-      eventName: json['event_name'],
-      hazardName: json['hazard_name'],
-      vendorName: json['vendor_name'],
-      status: json['status'],
-      impactedLocCount: json['impacted_loc_count'],
+      id: json['id']?.toString() ?? json['event_id']?.toString(),
+      eventId: json['event_id']?.toString() ?? json['id']?.toString(),
+      eventName: json['event_name']?.toString(),
+      hazardName: json['hazard_name']?.toString(),
+      vendorName: json['vendor_name']?.toString(),
+      status: json['status']?.toString(),
+      impactedLocCount: json['impacted_loc_count'] is int
+          ? json['impacted_loc_count']
+          : int.tryParse(json['impacted_loc_count']?.toString() ?? ''),
+      dataSourceDate: json['data_source_date']?.toString(),
+      runDtg: json['run_dtg']?.toString(),
       locationCoordinates: json['location_coordinates'] != null
           ? LocationCoordinates.fromJson(json['location_coordinates'])
           : null,
       updatedAt: json['updated_at'] != null
           ? CreatedAt.fromJson(json['updated_at'])
           : null,
+      lastUpdateDate: json['last_update_date'] != null
+          ? CreatedAt.fromJson(json['last_update_date'])
+          : null,
       frontendUrls: json['frontend_urls'] != null
           ? FrontendUrls.fromJson(json['frontend_urls'])
-          : null
+          : null,
+      otherEvents: json['other_events'] != null && json['other_events'] is List
+          ? (json['other_events'] as List)
+              .map((x) => OtherEvent.fromJson(x))
+              .where((e) => e.eventId != null || e.date != null)
+              .toList()
+          : null,
     );
   }
 }
@@ -242,11 +292,23 @@ class FrontendUrls {
         this.stormSwathGeojson,
         this.stormTrackGeojson});
 
-  FrontendUrls.fromJson(Map<String, dynamic> json) {
-    uiDataGeojson = json['ui_data.geojson'];
-    stormForecastPointsGeojson = json['storm_forecast_points.geojson'];
-    stormSwathGeojson = json['storm_swath.geojson'];
-    stormTrackGeojson = json['storm_track.geojson'];
+  factory FrontendUrls.fromJson(dynamic json) {
+    if (json == null) return FrontendUrls();
+    if (json is FrontendUrls) return json;
+    if (json is Map) {
+      return FrontendUrls(
+        uiDataGeojson: json['ui_data.geojson']?.toString() ??
+            json['ui_data_geojson']?.toString(),
+        stormForecastPointsGeojson:
+            json['storm_forecast_points.geojson']?.toString() ??
+                json['storm_forecast_points_geojson']?.toString(),
+        stormSwathGeojson: json['storm_swath.geojson']?.toString() ??
+            json['storm_swath_geojson']?.toString(),
+        stormTrackGeojson: json['storm_track.geojson']?.toString() ??
+            json['storm_track_geojson']?.toString(),
+      );
+    }
+    return FrontendUrls();
   }
 
   Map<String, dynamic> toJson() {
@@ -258,15 +320,41 @@ class FrontendUrls {
     return data;
   }
 }
+
 class CreatedAt {
   int? iSeconds;
   int? iNanoseconds;
 
   CreatedAt({this.iSeconds, this.iNanoseconds});
 
-  CreatedAt.fromJson(Map<String, dynamic> json) {
-    iSeconds = json['_seconds'];
-    iNanoseconds = json['_nanoseconds'];
+  factory CreatedAt.fromJson(dynamic json) {
+    if (json == null) return CreatedAt();
+    if (json is CreatedAt) return json;
+    if (json is Map) {
+      return CreatedAt(
+        iSeconds: json['_seconds'] is int
+            ? json['_seconds']
+            : int.tryParse(json['_seconds']?.toString() ?? ''),
+        iNanoseconds: json['_nanoseconds'] is int
+            ? json['_nanoseconds']
+            : int.tryParse(json['_nanoseconds']?.toString() ?? ''),
+      );
+    }
+    if (json is String) {
+      try {
+        final dt = DateTime.tryParse(json);
+        if (dt != null) {
+          return CreatedAt(
+            iSeconds: dt.millisecondsSinceEpoch ~/ 1000,
+            iNanoseconds: 0,
+          );
+        }
+      } catch (_) {}
+    }
+    if (json is int) {
+      return CreatedAt(iSeconds: json, iNanoseconds: 0);
+    }
+    return CreatedAt();
   }
 
   Map<String, dynamic> toJson() {
@@ -283,9 +371,18 @@ class LocationCoordinates {
 
   LocationCoordinates({this.longitude, this.latitude});
 
-  LocationCoordinates.fromJson(Map<String, dynamic> json) {
-    longitude = json['longitude'];
-    latitude = json['latitude'];
+  factory LocationCoordinates.fromJson(dynamic json) {
+    if (json == null) return LocationCoordinates();
+    if (json is LocationCoordinates) return json;
+    if (json is Map) {
+      return LocationCoordinates(
+        longitude: (json['longitude'] as num?)?.toDouble() ??
+            double.tryParse(json['longitude']?.toString() ?? ''),
+        latitude: (json['latitude'] as num?)?.toDouble() ??
+            double.tryParse(json['latitude']?.toString() ?? ''),
+      );
+    }
+    return LocationCoordinates();
   }
 
   Map<String, dynamic> toJson() {

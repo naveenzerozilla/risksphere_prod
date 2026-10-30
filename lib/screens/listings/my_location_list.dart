@@ -2766,13 +2766,12 @@ class _MyLocationListState extends State<MyLocationList>
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _lastProcessStatus = newStatus;
 
-            // 🔥 Update FAB based on process status
             if (newStatus == "processing") {
               fabStatusNotifier.value = "processing";
             } else if (newStatus == "completed") {
               fabStatusNotifier.value = "completed";
             } else {
-              fabStatusNotifier.value = "idle"; // normal
+              fabStatusNotifier.value = "idle";
             }
 
             _onProcessStatusChange(newStatus);

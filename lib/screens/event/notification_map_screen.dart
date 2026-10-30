@@ -31,7 +31,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
   String? mapUrl;
   String? _currentMapUrl;
   Set<TileOverlay> _tileOverlays =
-      {}; // ✅ stored as field, never rebuilt in build()
+      {};
   String? selectedFilter;
   Map<String, int> impactCounts = {'High': 0, 'Medium': 0, 'Low': 0};
   bool _isExpanded = false;
@@ -198,7 +198,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
             tileOverlayId: const TileOverlayId('map'),
             tileProvider: CustomTileProvider1(baseUrl: url),
             fadeIn: false,
-            // ✅ false prevents ghost overlay on iOS
             transparency: 0.0,
             zIndex: 1,
           ),
@@ -206,33 +205,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
       });
     });
   }
-
-  // // ✅ Only call this when the URL actually changes — not on every rebuild
-  // void _buildTileOverlay(String? url) {
-  //   if (url == null || url.isEmpty) {
-  //     if (_tileOverlays.isNotEmpty) {
-  //       setState(() => _tileOverlays = {});
-  //     }
-  //     return;
-  //   }
-  //
-  //   // Same URL — don't recreate, overlay is already alive
-  //   if (url == _currentMapUrl) return;
-  //
-  //   _currentMapUrl = url;
-  //   setState(() {
-  //     _tileOverlays = {
-  //       TileOverlay(
-  //         tileOverlayId: const TileOverlayId('map'),
-  //         tileProvider: CustomTileProvider1(baseUrl: url),
-  //         fadeIn: true,
-  //         // smooth tile appearance
-  //         transparency: 0.0,
-  //         zIndex: 1,
-  //       ),
-  //     };
-  //   });
-  // }
 
   bool isMapView = true;
 
@@ -408,7 +380,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
                     },
                   ),
 
-                  /// MAP / TABLE TOGGLE
                   Container(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -509,8 +480,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
                                     mapType: MapType.normal,
                                     myLocationButtonEnabled: true,
                                     zoomControlsEnabled: true,
-                                    // ✅ ADD THIS — forces iOS to re-request tiles cleanly on zoom
-                                    onCameraMove: (_) {
+                                   onCameraMove: (_) {
                                       if (_tileOverlays.isNotEmpty) {
                                         final overlay = _tileOverlays.first;
                                         _mapController.clearTileCache(
@@ -813,28 +783,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
     );
   }
 
-  String _formatDate(String ddmmyyhhmm) {
-    final day = ddmmyyhhmm.substring(0, 2);
-    final month = ddmmyyhhmm.substring(2, 4);
-    final year = '20${ddmmyyhhmm.substring(4, 6)}';
-    final hour = ddmmyyhhmm.substring(6, 8);
-    final minute = ddmmyyhhmm.substring(8, 10);
 
-    final parsedDate = DateTime.parse('$year-$month-$day $hour:$minute');
-    return DateFormat('MM/dd/yyyy HH:mm:ss').format(parsedDate);
-  }
-
-  String? _extractImpact(Map<String, dynamic> json) {
-    for (final entry in json.entries) {
-      if (entry.key == 'impact') {
-        return entry.value.toString();
-      } else if (entry.value is Map) {
-        final impact = _extractImpact(entry.value as Map<String, dynamic>);
-        if (impact != null) return impact;
-      }
-    }
-    return null;
-  }
 
   Widget _buildLegend() {
     return Container(
@@ -855,7 +804,6 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
           ),
           const SizedBox(height: 10),
 
-          // 🔥 EXACT WEB GRADIENT
           Container(
             height: 12,
             width: 180,
@@ -876,7 +824,7 @@ class _NotificationMapScreenState extends State<NotificationMapScreen> {
           const SizedBox(height: 6),
 
           Container(
-            width: 180, // 👈 SAME as gradient width
+            width: 180,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [

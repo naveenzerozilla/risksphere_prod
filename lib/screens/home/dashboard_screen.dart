@@ -193,7 +193,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       pref.setBool("first_dashboard_loader", false);
     } else {
-      _showFirstTimeLoader = false;
+      if (mounted) {
+        setState(() {
+          _showFirstTimeLoader = false;
+        });
+      }
     }
   }
 

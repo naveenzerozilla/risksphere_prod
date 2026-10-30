@@ -14,13 +14,21 @@
       },
       "oauth_client": [
         {
+          "client_id": "733517635954-o5eik7glv6nais1js5csjdaoig49j4a1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.risksphere.green",
+            "certificate_hash": "e3017ed8954f0cfc56e8056ef2eb9d3e1baeab31"
+          }
+        },
+        {
           "client_id": "733517635954-chitpo2r6uilu6gma1pg1qrlfotj66es.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBP-LLpikZbtQIa4e7KfkMlwoIXvRuQQGw"
+          "current_key": "AIzaSyDqMmwmmcz2uZGVmX9-FxhmMmgO6v0j1K4"
         }
       ],
       "services": {

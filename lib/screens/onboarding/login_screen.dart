@@ -1,4 +1,5 @@
 import 'package:RiskSphere/main.dart';
+import 'package:RiskSphere/service/push_notification_service.dart';
 import 'package:country_pickers/country.dart';
 import 'package:country_pickers/country_picker_dropdown.dart';
 import 'package:country_pickers/utils/utils.dart';
@@ -501,7 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final isVerified = user.emailVerified;
 
                                     if (isVerified) {
-                                      initFCM(user.uid).catchError((e) {
+                                      PushNotificationService.initFCM(user.uid).catchError((e) {
                                         debugPrint('FCM init error: $e');
                                       });
 

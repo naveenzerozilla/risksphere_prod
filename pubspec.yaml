@@ -1,7 +1,7 @@
 name: RiskSphere
 description: "A new Flutter project."
 publish_to: 'none'
-version: 10.1.2+102
+version: 10.1.5+108
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
@@ -98,6 +98,7 @@ dependencies:
   google_maps_flutter_platform_interface: any
   intl: any
   crypto: any
+  shimmer: ^3.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -107,6 +108,7 @@ dev_dependencies:
 dependency_overrides:
   intl: ^0.20.2
   win32: ^5.5.4
+  device_info_plus: 11.2.1
 
 
 flutter_launcher_icons:

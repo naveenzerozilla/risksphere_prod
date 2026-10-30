@@ -407,6 +407,35 @@ class NewsFeedProvider extends ChangeNotifier {
   }
 
   /// Fetch eventDate from API and store as list of maps
+  /// Fetch a single event's full details (other_events, frontend_urls, etc.)
+  /// from vendor_management_v2/single_event/{eventId}.
+  /// Returns the result map (or null on failure).
+  Future<Map<String, dynamic>?> fetchSingleEvent({
+    required String eventId,
+  }) async {
+    try {
+      ApiService apiService =
+          ApiService('${AppConstant.GET_SINGLE_EVENT}/$eventId');
+      final response = await apiService.get('');
+      
+      if (response.containsKey('event') && response['event'] != null) {
+        final eventData = response['event'];
+        if (eventData is Map<String, dynamic>) return eventData;
+      }
+      if (response.containsKey('result') && response['result'] != null) {
+        final result = response['result'];
+        if (result is Map<String, dynamic>) return result;
+      }
+      // Some responses return the data directly at the top level
+      if (response.isNotEmpty) return response;
+      log('No result found in single_event response for: $eventId');
+    } catch (e, stackTrace) {
+      log('Error fetching single event: $e');
+      log(stackTrace.toString());
+    }
+    return null;
+  }
+
   Future<void> fetchEventDate({
     String? eventId,
   }) async {

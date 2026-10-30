@@ -10,6 +10,7 @@ import 'package:RiskSphere/screens/onboarding/login_screen.dart';
 import 'package:RiskSphere/service/shared_preference_service.dart';
 import 'package:http/http.dart' as http;
 import '../../main.dart';
+import '../../models/pending_data.dart';
 import '../../models/pending_location.dart';
 import '../listings/add_location_screen.dart';
 
@@ -151,23 +152,15 @@ class _SplashScreenState extends State<SplashScreen>
       return const LoginScreen();
     }
 
-    /// 2️⃣ Wait until Firebase finishes restoring auth state
-    User? user;
-    try {
-      user = await auth
-          .authStateChanges()
-          .timeout(const Duration(seconds: 5))
-          .first;
-    } catch (_) {
-      user = null;
-    }
+    /// 2️⃣ Check current user synchronously (Instant)
+    User? user = auth.currentUser;
 
     if (user == null) {
       return const LoginScreen();
     }
 
     try {
-      final tokenResult = await user.getIdTokenResult(true);
+      final tokenResult = await user.getIdTokenResult(false); // false = use cached token, don't force network wait
       final claims = tokenResult.claims ?? {};
       await SharedPreferenceService.setClaims(claims);
 
@@ -175,8 +168,6 @@ class _SplashScreenState extends State<SplashScreen>
         if (!mounted) return;
         context.read<UserProfileProvider>().getAllUserData(context, '', '');
       });
-
-      await Future.delayed(const Duration(milliseconds: 2000));
 
       debugPrint(
           'wasLaunchedViaShare: ${PendingSharedLocation.wasLaunchedViaShare}');

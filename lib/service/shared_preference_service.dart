@@ -279,10 +279,8 @@ class SharedPreferenceService {
           if (value.runtimeType == int) {
             if (value == 1) {
               prefs.setBool(key, true);
-              print('Claim $key set to true');
             } else {
               prefs.setBool(key, false);
-              print('Claim $key set to false');
             }
             break;
           }
@@ -378,15 +376,6 @@ class SharedPreferenceService {
     }
   }
 
-  // static Future<void> setScheduleInProgress(bool value) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.setString('schedule_in_progress', value.toString()); // Convert bool to String
-  // }
-  //
-  // static Future<String?> getScheduleInProgress() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   return prefs.getString('schedule_in_progress'); // Now returns a String
-  // }
 
   static Future<void> setUpcomingScheduleEndTime(String? value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

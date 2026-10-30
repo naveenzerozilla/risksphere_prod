@@ -38,6 +38,7 @@ import 'package:RiskSphere/screens/listings/widgets/message_card.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -1009,7 +1010,7 @@ class _LocationProfileState extends State<LocationProfile>
                                                       children: [
                                                         // ---------- SOV FLOW ----------
                                                         if (widget.sovId
-                                                                .isNotEmpty) ...[
+                                                            .isNotEmpty) ...[
                                                           InkWell(
                                                             onTap: () {
                                                               if (!bottomsheetopened) {
@@ -2229,7 +2230,8 @@ class _LocationProfileState extends State<LocationProfile>
 
                           /// ACTIVITY LOG TAB
                           if (index == 2) {
-                            final locationId = provider.locationProfile?.locationId;
+                            final locationId =
+                                provider.locationProfile?.locationId;
                             if (locationId != null && locationId.isNotEmpty) {
                               provider.fetchLocationActivityLogs(locationId);
                             }
@@ -2876,7 +2878,6 @@ class _LocationProfileState extends State<LocationProfile>
                                   ),
                                 ),
                               ),
-
                               SizedBox(height: 150),
                               if (isSelectionMode && !isSwitched)
                                 Align(
@@ -3151,260 +3152,6 @@ class _LocationProfileState extends State<LocationProfile>
                                     ),
                                   ),
                                 ),
-
-                              //old
-                              // if (isSelectionMode && !isSwitched)
-                              //
-                              //  SafeArea(
-                              //       top: false,
-                              //       child: Container(
-                              //         width: double.infinity,
-                              //         padding: const EdgeInsets.symmetric(
-                              //             horizontal: 16.0, vertical: 12.0),
-                              //         decoration: BoxDecoration(
-                              //           // color: Colors.white,
-                              //           boxShadow: [
-                              //             BoxShadow(
-                              //               color: Colors.black26,
-                              //               blurRadius: 8,
-                              //               offset: Offset(0, -2),
-                              //             ),
-                              //           ],
-                              //         ),
-                              //         child: CustomButton(
-                              //           type: ButtonType.elevated,
-                              //           onPressed: () async {
-                              //             Set<String> tempSelectedIds =
-                              //                 Set.from(selectedIds);
-                              //             await showDialog(
-                              //               context: context,
-                              //               barrierDismissible: false,
-                              //               builder: (context) {
-                              //                 bool confirmload = false;
-                              //
-                              //                 return StatefulBuilder(
-                              //                   builder:
-                              //                       (context, setStateDialog) {
-                              //                     return AlertDialog(
-                              //                       shape:
-                              //                           RoundedRectangleBorder(
-                              //                         borderRadius:
-                              //                             BorderRadius.circular(
-                              //                                 10),
-                              //                       ),
-                              //                       title: Text(
-                              //                           "Confirm Add to Campus"),
-                              //                       content: SizedBox(
-                              //                         width: double.maxFinite,
-                              //                         height:
-                              //                             MediaQuery.of(context)
-                              //                                     .size
-                              //                                     .height /
-                              //                                 3,
-                              //                         child: ListView.separated(
-                              //                           itemCount:
-                              //                               tempSelectedIds
-                              //                                   .length,
-                              //                           separatorBuilder:
-                              //                               (_, __) => SizedBox(
-                              //                                   height: 12),
-                              //                           itemBuilder:
-                              //                               (context, index) {
-                              //                             final selectedId =
-                              //                                 tempSelectedIds
-                              //                                         .toList()[
-                              //                                     index];
-                              //                             final item =
-                              //                                 filteredSubdestinations
-                              //                                     .firstWhere(
-                              //                               (element) =>
-                              //                                   element.id ==
-                              //                                   selectedId,
-                              //                             );
-                              //
-                              //                             return Row(
-                              //                               crossAxisAlignment:
-                              //                                   CrossAxisAlignment
-                              //                                       .start,
-                              //                               children: [
-                              //                                 Checkbox(
-                              //                                   value: tempSelectedIds
-                              //                                       .contains(
-                              //                                           selectedId),
-                              //                                   onChanged:
-                              //                                       (bool?
-                              //                                           value) {
-                              //                                     setStateDialog(
-                              //                                         () {
-                              //                                       if (value ==
-                              //                                           true) {
-                              //                                         tempSelectedIds
-                              //                                             .add(
-                              //                                                 selectedId);
-                              //                                       } else {
-                              //                                         tempSelectedIds
-                              //                                             .remove(
-                              //                                                 selectedId);
-                              //                                       }
-                              //                                     });
-                              //                                   },
-                              //                                 ),
-                              //                                 Expanded(
-                              //                                   child: Column(
-                              //                                     crossAxisAlignment:
-                              //                                         CrossAxisAlignment
-                              //                                             .start,
-                              //                                     children: [
-                              //                                       Text(item
-                              //                                               .name ??
-                              //                                           "Unnamed Location"),
-                              //                                       if (item.address !=
-                              //                                           null)
-                              //                                         Text(
-                              //                                           item.address!,
-                              //                                           style: TextStyle(
-                              //                                               fontSize:
-                              //                                                   12,
-                              //                                               color:
-                              //                                                   Colors.grey),
-                              //                                         ),
-                              //                                     ],
-                              //                                   ),
-                              //                                 ),
-                              //                               ],
-                              //                             );
-                              //                           },
-                              //                         ),
-                              //                       ),
-                              //                       actions: [
-                              //                         TextButton(
-                              //                           onPressed: () =>
-                              //                               Navigator.of(
-                              //                                       context)
-                              //                                   .pop(),
-                              //                           child: Text("Cancel"),
-                              //                         ),
-                              //                         ElevatedButton(
-                              //                           onPressed: confirmload
-                              //                               ? null
-                              //                               : () async {
-                              //                                   setStateDialog(
-                              //                                       () {
-                              //                                     confirmload =
-                              //                                         true;
-                              //                                   });
-                              //                                   try {
-                              //                                     var provider = Provider.of<
-                              //                                             MyLocationListProvider>(
-                              //                                         context,
-                              //                                         listen:
-                              //                                             false);
-                              //                                     final campusId = provider
-                              //                                             .locationProfile
-                              //                                             ?.finalAddress
-                              //                                             ?.campusId ??
-                              //                                         "";
-                              //
-                              //                                     for (String id
-                              //                                         in tempSelectedIds) {
-                              //                                       final subdestination =
-                              //                                           filteredSubdestinations.firstWhere((item) =>
-                              //                                               item.id ==
-                              //                                               id);
-                              //                                       String occupancy = (subdestination.rented ??
-                              //                                               false)
-                              //                                           ? 'Rented/Leased'
-                              //                                           : 'Owned';
-                              //
-                              //                                       await _addToSOV(
-                              //                                         subdestination
-                              //                                                 .id ??
-                              //                                             "",
-                              //                                         occupancy:
-                              //                                             occupancy,
-                              //                                         campusName:
-                              //                                             campusId,
-                              //                                       );
-                              //                                     }
-                              //
-                              //                                     setState(() {
-                              //                                       selectedIds
-                              //                                           .clear();
-                              //                                       isLoadingAddToCampus =
-                              //                                           false;
-                              //                                       isSelectionMode =
-                              //                                           false;
-                              //                                     });
-                              //                                     await _fetchAllData();
-                              //
-                              //                                     if (context
-                              //                                         .mounted) {
-                              //                                       widget
-                              //                                           .onConfirmCallback
-                              //                                           ?.call();
-                              //                                       _getData();
-                              //                                       _initializeClusterManager();
-                              //                                       await _refreshData();
-                              //                                       Navigator.of(
-                              //                                               context)
-                              //                                           .pop(
-                              //                                               true);
-                              //                                     }
-                              //                                   } finally {
-                              //                                     if (context
-                              //                                         .mounted) {
-                              //                                       setStateDialog(
-                              //                                           () {
-                              //                                         confirmload =
-                              //                                             false;
-                              //                                       });
-                              //                                     }
-                              //                                   }
-                              //                                 },
-                              //                           child: confirmload
-                              //                               ? SizedBox(
-                              //                                   width: 20,
-                              //                                   height: 20,
-                              //                                   child:
-                              //                                       CircularProgressIndicator(
-                              //                                     strokeWidth:
-                              //                                         2,
-                              //                                     color: Colors
-                              //                                         .white,
-                              //                                   ),
-                              //                                 )
-                              //                               : Text("Confirm"),
-                              //                         ),
-                              //                       ],
-                              //                     );
-                              //                   },
-                              //                 );
-                              //               },
-                              //             );
-                              //           },
-                              //           child: isLoadingAddToCampus
-                              //               ? SizedBox(
-                              //                   width: 20,
-                              //                   height: 20,
-                              //                   child:
-                              //                       CircularProgressIndicator(
-                              //                     strokeWidth: 2,
-                              //                     valueColor:
-                              //                         AlwaysStoppedAnimation<
-                              //                             Color>(Colors.white),
-                              //                   ),
-                              //                 )
-                              //               : Text(
-                              //                   'Confirm Add to Campus',
-                              //                   style: TextStyle(
-                              //                     color: Colors.black,
-                              //                     fontWeight: FontWeight.w600,
-                              //                     fontSize: 16,
-                              //                   ),
-                              //                 ),
-                              //         ),
-                              //       ),
-                              //     ),
                             ],
                           ),
                   ],
@@ -3810,6 +3557,70 @@ class _LocationProfileState extends State<LocationProfile>
       ),
     );
   }
+
+  void _showStreetViewDialog(BuildContext context, double lat, double lng) {
+    final apiKey = Env.get('GOOGLE_MAPS_API_KEY')
+        .trim()
+        .replaceAll("'", "")
+        .replaceAll('"', "");
+        
+    final String html = '''
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <style>
+            body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+            iframe { border: none; width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <iframe
+            src="https://www.google.com/maps/embed/v1/streetview?key=$apiKey&location=$lat,$lng"
+            allowfullscreen>
+          </iframe>
+        </body>
+      </html>
+    ''';
+
+    final WebViewController controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(html);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              width: MediaQuery.of(context).size.width,
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: controller),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black, size: 30),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white70,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildGoogleImage(MyLocation? profile) {
     final lat = profile?.finalAddress?.latitude ?? 0.0;
     final lng = profile?.finalAddress?.longitude ?? 0.0;
@@ -3819,8 +3630,7 @@ class _LocationProfileState extends State<LocationProfile>
         .replaceAll("'", "")
         .replaceAll('"', "");
 
-    final imageUrl =
-        "https://maps.googleapis.com/maps/api/streetview"
+    final imageUrl = "https://maps.googleapis.com/maps/api/streetview"
         "?size=600x300"
         "&location=$lat,$lng"
         "&key=$apiKey";
@@ -3828,71 +3638,76 @@ class _LocationProfileState extends State<LocationProfile>
     // debugPrint("Street View URL: $imageUrl");
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            /// IMAGE
-            Positioned.fill(
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: GestureDetector(
+          onTap: () {
+            _showStreetViewDialog(context, lat, lng);
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                /// IMAGE
+                Positioned.fill(
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    errorWidget: (context, url, error) {
+                      debugPrint("Street View Error: $error");
+                      return const Center(
+                        child: Icon(Icons.location_on, size: 40),
+                      );
+                    },
+                  ),
                 ),
-                errorWidget: (context, url, error) {
-                  debugPrint("Street View Error: $error");
-                  return const Center(
-                    child: Icon(Icons.location_on, size: 40),
-                  );
-                },
-              ),
-            ),
 
-            /// GOOGLE TEXT OVERLAY
-            Positioned(
-              left: 8,
-              right: 200,
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Text(
-                      '@',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                /// GOOGLE TEXT OVERLAY
+                Positioned(
+                  left: 8,
+                  right: 200,
+                  bottom: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Resource from Google',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Text(
+                          '@',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Resource from Google',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
+
   Widget _deleteIcon({required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
@@ -4340,8 +4155,7 @@ class _LocationProfileState extends State<LocationProfile>
 
                 child: ScrollbarTheme(
                   data: ScrollbarThemeData(
-                    thumbColor:
-                        WidgetStateProperty.all(Colors.lightBlueAccent),
+                    thumbColor: WidgetStateProperty.all(Colors.lightBlueAccent),
                     trackColor: WidgetStateProperty.all(Colors.black26),
                     thickness: WidgetStateProperty.all(3),
                     // move thickness here
@@ -5457,7 +5271,8 @@ class _LocationProfileState extends State<LocationProfile>
                                 onCameraIdle: () {
                                   _mapIsReady = true;
                                 },
-                                onCameraMove: (_) {
+                                onCameraMove: (CameraPosition position) {
+                                  _currentCenter = position.target;
                                   if (showViewMore) {
                                     setState(() {
                                       showViewMore =
@@ -5538,6 +5353,29 @@ class _LocationProfileState extends State<LocationProfile>
                           child: Icon(Icons.layers,
                               color: Theme.of(context).colorScheme.onSurface),
                           tooltip: 'Change Map Type',
+                        ),
+                        SizedBox(width: 8),
+                        FloatingActionButton.small(
+                          elevation: 0,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.brightness ==
+                                      Brightness.light
+                                  ? AppColors.paperElevation2Light
+                                  : AppColors.paperElevation2,
+                          onPressed: () {
+                            double targetLat = latitude;
+                            double targetLng = longitude;
+                            
+                            if (_currentCenter.latitude != 20.5937 || _currentCenter.longitude != 78.9629) {
+                                targetLat = _currentCenter.latitude;
+                                targetLng = _currentCenter.longitude;
+                            }
+                            
+                            _showStreetViewDialog(context, targetLat, targetLng);
+                          },
+                          child: Icon(Icons.streetview,
+                              color: Theme.of(context).colorScheme.onSurface),
+                          tooltip: 'Street View',
                         ),
                         SizedBox(width: 8),
                       ],
@@ -5640,8 +5478,58 @@ class _LocationProfileState extends State<LocationProfile>
                                     child: Icon(Icons.add_location_alt,
                                         color: Colors.white),
                                     tooltip: 'Add Campus',
-                                  )
-                                : Container()
+                                  ):Container()
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Zoom Controls
+                Positioned(
+                  bottom: MediaQuery.of(context).size.height / 5.8,
+                  right: 16,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.brightness == Brightness.light
+                          ? AppColors.paperElevation2Light
+                          : AppColors.paperElevation2,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FloatingActionButton.small(
+                          heroTag: null,
+                          elevation: 0,
+                          backgroundColor: Colors.transparent,
+                          onPressed: () {
+                            _mapController?.animateCamera(CameraUpdate.zoomIn());
+                          },
+                          child: Icon(Icons.add, color: Theme.of(context).colorScheme.onSurface),
+                          tooltip: 'Zoom In',
+                        ),
+                        Container(
+                          height: 1,
+                          width: 30,
+                          color: Theme.of(context).dividerColor.withOpacity(0.2),
+                        ),
+                        FloatingActionButton.small(
+                          heroTag: null,
+                          elevation: 0,
+                          backgroundColor: Colors.transparent,
+                          onPressed: () {
+                            _mapController?.animateCamera(CameraUpdate.zoomOut());
+                          },
+                          child: Icon(Icons.remove, color: Theme.of(context).colorScheme.onSurface),
+                          tooltip: 'Zoom Out',
+                        ),
                       ],
                     ),
                   ),

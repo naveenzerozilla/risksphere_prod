@@ -138,7 +138,7 @@ class MyLocationListProvider with ChangeNotifier {
   Future<void> fetchLocationActivityLogs(String locationId) async {
     try {
       final headers = await CommonHeaders.createHeaders();
-      final url = "${AppConstant.baseURL}/locations_v2/getlocation_activity?location_id=$locationId";
+      final url = "${AppConstant.baseURL1}/locations_v2/getlocation_activity?location_id=$locationId";
       
       print("Fetching location activity logs from: $url");
       final response = await http.get(Uri.parse(url), headers: headers);

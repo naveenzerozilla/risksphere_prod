@@ -5,9 +5,18 @@ class AppConstant {
   static String get Stripe_prod => Env.get('STRIPE_PUBLISHABLE_KEY');
 
   static const String REGION = "us-central1";
+  // static const String REGION = "europe-west2";
+  static const String REGION1 = "us-east1";
+  static const String REGION2 = "us-west2";
 
   static String get baseURL =>
       'https://${REGION}-${Configuration.projectId}.cloudfunctions.net';
+
+  static String get baseURL1 =>
+      'https://${REGION1}-${Configuration.projectId}.cloudfunctions.net';
+
+  static String get baseURL2 =>
+      'https://${REGION1}-${Configuration.projectId}.cloudfunctions.net';
 
   static String get CORPORATE_MANAGEMENT_URL => '$baseURL/companies_v2';
 
@@ -15,13 +24,14 @@ class AppConstant {
       '$baseURL/pricing_v2/payment_session';
 
   static String get PAYMNET_DETAILS_URL => '$baseURL/pricing_v2/session_status';
-  static String get RECOMMENDATION_ENGINE_V3 =>
-      '$baseURL/';
+
+  static String get RECOMMENDATION_ENGINE_V3 => '$baseURL/';
+
   static String get RECOMMENDATION_ENGINE_V2 =>
       '$baseURL/recommendation_engine_v2/confirm_sync';
-  static String VENDOR_DATA_COMPARISON =
+  static String get VENDOR_DATA_COMPARISON =>
       '$baseURL/recommendation_engine_v2/vendor_data_comparison';
-  static String UNLINK_PARAMETER =
+  static String get UNLINK_PARAMETER =>
       '$baseURL/vendor_management_v2/unlink_parameter';
 
   static String get CORPORATE_MANAGEMENT_URL_NEW =>
@@ -43,7 +53,10 @@ class AppConstant {
       '$baseURL/user_management_new_v2/last_updated_role';
 
   static String get CREATE_CORPORATE_URL => '$baseURL/new_user_create_v2';
-  static String get Fetch_purchase_chatbot => '$baseURL/chat_with_agent_v2/purchase';
+
+  static String get Fetch_purchase_chatbot =>
+      '$baseURL/chat_with_agent_v2/purchase';
+
   static String get Fetch_purchase => '$baseURL/chat_with_agent_v2';
 
   static String get UPDATE_CORPORATE_URL => '$baseURL/companies_v2';
@@ -66,9 +79,9 @@ class AppConstant {
   static String get ADD_EMAILS => '$baseURL/support_v2';
 
   static String get CHANGE_STATUS => '$baseURL/support_v2';
-  static String get GET_GOOGLE_TOKEN => '$baseURL/locations_v2/get_token';
-  static  String GET_LOCATION_DETAILS =
-      '$baseURL/locations_v2/getlocation';
+
+  static String get GET_GOOGLE_TOKEN => '$baseURL1/locations_v2/get_token';
+  static String get GET_LOCATION_DETAILS => '$baseURL1/locations_v2/getlocation';
 
   static String get GET_EMPLOYEES =>
       '$baseURL/user_management_v2?employees_list=true';
@@ -107,7 +120,7 @@ class AppConstant {
       '$baseURL/user_management_v2/current?connections=true';
 
   static String get DUPLICATE_ACCOUNT =>
-      '$baseURL/accounts_v2'; //'$baseURL/accounts';
+      '$baseURL1/accounts_v2'; //'$baseURL/accounts';
 
   static String get GET_REQUESTS => '$baseURL/user_management_v2?requests=true';
 
@@ -153,7 +166,7 @@ class AppConstant {
 
   /// ---------------- R2 APIs ----------------
 
-  static String get GET_ACCOUNT_LIST => '$baseURL/locations_v2/accounts';
+  static String get GET_ACCOUNT_LIST => '$baseURL1/locations_v2/accounts';
 
   static String get HANDLE_VENDOR_DATA =>
       '$baseURL/recommendation_engine_v2/handle_vendor_data';
@@ -183,7 +196,7 @@ class AppConstant {
   static String get SOV_PARAMETER_UPDATE =>
       '$baseURL/recommendation_engine_v2/sov_update';
 
-  static String get ADD_ACCOUNT => '$baseURL/locations_v2/create_account';
+  static String get ADD_ACCOUNT => '$baseURL1/locations_v2/create_account';
 
   static String get UPLOAD_SOV_ACCOUNT => '$baseURL/sov_v2';
 
@@ -203,44 +216,44 @@ class AppConstant {
       '$baseURL/duplicate_check_v2/skipconflict';
 
   static String get START_HAZARD_CONFLICTS =>
-      '$baseURL/locations_v2/starthazard';
+      '$baseURL1/locations_v2/starthazard';
 
-  static String get HANDLE_CONFLICT => '$baseURL/locations_v2';
+  static String get HANDLE_CONFLICT => '$baseURL1/locations_v2';
 
-  static String get TRANSFER_SOV => '$baseURL/locations_v2/transfer_sov';
+  static String get TRANSFER_SOV => '$baseURL1/locations_v2/transfer_sov';
 
   static String get TRANSFER_SUBACCOUNT =>
-      '$baseURL/locations_v2/transfer_sub_account';
+      '$baseURL1/locations_v2/transfer_sub_account';
 
   static String get TRANSFER_ACCOUNT =>
-      '$baseURL/locations_v2/transfer_account';
+      '$baseURL1/locations_v2/transfer_account';
 
   /// ---------------- Locations ----------------
 
-  static String get MY_LOCATION => '$baseURL/locations_v2';
+  static String get MY_LOCATION => '$baseURL1/locations_v2';
 
-  static String get IMAGE_LIST => '$baseURL/locations_v2/getmedia';
+  static String get IMAGE_LIST => '$baseURL1/locations_v2/getmedia';
 
   static String get DOCUMENT_LIST => '$baseURL/data_categories_v2/documents';
 
   static String get ADD_COMMENT =>
-      '$baseURL/locations_v2/update_location_comment';
+      '$baseURL1/locations_v2/update_location_comment';
 
-  static String get ADD_TO_SOV => '$baseURL/locations_v2/add_to_sov';
+  static String get ADD_TO_SOV => '$baseURL1/locations_v2/add_to_sov';
 
   static String get LOCATION_SUMMARY =>
-      '$baseURL/locations_v2/location_summary';
+      '$baseURL1/locations_v2/location_summary';
 
   static String get GET_SEARCH_LIST_BY_SOV => '$baseURL/user_management_new_v2';
 
-  static String get EXPORT => '$baseURL/locations_v2/export';
+  static String get EXPORT => '$baseURL1/locations_v2/export';
 
-  static String get EXPORT_SOV => '$baseURL/locations_v2/export_sov';
+  static String get EXPORT_SOV => '$baseURL1/locations_v2/export_sov';
 
-  static String get GLOBAL_SEARCH => '$baseURL/locations_v2/global_search';
+  static String get GLOBAL_SEARCH => '$baseURL1/locations_v2/global_search';
 
   static String get GET_CURRENT_COMPANY_ID =>
-      '$baseURL/locations_v2/current_company_id';
+      '$baseURL1/locations_v2/current_company_id';
 
   /// ---------------- Monitoring ----------------
 
@@ -263,7 +276,7 @@ class AppConstant {
   static String get GET_COMPANY_ID =>
       '$baseURL/user_management_new_v2/company_credits/';
 
-  static String get RENAME_ACCOUNT => '$baseURL/accounts_v2';
+  static String get RENAME_ACCOUNT => '$baseURL1/accounts_v2';
 
   /// ---------------- Notifications ----------------
 
@@ -278,8 +291,11 @@ class AppConstant {
   static String get GET_EVENT_INFO =>
       '$baseURL/user_management_new_v2/eventinfo';
 
+  static String get GET_SINGLE_EVENT =>
+      '$baseURL/vendor_management_v2/single_event';
+
   static String get RENAME_SOV =>
-      '$baseURL/accounts_v2/undefined/subaccount/undefined/sov';
+      '$baseURL1/accounts_v2/undefined/subaccount/undefined/sov';
 
   static String get GET_EVENT_FEED =>
       '$baseURL/user_management_new_v2/getEventFeed';
@@ -295,35 +311,35 @@ class AppConstant {
 
   /// ---------------- Delete ----------------
 
-  static String get DELETE_ACCOUNT => '$baseURL/locations_v2/delete_account/?';
+  static String get DELETE_ACCOUNT => '$baseURL1/locations_v2/delete_account/?';
 
   static String get DELETE_SUB_ACCOUNT =>
-      '$baseURL/locations_v2/delete_subaccount?';
+      '$baseURL1/locations_v2/delete_subaccount?';
 
-  static String get DELETE_SOV_ACCOUNT => '$baseURL/locations_v2/delete_sov?';
+  static String get DELETE_SOV_ACCOUNT => '$baseURL1/locations_v2/delete_sov?';
 
   /// ---------------- Hazard ----------------
 
   static String get GET_HAZARD_LIST =>
       '$baseURL/vendor_management_v2/hazard_list';
 
-  static String get REQUEST_ACCESS => '$baseURL/accounts_v2';
+  static String get REQUEST_ACCESS => '$baseURL1/accounts_v2';
 
   static String get CONFIGURATIONS =>
-      '$baseURL/locations_v2/account_sub_global_configuration/global';
+      '$baseURL1/locations_v2/account_sub_global_configuration/global';
 
   static String get CONFIGURATIONS_ACCOUNTS =>
-      '$baseURL/locations_v2/account_sub_global_configuration/account';
+      '$baseURL1/locations_v2/account_sub_global_configuration/account';
 
   static String get CONFIGURATIONS_SUB_ACCOUNTS =>
-      '$baseURL/locations_v2/account_sub_global_configuration/sub_account';
-  static String UPDATE_CONFIGURATION =
-      '$baseURL/locations_v2/update_account_sub_global_configuration';
-  static String UPDATE_ACCOUNT_NAME =
-      '$baseURL/locations_v2/update_company_config';
+      '$baseURL1/locations_v2/account_sub_global_configuration/sub_account';
+  static String get UPDATE_CONFIGURATION =>
+      '$baseURL1/locations_v2/update_account_sub_global_configuration';
+  static String get UPDATE_ACCOUNT_NAME =>
+      '$baseURL1/locations_v2/update_company_config';
 
   static String get UPLOAD_IMAGES_NEW =>
-      '$baseURL/locations_v2/location_profile_images';
+      '$baseURL1/locations_v2/location_profile_images';
 
   static String get GET_USER_VERIFICATION_REQUESTS =>
       '$baseURL/companies_v2?leads=users';
@@ -351,76 +367,77 @@ class AppConstant {
   static String get GET_DATA_PARAMETERS =>
       '$baseURL/data_categories_v2/subaccountparameter/';
 
-  static String get GET_SOV_LIST => '$baseURL/accounts_v2';
+  static String get GET_SOV_LIST => '$baseURL1/accounts_v2';
 
-  static String get GET_LOCATION_PROFILE_NEW => '$baseURL/locations_v2';
+  static String get GET_LOCATION_PROFILE_NEW => '$baseURL1/locations_v2';
 
-  static String get EDIT_CAMPUS => '$baseURL/locations_v2/editcampus';
+  static String get EDIT_CAMPUS => '$baseURL1/locations_v2/editcampus';
 
   static String get UPLOAD_SOV_SUB_ACCOUNT => '$baseURL/sov_v2';
 
-  static String get GET_LOCATION_PROFILE => '$baseURL/accounts_v2';
+  static String get GET_LOCATION_PROFILE => '$baseURL1/accounts_v2';
 
   static String get GET_LOCATION_PROFILE_INDIVIDUAL_NEW =>
-      '$baseURL/locations_v2/getlocation';
+      '$baseURL1/locations_v2/getlocation';
 
   static String get ADD_SUBDESTINATION =>
-      '$baseURL/locations_v2/addsubdestination';
+      '$baseURL1/locations_v2/addsubdestination';
 
   static String get SOV_COMPLETE_STATUS1 =>
-      '$baseURL/locations_v2/getsubdestination?';
+      '$baseURL1/locations_v2/getsubdestination?';
 
   static String get SOV_COMPLETE_STATUS =>
-      '$baseURL/locations_v2/location_status';
+      '$baseURL1/locations_v2/location_status';
 
   static String get UPLOAD_DOCUMENT_NEW =>
-      '$baseURL/locations_v2/location_media/';
+      '$baseURL1/locations_v2/location_media/';
 
   static String get ADD_TO_MONITORING =>
-      '$baseURL/locations_v2/add_to_sov_monitoring';
+      '$baseURL1/locations_v2/add_to_sov_monitoring';
 
   static String get DELETE_DOCUMENT_NEW =>
-      '$baseURL/locations_v2/location_media/';
+      '$baseURL1/locations_v2/location_media/';
 
-  static String get CHANGE_OCCUPANCY => '$baseURL/locations_V2/rented';
+  static String get CHANGE_OCCUPANCY => '$baseURL1/locations_v2/rented';
 
-  static String get UPDATE_HAZARD => '$baseURL/locations_v2/updatehazard';
+  static String get UPDATE_HAZARD => '$baseURL1/locations_v2/updatehazard';
 
-  static String get GIFT_CREDITS => '$baseURL/locations_v2/gift_credits';
+  static String get GIFT_CREDITS => '$baseURL1/locations_v2/gift_credits';
 
-  static String get ACCEPT_CREDITS => '$baseURL/locations_v2/accept_credits';
+  static String get ACCEPT_CREDITS => '$baseURL1/locations_v2/accept_credits';
 
-  static String get SENT_GIFTS => '$baseURL/locations_v2/sent_gifts';
+  static String get SENT_GIFTS => '$baseURL1/locations_v2/sent_gifts';
 
-  static String get RENAME_SUB_ACCOUNT => '$baseURL/accounts_v2';
+  static String get RENAME_SUB_ACCOUNT => '$baseURL1/accounts_v2';
 
-  static String get REVOKE_GIFTS => '$baseURL/locations_v2/revoke_gift';
+  static String get REVOKE_GIFTS => '$baseURL1/locations_v2/revoke_gift';
 
-  static String get DUPLICATE_SUB_ACCOUNT => '$baseURL/accounts_v2';
+  static String get DUPLICATE_SUB_ACCOUNT => '$baseURL1/accounts_v2';
 
   static String get CHANGE_COLUMN_VISIBILITY_SUB_ACCOUNT =>
-      '$baseURL/accounts_v2';
+      '$baseURL1/accounts_v2';
 
   static String get ADD_SUB_ACCOUNT =>
-      '$baseURL/locations_v2/create_sub_account';
+      '$baseURL1/locations_v2/create_sub_account';
 
-  static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL/locations_v2/sov';
+  static String get GET_AUTOCOMPLETE_SOV_LIST => '$baseURL1/locations_v2/sov';
 
-  static String get SHARE_SOV_LIST => '$baseURL/locations_v2/share_sov';
+  static String get SHARE_SOV_LIST => '$baseURL1/locations_v2/share_sov';
+
   static String get sendConnectionRequest => '$baseURL/user_management_v2';
 
-  static String get GET_SUB_ACCOUNT_LIST => '$baseURL/locations_v2';
+  static String get GET_SUB_ACCOUNT_LIST => '$baseURL1/locations_v2';
 
   static String get CANCEL_SOV_UPLOAD_PROCESS =>
       '$baseURL/user_management_new_v2/my_last_process/cancel';
 
   static String get GET_SOV_LIST_BY_SOV =>
-      '$baseURL/locations_v2/accessible_sov';
+      '$baseURL1/locations_v2/accessible_sov';
 
   static String get GET_EVENET_SOV_LIST_BY_SOV =>
       '$baseURL/vendor_management_v2/event_based_on_monitoring_sov';
 
   static String get CHANGE_CORPORATE_STATUS => '$baseURL/companies_v2';
 
-  static String get CHANGE_COLUMN_VISIBILITY => '$baseURL/accounts_v2';
+  static String get CHANGE_COLUMN_VISIBILITY => '$baseURL1/accounts_v2';
 }

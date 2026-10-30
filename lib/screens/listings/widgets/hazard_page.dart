@@ -80,9 +80,11 @@ class HazardsSectionPage extends StatelessWidget {
                   }).map((entry) {
                     final hazardName = entry.key;
                     final hazard = entry.value;
-                    final rating = hazard.rating ?? 0;
-                    final intRating = int.tryParse(rating.toString()) ??
-                        -1; // Safely parse it, defaulting to -1 if invalid
+                    final rating = hazard.rating;
+                    int intRating = int.tryParse(rating?.toString() ?? '') ?? 5;
+                    if (intRating == 0) {
+                      intRating = 5;
+                    }
 
                     final color =
                         (intRating >= 0 && intRating < scoreColors.length)
@@ -111,14 +113,10 @@ class HazardsSectionPage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              rating.toString().isEmpty
-                                  ? '5'
-                                  : (rating.toString() != '0'
-                                      ? rating.toString()
-                                      : 'N/A'),
+                              intRating.toString(),
                               style: typography.Body2.copyWith(
                                 color:
-                                    rating == 3 ? Colors.black : Colors.white,
+                                    intRating == 3 ? Colors.black : Colors.white,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

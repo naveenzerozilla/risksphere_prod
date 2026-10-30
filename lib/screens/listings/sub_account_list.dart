@@ -143,7 +143,6 @@ class _SubAccountListScreenState extends State<SubAccountListScreen>
       final trialStatus = userProfileProvider.trialInfo['status'] ?? '';
       int tabCount = trialStatus.isEmpty ? 2 : 2;
       _scrollController = ScrollController();
-      // 🟢 Create TabController ONLY after UI is mounted
       _tabController = TabController(length: tabCount, vsync: this);
 
       if (mounted) setState(() {});

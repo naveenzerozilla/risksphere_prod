@@ -24,6 +24,8 @@ import '../../../utils/common_headers.dart';
 import 'location_details_popup.dart';
 import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart'
     as cluster_manager;
+import 'package:webview_flutter/webview_flutter.dart';
+import '../../../utils/env.dart';
 
 class LocationListMapView extends StatefulWidget {
   final String accountId;
@@ -129,7 +131,10 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
     debugPrint("Dataset ID Loaded: $datasetID");
 
-    if (datasetID != null && datasetID!.isNotEmpty && datasetID != "1" && datasetID != "null") {
+    if (datasetID != null &&
+        datasetID!.isNotEmpty &&
+        datasetID != "1" &&
+        datasetID != "null") {
       await loadDatasetLocations();
     } else {
       debugPrint("Invalid Dataset ID: $datasetID");
@@ -141,7 +146,8 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
     String? datasetIdd = await SharedPreferenceService.getDefaultDatasetID();
     setState(() {
-      datasetID = (datasetIdd != null && datasetIdd != "null") ? datasetIdd : null;
+      datasetID =
+          (datasetIdd != null && datasetIdd != "null") ? datasetIdd : null;
     });
     print("DatasetId => $datasetID");
   }
@@ -206,7 +212,8 @@ class _LocationListMapViewState extends State<LocationListMapView>
 
   Future<void> loadDatasetLocations() async {
     final projectId = Configuration.projectId;
-
+    print(
+        "https://mapsplatformdatasets.googleapis.com/download/v1/projects/$projectId/datasets/$datasetID:download?alt=media");
     final googleAccessToken = await getGoogleAccessToken();
 
     if (googleAccessToken == null || googleAccessToken.isEmpty) {
@@ -830,7 +837,6 @@ class _LocationListMapViewState extends State<LocationListMapView>
     setState(() => is3DView = !is3DView);
   }
 
-
   @override
   Widget build(BuildContext context) {
     var typography = CustomTypography(context);
@@ -872,283 +878,301 @@ class _LocationListMapViewState extends State<LocationListMapView>
         ),
 
         // if (_filteredLocations.isNotEmpty)
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  GoogleMap(
-                    cloudMapId: Platform.isAndroid
-                        ? "df78fbd8e414bf264398784a"
-                        : "df78fbd8e414bf269a617fe7",
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(20.5937, 78.9629),
-                      zoom: 9,
-                    ),
-                    zoomControlsEnabled: false,
-                    myLocationEnabled: true,
-                    markers: (!_isHeatmapOn && _showPins) ? _markers : {},
-                    mapType: _selectedTabIndex == 0
-                        ? _currentMapType
-                        : _currentMapType1,
-                    onMapCreated: (GoogleMapController controller) {
-                      mapController = controller;
-                      _mapReady = true;
-                      clusterManager.setMapId(controller.mapId);
-                      clusterManager.setItems(_filteredLocations);
-                      clusterManager.updateMap();
-                      Future.delayed(const Duration(seconds: 1), () {
-                        debugPrint(" Locations: ${_filteredLocations.length}");
-                        if (!mounted) return;
-                        if (_locationsLoaded && _filteredLocations.isNotEmpty) {
-                          clusterManager.setItems(_filteredLocations);
-                          if (!_firstAttachDone) {
-                            _moveCameraToLatLng(
-                                _filteredLocations.first.location);
-                            setState(() => _firstAttachDone = true);
-                          }
-                        }
-                      });
-                    },
-
-                    tileOverlays: _selectedTabIndex == 0
-                        ? {}
-                        : (_selectedHazard != null &&
-                                _tileProviders.containsKey(_selectedHazard) &&
-                                _mainHazardTileProvider != null &&
-                                selectedHazardId != null &&
-                                selectedVendor != null)
-                            ? {
-                                TileOverlay(
-                                  tileOverlayId:
-                                      TileOverlayId(selectedHazardId!),
-                                  tileProvider: _mainHazardTileProvider!,
-                                ),
-                                TileOverlay(
-                                  tileOverlayId:
-                                      TileOverlayId(_selectedHazard!),
-                                  tileProvider:
-                                      _tileProviders[_selectedHazard!]!,
-                                ),
-                              }
-                            : (_mainHazardTileProvider != null &&
-                                    selectedHazardId != null &&
-                                    selectedVendor != null)
-                                ? {
-                                    TileOverlay(
-                                      tileOverlayId:
-                                          TileOverlayId(selectedHazardId!),
-                                      tileProvider: _mainHazardTileProvider!,
-                                    ),
-                                  }
-                                : {},
-                    onCameraMove: (position) {
-                      _currentCenter = position.target;
-                      clusterManager.onCameraMove(position);
-                    },
-
-                    onCameraIdle: () {
-                      clusterManager.updateMap();
-                    },
-                    // onCameraIdle: clusterManager.updateMap,
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                GoogleMap(
+                  cloudMapId: Platform.isAndroid
+                      ? "df78fbd8e414bf264398784a"
+                      : "df78fbd8e414bf269a617fe7",
+                  initialCameraPosition: const CameraPosition(
+                    target: LatLng(20.5937, 78.9629),
+                    zoom: 9,
                   ),
+                  zoomControlsEnabled: false,
+                  myLocationEnabled: true,
+                  markers: (!_isHeatmapOn && _showPins) ? _markers : {},
+                  mapType: _selectedTabIndex == 0
+                      ? _currentMapType
+                      : _currentMapType1,
+                  onMapCreated: (GoogleMapController controller) {
+                    mapController = controller;
+                    _mapReady = true;
+                    clusterManager.setMapId(controller.mapId);
+                    clusterManager.setItems(_filteredLocations);
+                    clusterManager.updateMap();
+                    Future.delayed(const Duration(seconds: 1), () {
+                      debugPrint(" Locations: ${_filteredLocations.length}");
+                      if (!mounted) return;
+                      if (_locationsLoaded && _filteredLocations.isNotEmpty) {
+                        clusterManager.setItems(_filteredLocations);
+                        if (!_firstAttachDone) {
+                          _moveCameraToLatLng(
+                              _filteredLocations.first.location);
+                          setState(() => _firstAttachDone = true);
+                        }
+                      }
+                    });
+                  },
 
-                  // 2D/3D toggle
-                  Positioned(
-                    bottom: 70,
-                    right: 8,
-                    child: InkWell(
-                      onTap: _toggle2D3DView,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3))
-                          ],
-                        ),
-                        child: Text(
-                          is3DView ? "3D" : "2D",
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black),
-                        ),
+                  tileOverlays: _selectedTabIndex == 0
+                      ? {}
+                      : (_selectedHazard != null &&
+                              _tileProviders.containsKey(_selectedHazard) &&
+                              _mainHazardTileProvider != null &&
+                              selectedHazardId != null &&
+                              selectedVendor != null)
+                          ? {
+                              TileOverlay(
+                                tileOverlayId: TileOverlayId(selectedHazardId!),
+                                tileProvider: _mainHazardTileProvider!,
+                              ),
+                              TileOverlay(
+                                tileOverlayId: TileOverlayId(_selectedHazard!),
+                                tileProvider: _tileProviders[_selectedHazard!]!,
+                              ),
+                            }
+                          : (_mainHazardTileProvider != null &&
+                                  selectedHazardId != null &&
+                                  selectedVendor != null)
+                              ? {
+                                  TileOverlay(
+                                    tileOverlayId:
+                                        TileOverlayId(selectedHazardId!),
+                                    tileProvider: _mainHazardTileProvider!,
+                                  ),
+                                }
+                              : {},
+                  onCameraMove: (position) {
+                    _currentCenter = position.target;
+                    clusterManager.onCameraMove(position);
+                  },
+
+                  onCameraIdle: () {
+                    clusterManager.updateMap();
+                  },
+                  // onCameraIdle: clusterManager.updateMap,
+                ),
+
+                // 2D/3D toggle
+                Positioned(
+                  bottom: 70,
+                  right: 8,
+                  child: InkWell(
+                    onTap: _toggle2D3DView,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3))
+                        ],
+                      ),
+                      child: Text(
+                        is3DView ? "3D" : "2D",
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black),
                       ),
                     ),
                   ),
+                ),
 
-                  // Layer / hazard controls
-                  _selectedTabIndex == 1
-                      ? _buildHazardControls()
-                      : Positioned(
-                          bottom: 20,
-                          left: 10,
-                          child: Container(
-                            margin: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.brightness ==
-                                      Brightness.light
-                                  ? AppColors.paperElevation2Light
-                                  : AppColors.paperElevation2,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5))
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                FloatingActionButton.small(
-                                  elevation: 0,
-                                  backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .brightness ==
-                                          Brightness.light
-                                      ? AppColors.paperElevation2Light
-                                      : AppColors.paperElevation2,
-                                  onPressed: () {
-                                    setState(() {
-                                      List<MapType> mapTypes = [
-                                        MapType.normal,
-                                        MapType.satellite,
-                                        MapType.terrain,
-                                        MapType.hybrid
-                                      ];
-                                      int currentIndex =
-                                          mapTypes.indexOf(_currentMapType);
-                                      _currentMapType = mapTypes[
-                                          (currentIndex + 1) % mapTypes.length];
-                                    });
-                                  },
-                                  child: Icon(Icons.layers,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface),
-                                  tooltip: 'Change Map Type',
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                            ),
+                // Layer / hazard controls
+                _selectedTabIndex == 1
+                    ? _buildHazardControls()
+                    : Positioned(
+                        bottom: 20,
+                        left: 10,
+                        child: Container(
+                          margin: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.brightness ==
+                                    Brightness.light
+                                ? AppColors.paperElevation2Light
+                                : AppColors.paperElevation2,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5))
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FloatingActionButton.small(
+                                heroTag: null,
+                                elevation: 0,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                        ? AppColors.paperElevation2Light
+                                        : AppColors.paperElevation2,
+                                onPressed: () {
+                                  setState(() {
+                                    List<MapType> mapTypes = [
+                                      MapType.normal,
+                                      MapType.satellite,
+                                      MapType.terrain,
+                                      MapType.hybrid
+                                    ];
+                                    int currentIndex =
+                                        mapTypes.indexOf(_currentMapType);
+                                    _currentMapType = mapTypes[
+                                        (currentIndex + 1) % mapTypes.length];
+                                  });
+                                },
+                                child: Icon(Icons.layers,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface),
+                                tooltip: 'Change Map Type',
+                              ),
+                              const SizedBox(width: 8),
+                              FloatingActionButton.small(
+                                heroTag: null,
+                                elevation: 0,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.brightness ==
+                                            Brightness.light
+                                        ? AppColors.paperElevation2Light
+                                        : AppColors.paperElevation2,
+                                onPressed: () {
+                                  double targetLat = _currentCenter.latitude;
+                                  double targetLng = _currentCenter.longitude;
+
+                                  _showStreetViewDialog(
+                                      context, targetLat, targetLng);
+                                },
+                                child: Icon(Icons.streetview,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface),
+                                tooltip: 'Street View',
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                           ),
                         ),
+                      ),
 
-                  // Heatmap toggle (tab 1)
-                  Positioned(
-                    top: 16,
-                    right: 10,
-                    child: _selectedTabIndex == 1
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.light
-                                  ? AppColors.paperElavation25Light
-                                  : AppColors.paperElavation25,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: MenuAnchor(
-                              builder: (context, controller, child) {
-                                return InkWell(
-                                  onTap: () async {
-                                    setState(() => _isLoading = true);
-                                    Future.delayed(const Duration(seconds: 5),
-                                        () {
-                                      if (mounted)
-                                        setState(() => _isLoading = false);
-                                    });
-                                  },
-                                  child: Container(
-                                    height: 31,
-                                    width: 34,
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: _isHeatmapOn
-                                          ? Colors.grey.withOpacity(0.8)
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                    ),
-                                    child: _isLoading
-                                        ? const Center(
-                                            child: SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(Colors.orange),
-                                              ),
-                                            ),
-                                          )
-                                        : SvgPicture.asset(
-                                            'assets/images/heatmap_icon.svg',
-                                            color: _isHeatmapOn
-                                                ? Colors.white
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurface,
-                                          ),
+                // Heatmap toggle (tab 1)
+                Positioned(
+                  top: 16,
+                  right: 10,
+                  child: _selectedTabIndex == 1
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.light
+                                    ? AppColors.paperElavation25Light
+                                    : AppColors.paperElavation25,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: MenuAnchor(
+                            builder: (context, controller, child) {
+                              return InkWell(
+                                onTap: () async {
+                                  setState(() => _isLoading = true);
+                                  Future.delayed(const Duration(seconds: 5),
+                                      () {
+                                    if (mounted)
+                                      setState(() => _isLoading = false);
+                                  });
+                                },
+                                child: Container(
+                                  height: 31,
+                                  width: 34,
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: _isHeatmapOn
+                                        ? Colors.grey.withOpacity(0.8)
+                                        : Theme.of(context).colorScheme.surface,
                                   ),
-                                );
-                              },
-                              menuChildren: !_isLoading &&
-                                      !Provider.of<MyLocationListProvider>(
-                                              context,
-                                              listen: false)
-                                          .isHeatMapGeneratingLive
-                                  ? [
-                                      MenuItemButton(
-                                        child: Text("Update Heatmap",
-                                            style: typography.InputLabel),
-                                        onPressed: () async =>
-                                            await _fetchHazardLayers(
-                                                regenerate: true),
-                                      ),
-                                      const Divider(height: 1, thickness: 1),
-                                      if (_isHeatmapOn)
-                                        MenuItemButton(
-                                          child: Text("Switch off Heatmap",
-                                              style: typography.InputLabel),
-                                          onPressed: _toggleHeatmap,
+                                  child: _isLoading
+                                      ? const Center(
+                                          child: SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.orange),
+                                            ),
+                                          ),
+                                        )
+                                      : SvgPicture.asset(
+                                          'assets/images/heatmap_icon.svg',
+                                          color: _isHeatmapOn
+                                              ? Colors.white
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
                                         ),
-                                      if (_isHeatmapOn)
-                                        const Divider(height: 1, thickness: 1),
-                                      ..._reducers.map((reducer) {
-                                        return MenuItemButton(
-                                          child: Text(reducer,
-                                              style: typography.InputLabel),
-                                          onPressed: () {
-                                            if (!_isHeatmapOn) _toggleHeatmap();
-                                            _onReducerChanged(reducer);
-                                          },
-                                        );
-                                      }).toList(),
-                                    ]
-                                  : [],
-                            ),
-                          )
-                        : const SizedBox(),
-                  ),
-                ],
-              ),
+                                ),
+                              );
+                            },
+                            menuChildren: !_isLoading &&
+                                    !Provider.of<MyLocationListProvider>(
+                                            context,
+                                            listen: false)
+                                        .isHeatMapGeneratingLive
+                                ? [
+                                    MenuItemButton(
+                                      child: Text("Update Heatmap",
+                                          style: typography.InputLabel),
+                                      onPressed: () async =>
+                                          await _fetchHazardLayers(
+                                              regenerate: true),
+                                    ),
+                                    const Divider(height: 1, thickness: 1),
+                                    if (_isHeatmapOn)
+                                      MenuItemButton(
+                                        child: Text("Switch off Heatmap",
+                                            style: typography.InputLabel),
+                                        onPressed: _toggleHeatmap,
+                                      ),
+                                    if (_isHeatmapOn)
+                                      const Divider(height: 1, thickness: 1),
+                                    ..._reducers.map((reducer) {
+                                      return MenuItemButton(
+                                        child: Text(reducer,
+                                            style: typography.InputLabel),
+                                        onPressed: () {
+                                          if (!_isHeatmapOn) _toggleHeatmap();
+                                          _onReducerChanged(reducer);
+                                        },
+                                      );
+                                    }).toList(),
+                                  ]
+                                : [],
+                          ),
+                        )
+                      : const SizedBox(),
+                ),
+              ],
             ),
           ),
+        ),
 
         const SizedBox(height: 8),
 
@@ -1485,6 +1509,68 @@ class _LocationListMapViewState extends State<LocationListMapView>
     debugPrint("Hazards : ${hazards.keys.toList()}");
 
     return hazards;
+  }
+
+  void _showStreetViewDialog(BuildContext context, double lat, double lng) {
+    final apiKey = Env.get('GOOGLE_MAPS_API_KEY')
+        .trim()
+        .replaceAll("'", "")
+        .replaceAll('"', "");
+
+    final String html = '''
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <style>
+            body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+            iframe { border: none; width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <iframe
+            src="https://www.google.com/maps/embed/v1/streetview?key=$apiKey&location=$lat,$lng"
+            allowfullscreen>
+          </iframe>
+        </body>
+      </html>
+    ''';
+
+    final WebViewController controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadHtmlString(html);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              width: MediaQuery.of(context).size.width,
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: controller),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: IconButton(
+                      icon: const Icon(Icons.close,
+                          color: Colors.black, size: 30),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

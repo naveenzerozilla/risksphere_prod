@@ -12,6 +12,7 @@ import '../screens/onboarding/create_account_screen.dart';
 import 'package:http/http.dart' as http;
 import '../utils/global_imports.dart' hide CompanyType;
 import 'package:RiskSphere/utils/appcheckService.dart';
+import 'package:RiskSphere/service/push_notification_service.dart';
 
 class AuthNotifier extends ChangeNotifier {
   ValueNotifier<List<Companies>> companyOptionsNotifier = ValueNotifier([]);
@@ -562,7 +563,7 @@ class AuthNotifier extends ChangeNotifier {
 
       await SharedPreferenceService.setClaims(claims);
       await SharedPreferenceService.getAllClaims();
-      unawaited(initFCM(_user!.uid));
+      unawaited(PushNotificationService.initFCM(_user!.uid));
       _isSigningIn = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
@@ -617,7 +618,7 @@ class AuthNotifier extends ChangeNotifier {
 
         await SharedPreferenceService.setClaims(claims);
         await SharedPreferenceService.getAllClaims();
-        unawaited(initFCM(_user!.uid));
+        unawaited(PushNotificationService.initFCM(_user!.uid));
 
         print('Is Individual? ${claims['isIndividual']}');
 
@@ -694,9 +695,6 @@ class AuthNotifier extends ChangeNotifier {
         userCredential =
             await FirebaseAuth.instance.signInWithProvider(microsoftProvider);
       }
-
-      // Handle user data or token claims if necessary
-      // Example:
       IdTokenResult token = await userCredential.user!.getIdTokenResult();
       Map<String, dynamic>? claims = token.claims ?? {};
       log("Claims: $claims");
@@ -1618,20 +1616,12 @@ class AuthNotifier extends ChangeNotifier {
       if (_auth.currentUser == null) {
         return "server_error";
       }
-      // if (_auth.currentUser == null) {
-      //   print("User is not authenticated.");
-      //   return "";
-      // }
+
 
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('assignClaims_v2');
 
       String? token = await _auth.currentUser!.getIdToken(false);
-
-      print("================ CALLABLE: assignClaims_v2 ================");
-      print("URL: HTTPS Callable Function (assignClaims_v2)");
-      print("Payload data: {'Authorization': 'Bearer ${token != null ? (token.substring(0, 15) + "...") : "null"}'}");
-      print("==========================================================");
 
       HttpsCallableResult response = await callable.call(<String, dynamic>{
         'Authorization': 'Bearer ${token ?? ""}',

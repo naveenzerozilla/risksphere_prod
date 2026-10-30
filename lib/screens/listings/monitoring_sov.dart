@@ -335,7 +335,7 @@ class _MySovListState extends State<MontoringSovList>
                           Expanded(
                             child: Container(
                               margin: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                                  horizontal: 16, vertical: 1),
                               child: monitoringsovBody(typography),
                             ),
                           ),
@@ -408,6 +408,7 @@ class _MySovListState extends State<MontoringSovList>
               controller: _scrollController1,
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
+                SizedBox(height: CustomSpacing.three),
                 Consumer<SOVListProvider>(
                   builder: (context, sovListProvider, _) {
                     return LayoutBuilder(
@@ -415,8 +416,8 @@ class _MySovListState extends State<MontoringSovList>
                         final isMobile = constraints.maxWidth < 500;
 
                         return Wrap(
-                          spacing: 25,
-                          runSpacing: 6,
+                          spacing: 12,
+                          runSpacing: 8,
                           children: [
                             SizedBox(
                               width: isMobile
@@ -432,7 +433,7 @@ class _MySovListState extends State<MontoringSovList>
                             ),
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 15
+                                  ? (constraints.maxWidth / 2) - 8
                                   : 220,
                               child: InfoCard(
                                 title: "Impacted Locations of Total",
@@ -452,14 +453,12 @@ class _MySovListState extends State<MontoringSovList>
                                   sovListProvider.hurricaneMonitoringLocations,
                                 ),
                                 icon: Icons.gas_meter_outlined,
-                                onTap: () {
-
-                                },
+                                onTap: () {},
                               ),
                             ),
                             SizedBox(
                               width: isMobile
-                                  ? (constraints.maxWidth / 2) - 15
+                                  ? (constraints.maxWidth / 2) - 11
                                   : 220,
                               child: InfoCard(
                                 title: "Earthquake Monitoring Locations",
@@ -467,9 +466,7 @@ class _MySovListState extends State<MontoringSovList>
                                   sovListProvider.earthquakeMonitoringLocations,
                                 ),
                                 icon: Icons.crisis_alert,
-                                onTap: () {
-
-                                },
+                                onTap: () {},
                               ),
                             ),
                           ],
@@ -479,7 +476,7 @@ class _MySovListState extends State<MontoringSovList>
                   },
                 ),
                 // monitoringLimitCard(),
-                SizedBox(height: CustomSpacing.two),
+                SizedBox(height: CustomSpacing.four),
                 Consumer<SOVListProvider>(
                   builder: (context, sovListProvider, _) {
                     if (sovListProvider.isLoading) {
@@ -523,12 +520,21 @@ class _MySovListState extends State<MontoringSovList>
                                       notificationData: {
                                         'title':
                                             sov.eventName ?? "Event Details",
+                                        'eventName':
+                                            sov.eventName ?? "Event Details",
+                                        'hazardName':
+                                            sov.hazardName ?? "Event Hazard",
+                                        'hazard_name':
+                                            sov.hazardName ?? "Event Hazard",
                                         'body': "body",
                                         'timestamp':
                                             DateTime.fromMillisecondsSinceEpoch(
-                                                (sov.updatedAt?.iSeconds ?? 0) *
+                                                (sov.updatedAt?.iSeconds ??
+                                                        sov.lastUpdateDate
+                                                            ?.iSeconds ??
+                                                        0) *
                                                     1000),
-                                        'eventId': sov.id,
+                                        'eventId': sov.eventId ?? sov.id,
                                         'lat':
                                             sov.locationCoordinates?.latitude ??
                                                 20.5937,
@@ -536,6 +542,12 @@ class _MySovListState extends State<MontoringSovList>
                                                 ?.longitude ??
                                             78.9629,
                                         'frontendUrls': sov.frontendUrls,
+                                        'otherEvents': sov.otherEvents,
+                                        'other_events': sov.otherEvents
+                                            ?.map((e) => e.toJson())
+                                            .toList(),
+                                        'dataSourceDate': sov.dataSourceDate ??
+                                            sov.runDtg,
                                       }),
                                 ),
                               );
@@ -659,9 +671,7 @@ class _MySovListState extends State<MontoringSovList>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   "Locations Impacted : ${sov.impactedLocCount ?? 0}",
                   style: typography.Body2.copyWith(
@@ -669,16 +679,12 @@ class _MySovListState extends State<MontoringSovList>
                     fontSize: 13,
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Container(
                   height: 1,
                   color: Colors.white24,
                 ),
-
                 const SizedBox(height: 10),
-
                 Row(
                   children: [
                     Expanded(
@@ -707,9 +713,7 @@ class _MySovListState extends State<MontoringSovList>
                         ],
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     Expanded(
                       flex: 4,
                       child: Row(
@@ -722,15 +726,33 @@ class _MySovListState extends State<MontoringSovList>
                             ),
                           ),
                           Expanded(
-                            child: Text(
-                              sov.vendorName.toString(),
-                              style: typography.Body2.copyWith(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Builder(
+                              builder: (context) {
+                                final vName = sov.vendorName?.toString() ?? "";
+                                if (vName.isEmpty) return const SizedBox.shrink();
+                                
+                                // Clean up vendor name for asset mapping
+                                final cleanName = vName.toLowerCase().replaceAll(' ', '_').replaceAll('*', '').trim();
+                                
+                                return Image.asset(
+                                  'assets/images/$cleanName.png',
+                                  height: 20,
+                                  alignment: Alignment.centerLeft,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback to text if the image isn't found in assets
+                                    return Text(
+                                      vName,
+                                      style: typography.Body2.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                );
+                              }
                             ),
                           ),
                         ],
@@ -738,10 +760,7 @@ class _MySovListState extends State<MontoringSovList>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 8),
-
-
                 Row(
                   children: [
                     Text(
@@ -837,69 +856,82 @@ class InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      width: 121,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Card(
-          color: Colors.white12,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 1, 0, 2),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    IconData displayIcon = Icons.description;
+    String displayCount = count.toString();
+
+    if (title.contains('Impacted')) {
+      displayIcon = Icons.speed;
+      displayCount = "${count.toString()} ";
+    } else if (title.contains('Hurricane')) {
+      displayIcon = Icons.description;
+      displayCount = count.toString();
+    } else if (title.contains('Earthquake')) {
+      displayIcon = Icons.speed;
+      displayCount = "${count.toString()}";
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 90,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
+            width: 1.0,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                displayIcon,
+                color: Colors.white70,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.white38,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: Colors.white60,
-                      size: 20,
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                  SizedBox(width: CustomSpacing.two),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 1.2,
-                      ),
+                  const SizedBox(height: 3),
+                  Text(
+                    displayCount,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: CustomSpacing.two),
-              Text(
-                count.toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.17),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 String? messageError;
-
